@@ -8,10 +8,10 @@ abstract class Geoip
     
     public function __construct($config)
     {
+        $this->init($config);
         if (isset($config['cache'])) {
             $this->cache = load('cache', $config['cache']);
         }
-        $this->init($config);
     }
     
     public function locate($ip, $fitler = true)

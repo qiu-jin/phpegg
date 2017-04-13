@@ -10,6 +10,14 @@ abstract class Crypt
     
     abstract public function decrypt($data);
     
+    public function __construct($config)
+    {
+        $this->init($config);
+        if (isset($config['serialize'])) {
+            list($this->serialize, $this->unserialize) = $config['serialize'];
+        }
+    }
+    
     protected function serialize($data)
     {
         return $this->serialize ? ($this->serialize)($data) : $data;

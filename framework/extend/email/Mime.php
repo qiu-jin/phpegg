@@ -51,7 +51,7 @@ class Mime
         return '=?utf-8?B?'.base64_encode($str).'?=';
     }
     
-    public static function buildAttachment(array $attchs)
+    public static function buildAttach(array $attchs)
     {
         foreach ($attchs as $attch) {
             

@@ -1,50 +1,17 @@
 <?php
 namespace framework\driver\rpc;
 
-use framework\core\Exception;
 use framework\core\http\Client;
-use framework\extend\rpc\Batch;
 use framework\extend\rpc\Names;
 
 class Jsonrpc
 {
-    private $server;
-    private $throw_exception = true;
+    protected $server;
+    protected $throw_exception = true;
     
     public function __construct($config)
     {
         $this->server = $config['server'];
-    }
-    
-    public function call($ns, $method, $params = null, $id = null)
-    {
-        $body = json_encode([
-            'jsonrpc'   => '2.0',
-            'method'    => $method,
-            'params'    => $params,
-            'id'        => empty($id) ? uniqid() : $id
-        ]);
-        $res = Client::send('POST', $this->server, [
-            'body' => $body,
-            'return_status' => true,
-            'headers' => ['Content-Type: application/json; charset=UTF-8'] 
-        ]);
-        if ($res['status'] === 200 && !empty($res['body'])) {
-            $data = json_decode($res['body'], true);
-            if (isset($data['result'])) {
-                return $data['result'];
-            } elseif (isset($data['error'])) {
-                $this->_error($data['error']['code'], $data['error']['message']);
-                return false;
-            }
-        }
-        $this->_error('-32603', 'nvalid JSON-RPC response');
-        return false;
-    }
-    
-    public function batch()
-    {
-        return new Batch($this);
     }
 
     public function __get($class)
@@ -54,18 +21,52 @@ class Jsonrpc
 
     public function __call($method, $params = [])
     {
-        return $this->call(null, $method, $params);
+        return $this->_call(null, $method, $params);
     }
     
-    private function _send($data)
+    public function _call($ns, $method, $params = null, $id = null)
     {
-
+        $data = [
+            'jsonrpc'   => '2.0',
+            'params'    => $params,
+            'method'    => $ns ? implode('.', $ns).'.'.$method : $method,
+            'id'        => empty($id) ? uniqid() : $id
+        ];
+        $client = Client::post($this->server)->json($data);
+        $result = $client->json;
+        if (isset($result['result'])) {
+            return $result['result'];
+        }
+        if (isset($data['error'])) {
+            $this->_error($data['error']['code'], $data['error']['message']);
+        } else {
+            if ($result->status == 200) {
+                $this->_error('-32603', 'nvalid JSON-RPC response');
+            }
+            if ($clierr = $client->error) {
+                $this->_error('-32000', "Internet error $clierr[0]: $clierr[1]");
+            }
+            $this->_error('-32000', 'unknown Internet error');
+        }
+        return false;
     }
     
-    private function _error($code, $message)
+    /*
+    public function batch()
+    {
+        return new Batch($this);
+    }
+    
+    public function _batchCall()
+    {
+        
+    }
+    */
+    
+    protected function _error($code, $message)
     {
         if ($this->throw_exception) {
-            throw new Exception("$code: $message", Exception::RPC);
+            throw new \Exception("Jsonrpc error $code: $message");
         } else {
             $this->log = "$code: $message";
         }
