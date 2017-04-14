@@ -3,13 +3,29 @@ namespace framework;
 
 use framework\core\Hook;
 use framework\core\Config;
+use framework\core\http\Response;
 
-class App
+abstract class App
 {
     private static $app;
     private static $init;
     private static $exit;
     private static $runing;
+    private static $error_handler;
+    
+    protected $config = [];
+    protected $dispatch = [];
+    
+    abstract public function run(callable $return_handler);
+    abstract protected function dispatch();
+    //abstract public function response($return);
+    //abstract public function error($code, $message);
+    
+    private function __construct($config = [])
+    {
+        $this->config = array_merge($this->config, $config);
+        $this->dispatch = $this->dispatch();
+    }
     
     public static function init($name)
     {
@@ -49,9 +65,12 @@ class App
             } else {
                 throw new \Exception('App start error');
             }
-            define('APP_MODE', $app);
-            Hook::listen('start');
-            return self::$app;
+            if (self::$app->dispatch) {
+                Hook::listen('start');
+                return self::$app;
+            } else {
+                self::abort(404);
+            }
         }
     }
 
@@ -90,12 +109,27 @@ class App
         }
     }
     
-    public static function runing()
+    public static function abort($code = null, $message = null)
+    {
+        if (isset(self::$error_handler)) {
+            self::$error_handler($code, $message);
+        } elseif (is_callable([self::$app, 'error'])) {
+            self::$app->error($code, $message);
+        } else {
+            Response::json(['error' => ['code' => $code, 'message' => $message]]);
+        }
+    }
+    
+    public static function setErrorHandler($handler)
+    {
+        self::$error_handler = $handler;
+    }
+    
+    protected function runing()
     {
         if (self::$runing) {
-            return true;
+            throw new \Exception('App is runing');
         }
         self::$runing = true;
-        return false;
     }
 }

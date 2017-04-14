@@ -29,7 +29,7 @@ class Mysqli extends Db
         $this->dbname = $dbname;
         $this->link->select_db($dbname);
         try {
-            $call();
+            $call($this);
         } catch (\Exception $e) {
             
         }

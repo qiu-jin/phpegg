@@ -8,7 +8,7 @@ class Router
     private static $filters = [
     ];
 
-    public static function dispatch($path, $ruotes, $method)
+    public static function dispatch($path, $ruotes, $method = null)
     {
         if (empty($path)) {
             if (isset($ruotes['/']))  {
@@ -50,7 +50,7 @@ class Router
                         } else {
                             $params = [];
                         }
-                        return [$call, [$rule => $to], $params];
+                        return [$call, $params, [$rule => $to]];
                     }
                 }
             }
@@ -77,15 +77,16 @@ class Router
                         }
                     }
                     return false;
-                case '^':
-                    if (preg_match('/'.$unit.'/', $path[$i], $matchs)) {
+                case '(':
+                    $item = substr($path[$i], 0, -1);
+                    if (preg_match('/^'.$unit.'$/i', $item, $matchs)) {
                         $count = count($matchs);
                         if ($count > 1) {
                             for ($j = 1;$j < $count;$j++) {
                                 $macth[] = $matchs[$j];
                             }
                         } else {
-                            $macth[] = $path[$i];
+                            $macth[] = $item;
                         }
                         break;
                     }

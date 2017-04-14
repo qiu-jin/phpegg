@@ -1,107 +1,92 @@
 <?php
-namespace Framework\Core\App;
+namespace framework\core\app;
 
-use Framework\App;
-use Framework\Core\Http\Request;
-use Framework\Core\Http\Response;
+use framework\App;
+use framework\core\http\Request;
+use framework\core\http\Response;
 
-class Jsonrpc
+class Jsonrpc extends App
 {
-    private $request;
-    private $version = '2.0';
-    private $ns = 'App\\'.APP_NAME.'\Controller\\';
+    private $id;
     
-    public function __construct(array $config)
+    public function dispatch()
     {
-        $this->config = $config+$this->config;
-        $request = json_decode(Request::body(), true);
-        if ($request) {
-            if (isset($request['method'])){
-                $dispatch = $this->dispatch($request['method']);
-                if ($dispatch) {
-                    $this->controller = new $this->ns.implode('\\', $dispatch['controller']);
-                }
-                $this->error('-32601', 'Method not found');
-            }
-            $this->error('-32600', 'Invalid Request');
+        $data = json_decode(Request::body(), true);
+        if (!$data) {
+            $this->abort('-32700', 'Parse error');
         }
-        $this->error('-32700', 'Parse error');
+        $this->id = isset($data['id']) ? $data['id'] : null;
+        if (isset($data['method'])) {
+            $method = explode('.', $method);
+            if (count($method) > 1) {
+                $action = array_pop($method);
+                $class = 'App\\'.APP_NAME.'\Controller\\'.implode('\\', $method);
+                if (class_exists($class)) {
+                    $controller = new $class();
+                    if (is_callable($controller, $action)) {
+                        return [
+                            'controller'    => $controller,
+                            'action'        => $action,
+                            'params'        => isset($data['params']) ? $data['params'] : null
+                        ];
+                    }
+                }
+            }
+            $this->abort('-32601', 'Method not found');
+        }
+        $this->abort('-32600', 'Invalid Request');
     }
-    
+
     public function run($return_handler = null)
     {
-        if (App::runing()) return;
+        $this->runing();
+        $action = $this->dispatch['action'];
+        $params = $this->dispatch['params'];
+        $controller = $this->dispatch['controller'];
+        $this->dispatch = null;
         switch ($this->config['param_mode']) {
             case 1:
-                if (is_callable([$this->controller, $action])) {
-                    $return = $this->controller->$action(...$params);
-                    break;
-                }
-                $this->error('-32601', 'Method not found');
+                $return = $controller->$action(...$params);
+                break;
             case 2:
-                $method = new \ReflectionMethod($this->controller, $action);
-                if ($method->isPublic()) {
-                    $params = [];
-                    if ($method->getnumberofparameters() > 0) {
-                        foreach ($method->getParameters() as $param) {
-                            if (isset($this->params[$param->name])) {
-                                $params[] = $this->params[$param->name];
-                            } elseif($param->isDefaultValueAvailable()) {
-                                $params[] = $param->getdefaultvalue();
-                            } else {
-                                $this->error('-32602');
-                            }
+                $parameters = [];
+                $method = new \ReflectionMethod($controller, $action);
+                if ($method->getnumberofparameters() > 0) {
+                    foreach ($method->getParameters() as $param) {
+                        if (isset($params[$param->name])) {
+                            $parameters[] = $params[$param->name];
+                        } elseif($param->isDefaultValueAvailable()) {
+                            $parameters[] = $param->getdefaultvalue();
+                        } else {
+                            $this->error('-32602', 'Invalid params');
                         }
                     }
-                    $result = $method->invokeArgs($this->controller, $params);
-                    break;
                 }
-                $this->error('-32601', 'Method not found');
-            }
+                $result = $method->invokeArgs($controller, $parameters);
+                break;
             default:
-                if (is_callable([$this->controller, $action])) {
-                    $return = $this->controller->$action($params);
-                    break;    
-                }
-                $this->error('-32601', 'Method not found');
+                $return = $controller->$action($params);
+                break; 
         }
-        if (isset($return_handler)) {
-            $return_handler($return);
-        }
+        $return_handler && $return_handler($return);
         $this->response($return);
     }
     
     public function error($code = null, $message = null)
     {
         Response::json([
-            'id' => self::$id,
-            'jsonrpc' => self::$jsonrpc,
+            'id' => $this->id,
+            'jsonrpc' => '2.0',
             'error' => ['code' => $code, 'message' => $message]
         ]);
     }
     
-    protected function response($return = null)
+    public function response($return = null)
     {
         Response::json([
-            'id' => self::$id,
-            'jsonrpc' => self::$jsonrpc,
+            'id' => $this->id,
+            'jsonrpc' => '2.0',
             'result' => $return
         ]);
-    }
-    
-    protected function dispatch($method)
-    {
-        $method = explode('.', $method);
-        $count = count($method);
-        if ($count > 1) {
-            $action = array_pop($method);
-            if (method_exists($this->ns.implode('\\', $method), $action)) {
-                return [
-                    'controller' => $method,
-                    'action'     => $action
-                ];
-            }
-        }
-        return false;
     }
 }

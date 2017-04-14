@@ -26,7 +26,7 @@ class Query extends Chain
     
     public function get($id, $pk = 'id')
     {
-        $this->options = ['where' => [$pk => $id], 'fields' => isset($this->options['fields']) ? $this->options['fields'] : null];
+        $this->option = ['where' => [$pk => $id], 'fields' => isset($this->option['fields']) ? $this->option['fields'] : null];
         return $this->find(1);
     }
 

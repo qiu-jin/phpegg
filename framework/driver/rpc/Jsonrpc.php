@@ -7,11 +7,14 @@ use framework\extend\rpc\Names;
 class Jsonrpc
 {
     protected $server;
-    protected $throw_exception = true;
+    protected $throw_exception = false;
     
     public function __construct($config)
     {
         $this->server = $config['server'];
+        if (isset($config['throw_exception'])) {
+            $throw_exception = (bool) $config['throw_exception'];
+        }
     }
 
     public function __get($class)
@@ -46,7 +49,7 @@ class Jsonrpc
             if ($clierr = $client->error) {
                 $this->_error('-32000', "Internet error $clierr[0]: $clierr[1]");
             }
-            $this->_error('-32000', 'unknown Internet error');
+            $this->_error('-32000', 'Unknown internet error');
         }
         return false;
     }

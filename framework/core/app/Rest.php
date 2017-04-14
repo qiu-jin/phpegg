@@ -1,90 +1,150 @@
 <?php
-namespace Framework\Core\App;
+namespace framework\core\app;
 
-use Framework\App;
-use Framework\Util\Xml;
-use Framework\Core\Router;
-use Framework\Core\Config;
-use Framework\Core\Http\Request;
-use Framework\Core\Http\Response;
+use framework\App;
+use framework\core\Router;
+use framework\core\Config;
+use framework\core\http\Request;
+use framework\core\http\Response;
 
-class Rest
+class Rest extends App
 {
     private $config = [
         'level' => 0,
         'param' => 0,
         'route' => 0,
     ];
+    private $method;
     private $ns = 'App\\'.APP_NAME.'\Controller\\';
     
-    public function __construct(array $config)
+    public function dispatch()
     {
-        $this->config = $config+$this->config;
-        $dispatch = $this->dispatch();
-        if ($dispatch) {
-            Request::set('dispatch', $dispatch);
-        } else {
-            $this->error(404);
+        $method = strtolower(Request::method());
+        if (in_array($method, ['get','post', 'put', 'delete', 'options', 'head', 'patch'], true)) {
+            $path = explode('/', trim(Request::path(), '/'));
+            switch ($this->config['route']) {
+                case 0:
+                    return $this->defaultDispatch($path, $method);
+                case 1:
+                    return $this->routeDispatch($path, $method);
+                case 2:
+                    $dispatch = $this->defaultDispatch($path, $method);
+                    return $dispatch ? $dispatch : $this->routeDispatch($path, $method);
+                case 3:
+                    $dispatch = $this->routeDispatch($path, $method);
+                    return $dispatch ? $dispatch : $this->defaultDispatch($path, $method);
+            }
         }
+        return false;
     }
-    
+
     public function run($return_handler = null)
     {
-        if (App::runing()) return;
-        $class = Request::dispatch('controller'); 
-        $this->controller = new $class();
-        $method = new \ReflectionMethod($this->controller, Request::dispatch('action'));
-         
-        if ($method->isPublic()) {
-            if (empty($this->config['param_mode'])) {
-                $return = $method->invoke($this->controller);
-            }else {
-                $params = array();
+        $this->runing();
+        $action = $this->dispatch['action'];
+        $params = $this->dispatch['params'];
+        $controller = $this->dispatch['controller'];
+        $this->dispatch = null;
+        
+        switch ($this->config['param_mode']) {
+            case 1:
+                $return = $controller->$action(...$params);
+                break;
+            case 2:
+                $parameters = [];
+                if ($this->method) {
+                    $method = $this->method;
+                } else {
+                    $method = new \ReflectionMethod($controller, $action);
+                }
                 if ($method->getnumberofparameters() > 0) {
                     foreach ($method->getParameters() as $param) {
-                        if (isset($_GET[$param->name])) {
-                            $params[] = $_GET[$param->name];
+                        if (isset($params[$param->name])) {
+                            $parameters[] = $params[$param->name];
                         } elseif($param->isDefaultValueAvailable()) {
-                            $params[] = $param->getdefaultvalue();
+                            $parameters[] = $param->getdefaultvalue();
                         } else {
-                            if ($param_mode === 2) {
-                                $this->error('404', '无效的参数');
-                            }
-                            $params[] = null;
+                            $this->abort(404);
                         }
                     }
                 }
-                $return = $method->invokeArgs($this->controller, $params);
-            }
-        } else {
-            $this->error(404);
+                $result = $method->invokeArgs($controller, $parameters);
+                break;
+            default:
+                $return = $controller->$action($params);
+                break; 
         }
-        if (isset($return_handler)) {
-            $return_handler($return);
-        }
-        unset($this->controller);
+        $return_handler && $return_handler($return);
         $this->response($return);
     }
     
     public function error($code = null, $message = null)
     {
-        if (!isset($code)) $code = 500;
+        if ($code == null) {
+            $code = 500;
+        }
         Response::status($code);
         Response::json(['error'=>['code'=>$code, 'message'=>$message]]);
     }
     
     protected function response($return)
     {
-        Response::json($return);
+        Response::json(['result' => $return]);
     }
     
-    protected function dispatch()
+    protected function defaultDispatch($path, $method) 
     {
-        $path = explode('/', trim(Request::path(), '/'));
-        $method = Request::method();
+        $params = null;
+        $count = count($path);
+        $level = $this->config['level'];
+        if ($level > 0) {
+            if ($count >= $level) {
+                if ($count === $level) {
+                    $class = $this->ns.implode('\\', $path);
+                } else {
+                    $class = $this->ns.implode('\\', array_slice($path, 0, $level));
+                    $params = array_slice($path, $level);
+                    if ($this->config['param_mode'] === 2) {
+                        $params = $this->paserParams($params);
+                    }
+                }
+            }
+        } else {
+            $class = $this->ns.implode('\\', $path);
+        }
+        if (isset($class) && class_exists($class)) {
+            $controller = new $class();
+            if (is_callable([$controller, $method])) {
+                return ['controller' => $controller, 'action' => $action, 'params' => $params];
+            }
+        }
+        return false;
     }
-    
-    private function parse_url_kv_param(array $path)
+
+    protected function routeDispatch($path, $method) 
+    {
+        $dispatch = Router::dispatch($path, Config::get('router'), $method);
+        if ($dispatch) {
+            $action = array_pop($dispatch[0]);
+            $class = $this->ns.implode('\\', $dispatch[0]);
+            if (class_exists($class)) {
+                $controller = new $class();
+                $method = new \ReflectionMethod($controller, $action);
+                if (!$method->isPublic()) {
+                    if ($method->isProtected()) {
+                        $method->setAccessible(true);
+                    } else {
+                        return false;
+                    }
+                }
+                $this->method = $method;
+                return ['controller'=> $controller, 'action' => $action, 'params' => $dispatch[1]];
+            }
+        }
+        return false;
+    }
+
+    protected function paserParams(array $path)
     {
         $params = [];
         $len = count($path);
@@ -109,72 +169,5 @@ class Rest
             default:
                 return = Request::body();
         }
-    }
-    
-    private function default_dispatch($path, $method, $level = 0, $remainder = false) 
-    {
-        $count = count($path);
-        if ($level > 0) {
-            if ($count === $level) {
-                $controller = $this->ns.implode('\\', $path);
-                if (method_exists($class, $method)) {
-                    return [
-                        'controller'=> $controller,
-                        'action'    => $method
-                    ];
-                } elseif ($remainder && class_exists($controller)) {
-                    return [
-                        'controller'=> $controller,
-                        'remainder' => ''
-                    ];
-                }
-            } elseif ($remainder && $count > $level) {
-                $controller = $this->ns.implode('\\', array_slice($path, 0, $level));
-                if (class_exists($controller)) {
-                    return [
-                        'controller'=> $controller,
-                        'remainder' => array_slice($path, $level)
-                    ]; 
-                }
-            }
-        } else {
-            $controller = $this->ns.implode('\\', $path);
-            if (method_exists($controller, $method)) {
-                return [
-                    'controller'=> $controller,
-                    'action'    => $method
-                ];
-            }
-        }
-        return false;
-    }
-    
-    private function route_controller_dispatch($path, $routes, $method) 
-    {
-        $route_dispatch = Router::dispatch($path, $routes, $method);
-        if ($route_dispatch) {
-            $action = array_pop($route_dispatch[0]);
-            $controller = $this->ns.implode('\\', $dispatch[0]);
-            if (method_exists($controller, $action)) {
-                return [
-                    'controller'=> $controller,
-                    'action'    => $action,
-                    'params'    => $dispatch[1]
-                ];
-            }
-        }
-        return false;
-    }
-    
-    private function route_action_dispatch($path, $routes, $method) 
-    {
-        $route_dispatch = Router::dispatch($path, $routes, $method);
-        if ($route_dispatch) {
-            return [
-                'action'    => $dispatch[0][0],
-                'params'    => $dispatch[1]
-            ];
-        }
-        return false;
     }
 }

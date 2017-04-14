@@ -17,12 +17,15 @@ class Recaptcha
         $this->sitekey = $config['sitekey'];
     }
     
+    /*
+     * {{ load('captcha', 'recaptcha')->render() }}
+     */
     public function render($tag = 'div', $attr = [])
     {
         $str = '';
         $attr['class'] = 'g-recaptcha';
         $attr['data-sitekey'] = $this->sitekey;
-        $html = "<script src='".$this->scripturl."' async defer></script>\r\n";
+        $html = "<script src='$this->scripturl' async defer></script>\r\n";
         foreach ($attr as $k => $v) {
             $str = "$k = '$v' ";
         }
@@ -30,18 +33,23 @@ class Recaptcha
         return $html;
     }
     
-    public function verify($response = null)
+    public function verify($value = null)
     {
-        $params = [
+        $form = [
             'secret' => $this->secret,
-            'response' => $response ? $response : Request::post('g-recaptcha-response'),
+            'response' => $value ? $value : Request::post('g-recaptcha-response'),
             'remoteip' => Request::ip()
         ];
-        $result = Client::post($this->apiurl)->form($params)->json;
+        $result = Client::post($this->apiurl)->form($form)->json;
         if (isset($result['success']) && $result['success'] === true) {
             return true;
-        } else {
-            return false;
         }
+        if (isset($result['error-codes'])) {
+            $this->log = $result['error-codes'];
+        } else {
+            $clierr = $client->error;
+            $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
+        }
+        return false;
     }
 }

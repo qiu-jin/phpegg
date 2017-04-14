@@ -1,32 +1,38 @@
 <?php
-namespace Framework\Core\App;
+namespace framework\core\app;
 
-use Framework\App;
-use Framework\Core\View;
-use Framework\Core\Router;
-use Framework\Core\Config;
-use Framework\Core\Http\Request;
-use Framework\Core\Http\Response;
+use framework\App;
+use framework\core\Router;
+use framework\core\Config;
+use framework\core\http\Request;
+use framework\core\http\Response;
 
-class Inline
+class Inline extends App
 {
-    private $config;
-    private $dispatch;
+    private $dir = APP_DIR.'controller/';
     
-    public function __construct($config)
+    public function dispatch()
     {
-        $dispatch = $this->dispatch();
-        if ($dispatch) {
-            $this->dispatch = $dispatch;
-        } else {
-            $this->error(404);
+        $path = trim(Request::path(), '/');
+        switch ($this->config['route']) {
+            case 0:
+                return $this->defaultDispatch($path);
+            case 1:
+                return $this->routeDispatch($path);
+            case 2:
+                $dispatch = $this->defaultDispatch($path);
+                return $dispatch ? $dispatch : $this->routeDispatch($path);
+            case 3:
+                $dispatch = $this->routeDispatch($path);
+                return $dispatch ? $dispatch : $this->defaultDispatch($path);
         }
+        return false;
     }
-
-    public function run(callable $return_handler)
+    
+    public function run(callable $return_handler = null)
     {
-        if (App::runing()) return;
-        $params = [];
+        $this->runing();
+        $params = $this->dispatch['params'];
         $_return = require($this->dispatch['file']);
         if ($_return === 1) {
             $_return = null;
@@ -39,46 +45,72 @@ class Inline
         }
         $_return && $this->response($_return);
     }
-    
-    public function error($code, $message = null)
+
+    public function error($code = null, $message = null)
     {
-        Response::send("$code\r\n".print_r($message, true));
-    }
-    
-    public function params()
-    {
-        
+        if (isset($this->config['view'])) {
+            View::error($code, $message);
+        } else {
+            Response::json(['error' => ['code' => $code, 'message' => $message]]);
+        }
     }
     
     public function response($return = null)
     {
-        switch ($this->config['view']) {
-            case 0:
-                Response::json($return);
-            case 1:
-                if (Config::has('view')) {
-                    Response::view(implode('/',Request::dispatch('call')), $return);
-                } else {
-                    Response::json($return);
-                }
-            case 2:
-                Response::view(implode('/',Request::dispatch('call')), $return);
+        if (isset($this->config['view'])) {
+            Response::view(implode('/', Request::dispatch('call')), $return);
+        } else {
+            Response::json($return);
         }
     }
     
-    public function dispatch()
+    protected function defaultDispatch($path) 
     {
-        $path = trim(Request::path(), '/');
+        $params = null;
         if ($path) {
             if (preg_match('/^(\w+)(\/\w+)*$/', $path)) {
-                $file = APP_DIR.'controller/'.$path.'.php';
-                if (file_exists($file)) {
-                    return ['file' => $file];
+                $level = $this->config['level'];
+                if ($level > 0) {
+                    $pairs = explode('/', $path);
+                    if (count($pairs) >= $level) {
+                        $file = $this->dir.implode('/', array_slice($pairs, 0, $level)).'.php';
+                        $params = array_slice($pairs, $level);
+                        if ($this->config['param_mode'] === 2) {
+                            $params = $this->paserParams($params);
+                        } elseif ($this->config['param_mode'] !== 2) {
+                            $params = implode('/', $params);
+                        }
+                    }
+                } else {
+                    $file = $this->dir.$path.'.php';
+                }
+                if (is_file($file)) {
+                    return ['file' => $file, 'params' => $params];
                 }
             }
         } elseif (isset($this->config['index'])) {
-            return ['file' => APP_DIR.'/controller/'.$index.'.php']; 
+            $file = $this->dir.$this->config['index'].'.php';
+            if (is_file($file)) {
+                return ['file' => $file, 'params' => $params]; 
+            }
         }
         return false;
+    }
+    
+    protected function routeDispatch($path)
+    {
+        $dispatch = Router::dispatch($path, Config::get('router'));
+        if ($dispatch) {
+            $file = implode('/', $dispatch[0]);
+            if (is_file($file)) {
+                return ['file' => $file, 'params' => $dispatch[1]];
+            }
+        }
+        return false;
+    }
+    
+    protected function paserParams()
+    {
+        
     }
 }

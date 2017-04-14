@@ -17,7 +17,7 @@ abstract class Chain
         return new Related($this->db, $this->table, $this, $table, $alias, $optimize);
     }
     
-    public function field()
+    public function select()
     {
         $this->option['fields'] = func_get_args();
         return $this;

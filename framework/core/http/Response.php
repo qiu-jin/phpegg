@@ -71,12 +71,6 @@ class Response
         App::exit();
     }
     
-    public static function error($code, $message = null)
-    {
-        App::make()->error($code, $message);
-        App::exit();
-    }
-    
     public static function sendfile($file)
     {
         $file = realpath($file);

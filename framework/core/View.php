@@ -52,7 +52,7 @@ class View
         }
     }
     
-    public static function error($name, array $message = [])
+    public static function error($code, array $message = [])
     {   
         if (isset(self::$config['error'][$name])) {
             $phpfile = self::_include(self::$config['error'][$name]);

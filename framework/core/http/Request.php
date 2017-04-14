@@ -40,7 +40,7 @@ class Request
         return isset(self::$request->env[$name]) ? self::$request->env[$name] : $default;
     }
 
-    public static function query($name = null, $default = null)
+    public static function get($name = null, $default = null)
     {
         return isset(self::$request->get[$name]) ? self::$request->get[$name] : $default;
     }

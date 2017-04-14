@@ -3,6 +3,16 @@ namespace Framework\Util;
 
 class Str
 {
+    
+    public static function pos($value, $find, $index = 0)
+    {
+        $pos = mb_stripos($value, $find);
+        if ($pos !== false) {
+            return mb_substr($value, 0, $pos+1);
+        }
+        return false;
+    }
+    
     public static function head($value, $find)
     {
         $pos = mb_stripos($value, $find);

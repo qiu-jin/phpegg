@@ -84,12 +84,7 @@ class Error
     
     private static function response()
     {
-        $app = App::load();
-        if (is_callable([$app, 'error'])) {
-            $app->error(null, APP_DEBUG ? self::$error : null);
-        } elseif (APP_DEBUG) {
-            dump(self::$error);
-        }
+        App::abort(null, APP_DEBUG ? self::$error : null);
     }
     
     private static function getErrorCodeInfo($code)
