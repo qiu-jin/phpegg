@@ -1,5 +1,5 @@
 <?php
-namespace framework\driver\Cache;
+namespace framework\driver\cache;
 
 class SingleFile extends Cache
 {
@@ -18,16 +18,12 @@ class SingleFile extends Cache
     
     public function get($key)
     {
-        if (isset($this->cache[$key])) {
-            return $this->cache[$key]['value'];
-        }
-        return false;
+        return isset($this->cache[$key]) ? $this->cache[$key]['value'] : null;
     }
     
     public function set($key, $value, $ttl = 0)
     {
-        $this->cache[$key]['value'] = $value;
-        $this->cache[$key]['ttl'] = $ttl > 0 ? $ttl + time() : 0;
+        $this->cache[$key] = ['value' => $value, 'ttl' => ($ttl ? $ttl + time() : 0)];
         return $this->save();
     }
 
@@ -50,7 +46,7 @@ class SingleFile extends Cache
         if (isset($this->cache)) {
             unset($this->cache);
         }
-        if (file_exists($this->file)) {
+        if (is_file($this->file)) {
             unlink($this->file);
         }
     }

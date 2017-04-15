@@ -68,6 +68,6 @@ class Console extends Logger
     
     private function encode ($data)
     {
-        return base64_encode(utf8_encode(json_encode($data)));
+        return base64_encode(json_encode($data));//utf8_encode()
     }
 }

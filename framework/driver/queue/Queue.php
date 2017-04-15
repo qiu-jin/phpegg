@@ -18,17 +18,17 @@ abstract class Queue
         return $this->link;
     }
 
-    public function producer($job, ...$params)
+    public function producer($job)
     {
-        return $this->getRoleInstance('producer', $job, $params);
+        return $this->getRoleInstance('producer', $job);
     }
     
-    public function consumer($job, ...$params)
+    public function consumer($job)
     {
-        return $this->getRoleInstance('consumer', $job, $params);
+        return $this->getRoleInstance('consumer', $job);
     }
     
-    protected function getRoleInstance($role, $job, $params)
+    protected function getRoleInstance($role, $job)
     {
         if ($this->instance) {
             if ($this->role === $role) {
@@ -45,7 +45,7 @@ abstract class Queue
         }
         $this->role = $role;
         $class = 'framework\driver\queue\\'.$role.strrchr(static::class, '\\');
-        $this->instance = new $class($this->connect(), $job, $this->config, ...$params);
+        $this->instance = new $class($this->connect(), $job, $this->config);
         return $this->instance;
     }
 }

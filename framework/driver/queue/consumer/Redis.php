@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\queue\consumer;
 
-class Redis
+class Redis extends Consumer
 {
     protected $job;
     protected $queue;
@@ -11,9 +11,20 @@ class Redis
         $this->job = $job;
         $this->queue = $queue;
     }
+    
+    public function get()
+    {
+        return $this->queue->rpoplpush($this->job, $this->timeout);
+    }
 
     public function pop()
     {
-        return $this->link->brPop($this->job);
+        return $this->queue->brPop($this->job, $this->timeout);
+    }
+    
+    
+    public function delete()
+    {
+        
     }
 }

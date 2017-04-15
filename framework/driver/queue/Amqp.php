@@ -7,23 +7,21 @@ namespace framework\driver\queue;
 
 class Amqp extends Queue
 {
-    protected function connect($mode)
+    protected function connect()
     {
         $link = new \AMQPConnection($this->config);
         if ($link->connect()) {
-            $channel = new \AMQPChannel($link);
-            $exchange = new \AMQPExchange($channel);
-            $exchange->setType(AMQP_EX_TYPE_DIRECT);
-            $exchange->setFlags(AMQP_DURABLE);
             $this->link = $link;
-            return $exchange;
+            return $link;
+        } else {
+            throw new \Exception('Can not connect to AMQP server');
         }
     }
 
     public function __destruct()
     {
         if ($this->link) {
-            $this->link->disconnect();
+            //$this->link->disconnect();
         }
     }
 }

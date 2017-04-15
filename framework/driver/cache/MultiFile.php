@@ -1,5 +1,5 @@
 <?php
-namespace framework\driver\Cache;
+namespace framework\driver\cache;
 
 use Framework\Core\Hook;
 
@@ -7,6 +7,7 @@ class MultiFile extends Cache
 {
     private $dir;
     private $cache;
+    private $ext = '.cache';
     private $gc_maxlife = 86400;
 
     protected function init($config)
@@ -48,7 +49,7 @@ class MultiFile extends Cache
 
     public function has($key)
     {
-        return isset($this->cache[$key]);
+        return isset($this->cache[$key]) || $this->cache[$key] = $this->load($key);
     }
     
     public function delete($key)
@@ -56,8 +57,8 @@ class MultiFile extends Cache
         if (isset($this->cache[$key])) {
             unset($this->cache[$key]);
         }
-        $file = $this->dir.md5($key);
-        if (file_exists($file)) {
+        $file = $this->filename($key);
+        if (is_file($file)) {
             unlink($file);
         }
     }
@@ -91,8 +92,8 @@ class MultiFile extends Cache
     
     private function load($key)
     {
-        $file = $this->dir.md5($key);
-        if (file_exists($file)) {
+        $file = $this->filename($key);
+        if (is_file($file)) {
             $time = time();
             $fp = fopen($file, 'r');
             if ($fp) {
@@ -110,12 +111,12 @@ class MultiFile extends Cache
                 }
             }
         }
-        return null;
+        return false;
     }
 
     private function save($key, $value, $ttl)
     {
-        $fp = fopen($this->dir.md5($key), 'w');
+        $fp = fopen($this->filename($key), 'w');
         if ($fp) {
             if (flock($fp, LOCK_EX)) {
                 if ($ttl !== 0) {
@@ -132,5 +133,10 @@ class MultiFile extends Cache
             }
         }
         throw new \Exception('file save error');
+    }
+    
+    private function filename($key)
+    {
+        return $this->dir.md5($key).$this->ext;
     }
 }

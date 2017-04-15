@@ -9,6 +9,7 @@ use framework\core\http\Response;
 class Mix extends App
 {
     private $routes;
+    private $ns = 'App\\'.APP_NAME.'\Controller\\';
     
     public function dispatch()
     {
@@ -22,7 +23,9 @@ class Mix extends App
             $call = $this->routeDispatch(explode('/', trim(Request::path(), '/')));
             if ($call) {
                 $return = $call();
-                $return_handler && $return_handler($return);
+                if (isset($return_handler)) {
+                    $return_handler($return);
+                }
             }
             $this->exit();
         } else {
@@ -30,6 +33,7 @@ class Mix extends App
         }
     }
     
+    /*
     public function route($role, callable $call, $method = null)
     {
         $this->routes['call'][] = $call;
@@ -48,7 +52,8 @@ class Mix extends App
 
         }
         foreach ($this->routes['rule'] as $rule) {
-            $macth = Router::macth(array_slice(explode('/', $rule), 1), $path);
+            $rule = explode('/', trim($rule, '/'));
+            $macth = Router::macth($rule, $path);
             if ($macth !== false) {
                 if (is_array($call)) {
                     if (isset($call[$method])) {
@@ -56,6 +61,40 @@ class Mix extends App
                     }
                 } else {
                     return $call;
+                }
+            }
+        }
+        return false;
+    }
+    */
+    
+    public function route($role, callable $call, $verb = null)
+    {
+        if (isset($verb) && in_array($verb, ['GET', 'PUT', 'POST', 'DELETE'])) {
+            $this->routes[$role][$verb] = $call;
+        } else {
+            $this->routes[$role] = $call;
+        }
+    }
+    
+    protected function routeDispatch($path)
+    {
+        $method = Request::method();
+        if (empty($path)) {
+            if (isset($this->routes['/'])) {
+                //$return = call_user_func_array($this->routes['/']);
+            }
+        } else {
+            foreach ($this->routes as $rule => $call) {
+                $macth = Router::macth(array_slice(explode('/', $rule), 1), $path);
+                if ($macth !== false) {
+                    if (is_array($call)) {
+                        if (isset($call[$method])) {
+                            return $call[$method];
+                        }
+                    } else {
+                        return $call;
+                    }
                 }
             }
         }

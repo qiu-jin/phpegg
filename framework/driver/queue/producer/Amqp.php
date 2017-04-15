@@ -3,14 +3,17 @@ namespace framework\driver\queue\producer;
 
 class Amqp extends Producer
 {
-    public function __construct($queue, $job)
+    public function __construct($link, $job)
     {
-        $this->queue = $queue;
+        $channel = new \AMQPChannel($link);
+        $this->queue = new \AMQPExchange($channel);
         $this->queue->setName($job); 
+        $this->queue->setType(AMQP_EX_TYPE_FANOUT);
+        $this->queue->setFlags(AMQP_DURABLE);
     }
     
     public function push($value)
     {   
-        $this->queue->publish($this->serialize($value));
+        return $this->queue->publish($this->serialize($value));
     }
 }

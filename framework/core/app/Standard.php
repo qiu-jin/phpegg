@@ -11,10 +11,11 @@ class Standard extends App
 {
     protected $config = [
         'level' => 0,
-        'param' => 0,
         'route' => 0,
+        'param' => 0,
         'view'  => 0,
     ];
+    private $method;
     private $ns = 'App\\'.APP_NAME.'\Controller\\';
     
     public function dispatch()
@@ -93,47 +94,41 @@ class Standard extends App
         }
     }
     
-    protected function defaultDispatch($path) 
+    protected function defaultDispatch($path, $method) 
     {
+        $params = null;
+        $count = count($path);
+        $level = $this->config['level'];
         if (empty($path)) {
             if (isset($this->config['index'])) {
                 $index = explode('/', $this->config['index']);
                 $action = array_pop($index);
                 $class = $this->ns.implode('\\', $index);
-                if (class_exists($class)) {
-                    $controller = new $class();
-                    if (is_callable([$controller, $action])) {
-                        return ['controller' => $controller, 'action' => $action];
-                    }
-                }
-            }
-            return false;
-        }
-        $count = count($path);
-        $level = $this->config['level'];
-        if ($level > 0) {
-            if ($count >= $level) {
-                $$class = $this->ns.implode('\\', array_slice($path, 0, -1));
-                if ($count === $level+1) {
-                    $action = array_pop($path);
-                    if (class_exists($class)) {
-                        $controller = new $class();
-                        if (is_callable([$controller, $action])) {
-                            return ['controller' => $controller, 'action' => $action];
-                        }
-                    }
-                } 
-            } else {
-                return false;
             }
         } else {
-            $action = array_pop($path);
-            $class = $this->ns.implode('\\', $path);
-            if (class_exists($class)) {
-                $controller = new $class();
-                if (is_callable([$controller, $action])) {
-                    return ['controller' => $controller, 'action' => $action];
+            if ($level > 0) {
+                if ($count > $level) {
+                    if ($count == $level+1) {
+                        $action = array_pop($path);
+                        $class = $this->ns.implode('\\', $path);
+                    } else {
+                        $action = $path[$level];
+                        $class = $this->ns.implode('\\', array_slice($path, 0, $level));
+                        $params = array_slice($path, $level);
+                        if ($this->config['param_mode'] === 2) {
+                            $params = $this->paserParams($params);
+                        }
+                    }
                 }
+            } else {
+                $action = array_pop($path);
+                $class = $this->ns.implode('\\', $path);
+            }
+        }
+        if (isset($class) && class_exists($class)) {
+            $controller = new $class();
+            if (is_callable([$controller, $method])) {
+                return ['controller' => $controller, 'action' => $action, 'params' => $params];
             }
         }
         return false;
@@ -160,74 +155,5 @@ class Standard extends App
             }
         }
         return false;
-    }
-    
-    
-    
-    
-    
-    
-    protected function _defaultDispatch($path) 
-    {
-        if (empty($path)) {
-            if (isset($this->config['index'])) {
-                $index = explode('/', $this->config['index']);
-                'action' => array_pop($index)
-                return ['action' => array_pop($index), 'controller' => $index];
-            }
-            return false;
-        }
-        $count = count($path);
-        $level = $this->config['level'];
-        if ($level > 0) {
-            if ($count >= $level) {
-                $controller = array_slice($path, 0, -1);
-                if ($count === $level+1) {
-                    $action = array_pop($path);
-                    if (method_exists($this->ns.implode('\\', $controller), $action)) {
-                        return [
-                            'controller'=> $controller,
-                            'action'    => $action
-                        ];
-                    }
-                }
-            }
-        } else {
-            $action = array_pop($path);
-            if (method_exists($this->ns.implode('\\', $path), $action)) {
-                return [
-                    'controller'=> $path,
-                    'action'    => $action
-                ];
-            }
-        }
-        return false;
-    }
-    
-    protected function routeControllerDispatch($path, $routes) 
-    {
-        $dispatch = Router::dispatch($path, $routes);
-        if ($dispatch) {
-            $action = array_pop($dispatch[0]);
-            if (method_exists($this->ns.implode('\\', $dispatch[0]), $action)) {
-                return [
-                    'controller'=> $dispatch[0],
-                    'action'    => $action,
-                    'params'    => $dispatch[1]
-                ];
-            }
-        }
-        return false;
-    }
-    
-    protected function routeActionDispatch($path, $routes) 
-    {
-        $dispatch = Router::dispatch($path, $routes);
-        if ($dispatch) {
-            return [
-                'action'    => $dispatch[0][0],
-                'params'    => $dispatch[1]
-            ];
-        }
     }
 }

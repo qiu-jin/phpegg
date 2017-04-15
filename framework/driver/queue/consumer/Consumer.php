@@ -1,10 +1,11 @@
 <?php
-namespace framework\driver\queue\producer;
+namespace framework\driver\queue\consumer;
 
 abstract class Consumer
 {
     protected $job;
     protected $queue;
+    protected $timeout = 3;
     protected $serialize = 'serialize';
     protected $unserialize = 'unserialize';
     

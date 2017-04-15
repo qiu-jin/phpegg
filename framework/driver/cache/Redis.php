@@ -1,5 +1,5 @@
 <?php
-namespace framework\driver\Cache;
+namespace framework\driver\cache;
 
 class Redis extends Cache
 {
@@ -9,7 +9,7 @@ class Redis extends Cache
     {
         try {
             $link = new \Redis();
-            if ($link->connect($config['host'], $config['port'])) {
+            if ($link->connect($config['host'], isset($config['port']) ? $config['port'] : 6379)) {
                 if (isset($config['database'])) {
                     $link->select($config['database']);
                 }
@@ -41,7 +41,6 @@ class Redis extends Cache
     public function set($key, $value, $ttl = 0)
     {
         if ($ttl > 0) {
-            $ttl += time();
             return $this->link->setex($key, $ttl, $this->serialize($value));
         } else {
             return $this->link->set($key, $this->serialize($value)); 

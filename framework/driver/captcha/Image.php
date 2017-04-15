@@ -53,10 +53,10 @@ class Image
         Response::headers([
             'Content-Type: image/png'
         ]);
-        Response::send($this->makeImage($value));
+        Response::send($this->makeImagePng($value));
     }
     
-    protected function makeImage($value)
+    protected function makeImagePng($value)
     {
         ob_start();
         imagepng($image);

@@ -17,11 +17,9 @@ abstract class App
     protected $dispatch = [];
     
     abstract public function run(callable $return_handler);
-    abstract protected function dispatch();
-    //abstract public function response($return);
-    //abstract public function error($code, $message);
+    abstract public function dispatch();
     
-    private function __construct($config = [])
+    private function __construct($config)
     {
         $this->config = array_merge($this->config, $config);
         $this->dispatch = $this->dispatch();
@@ -57,20 +55,26 @@ abstract class App
     {
         if (!self::$app) {
             self::init($name);
-            if (in_array($app, ['cli', 'inline', 'jsonrpc', 'mix', 'rest', 'standard'])) {
-                $class = 'framework\core\app\\'.ucfirst($app);
-                self::$app = $config ? new $class($config) : new $class(Config::get('app'));
-            } elseif (class_exists($app)) {
-                self::$app = $config ? new $app($config) : new $app(Config::get('app'));
+            if (static::class !== __CLASS__) {
+                throw new \Exception('Illegal start call');
+            }
+            if (strpos($app, '\\') === false) {
+                define('APP_MODE', $app);
+                $app = 'framework\core\app\\'.ucfirst($app);
+            }
+            if (is_subclass_of($app, __CLASS__)) {
+                if ($config === null) {
+                    $config = Config::get('app');
+                }
+                self::$app = new $app($config);
             } else {
-                throw new \Exception('App start error');
+                throw new \Exception('Illegal app class');
             }
             if (self::$app->dispatch) {
                 Hook::listen('start');
                 return self::$app;
-            } else {
-                self::abort(404);
             }
+            self::abort(404);
         }
     }
 

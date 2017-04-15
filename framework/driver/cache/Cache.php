@@ -1,5 +1,5 @@
 <?php
-namespace framework\driver\Cache;
+namespace framework\driver\cache;
 
 abstract class Cache
 {
