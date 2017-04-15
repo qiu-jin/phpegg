@@ -11,11 +11,11 @@ class Kafka extends Queue
     {
         if ($this->role === 'producer') {
             $link = new \RdKafka\Producer();
-            $link->addBrokers($hosts);
-        } elseif ($this->role === 'consumer') {
+            $link->addBrokers($this->config['hosts']);
+        } else {
             $link = new \RdKafka\Consumer();
-            $link->addBrokers($hosts);
-        } 
-        return $this->link = $link;
+            $link->addBrokers($this->config['hosts']);
+        }
+        return $link;
     }
 }

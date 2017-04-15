@@ -5,11 +5,8 @@ class Amqp extends Producer
 {
     public function __construct($link, $job)
     {
-        $channel = new \AMQPChannel($link);
-        $this->queue = new \AMQPExchange($channel);
-        $this->queue->setName($job); 
-        $this->queue->setType(AMQP_EX_TYPE_FANOUT);
-        $this->queue->setFlags(AMQP_DURABLE);
+        $this->queue = new \AMQPExchange(new \AMQPChannel($link));
+        $this->queue->setName($job);
     }
     
     public function push($value)

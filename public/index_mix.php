@@ -8,9 +8,9 @@ $app = framework\App::start('test', 'mix');
 
 $app->route('123', function ($id = 2) {
 
-    //return load('queue', 'amqp')->producer('test')->push(time());
+    return load('queue', 'kafka')->producer('test')->push(time());
 
-    return load('queue', 'amqp')->consumer('test')->get();
+    return load('queue', 'amqp')->consumer('test')->pop();
 
     //return cache('mfile')->get('test');
     

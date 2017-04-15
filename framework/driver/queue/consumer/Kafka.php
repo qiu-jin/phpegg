@@ -1,20 +1,17 @@
 <?php
-namespace framework\driver\queue;
+namespace framework\driver\queue\consumer;
 
-/*
- * https://github.com/arnaud-lb/php-rdkafka
- */
-
-class Kafka extends Queue
+class Kafka extends Consumer
 {
-    protected function connect($mode)
+    protected $queue;
+    
+    public function __construct($link, $job)
     {
-        if ($mode === 'producer') {
-            $link = new \RdKafka\Producer();
-            $link->addBrokers($hosts);
-        } elseif ($mode === 'consumer') {
-            $link = new \RdKafka\Consumer();
-            $link->addBrokers($hosts);
-        }
+        $this->queue = $link->newTopic($job); 
+    }
+    
+    public function pop()
+    {
+        return $this->queue->consume(RD_KAFKA_PARTITION_UA, $this->timeout); 
     }
 }

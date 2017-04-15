@@ -3,14 +3,13 @@ namespace framework\driver\queue\producer;
 
 class Kafka extends Producer
 {
-    public function __construct($queue, $job)
+    public function __construct($link, $job)
     {
-        $this->queue = $queue;
-        $$this->job = $this->queue->newTopic($job); 
+        $this->queue = $link->newTopic($job); 
     }
     
     public function push($value)
     {   
-        $this->job->produce(RD_KAFKA_PARTITION_UA, 0, $this->serialize($value));
+        $this->queue->produce(RD_KAFKA_PARTITION_UA, 0, $this->serialize($value));
     }
 }
