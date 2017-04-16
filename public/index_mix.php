@@ -17,7 +17,7 @@ $app->route('123', function ($id = 2) {
     //return cache('mfile')->get('test');
     
     //return cache('opcache')->set('test', $_SERVER, 30);
-    return db()->user->select('name')->find();
+    return db()->user->select('name')->find(1);
 });
 
 $app->run('print_r');

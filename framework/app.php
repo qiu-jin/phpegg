@@ -69,7 +69,7 @@ abstract class App
                 }
                 self::$app = new $app($config);
             } else {
-                throw new \Exception('Illegal app class');
+                throw new \Exception('Illegal app class :'.$app);
             }
             if (self::$app->dispatch) {
                 if (isset(self::$app->config['auth'])) {
