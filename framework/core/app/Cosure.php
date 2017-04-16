@@ -6,7 +6,7 @@ use framework\core\Router;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
-class Mix extends App
+class Closure extends App
 {
     private $routes;
     private $ns = 'App\\'.APP_NAME.'\Controller\\';

@@ -4,7 +4,7 @@ define('APP_DEBUG', true);
 
 include __DIR__.'/../framework/app.php';
 
-$app = framework\App::start('test', 'mix');
+$app = framework\App::start('test', 'closure');
 
 $app->route('123', function ($id = 2) {
     

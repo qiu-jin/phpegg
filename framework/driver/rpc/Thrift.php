@@ -62,7 +62,6 @@ class Thrift
         return $this->rpc[$ns]->$method(...$params);
     }
     
-    
     private function _className($ns)
     {
         return '\\'.str_replace('.', '\\', $ns);

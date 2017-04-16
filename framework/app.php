@@ -1,6 +1,7 @@
 <?php 
 namespace framework;
 
+use framework\core\Auth;
 use framework\core\Hook;
 use framework\core\Config;
 use framework\core\http\Response;
@@ -71,6 +72,9 @@ abstract class App
                 throw new \Exception('Illegal app class');
             }
             if (self::$app->dispatch) {
+                if (isset(self::$app->config['auth'])) {
+                    Auth::checkCall();
+                }
                 Hook::listen('start');
                 return self::$app;
             }

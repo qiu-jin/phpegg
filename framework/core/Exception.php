@@ -17,14 +17,21 @@ class Exception extends \Exception
         self::STORAGE => 'Storage'
     ];
     
+    protected $data;
+    
+    public function __construct($message, $code = null, $data = null)
+    {
+        
+    }
+    
     public function getData()
     {
-
+        return $this->data;
     }
     
     public function setData($data)
     {
-
+        $this->data = $data;
     }
     
     public function getName($code = null)
