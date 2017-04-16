@@ -8,6 +8,7 @@ use framework\core\http\Response;
 
 class Closure extends App
 {
+    private $index = 0;
     private $routes;
     private $ns = 'App\\'.APP_NAME.'\Controller\\';
     
@@ -20,82 +21,56 @@ class Closure extends App
     {
         $this->runing();
         if ($this->routes) {
-            $call = $this->routeDispatch(explode('/', trim(Request::path(), '/')));
-            if ($call) {
-                $return = $call();
+            $path = explode('/', trim(Request::path(), '/'))
+            $dispatch = $this->routeDispatch($path);
+            if ($dispatch) {
+                $return = $dispatch[0](...$dispatch[1]);
                 if (isset($return_handler)) {
                     $return_handler($return);
                 }
+                $this->exit();
             }
-            $this->exit();
-        } else {
-            $this->abort(404);
         }
+        $this->abort(404);
     }
     
-    /*
     public function route($role, callable $call, $method = null)
     {
         $this->routes['call'][] = $call;
-        $count = count($this->routes['call']);
-        if (in_array($method, ['get','post', 'put', 'delete', 'options', 'head', 'patch'], true)) {
-            $this->routes['role'][$method] = $count;
+        if ($method && in_array($method, ['get','post', 'put', 'delete', 'options', 'head', 'patch'], true)) {
+            $this->routes['rule'][$role][$method] = $this->index;
         } else {
-            $this->routes['role'] = $count;
+            $this->routes['rule'][$role] = $this->index;
         }
+        $this->index++;
     }
     
     protected function routeDispatch($path)
     {
-        $method = Request::method();
+        $params = [];
         if (empty($path)) {
-
-        }
-        foreach ($this->routes['rule'] as $rule) {
-            $rule = explode('/', trim($rule, '/'));
-            $macth = Router::macth($rule, $path);
-            if ($macth !== false) {
-                if (is_array($call)) {
-                    if (isset($call[$method])) {
-                        return $call[$method];
-                    }
-                } else {
-                    return $call;
-                }
-            }
-        }
-        return false;
-    }
-    */
-    
-    public function route($role, callable $call, $verb = null)
-    {
-        if (isset($verb) && in_array($verb, ['GET', 'PUT', 'POST', 'DELETE'])) {
-            $this->routes[$role][$verb] = $call;
-        } else {
-            $this->routes[$role] = $call;
-        }
-    }
-    
-    protected function routeDispatch($path)
-    {
-        $method = Request::method();
-        if (empty($path)) {
-            if (isset($this->routes['/'])) {
-                //$return = call_user_func_array($this->routes['/']);
+            if (isset($this->routes['rule']['/'])) {
+                $index = $this->routes['rule']['/'];
             }
         } else {
-            foreach ($this->routes as $rule => $call) {
-                $macth = Router::macth(array_slice(explode('/', $rule), 1), $path);
+            foreach ($this->routes['rule'] as $rule => $i) {
+                $rule = explode('/', trim($rule, '/'));
+                $macth = Router::macth($rule, $path);
                 if ($macth !== false) {
-                    if (is_array($call)) {
-                        if (isset($call[$method])) {
-                            return $call[$method];
-                        }
-                    } else {
-                        return $call;
-                    }
+                    $index = $i;
+                    $params = $macth;
+                    break;
                 }
+            }
+        }
+        if (isset($index)) {
+            if (is_array($index)) {
+                $method = Request::method();
+                if (isset($index[$method])) {
+                    return [$this->routes['call'][$index[$method]], $params];
+                }
+            } else {
+                return [$this->routes['call'][$index], $params];
             }
         }
         return false;

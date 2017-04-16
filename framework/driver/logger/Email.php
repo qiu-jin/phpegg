@@ -57,7 +57,7 @@ class Email extends Logger
         if (isset($this->driver[$type]) {
             return load($type, isset($this->driver[$type]);
         } elseif ($type === 'cache') {
-            return driver('cache', 'SingleFile', ['file' => RUNTIME_DIR.'/logger_email.cache']);
+            return driver('cache', 'SingleFile', ['file' => APP_DIR.'storage/cache/logger_email.cache']);
         }
         return null;
     }

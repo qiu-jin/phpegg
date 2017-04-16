@@ -6,7 +6,7 @@ include __DIR__.'/../framework/app.php';
 
 $app = framework\App::start('test', 'closure');
 
-$app->route('123', function ($id = 2) {
+$app->route('/user/([0-9])', function ($id) {
     
     //load('email', 'sendmail')->send('qiu-jin@qq.com', 'test', '测试');
 
@@ -17,7 +17,7 @@ $app->route('123', function ($id = 2) {
     //return cache('mfile')->get('test');
     
     //return cache('opcache')->set('test', $_SERVER, 30);
-    return db()->user->select('name')->find(1);
+    return db()->user->select('name')->get($id);
 });
 
 $app->run('print_r');

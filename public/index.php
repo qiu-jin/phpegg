@@ -1,3 +1,3 @@
 <?php
 
-include 'index_mix.php';
+include 'index_standard.php';

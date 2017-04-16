@@ -22,11 +22,6 @@ class Response
         return isset(self::$response->$name) ? self::$response->$name : $default;
     }
     
-    public static function set($name, $value)
-    {
-        self::$response->$name = $value;
-    }
-    
     public static function has($name, $key = null)
     {
         if ($key) {

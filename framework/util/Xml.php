@@ -1,16 +1,21 @@
 <?php
-namespace Framework\Util;
+namespace framework\util;
 
 class Xml
 {
-    public static function encode($array, $root = 'data')
+    public static function encode($array)
     {
         $xml = '<?xml version="1.0" encoding="UTF-8"?>';
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
-        
-        
+        foreach ($array as $key => $val) {
+            if ($key{0} = '_') {
+                
+            } elseif (is_array($val)) {
+                
+            } else {
+                
+            }
+        }
         return '<'.$root.'>'.$xml.'</'.$root.'>'
-            
     }
 
     public static function decode($string)

@@ -10,18 +10,18 @@ use framework\core\http\Response;
 class Standard extends App
 {
     protected $config = [
-        'level' => 0,
-        'route' => 0,
-        'param' => 0,
-        'view'  => 0,
+        'param_mode' => 0,
+        'route_mode' => 0,
+        'view_enable' => 0,
+        'controller_level' => 0,
     ];
     private $method;
-    private $ns = 'App\\'.APP_NAME.'\Controller\\';
+    private $ns = 'app\\'.APP_NAME.'\controller\\';
     
     public function dispatch()
     {
         $path = explode('/', trim(Request::path(), '/'));
-        switch ($this->config['route']) {
+        switch ($this->config['route_mode']) {
             case 0:
                 return $this->defaultDispatch($path);
             case 1:
@@ -29,32 +29,31 @@ class Standard extends App
             case 2:
                 $dispatch = $this->defaultDispatch($path);
                 return $dispatch ? $dispatch : $this->routeDispatch($path);
-            case 3:
-                $dispatch = $this->routeDispatch($path);
-                return $dispatch ? $dispatch : $this->defaultDispatch($path);
         }
         return false;
     }
 
-    public function run($return_handler = null)
+    public function run(callable $return_handler = null)
     {
         $this->runing();
         $action = $this->dispatch['action'];
         $params = $this->dispatch['params'];
         $controller = $this->dispatch['controller'];
-        $this->dispatch = null;
         
-        switch ($this->config['param_mode']) {
-            case 1:
-                $return = $controller->$action(...$params);
-                break;
-            case 2:
-                $parameters = [];
-                if ($this->method) {
-                    $method = $this->method;
+        if ($this->config['param_mode']) {
+            if ($this->method) {
+                $method = $this->method;
+            } else {
+                $method = new \ReflectionMethod($controller, $action);
+            }
+            if ($this->config['param_mode'] == 1) {
+                if ($method->getnumberofparameters() >= count($params)) {
+                    $return = $method->invokeArgs($controller, $params);
                 } else {
-                    $method = new \ReflectionMethod($controller, $action);
+                    $this->abort(404);
                 }
+            } elseif ($this->config['param_mode'] == 2) {
+                $parameters = [];
                 if ($method->getnumberofparameters() > 0) {
                     foreach ($method->getParameters() as $param) {
                         if (isset($params[$param->name])) {
@@ -66,11 +65,12 @@ class Standard extends App
                         }
                     }
                 }
-                $result = $method->invokeArgs($controller, $parameters);
-                break;
-            default:
-                $return = $controller->$action($params);
-                break; 
+                $return = $method->invokeArgs($controller, $parameters);
+            } else {
+                $this->abort(404);
+            }
+        } else {
+            $return = $controller->$action();
         }
         $return_handler && $return_handler($return);
         $this->response($return);
@@ -78,7 +78,7 @@ class Standard extends App
     
     public function error($code = null, $message = null)
     {
-        if (isset($this->config['view'])) {
+        if ($this->config['view_enable']) {
             View::error($code, $message);
         } else {
             Response::json(['error' => ['code' => $code, 'message' => $message]]);
@@ -87,18 +87,18 @@ class Standard extends App
     
     protected function response($return = null)
     {
-        if (isset($this->config['view'])) {
+        if (isset($this->config['view_enable'])) {
             Response::view(implode('/', Request::dispatch('call')), $return);
         } else {
-            Response::json($return);
+            Response::json(['result' => $return]);
         }
     }
     
-    protected function defaultDispatch($path, $method) 
+    protected function defaultDispatch($path) 
     {
-        $params = null;
+        $params = [];
         $count = count($path);
-        $level = $this->config['level'];
+        $level = $this->config['controller_level'];
         if (empty($path)) {
             if (isset($this->config['index'])) {
                 $index = explode('/', $this->config['index']);
@@ -114,9 +114,9 @@ class Standard extends App
                     } else {
                         $action = $path[$level];
                         $class = $this->ns.implode('\\', array_slice($path, 0, $level));
-                        $params = array_slice($path, $level);
+                        $params = array_slice($path, $level+1);
                         if ($this->config['param_mode'] === 2) {
-                            $params = $this->paserParams($params);
+                            $params = $this->getKvParams($params);
                         }
                     }
                 }
@@ -127,7 +127,7 @@ class Standard extends App
         }
         if (isset($class) && class_exists($class)) {
             $controller = new $class();
-            if (is_callable([$controller, $method])) {
+            if (is_callable([$controller, $action])) {
                 return ['controller' => $controller, 'action' => $action, 'params' => $params];
             }
         }
@@ -151,9 +151,20 @@ class Standard extends App
                     }
                 }
                 $this->method = $method;
+                $this->config['param_mode'] = 2;
                 return ['controller'=> $controller, 'action' => $action, 'params' => $dispatch[1]];
             }
         }
         return false;
+    }
+    
+    protected function getKvParams(array $path)
+    {
+        $params = [];
+        $len = count($path);
+        for ($i =0; $i < $len; $i = $i+2) {
+            $params[$path[$i]] = isset($path[$i+1]) ? $path[$i+1] : null;
+        }
+        return $params;
     }
 }

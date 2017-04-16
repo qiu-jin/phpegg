@@ -32,7 +32,7 @@ abstract class Auth
         }
     }
     
-    public static function checkCall($call)
+    public static function passport($call)
     {
         if ($this->pass) {
             foreach ($this->pass as $pass) {

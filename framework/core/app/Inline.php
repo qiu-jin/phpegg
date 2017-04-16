@@ -22,9 +22,6 @@ class Inline extends App
             case 2:
                 $dispatch = $this->defaultDispatch($path);
                 return $dispatch ? $dispatch : $this->routeDispatch($path);
-            case 3:
-                $dispatch = $this->routeDispatch($path);
-                return $dispatch ? $dispatch : $this->defaultDispatch($path);
         }
         return false;
     }
@@ -32,18 +29,14 @@ class Inline extends App
     public function run(callable $return_handler = null)
     {
         $this->runing();
-        $params = $this->dispatch['params'];
-        $_return = require($this->dispatch['file']);
-        if ($_return === 1) {
-            $_return = null;
+        $params = isset($this->dispatch['params']) ? $this->dispatch['params'] : null;
+        $__return = require($this->dispatch['file']);
+        if ($__return === 1) {
+            $__return = null;
         }
-        if (isset($return) && isset($_return)) {
-            $_return = array_merge((array) $return,(array) $_return);
-        }
-        if (isset($return_handler)) {
-            $return_handler($_return);
-        }
-        $_return && $this->response($_return);
+        $return = isset($return) ? array_merge((array) $return,(array) $_return) : $__return;
+        $return_handler && $return_handler($return);
+        $this->response($return);
     }
 
     public function error($code = null, $message = null)
@@ -60,38 +53,23 @@ class Inline extends App
         if (isset($this->config['view'])) {
             Response::view(implode('/', Request::dispatch('call')), $return);
         } else {
-            Response::json($return);
+            Response::json(['result' => $return]);
         }
     }
     
     protected function defaultDispatch($path) 
     {
-        $params = null;
         if ($path) {
             if (preg_match('/^(\w+)(\/\w+)*$/', $path)) {
-                $level = $this->config['level'];
-                if ($level > 0) {
-                    $pairs = explode('/', $path);
-                    if (count($pairs) >= $level) {
-                        $file = $this->dir.implode('/', array_slice($pairs, 0, $level)).'.php';
-                        $params = array_slice($pairs, $level);
-                        if ($this->config['param_mode'] === 2) {
-                            $params = $this->paserParams($params);
-                        } elseif ($this->config['param_mode'] !== 2) {
-                            $params = implode('/', $params);
-                        }
-                    }
-                } else {
-                    $file = $this->dir.$path.'.php';
-                }
+                $file = $this->dir.$path.'.php';
                 if (is_file($file)) {
-                    return ['file' => $file, 'params' => $params];
+                    return ['file' => $file];
                 }
             }
         } elseif (isset($this->config['index'])) {
             $file = $this->dir.$this->config['index'].'.php';
             if (is_file($file)) {
-                return ['file' => $file, 'params' => $params]; 
+                return ['file' => $file]; 
             }
         }
         return false;
@@ -101,16 +79,11 @@ class Inline extends App
     {
         $dispatch = Router::dispatch($path, Config::get('router'));
         if ($dispatch) {
-            $file = implode('/', $dispatch[0]);
+            $file = $this->dir.implode('/', $dispatch[0]);
             if (is_file($file)) {
                 return ['file' => $file, 'params' => $dispatch[1]];
             }
         }
         return false;
-    }
-    
-    protected function paserParams()
-    {
-        
     }
 }

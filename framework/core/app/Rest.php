@@ -10,9 +10,9 @@ use framework\core\http\Response;
 class Rest extends App
 {
     private $config = [
-        'level' => 0,
-        'param' => 0,
-        'route' => 0,
+        'param_mode' => 0,
+        'route_mode' => 0,
+        'controller_level' => 0,
     ];
     private $method;
     private $ns = 'App\\'.APP_NAME.'\Controller\\';
@@ -22,7 +22,7 @@ class Rest extends App
         $method = strtolower(Request::method());
         if (in_array($method, ['get','post', 'put', 'delete', 'options', 'head', 'patch'], true)) {
             $path = explode('/', trim(Request::path(), '/'));
-            switch ($this->config['route']) {
+            switch ($this->config['route_mode']) {
                 case 0:
                     return $this->defaultDispatch($path, $method);
                 case 1:
@@ -30,9 +30,6 @@ class Rest extends App
                 case 2:
                     $dispatch = $this->defaultDispatch($path, $method);
                     return $dispatch ? $dispatch : $this->routeDispatch($path, $method);
-                case 3:
-                    $dispatch = $this->routeDispatch($path, $method);
-                    return $dispatch ? $dispatch : $this->defaultDispatch($path, $method);
             }
         }
         return false;
@@ -41,6 +38,7 @@ class Rest extends App
     public function run($return_handler = null)
     {
         $this->runing();
+        $this->setPostParams();
         $action = $this->dispatch['action'];
         $params = $this->dispatch['params'];
         $controller = $this->dispatch['controller'];
@@ -96,7 +94,7 @@ class Rest extends App
     {
         $params = null;
         $count = count($path);
-        $level = $this->config['level'];
+        $level = $this->config['controller_level'];
         if ($level > 0) {
             if ($count >= $level) {
                 if ($count === $level) {
@@ -105,7 +103,7 @@ class Rest extends App
                     $class = $this->ns.implode('\\', array_slice($path, 0, $level));
                     $params = array_slice($path, $level);
                     if ($this->config['param_mode'] === 2) {
-                        $params = $this->paserParams($params);
+                        $params = $this->getKvParams($params);
                     }
                 }
             }
@@ -129,22 +127,23 @@ class Rest extends App
             $class = $this->ns.implode('\\', $dispatch[0]);
             if (class_exists($class)) {
                 $controller = new $class();
-                $method = new \ReflectionMethod($controller, $action);
-                if (!$method->isPublic()) {
-                    if ($method->isProtected()) {
-                        $method->setAccessible(true);
+                $refmethod = new \ReflectionMethod($controller, $action);
+                if (!$refmethod->isPublic()) {
+                    if ($refmethod->isProtected()) {
+                        $refmethod->setAccessible(true);
                     } else {
                         return false;
                     }
                 }
-                $this->method = $method;
+                $this->method = $refmethod;
+                $this->config['param_mode'] = 2;
                 return ['controller'=> $controller, 'action' => $action, 'params' => $dispatch[1]];
             }
         }
         return false;
     }
 
-    protected function paserParams(array $path)
+    protected function getKvParams(array $path)
     {
         $params = [];
         $len = count($path);
@@ -154,20 +153,21 @@ class Rest extends App
         return $params;
     }
     
-    private function parse_content_param()
+    protected function setPostParams()
     {
-        $content_type = Request::header('Content-Type');
-        switch ($content_type) {
-            case 'application/json':
-                return json_decode(Request::body(), true);
-            case 'application/x-www-form-urlencoded':
-                return $_POST;
-            case 'multipart/form-data':
-                return $_POST;
-            case 'application/xml':
-                return Xml::decode(Request::body());
-            default:
-                return = Request::body();
+        $type = Request::header('Content-Type');
+        if ($type) {
+            $type = strtolower($type);
+            if (strpos($type, ';') !== false) {
+                $type = strtok($type, ';');
+            }
+            if ($type === 'application/json') {
+                Request::set('post', jsondecode(Request::body()));
+            } elseif ($type === 'application/xml') {
+                Request::set('post', Xml::decode(Request::body()));
+            } elseif ($type !== 'multipart/form-data' && $type !== 'application/x-www-form-urlencoded') {
+                Request::set('post', Request::body());
+            }
         }
     }
 }

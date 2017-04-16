@@ -1,8 +1,6 @@
 <?php
 namespace Framework\Core;
 
-use Framework\Core\Validator;
-
 class Router
 {
     private static $filters = [
@@ -78,15 +76,15 @@ class Router
                     }
                     return false;
                 case '(':
-                    $item = substr($path[$i], 0, -1);
-                    if (preg_match('/^'.$unit.'$/i', $item, $matchs)) {
+                    $unit = substr($unit, 1, -1);
+                    if ($unit && preg_match('/^'.$unit.'$/i', $path[$i], $matchs)) {
                         $count = count($matchs);
                         if ($count > 1) {
                             for ($j = 1;$j < $count;$j++) {
                                 $macth[] = $matchs[$j];
                             }
                         } else {
-                            $macth[] = $item;
+                            $macth[] = $path[$i];
                         }
                         break;
                     }

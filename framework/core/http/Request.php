@@ -17,13 +17,17 @@ class Request
         self::$request->post = $_POST;
         self::$request->header = $_SERVER;
         //self::$request->cookie = $_COOKIE;
-        Hook::add('exit', __CLASS__.'::free');
+        Hook::add('exit', __CLASS__.'::clear');
         Hook::listen('request', self::$request);
     }
     
-    public static function set($name, $value)
+    public static function set($name, $key, $val = null)
     {
-        self::$request->$name = $value;
+        if ($val === null) {
+            self::$request->$name = $key;
+        } else {
+            self::$request->$name[$key] = $val;
+        }
     }
     
     public static function has($name, $key = null)
@@ -163,7 +167,7 @@ class Request
     	return false;
     }
     
-    public static function free($name = null)
+    public static function clear($name = null)
     {
         if ($name) {
             if (isset(self::$request->$name)) {
@@ -173,5 +177,20 @@ class Request
             self::$request = new \stdClass();
         }
     }
+    
+    public static function __callStatic($method, $params)
+    {
+        if (substr($method, 0, 3) === 'set') {
+            $method = strtolower(substr($method, 3));
+            if (in_array($method, ['env', 'get', 'post', 'header'], true)) {
+                if (count($params) === 2) {
+                    self::$request->$method[$params[0]] = $params[1];
+                } else {
+                    self::$request->$method = $params[0];
+                }
+                return;
+            }
+        }
+    } 
 }
 Request::init();
