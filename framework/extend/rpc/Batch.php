@@ -7,14 +7,22 @@ class Batch
     private $rpc;
     private $task = [];
     
-    public function __construct($rpc)
+    public function __construct($rpc, $batch = false)
     {
         $this->rpc = $rpc;
+        $this->batch = $batch;
     }
     
     public function call()
     {
-        return $this->rpc->call($this->task);
+        if ($batch) {
+            return $this->rpc->_batchCall($this->task);
+        } else {
+            foreach ($this->task as $task)) {
+                $result[] = $this->rpc->call(...$task);
+            }
+            return $result;
+        } 
     }
     
     public function __get($class)

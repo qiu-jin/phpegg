@@ -5,30 +5,24 @@ class Pdo extends Db
 {
     public function __construct($config)
     {
-        $this->connect($config);
+        $this->link = $this->connect($config);
     }
     
     protected function connect($config)
     {
 		try {
-            $this->config = $config;
-			$commands = array();
-			$dsn = '';
-			$type = isset($config['dbtype']) ? $config['dbtype'] : 'mysql';
-			switch ($type) {
-				case 'mysql':
-                    $dsn = $type.':host='.$config['host'].(!empty($config['port']) ? ';port='.$config['port'] : '').';dbname='.$config['dbname'];
-                    if (isset($config['charset'])) $dsn .= ';charset='.$config['charset'];
-					$commands[] = 'SET SQL_MODE=ANSI_QUOTES';
-					break;
-                default:
-                    throw new Exception('未知数据库类型');
-			}
+			$dsn = isset($config['dbtype']) ? $config['dbtype'] : 'mysql';
+            $dsn .= ':host='.$config['host'].';dbname='.$config['dbname'];
+            if (isset($config['port'])) {
+                $dsn .= ';port='.$config['port'];
+            }
+            if (isset($config['charset'])) {
+                $dsn .= ';charset='.$config['charset'];
+            }
+			$link = new \PDO($dsn, $config['username'], $config['password']);
+			$link->exec('SET SQL_MODE=ANSI_QUOTES');
             $this->dbname = $config['dbname'];
-			$this->link = new \PDO($dsn, $config['username'], $config['password']);
-			foreach ($commands as $value) {
-				$this->link->exec($value);
-			}
+            return $link;
 		} catch (PDOException $e) {
 			throw new Exception($e->getMessage());
 		}

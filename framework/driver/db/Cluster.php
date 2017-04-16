@@ -1,5 +1,5 @@
 <?php
-namespace Framework\Driver\Db;
+namespace framework\driver\db;
 
 class Cluster extends Pdo
 {
@@ -9,9 +9,10 @@ class Cluster extends Pdo
     
     public function __construct($config)
     {
-        $this->$config = $config;
-        $this->link = $this->connect($this->config['read'], $this->config['user'], $this->config['passwd'], $this->config['name'], $this->config['charset']);
-        $this->cur_link = $this->link;
+        $this->config = $config;
+        $config['host'] = $config['read'];
+        $this->link = $this->connect($config);
+        $this->work_link = $this->link;
         $this->read_link = $this->link;
     }
     
@@ -19,7 +20,9 @@ class Cluster extends Pdo
     {
         if ($is_wirte) {
             if (empty($this->wirte_link)) {
-                $this->wirte_link = $this->connect($this->config['wirte'], $this->config['user'], $this->config['passwd'], $this->config['name'], $this->config['charset']);
+                $config = $this->config;
+                $config['host'] = $config['wirte'];
+                $this->wirte_link = $this->connect($config);
             }
             return $this->wirte_link;
         } else {
@@ -75,12 +78,12 @@ class Cluster extends Pdo
         $this->wirte_link = null;
     }
     
-    private function is_wirte(&$sql)
+    protected function is_wirte(&$sql)
     {
-        return trim(strtoupper(strtok($sql, ' '))) !== 'INSERT';
+        return trim(strtoupper(strtok($sql, ' ')), "\t(") !== 'SELECT';
     }
     
-    private function sql_method($method, $sql, $params)
+    protected function sql_method($method, $sql, $params)
     {
         $method = 'parent::'.$method;
         if ($this->is_wirte($sql)) {

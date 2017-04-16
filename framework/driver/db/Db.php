@@ -6,12 +6,6 @@ use framework\extend\db\Builder;
 
 abstract class Db
 {
-    /*
-    const FETCH_ASSOC = 2;
-    const FETCH_NUM   = 2;
-    const FETCH_OBJ   = 2;
-    const FETCH_BOTH  = 2;
-    */
     protected $link;
     protected $dbname;
     protected $table_fields;

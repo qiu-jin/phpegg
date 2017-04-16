@@ -5,21 +5,21 @@ class Mysqli extends Db
 {
     public function __construct($config)
     {
-        $this->config = $config;
-        $this->link = $this->connect();
+        $this->link = $this->connect($config);
     }
     
-    protected function connect()
+    protected function connect($config)
     {
-        $link = new \mysqli($this->config['host'], $this->config['user'], $this->config['passwd'], $this->config['name']);
+        $port = isset($config['port']) ? $config['port'] : '3306';
+        $link = new \mysqli($config['host'], $config['username'], $config['password'], $config['dbname'], $port);
         if ($link->connect_error) {
-            throw new \Exception('MySQL Server Connect Error :['.$this->link->connect_errno.']'.$this->link->connect_error);
+            throw new \Exception("MySQL Server Connect Error $link->connect_errno: $link->connect_error");
         }
-        if ($charset) {
-            $link->set_charset($charset);
+        if (isset($config['charset'])) {
+            $link->set_charset($config['charset']);
         }
         $link->query("SET sql_mode=''");
-        $this->dbname = $this->config['name'];
+        $this->dbname = $config['dbname'];
         return $link;
     }
     

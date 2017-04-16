@@ -20,6 +20,6 @@ class Names
 
     public function __call($method, $params = [])
     {
-        return $this->rpc->_call($this->ns, $method, $params);
+        return $this->rpc->call($this->ns, $method, $params);
     }
 }

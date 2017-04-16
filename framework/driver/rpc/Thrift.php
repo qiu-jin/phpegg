@@ -41,6 +41,16 @@ class Thrift
             throw new \Exception($e->message());
         }
     }
+
+    public function __get($class)
+    {
+        return new Names($this, $class);
+    }
+
+    public function __call($method, $params = [])
+    {
+        return $this->call(null, $method, $params);
+    }
     
     public function call($ns, $method, $params = [])
     {
@@ -52,25 +62,6 @@ class Thrift
         return $this->rpc[$ns]->$method(...$params);
     }
     
-    public function close()
-    {
-        $this->transport->close();
-    }
-    
-    public function __get($class)
-    {
-        return new Names($this, $class);
-    }
-
-    public function __call($method, $params = array())
-    {
-        return $this->call(null, $method, $params);
-    }
-    
-    public function __destruct()
-    {
-        $this->close();
-    }
     
     private function _className($ns)
     {
@@ -97,5 +88,10 @@ class Thrift
                 $this->method_params_type[$class][$method][] = $type;
             }
         }
+    }
+    
+    public function __destruct()
+    {
+        $this->transport->close();
     }
 }

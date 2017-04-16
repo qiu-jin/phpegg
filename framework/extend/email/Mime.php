@@ -31,7 +31,7 @@ class Mime
             $mime .= 'Reply-To: '.self::buildAddr($option['replyto'])."\r\n";
         }
         if ($subject) {
-            $mime .= "Subject: ".self::buildHeaderLine($subject)."\r\n";
+            $mime .= "Subject: ".self::buildUtf8Header($subject)."\r\n";
         }
         if (isset($option['attachment'])) {
             $mime .= "Content-Type: text/html; charset=utf-8\r\n\r\n$content";
@@ -44,10 +44,10 @@ class Mime
     
     public static function buildAddr($addr)
     {
-        return empty($addr[1]) ? "<$addr[0]>" : self::buildHeaderLine($addr[1])."<$addr[0]>";
+        return empty($addr[1]) ? "<$addr[0]>" : self::buildUtf8Header($addr[1])."<$addr[0]>";
     }
     
-    public static function buildHeaderLine($str)
+    public static function buildUtf8Header($str)
     {
         return '=?utf-8?B?'.base64_encode($str).'?=';
     }

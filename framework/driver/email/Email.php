@@ -7,7 +7,7 @@ abstract class Email
 {
     protected $option = [];
     
-    abstract public function send($mail, $subject, $content);
+    abstract public function send($to, $subject, $content);
     
     public function __construct($config)
     {

@@ -24,10 +24,10 @@ class Jsonrpc
 
     public function __call($method, $params = [])
     {
-        return $this->_call(null, $method, $params);
+        return $this->call(null, $method, $params);
     }
     
-    public function _call($ns, $method, $params = null, $id = null)
+    public function call($ns, $method, $params = null, $id = null)
     {
         $data = [
             'jsonrpc'   => '2.0',

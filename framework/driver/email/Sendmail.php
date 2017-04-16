@@ -21,6 +21,7 @@ class Sendmail extends Email
             return false;  
         }
         list($header, $content) = explode("\r\n\r\n", $data[1], 2);
-        return mail(implode(',', $data[0]), Mime::buildHeaderLine($subject), $content, $header);
+        //var_dump(mail('6or9@163.com', '123', $content));die;
+        return mail(implode(',', $data[0]), Mime::buildUtf8Header($subject), $content, $header);
     }
 }
