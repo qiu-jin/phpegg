@@ -5,6 +5,7 @@ abstract class Auth
 {
     private static $auth;
     private static $pass;
+    private static $cache;
 
     abstract protected function check();
 
@@ -28,18 +29,39 @@ abstract class Auth
             throw new \Exception('Illegal auth class');
         }
         if (isset($config['pass'])) {
-            $this->pass = $config['pass'];
+            self::$pass = $config['pass'];
+            if ($config['cache_pass']) {
+                self::$cache = cache($config['cache_pass']);
+            }
         }
+        Hook::add('exit', __CLASS__.'::clear');
     }
     
     public static function passport($call)
     {
-        if ($this->pass) {
-            foreach ($this->pass as $pass) {
-                if (stripos($call, $pass) === 0) return;
+        if (self::$pass) {
+            if (self::$cache) {
+                if (self::$cache->has($call)) {
+                    return true;
+                }
+            }
+            foreach (self::$pass as $pass) {
+                if (stripos($call, $pass) === 0) {
+                    if (self::$cache) {
+                        self::$cache->set($call, 1);
+                    }
+                    return true;
+                }
             }
         }
         return self::$auth->check() || self::$auth->fail();
+    }
+    
+    public static function clear()
+    {
+        self::$auth = null;
+        self::$pass = null;
+        self::$cache = null;
     }
     
     public static function __callStatic($method, $params = [])

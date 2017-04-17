@@ -65,6 +65,14 @@ class View
         echo $code === '404' ? ViewError::print404($message) : ViewError::printError($message);
     }
     
+    public static function __callStatic($method, $params = [])
+    {
+        if (isset($this->config['view_method'][$method])) {
+            //render($tpl, array $vars = [])
+        }
+        return self::error(404);
+    }
+    
     private static function _import($tpl, $dir = null)
     {
         if ($tpl{0} === '/') {

@@ -1,79 +1,9 @@
 <?php
-namespace Framework\Util;
+namespace framework\util;
 
 class Str
 {
-    
-    public static function pos($value, $find, $index = 0)
-    {
-        $pos = mb_stripos($value, $find);
-        if ($pos !== false) {
-            return mb_substr($value, 0, $pos+1);
-        }
-        return false;
-    }
-    
-    public static function head($value, $find)
-    {
-        $pos = mb_stripos($value, $find);
-        if ($pos !== false) {
-            return mb_substr($value, 0, $pos+1);
-        }
-        return false;
-    }
-    
-    public static function tail($value, $find)
-    {
-        $pos = mb_strripos($value, $find);
-        if ($pos !== false) {
-            return mb_substr($value, $pos+1);
-        }
-        return false;
-    }
-    
-    public static function snake($value)
-    {
-        $str = '';
-        $len = mb_strlen($value);
-        for ($i = 0; $i < $len; $i++) {
-            $char = mb_substr($value, $i, 1, 'UTF-8');
-            if ($char === '_') {
-
-            }
-        }
-        return $str;
-    }
-    
-    public static function encodeCamel($value, $char = '_')
-    {
-        $str = '';
-        $len = mb_strlen($value);
-        for ($i = 0; $i < $len; $i++) {
-            $c = mb_substr($value, $i, 1, 'UTF-8');
-            if ($c === $char) {
-                
-            }
-        }
-        return $str;
-    }
-    
-    public static function decode_camel($value, $char = '_')
-    {
-        $str = '';
-        $len = mb_strlen($value);
-        for ($i = 0; $i < $len; $i++) {
-            $char = mb_substr($value, $i, 1, 'UTF-8');
-            if (strlen($char) === 1) {
-                $ascii = ord($char);
-                if ($ascii > 64 && $ascii < 91) {
-                    $char .= '_'.strtolower($char);
-                }
-            }
-        }
-        return $str;
-    }
-    
-    public static function random($length = 16)
+    public static function random($length = 16, $type = null)
     {
         $str = '';
         $string = 'qwertyuiopasdfghjklzxcvbnm1234567890';
@@ -81,5 +11,54 @@ class Str
             $str .= $string{rand(0, 33)};
         }
         return $str;
+    }
+    
+    public static function toCamel($value, $en = '_')
+    {
+        $str = '';
+        $arr = explode($en, $value);
+		foreach($arr as $v){
+			$str.= ucfirst($v);
+		}
+		return $str;
+    }
+    
+    public static function toSnake($value, $en = '_')
+    {
+        $str = '';
+        $len = strlen($value);
+        $value = lcfirst($value);
+        for ($i = 0; $i < $len; $i++) {
+            $c = $value{$i};
+            if ($c === strtolower($c)) {
+                $str .= $c;
+            } else {
+                $str .= $en.strtolower($c);
+            }
+        }
+        return $str;
+    }
+    
+    public static function indexPos($value, $find, $index = 1)
+    {
+        $len = strlen($find);
+        $offset = 0;
+        while ($index--) {
+            $pos = stripos($value, $find, $offset);
+            if ($pos === false) {
+                return false;
+            } else {
+                $offset = $pos+$len;
+            }
+        }
+        return $pos;
+    }
+    
+    public static function catHead($value, $find, $index = 1) 
+    {
+        $str = strtok($value, $find);
+        while ($index--) {
+            
+        }
     }
 }

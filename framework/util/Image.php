@@ -1,20 +1,7 @@
 <?php
 namespace Framework\Util;
 
-class Zip
+class Image
 {
-	public static read($name = null)
-    {
-        
-    }
-    
-	public static unzip($file, $dir)
-    {
-        
-    }
-    
-	public static create()
-    {
-        
-    }
+
 }

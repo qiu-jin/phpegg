@@ -3,7 +3,7 @@ namespace framework\driver\cache;
 
 use Framework\Core\Hook;
 
-class Apc extends Cache
+class Apcu extends Cache
 {
     protected function init($config)
     {

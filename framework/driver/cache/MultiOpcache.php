@@ -3,7 +3,7 @@ namespace framework\driver\cache;
 
 use Framework\Core\Hook;
 
-class Opcache extends Cache
+class MultiOpcache extends Cache
 {
     private $dir;
     private $ext = '.php';

@@ -32,7 +32,7 @@ class Request
     
     public static function has($name, $key = null)
     {
-        if ($key) {
+        if ($key == null) {
             return isset(self::$request->$name);
         }
         return isset(self::$request->$name[$key]);
@@ -40,7 +40,6 @@ class Request
     
     public static function env($name = null, $default = null)
     {
-        //return $name ? self::$request->env : self::get('env', $name, $default);
         return isset(self::$request->env[$name]) ? self::$request->env[$name] : $default;
     }
 
@@ -104,16 +103,12 @@ class Request
     {
         if ($proxy) {
             if (isset($_SERVER['HTTP_CLIENT_IP'])) {
-                return strip_tags($_SERVER['HTTP_CLIENT_IP']);
+                return $_SERVER['HTTP_CLIENT_IP'];
             } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-                return strip_tags($_SERVER['HTTP_X_FORWARDED_FOR']);
-            } elseif (isset($_SERVER['REMOTE_ADDR'])) {
-                return strip_tags($_SERVER['REMOTE_ADDR']);
+                return $_SERVER['HTTP_X_FORWARDED_FOR'];
             }
-            return null;
-        } else {
-            return isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null;
         }
+        return isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null;
     }
     
     public static function path()
@@ -174,23 +169,8 @@ class Request
                 unset(self::$request->$name);
             }
         } else {
-            self::$request = new \stdClass();
+            self::$request = null;
         }
     }
-    
-    public static function __callStatic($method, $params)
-    {
-        if (substr($method, 0, 3) === 'set') {
-            $method = strtolower(substr($method, 3));
-            if (in_array($method, ['env', 'get', 'post', 'header'], true)) {
-                if (count($params) === 2) {
-                    self::$request->$method[$params[0]] = $params[1];
-                } else {
-                    self::$request->$method = $params[0];
-                }
-                return;
-            }
-        }
-    } 
 }
 Request::init();

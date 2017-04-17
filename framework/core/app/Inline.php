@@ -9,12 +9,16 @@ use framework\core\http\Response;
 
 class Inline extends App
 {
+    protected $config = [
+        'route_mode' => 0,
+        'view_enable' => 0,
+    ];
     private $dir = APP_DIR.'controller/';
     
     public function dispatch()
     {
         $path = trim(Request::path(), '/');
-        switch ($this->config['route']) {
+        switch ($this->config['route_mode']) {
             case 0:
                 return $this->defaultDispatch($path);
             case 1:
@@ -41,7 +45,7 @@ class Inline extends App
 
     public function error($code = null, $message = null)
     {
-        if (isset($this->config['view'])) {
+        if (isset($this->config['view_enable'])) {
             View::error($code, $message);
         } else {
             Response::json(['error' => ['code' => $code, 'message' => $message]]);
@@ -50,10 +54,11 @@ class Inline extends App
     
     public function response($return = null)
     {
-        if (isset($this->config['view'])) {
-            Response::view(implode('/', Request::dispatch('call')), $return);
+        if (isset($this->config['view_enable'])) {
+            $tpl = str_replace($this->dir, '', basename($this->dispatch['file'], '.php'), 1);
+            Response::view($tpl, $return);
         } else {
-            Response::json(['result' => $return]);
+            Response::json($return);
         }
     }
     
