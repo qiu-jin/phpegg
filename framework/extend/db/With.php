@@ -1,7 +1,7 @@
 <?php
 namespace framework\extend\db;
 
-class With extends Chain
+class With extends QueryChain
 {
     protected $with;
     protected $alias;
@@ -17,6 +17,7 @@ class With extends Chain
         $this->option['where'] = [];
         $this->optimize = $optimize;
         $this->query = $query;
+        $this->builder = $db->builder();
     }
     
     public function on($field1, $field2)
@@ -87,7 +88,7 @@ class With extends Chain
                 }
             }
             $this->option['where'] = array_merge([$field2, '=', $data[$i][$field1]], $where);
-            $data[$i][$this->alias] = $this->db->exec(...Builder::select($this->with, $this->option));
+            $data[$i][$this->alias] = $this->db->exec(...$this->builder->select($this->with, $this->option));
         }
     }
     
@@ -108,7 +109,7 @@ class With extends Chain
             $this->option['fields'][] = $field2;
         }
         $option = ['fields' => $this->option['fields'], 'where' => $this->option['where']];
-        $query = $this->db->query(...Builder::select($this->with, $option));
+        $query = $this->db->query(...$this->builder->select($this->with, $option));
         if ($query && $this->db->num_rows($query) > 0) {
             $subdata = [];
             while ($row = $this->db->fetch_array($query)) {

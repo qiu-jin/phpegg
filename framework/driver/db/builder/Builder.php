@@ -1,5 +1,5 @@
 <?php
-namespace framework\extend\db;
+namespace framework\driver\db\builder;
 
 class Builder
 {

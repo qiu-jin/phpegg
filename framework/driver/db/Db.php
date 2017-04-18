@@ -8,6 +8,7 @@ abstract class Db
 {
     protected $link;
     protected $dbname;
+    protected $builder;
     protected $table_fields;
     
     abstract public function exec($sql);
@@ -65,29 +66,34 @@ abstract class Db
     {
         $option['where'] = $where;
         $option['fields'] = (array) $fields;
-        return $this->exec(...Builder::select($table, $option));
+        return $this->exec(...$this->builder->select($table, $option));
     }
 
     public function insert($table, $data, $replace = false)
     {
         $sql = ($replace ? 'REPLACE' : 'INSERT')." INTO $table SET ";
-        $data = Builder::setData($data);
+        $data = $this->builder->setData($data);
         return $this->exec($sql.$data[0], $data[1]);
     }
     
     public function update($table, $data, $where, $limit = 1)
     {
-        $data = Builder::setData($data);
-        $where = Builder::where($where);
+        $data = $this->builder->setData($data);
+        $where = $this->builder->where($where);
         $sql = "UPDATE $table SET ".$data[0].' WHERE '.$where[0];
         return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, array_merge($data[1], $where[1]));
     }
    
     public function delete($table, $where, $limit = 1)
     {
-        $where = Builder::where($where);
+        $where = $this->builder->where($where);
         $sql = "DELETE FROM `$table` WHERE ".$where[0];
         return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $where[1]);
+    }
+    
+    public function builder()
+    {
+        return $this->builder;
     }
     
     public function getFields($table)

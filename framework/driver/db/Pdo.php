@@ -6,6 +6,7 @@ class Pdo extends Db
     public function __construct($config)
     {
         $this->link = $this->connect($config);
+        $this->builder = new builder\Builder();
     }
     
     protected function connect($config)

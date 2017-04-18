@@ -1,7 +1,7 @@
 <?php
 namespace framework\extend\db;
 
-class Join extends Chain
+class Join extends QueryChain
 {
     protected $cur;
     protected $join = [];
@@ -22,6 +22,7 @@ class Join extends Chain
             $option['fields'] = null;
         }
         $this->options[$table] = $option;
+        $this->builder = $db->builder();
     }
 
     public function join($join, $type = 'LEFT')
@@ -80,7 +81,7 @@ class Join extends Chain
                         }
                         break;
                     case 'where':
-                        $pairs = Builder::where($value, $table.'.');
+                        $pairs = $builder->where($value, $table.'.');
                         $where[] = $pairs[0];
                         if ($pairs[1]) {
                             $params = array_merge($params, $pairs[1]);
@@ -97,7 +98,7 @@ class Join extends Chain
                 }
             }
         }
-        $sql = Builder::selectFrom($this->table, $fields);
+        $sql = $this->builder->selectFrom($this->table, $fields);
         foreach ($this->join as $table => $join) {
             $sql .= ' '.$join['type'].' JOIN '.$table.' ON ';
             if (isset($join['on'])) {

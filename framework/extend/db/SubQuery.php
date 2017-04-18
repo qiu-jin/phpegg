@@ -1,7 +1,7 @@
 <?php
 namespace framework\extend\db;
 
-class SubQuery extends Chain
+class SubQuery extends QueryChain
 {
     protected $sub;
     protected $master_option;
@@ -13,6 +13,7 @@ class SubQuery extends Chain
         $this->sub = $sub;
         $this->table = $table;
         $this->master_option = $option;
+        $this->builder = $db->builder();
     }
     
     public function on($fields1, $fields2, $exp = 'IN')
@@ -39,7 +40,7 @@ class SubQuery extends Chain
     protected function build()
     {
         $fields = isset($this->master_option['fields']) ? $this->master_option['fields'] : '*';
-        $sql = Builder::selectFrom($this->table, $fields).' WHERE ';
+        $sql = $this->builder->selectFrom($this->table, $fields).' WHERE ';
         if (isset($this->option['on'])) {
             if (is_array($this->option['on'][0])) {
                 $sql .= '('.implode(',', $this->option['on'][0]).') ';
@@ -52,17 +53,17 @@ class SubQuery extends Chain
             $sql .= 'id IN ';
             $this->option['fields'] = [$this->table.'_id'];
         }
-        $sub = Builder::select($this->sub, $this->option);
+        $sub = $builder->select($this->sub, $this->option);
         $sql .= '('.$sub[0].') ';
         $params = $sub[1];
         if (isset($this->master_option['where'])) {
-            $where = Builder::where($this->master_option['where']);
+            $where = $this->builder->where($this->master_option['where']);
             $sql .= ' AND '.$where[0];
             if ($where[1]) {
                 $params = array_merge($params, $where[1]) ;
             }
         }
-        $option = Builder::selectOption($this->master_option);
+        $option = $this->builder->selectOption($this->master_option);
         if ($option[1]) {
             $params = array_merge($params, $option[1]);
         }

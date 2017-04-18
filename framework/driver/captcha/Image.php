@@ -44,7 +44,7 @@ class Image
         return $value && $this->valuestore::get($this->inputname) === $value;
     }
     
-    public function response($value = null)
+    public function output($value = null)
     {
         if ($value === null) {
             $value = Str::random(6);
@@ -53,10 +53,10 @@ class Image
         Response::headers([
             'Content-Type: image/png'
         ]);
-        Response::send($this->makeImagePng($value));
+        Response::send($this->makeImage($value));
     }
     
-    protected function makeImagePng($value)
+    protected function makeImage($value)
     {
         ob_start();
         imagepng($image);

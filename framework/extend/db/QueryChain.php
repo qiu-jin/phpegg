@@ -1,7 +1,7 @@
 <?php
 namespace framework\extend\db;
 
-abstract class Chain
+abstract class QueryChain
 {
     protected $db;
     protected $table;

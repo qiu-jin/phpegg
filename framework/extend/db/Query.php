@@ -1,7 +1,7 @@
 <?php
 namespace framework\extend\db;
 
-class Query extends Chain
+class Query extends QueryChain
 {
 	public function __construct($db, $table)
     {
@@ -35,7 +35,7 @@ class Query extends Chain
         if($limit) {
             $this->option['limit'] = $limit;
         }
-        $data = $this->db->exec(...Builder::select($this->table, $this->option));
+        $data = $this->db->exec(...$this->db->builder()->select($this->table, $this->option));
         if ($limit == 1) {
             return isset($data[0]) ? $data[0] : $data;
         } else {
@@ -46,7 +46,7 @@ class Query extends Chain
     public function has()
     {
         $this->option['limit'] = 1;
-        $select = Builder::select($this->table, $this->option);
+        $select = $this->db->builder()->select($this->table, $this->option);
         $query = $this->db->query('SELECT EXISTS('.$select[0].')', $select[1]);
         return $query && !empty($this->db->fetch($query, 'NUM')[0]);
     }
@@ -94,7 +94,7 @@ class Query extends Chain
     protected function aggregate($func, $field)
     {
         $this->option['fields'] = ["$func($field)"];
-        $query = $this->db->query(...Builder::select($this->table, $this->option));
+        $query = $this->db->query(...$this->db->builder()->select($this->table, $this->option));
         if ($query && $this->db->num_rows($query) > 0) {
             return $this->db->fetch($query, 'NUM')[0];
         }

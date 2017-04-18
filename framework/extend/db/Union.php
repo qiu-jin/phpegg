@@ -1,7 +1,7 @@
 <?php
 namespace framework\extend\db;
 
-class Union extends Chain
+class Union extends QueryChain
 {
     private $all;
     private $union;
@@ -21,6 +21,7 @@ class Union extends Chain
             $this->fields = '*';
         }
         $this->options[$table] = $option;
+        $this->builder = $db->builder();
     }
     
 	public function union($table)
@@ -41,11 +42,12 @@ class Union extends Chain
     {
         $sql = [];
         $params = [];
+        
         $union = $this->all ? ' UNION ALL ' : ' UNION ';
         $this->options[$this->union] = $this->option;
         foreach ($this->options as $table => $option) {
             $option['fields'] = $this->fields;
-            $select = Builder::select($table, $option);
+            $select = $this->builder->select($table, $option);
             $sql[] = '('.$select[0].')';
             $params = array_merge($params, $select[1]);
         }
