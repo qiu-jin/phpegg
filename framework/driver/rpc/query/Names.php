@@ -1,5 +1,5 @@
 <?php
-namespace framework\extend\rpc;
+namespace framework\driver\rpc\query;
 
 class Names
 {

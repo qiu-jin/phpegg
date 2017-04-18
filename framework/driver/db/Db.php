@@ -1,9 +1,6 @@
 <?php
 namespace framework\driver\db;
 
-use framework\extend\db\Query;
-use framework\extend\db\Builder;
-
 abstract class Db
 {
     protected $link;
@@ -41,12 +38,12 @@ abstract class Db
     
     public function __get($name)
     {
-        return new Query($this, $name);
+        return new query\Query($this, $name);
     }
    
     public function table($name)
     {
-        return new Query($this, $name);
+        return new query\Query($this, $name);
     }
    
     public function action(callable $call)

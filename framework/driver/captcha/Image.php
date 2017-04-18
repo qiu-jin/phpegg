@@ -1,9 +1,9 @@
 <?php
 namespace framework\driver\captcha;
 
-use framework\util\Str;
 use framework\core\http\Request;
 use framework\core\http\Response;
+use framework\extend\image\Captcha as CaptchaBuilder;
 
 class Image
 {
@@ -46,22 +46,10 @@ class Image
     
     public function output($value = null)
     {
-        if ($value === null) {
-            $value = Str::random(6);
-        }
         $this->valuestore::set($this->inputname, $value);
         Response::headers([
             'Content-Type: image/png'
         ]);
-        Response::send($this->makeImage($value));
-    }
-    
-    protected function makeImage($value)
-    {
-        ob_start();
-        imagepng($image);
-        $content = ob_get_contents();
-        ob_end_clean();
-        return $content;
+        Response::send(CaptchaBuilder::build($value));
     }
 }

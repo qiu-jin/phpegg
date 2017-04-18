@@ -2,7 +2,6 @@
 namespace framework\driver\rpc;
 
 use framework\core\http\Client;
-use framework\extend\rpc\Names;
 
 class Jsonrpc
 {
@@ -19,7 +18,7 @@ class Jsonrpc
 
     public function __get($class)
     {
-        return new Names($this, $class);
+        return new query\Names($this, $class);
     }
 
     public function __call($method, $params = [])

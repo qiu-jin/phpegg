@@ -34,11 +34,7 @@ class Inline extends App
     {
         $this->runing();
         $params = isset($this->dispatch['params']) ? $this->dispatch['params'] : null;
-        $__return = require($this->dispatch['file']);
-        if ($__return === 1) {
-            $__return = null;
-        }
-        $return = isset($return) ? array_merge((array) $return,(array) $_return) : $__return;
+        $return = __inline_require($this->dispatch['file'], $params);
         $return_handler && $return_handler($return);
         $this->response($return);
     }
@@ -91,4 +87,13 @@ class Inline extends App
         }
         return false;
     }
+}
+
+function __inline_require($file, $params)
+{
+    $__return = require($file);
+    if ($__return === 1) {
+        $__return = null;
+    }
+    return isset($return) ? array_merge((array) $return,(array) $_return) : $__return;
 }

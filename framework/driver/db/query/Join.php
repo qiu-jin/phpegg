@@ -1,5 +1,5 @@
 <?php
-namespace framework\extend\db;
+namespace framework\driver\db\query;
 
 class Join extends QueryChain
 {

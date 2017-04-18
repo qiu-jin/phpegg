@@ -1,8 +1,6 @@
 <?php
 namespace framework\driver\email;
 
-use framework\extend\email\Mime;
-
 class Sendmail extends Email
 {   
     protected function init($config)
@@ -15,7 +13,7 @@ class Sendmail extends Email
     public function send($to, $subject, $content)
     {
         try {
-            $data = Mime::build($to, $subject, $content, $this->option);
+            $data = Mime\Builder::build($to, $subject, $content, $this->option);
         } catch (\Exception $e) {
             $this->log = $e->getMessage();
             return false;  

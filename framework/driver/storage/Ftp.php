@@ -93,11 +93,7 @@ class Ftp extends Storage
     
     private function chdir($path) {
         $dir = dirname($path);
-        if (@ftp_chdir($this->link, $dir)) {
-            return true;
-        } else {
-            return ftp_mkdir($this->link, $dir);
-        }
+        return @ftp_chdir($this->link, $dir)) || ftp_mkdir($this->link, $dir);
     }
     
     public function close()

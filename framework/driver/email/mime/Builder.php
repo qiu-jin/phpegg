@@ -1,7 +1,7 @@
 <?php
-namespace framework\extend\email;
+namespace framework\driver\email\mime;
 
-class Mime
+class Builder
 {
     public static function build($to, $subject, $content, $option = null)
     {

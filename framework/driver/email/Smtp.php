@@ -1,8 +1,6 @@
 <?php
 namespace framework\driver\email;
 
-use framework\extend\email\Mime;
-
 class Smtp extends Email
 {
     protected $ch;
@@ -24,7 +22,7 @@ class Smtp extends Email
         $this->log = [];
         if ($this->connect()) {
             try {
-                $data = Mime::build($to, $subject, $content, $this->option);
+                $data = Mime\Builder::build($to, $subject, $content, $this->option);
             } catch (\Exception $e) {
                 $this->log['MIME'] = $e->getMessage();
                 return false;  

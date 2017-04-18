@@ -3,55 +3,73 @@ namespace framework\driver\storage;
 
 class Local extends Storage
 {
-    private $dir;
+    protected $dir;
     
     public function __construct($config)
     {
-        $this->dir = $config['dir'];
+        if (isset($config['dir']) && is_dir($config['dir']) && is_writable($config['dir'])) {
+            $this->dir = $config['dir'];
+        } else {
+            throw new \Exception('Storage dir is not writable');
+        }
     }
     
     public function get($from)
     {
-        return file_get_contents($this->dir.$from);
+        return file_get_contents($this->path($from));
     }
     
-    public function put($from, $to, $type='file')
+    public function put($from, $to, $is_buffer = false)
     {
-        $this->mkdir($to);
-        if ($type === 'file') {
-            return copy($this->dir.$to, $from);
-        } else {
-            return (bool) file_put_contents($this->dir.$to, $from);
+        $to = $this->path($to);
+        if ($this->ckdir($to)) {
+            if ($is_buffer) {
+                return (bool) file_put_contents($to, $from);
+            } else {
+                return copy($from, $to);
+            }
         }
+        return false;
     }
 
-    public function stat($to)
+    public function stat($from)
     {
-        $fp = fopen($this->dir.$to, 'r');
-        $fstat = fstat($fp);
-        fclose($fp);
-        return array('size' => $fstat['size'], 'mtime' => $fstat['mtime'], 'ctime' => $fstat['ctime']);
+        $fp = fopen($this->path($from), 'r');
+        if ($fp) {
+            $fstat = fstat($fp);
+            fclose($fp);
+            return array('size' => $fstat['size'], 'mtime' => $fstat['mtime'], 'ctime' => $fstat['ctime']);
+        }
+        return false;
     }
     
     public function copy($from, $to)
     {
-        $this->mkdir($to);
-        return copy($this->dir.$from, $this->dir.$to);
+        $to = $this->path($to);
+        $from = $this->path($from);
+        return $this->ckdir($to) && copy($from, $to);
     }
     
     public function move($from, $to)
     {
-        $this->mkdir($to);
-        return rename($this->dir.$from, $this->dir.$to);
+        $to = $this->path($to);
+        $from = $this->path($from);
+        return $this->ckdir($to) && rename($from, $to);
     }
     
-    public function delete($to)
+    public function delete($from)
     {
-        return unlink($this->dir.$to);
+        return unlink($this->path($from));
     }
     
-    private function mkdir($path) {
-        $dir = dirname($this->dir.$path);
-        if(!is_dir($dir)) mkdir($dir, 0755);
+    protected function path($path)
+    {
+        return $this->dir.'/'.$path;
+    }
+    
+    protected function ckdir($path)
+    {
+        $dir = dirname($path);
+        return is_dir($dir) || mkdir($dir, 0777);
     }
 }
