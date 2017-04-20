@@ -39,33 +39,26 @@ class Request
     
     public static function env($name = null, $default = null)
     {
+        if ($name === null) {
+            return self::$request->env;
+        }
         return isset(self::$request->env[$name]) ? self::$request->env[$name] : $default;
     }
 
     public static function get($name = null, $default = null)
     {
+        if ($name === null) {
+            return self::$request->get;
+        }
         return isset(self::$request->get[$name]) ? self::$request->get[$name] : $default;
     }
     
     public static function post($name = null, $default = null)
     {
+        if ($name === null) {
+            return self::$request->post;
+        }
         return isset(self::$request->post[$name]) ? self::$request->post[$name] : $default;
-    }
-    
-    public static function params($name = null, $default = null)
-    {
-        return isset(self::$request->params[$name]) ? self::$request->params[$name] : $default;
-    }
-    
-    public static function header($name = null, $default = null)
-    {
-        $name = 'HTTP_'.strtoupper($name);
-        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
-    }
-    
-    public static function server($name = null, $default = null)
-    {
-        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
     }
     
     public static function cookie($name = null, $default = null)
@@ -80,12 +73,24 @@ class Request
     
     public static function request($name = null, $default = null)
     {
+        if ($name === null) {
+            return self::$request->request;
+        }
         return isset(self::$request->request[$name]) ? self::$request->request[$name] : $default;
     }
     
-    public static function dispatch($name, $default = null)
+    public static function server($name = null, $default = null)
     {
-        return isset(self::$request->dispatch[$name]) ? self::$request->dispatch[$name] : $default;
+        if ($name === null) {
+            return self::$request->server;
+        }
+        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
+    }
+    
+    public static function header($name, $default = null)
+    {
+        $name = 'HTTP_'.strtoupper($name);
+        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
     }
     
     public static function url()
@@ -156,7 +161,7 @@ class Request
     
     public static function isPjax()
     {
-        return self::is_ajax() && isset($_SERVER['HTTP_X_PJAX']);
+        return self::isAjax() && isset($_SERVER['HTTP_X_PJAX']);
     }
 
     public static function isHttps()

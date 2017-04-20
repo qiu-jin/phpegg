@@ -14,15 +14,15 @@ abstract class Db
     
     abstract public function fetch($query);
     
-    abstract public function fetch_array($query);
+    abstract public function fetchArray($query);
     
-    abstract public function fetch_all($query);
+    abstract public function fetchAll($query);
     
-    abstract public function num_rows($query);
+    abstract public function numRows($query);
     
-    abstract public function affected_rows($query);
+    abstract public function affectedRows($query);
     
-    abstract public function insert_id();
+    abstract public function insertId();
     
     abstract public function begin();
     

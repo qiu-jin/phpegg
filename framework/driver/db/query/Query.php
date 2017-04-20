@@ -95,7 +95,7 @@ class Query extends QueryChain
     {
         $this->option['fields'] = ["$func($field)"];
         $query = $this->db->query(...$this->db->builder()->select($this->table, $this->option));
-        if ($query && $this->db->num_rows($query) > 0) {
+        if ($query && $this->db->numRows($query) > 0) {
             return $this->db->fetch($query, 'NUM')[0];
         }
         return false;

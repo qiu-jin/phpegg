@@ -62,7 +62,7 @@ class Jsonrpc extends App
                         }
                     }
                 }
-                $result = $method->invokeArgs($controller, $parameters);
+                $return = $method->invokeArgs($controller, $parameters);
                 break;
             default:
                 $return = $controller->$action($params);

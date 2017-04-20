@@ -110,9 +110,9 @@ class With extends QueryChain
         }
         $option = ['fields' => $this->option['fields'], 'where' => $this->option['where']];
         $query = $this->db->query(...$this->builder->select($this->with, $option));
-        if ($query && $this->db->num_rows($query) > 0) {
+        if ($query && $this->db->numRows($query) > 0) {
             $subdata = [];
-            while ($row = $this->db->fetch_array($query)) {
+            while ($row = $this->db->fetchArray($query)) {
                 $subdata[$row[$field2]][] = $row;
             }
             for ($i = 0; $i < $count;  $i++) {

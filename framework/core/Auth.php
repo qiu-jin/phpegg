@@ -13,7 +13,7 @@ abstract class Auth
 
     abstract protected function user();
     
-    abstract protected function login(...$params);
+    abstract protected function login($data);
     
     abstract protected function logout();
     

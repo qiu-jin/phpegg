@@ -54,19 +54,22 @@ class Session
         return session_regenerate_id();
     }
     
-    public static function get($key, $default = null)
+    public static function get($name = null, $default = null)
     {
+        if ($name === null) {
+            return $_SEESION;
+        }
         return isset($_SEESION[$key]) ? $_SEESION[$key] : $default;
     }
     
-    public static function set($key, $value)
+    public static function set($name, $value)
     {
-        $_SEESION[$key] = $value;
+        $_SEESION[$name] = $value;
     }
     
-    public static function del($key)
+    public static function delete($name)
     {
-        if (isset($_SEESION[$key])) unset($_SEESION[$key]);
+        if (isset($_SEESION[$name])) unset($_SEESION[$name]);
     }
     
     public static function clear()
