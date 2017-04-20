@@ -77,9 +77,15 @@ function driver($type, $driver, $config = [])
     return new $class($config);
 }
 
-function dump($params)
+function dump(...$vars)
 {
-    //Error::dump($params);
+    if (class_exists('Symfony\Component\VarDumper\VarDumper')) {
+        foreach ($vars as $var) {
+            Symfony\Component\VarDumper\VarDumper::dump($var);
+        }
+    } else {
+        var_dump($vars);
+    }
     App::exit();
 }
 

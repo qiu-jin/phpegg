@@ -144,17 +144,22 @@ class Request
         return isset($_FILES[$name]) ? new Uploaded($_FILES[$name]) : null;
     }
     
-    public static function is_ajax()
+    public static function isPost()
+    {
+        return self::method() === 'POST';
+    }
+    
+    public static function isAjax()
     {
         return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
     
-    public static function is_pjax()
+    public static function isPjax()
     {
         return self::is_ajax() && isset($_SERVER['HTTP_X_PJAX']);
     }
 
-    public static function is_https()
+    public static function isHttps()
     {
     	if (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') {
     		return true;

@@ -89,10 +89,11 @@ class Standard extends App
     
     protected function response($return = null)
     {
-        if (isset($this->config['view_enable'])) {
-            Response::view($this->tpl, $return);
-        } else {
+        
+        if (empty($this->config['view_enable'])) {
             Response::json($return);
+        } else {
+            Response::view($this->tpl, $return);
         }
     }
     

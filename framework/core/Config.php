@@ -11,6 +11,7 @@ class Config
     {
         if (self::$configs) return;
         self::$configs = new \stdClass();
+        self::setEnv();
         $config_name = defined('CONFIG_NAME') ? CONFIG_NAME : 'config';
         if (is_dir(APP_DIR.$config_name.'/')) {
             self::$path = APP_DIR.$config_name.'/';
@@ -118,6 +119,19 @@ class Config
                 }
             }
             self::$configs->$name = [];
+        }
+    }
+    
+    private static function setEnv()
+    {
+        $envfile = APP_DIR.'.env';
+        if (is_file($envfile)) {
+            $env = parse_ini_file($envfile);
+            if ($env) {
+                foreach ($env as $k => $v) {
+                    putenv("$k=$v");
+                }
+            }
         }
     }
 }

@@ -4,4 +4,4 @@ include __DIR__.'/../framework/app.php';
 
 framework\App::init('test');
 
-load('captcha', 'image')->response();
+load('captcha', 'image')->output();
