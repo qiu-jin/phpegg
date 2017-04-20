@@ -1,7 +1,10 @@
 <?php
 namespace framework\core;
 
-class Jobs
+class Job
 {
-    
+    public function delay(callable $job, array $params = [])
+    {
+        Hook::add('close', $job, $params);
+    }
 }

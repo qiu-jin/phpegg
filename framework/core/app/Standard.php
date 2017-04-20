@@ -18,7 +18,7 @@ class Standard extends App
         'controller_level' => 0,
     ];
     private $tpl;
-    private $ns = 'app\\'.APP_NAME.'\controller\\';
+    private $ns = 'app\controller\\';
     
     public function dispatch()
     {

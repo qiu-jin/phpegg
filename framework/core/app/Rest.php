@@ -15,7 +15,7 @@ class Rest extends App
         'controller_level' => 0,
     ];
     private $method;
-    private $ns = 'App\\'.APP_NAME.'\Controller\\';
+    private $ns = 'app\controller\\';
     
     public function dispatch()
     {

@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\email;
 
+use framework\core\Hook;
 use framework\extend\email\Template;
 
 abstract class Email
@@ -64,7 +65,36 @@ abstract class Email
         $this->option['attach'] = [$value, $is_buffer];
         return $this;
     }
-
+    
+    public function raw($name, $value)
+    {
+        $this->option['raw'][$name] = $value;
+        return $this;
+    }
+    /*
+    public function delay()
+    {
+        $this->option['delay'] = true;
+        return $this;
+    }
+    
+    public function queue($name)
+    {
+        $this->option['queue'] = $name;
+        return $this;
+    }
+    
+    public function sends($to, $subject, $content)
+    {
+        $this->option['to'][] = (array) $to;
+        if (!empty($this->option['delay'])) {
+            Hook::add('close', [$this, 'send'], [$to, $subject, $content]);
+        } elseif (!empty($this->option['queue'])) {
+        } else {
+            return $this->send($to, $subject, $content);
+        }
+    }
+*/
     public function sendTemplate($to, $template, $vars = null)
     {
         $data = View::render($template, $vars);

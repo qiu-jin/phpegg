@@ -37,7 +37,7 @@ abstract class Auth
         Hook::add('exit', __CLASS__.'::clear');
     }
     
-    public static function passport($call)
+    public static function passport($call = null)
     {
         if (self::$pass) {
             if (self::$cache) {

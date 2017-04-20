@@ -1,8 +1,6 @@
 <?php
 namespace framework\driver\cache;
 
-use Framework\Core\Hook;
-
 class MultiOpcache extends Cache
 {
     private $dir;
@@ -13,6 +11,9 @@ class MultiOpcache extends Cache
     {
         if (isset($config['dir']) && is_dir($config['dir']) && is_writable($config['dir'])) {
             $this->dir = $config['dir'];
+            if (substr($this->dir, -1) !== '/') {
+                $this->dir .= '/';
+            }
         } else {
             throw new \Exception('Cache dir is not writable');
         }

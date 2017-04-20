@@ -14,7 +14,7 @@ class Loader
     {
         if (self::$init) return;
         self::$init = true;
-        self::import(VENDOR_DIR.'autoload');
+        self::import((defined('VENDOR_DIR') ? VENDOR_DIR : ROOT_DIR.'vendor/').'autoload');
         if ($config = Config::get('loader')) {
             foreach ($config as $type => $rules) {
                 self::add($rules, $type);
@@ -87,9 +87,10 @@ class Loader
     private static function autoload($class)
     {
         $fn = strtok($class, '\\');
-        if (strcasecmp($fn, 'framework') === 0 || strcasecmp($fn, 'app') === 0) {
-            $path = strtr($class, '\\', '/');
-            self::import(ROOT_DIR.strtolower(dirname($path)).'/'.basename($path));
+        if (strcasecmp($fn, 'framework') === 0) {
+            self::import(FW_DIR.substr(strtr($class, '\\', '/'), 9));
+        }elseif (strcasecmp($fn, 'app') === 0) {
+            self::import(APP_DIR.substr(strtr($class, '\\', '/'), 4));
         } elseif(isset(self::$class_psr[$fn])) {
             self::import(self::$class_psr[$fn].strtr($class, '\\', '/'));
         } elseif(isset(self::$class_map[$class])) {

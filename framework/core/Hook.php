@@ -44,7 +44,7 @@ class Hook
                         continue;
                     }
                 }
-                $item[0]($params);
+                $item[0](...$params);
             }
             unset(self::$hooks->$name);
         }

@@ -32,10 +32,9 @@ abstract class App
         self::$init = true;
         define('APP_NAME', $name);
         define('FW_DIR', __DIR__.'/');
-        defined('APP_DEBUG')  || define('APP_DEBUG', false);
         defined('ROOT_DIR')   || define('ROOT_DIR', dirname(__DIR__).'/');
         defined('APP_DIR')    || define('APP_DIR', ROOT_DIR.'app/'.APP_NAME.'/');
-        defined('VENDOR_DIR') || define('VENDOR_DIR', ROOT_DIR.'vendor/');
+        defined('APP_DEBUG')  || define('APP_DEBUG', false);
         require(FW_DIR.'common.php');
         require(FW_DIR.'core/config.php');
         require(FW_DIR.'core/loader.php');
@@ -70,8 +69,8 @@ abstract class App
                 throw new \Exception('Illegal app class :'.$app);
             }
             if (self::$app->dispatch) {
-                if (isset(self::$app->config['auth'])) {
-                    //Auth::passport();
+                if (isset(self::$app->config['auth_enable'])) {
+                    Auth::passport();
                 }
                 Hook::listen('start');
                 return self::$app;

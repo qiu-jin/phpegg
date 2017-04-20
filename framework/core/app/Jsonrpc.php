@@ -20,7 +20,7 @@ class Jsonrpc extends App
             $method = explode('.', $method);
             if (count($method) > 1) {
                 $action = array_pop($method);
-                $class = 'App\\'.APP_NAME.'\Controller\\'.implode('\\', $method);
+                $class = 'app\controller\\'.implode('\\', $method);
                 if (class_exists($class)) {
                     $controller = new $class();
                     if (is_callable($controller, $action)) {

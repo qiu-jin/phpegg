@@ -15,8 +15,7 @@ class Request
         self::$request->env = $_ENV;
         self::$request->get = $_GET;
         self::$request->post = $_POST;
-        self::$request->header = $_SERVER;
-        //self::$request->cookie = $_COOKIE;
+        self::$request->server = $_SERVER;
         Hook::add('exit', __CLASS__.'::clear');
         Hook::listen('request', self::$request);
     }
@@ -61,7 +60,12 @@ class Request
     public static function header($name = null, $default = null)
     {
         $name = 'HTTP_'.strtoupper($name);
-        return isset(self::$request->header[$name]) ? self::$request->header[$name] : $default;
+        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
+    }
+    
+    public static function server($name = null, $default = null)
+    {
+        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
     }
     
     public static function cookie($name = null, $default = null)

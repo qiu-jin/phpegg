@@ -82,12 +82,6 @@ class Config
         }
     }
     
-    public static function first_key($name)
-    {
-        self::import($name);
-        return key(self::$configs->$name);
-    }
-    
     public static function first_value($name)
     {
         self::import($name);
@@ -97,7 +91,8 @@ class Config
     public static function first_pair($name)
     {
         self::import($name);
-        return [key(self::$configs->$name), reset(self::$configs->$name)];
+        $value = reset(self::$configs->$name);
+        return [key(self::$configs->$name), $value];
     }
     
     public static function load(array $configs)
