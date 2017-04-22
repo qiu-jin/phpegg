@@ -168,25 +168,31 @@ class Builder
         throw new \Exception('SQL WHERE ERROR: '.$field);
     }
     
-    public static function implodefields($fields)
-    {
-
-    }
-    
     public static function implodeParams($sql, $params)
     {
-        if (isset($params[0])) {
-            foreach ($params as $k => $v) {
-                $sql = str_replace($sql, '?', $this->quote($v), 1);
+        if ($params) {
+            if (isset($params[0])) {
+                $str = '';
+                $num = 0;
+                $len = strlen($sql);
+                for ($i = 1; $i < $len; $i++) {
+                    if ($sql{$i} === '?') {
+                        $str .= $params[$num];
+                        $num++;
+                    } else {
+                        $str .= $sql{$i};
+                    }
+                }
+                return $str;
+            } else {
+                $replace_pairs = array();
+                foreach ($params as $k => $v) {
+                    $replace_pairs[':'.$k] = addslashes($v);
+                }
+                return strtr($sql, $replace_pairs);
             }
-            return $sql;
-        } else {
-            $replace_pairs = array();
-            foreach ($params as $k => $v) {
-                $replace_pairs[':'.$k] = $this->quote($v);
-            }
-            return strtr($sql, $replace_pairs);
         }
+        return $sql;
     }
     
     public static function isField($str)

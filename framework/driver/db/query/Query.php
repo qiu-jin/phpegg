@@ -48,7 +48,7 @@ class Query extends QueryChain
         $this->option['limit'] = 1;
         $select = $this->db->builder()->select($this->table, $this->option);
         $query = $this->db->query('SELECT EXISTS('.$select[0].')', $select[1]);
-        return $query && !empty($this->db->fetch($query, 'NUM')[0]);
+        return $query && !empty($this->db->fetchRow($query)[0]);
     }
     
     public function max($field)
@@ -80,13 +80,18 @@ class Query extends QueryChain
     {
         return $this->db->insert($this->table, $data, $replace);
     }
+    
+    public function insertAll($datas)
+    {
+        //
+    }
    
-    public function update($data, $limit = 1)
+    public function update($data, $limit = 0)
     {
         return $this->db->update($this->table, $data, $this->option['where'], $limit);
     }
    
-    public function delete($limit = 1)
+    public function delete($limit = 0)
     {
         return $this->db->delete($this->table, $this->option['where'], $limit);
     }
@@ -96,7 +101,7 @@ class Query extends QueryChain
         $this->option['fields'] = ["$func($field)"];
         $query = $this->db->query(...$this->db->builder()->select($this->table, $this->option));
         if ($query && $this->db->numRows($query) > 0) {
-            return $this->db->fetch($query, 'NUM')[0];
+            return $this->db->fetchRow($query)[0];
         }
         return false;
     }

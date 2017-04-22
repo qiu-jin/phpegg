@@ -3,12 +3,6 @@ namespace Framework\Driver\Db;
 
 class Mysqli extends Db
 {   
-    public function __construct($config)
-    {
-        $this->link = $this->connect($config);
-        $this->builder = new builder\Builder();
-    }
-    
     protected function connect($config)
     {
         $port = isset($config['port']) ? $config['port'] : '3306';
@@ -43,11 +37,12 @@ class Mysqli extends Db
         $query = $this->link->query($sql, MYSQLI_ASYNC);
     }
     
-    public function exec($sql, $params = null)
+    public function exec($sql, $params = null, $is_assoc = false)
     {
+        $this->debug && $this->setLog($sql, $params, $is_assoc);
         $cmd = trim(strtoupper(strtok($sql, ' ')),"\t(");
         if ($params) {
-            $query = $this->prepare_execute($sql, $params);
+            $query = $this->prepareExecute($sql, $params, $is_assoc);
             switch ($cmd) {
                 case 'INSERT':
                     return $query->insert_id;
@@ -81,10 +76,11 @@ class Mysqli extends Db
         return false;
     }
     
-    public function query($sql, $params = null)
+    public function query($sql, $params = null, $is_assoc = false)
     {
+        $this->debug && $this->setLog($sql, $params, $is_assoc);
         if ($params) {
-            return $this->prepare_execute($sql, $params)->get_result();
+            return $this->prepareExecute($sql, $params, $is_assoc)->get_result();
         } else {
             $query = $this->link->query($sql);
             if (!$query) {
@@ -94,31 +90,32 @@ class Mysqli extends Db
         }
     }
     
-    public function prepare_execute($sql, $params)
+    public function prepareExecute($sql, $params, $is_assoc)
     {
-        $new_params = array(0 => '');
-        if (isset($params[0])) {
-            foreach ($params as $k => $v) {
-                $new_params[0] .= 's'; 
-                $new_params[] = &$params[$k];
-            }
-            $query = $this->link->prepare($sql);
-        } else {
-            $new_sql = '';
+        
+        $bind_params = [];
+        if ($is_assoc) {
+            $str = '';
             if (preg_match_all('/\:(\w+)/', $sql, $matchs, PREG_OFFSET_CAPTURE)) {
                 $start = 0;
                 foreach ($matchs[0] as $i => $match) {
-                    $new_sql .= substr($sql, $start, $match[1]-$start).'?';
-                    $new_params[0] .= 's';
-                    $new_params[] = &$params[$matchs[1][$i][0]];
+                    $str .= substr($sql, $start, $match[1]-$start).'?';
+                    $bind_params[] = &$params[$matchs[1][$i][0]];
                     $start = strlen($match[0]) + $match[1];
                 }
-                if ($start < strlen($sql)) $new_sql .= substr($sql, $start);
+                if ($start < strlen($sql)) $str .= substr($sql, $start);
             }
-            $query = $this->link->prepare($new_sql);
+            $sql = $str;
+        } else {
+            foreach ($params as $k => $v) {
+                $bind_params[] = &$params[$k];
+            }
         }
+        $query = $this->link->prepare($sql);
         if ($query) {
-            $query->bind_param(...$new_params);
+            $type = str_pad('', count($bind_params), 's');
+            array_unshift($bind_params, $type);
+            $query->bind_param(...$bind_params);
             $query->execute();
             return $query;
         } else {
@@ -126,56 +123,32 @@ class Mysqli extends Db
         }
     }
     
-    public function prepare($sql)
-    {
-        return $this->link->prepare($sql);
-    }
-    
-    public function execute($query, $params)
-    {
-        return $query->execute($params);
-    }
-    
-    public function fetch($query, $type = 'ASSOC')
-    {
-        switch ($type) {
-            case 'ASSOC':
-                return $query->fetch_assoc();
-            case 'NUM':
-                return $query->fetch_row();
-            case 'OBJECT':
-                return $query->fetch_object();
-            default:
-                return $query->fetch_array();
-        }
-    }
-    
-    public function fetch_all($query)
-    {
-        return $query->fetch_all(MYSQLI_ASSOC);
-    }
-    
-    public function fetch_array($query)
+    public function fetch($query)
     {
         return $query->fetch_assoc();
     }
     
-    public function fetch_row($query)
+    public function fetchRow($query)
     {
         return $query->fetch_row();
     }
     
-    public function num_rows($query)
+    public function fetchAll($query)
+    {
+        return $query->fetch_all(MYSQLI_ASSOC);
+    }
+    
+    public function numRows($query)
     {
         return $query->num_rows;
     }
     
-    public function affected_rows($query = null)
+    public function affectedRows($query = null)
     {
         return $query ? $query->affected_rows : $this->link->affected_rows;
     }
     
-    public function insert_id()
+    public function insertId()
     {
         return $this->link->insert_id;
     }
@@ -214,13 +187,8 @@ class Mysqli extends Db
         return $query ? array($query->errno, $query->error) : array($this->link->errno, $this->link->error);
     }
 
-    public function close()
-    {
-        return $this->link->close();
-    }
-    
     public function __destruct()
     {
-        $this->close();
+        $this->link->close();
     }
 }

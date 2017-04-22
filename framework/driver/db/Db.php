@@ -1,6 +1,8 @@
 <?php
 namespace framework\driver\db;
 
+use framework\core\Logger;
+
 abstract class Db
 {
     protected $link;
@@ -14,7 +16,7 @@ abstract class Db
     
     abstract public function fetch($query);
     
-    abstract public function fetchArray($query);
+    abstract public function fetchRow($query);
     
     abstract public function fetchAll($query);
     
@@ -34,7 +36,15 @@ abstract class Db
     
     abstract public function error();
     
-    abstract public function close();
+    
+    public function __construct($config)
+    {
+        $this->link = $this->connect($config);
+        $this->builder = new builder\builder();
+        if (APP_DEBUG) {
+            $this->debug = true;
+        }
+    }
     
     public function __get($name)
     {
@@ -73,7 +83,7 @@ abstract class Db
         return $this->exec($sql.$data[0], $data[1]);
     }
     
-    public function update($table, $data, $where, $limit = 1)
+    public function update($table, $data, $where, $limit = 0)
     {
         $data = $this->builder->setData($data);
         $where = $this->builder->where($where);
@@ -81,7 +91,7 @@ abstract class Db
         return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, array_merge($data[1], $where[1]));
     }
    
-    public function delete($table, $where, $limit = 1)
+    public function delete($table, $where, $limit = 0)
     {
         $where = $this->builder->where($where);
         $sql = "DELETE FROM `$table` WHERE ".$where[0];
@@ -91,6 +101,16 @@ abstract class Db
     public function builder()
     {
         return $this->builder;
+    }
+    
+    public function debug()
+    {
+        $this->debug = true;
+    }
+    
+    protected function setLog($sql, $params)
+    {
+        logger::write(Logger::DEBUG, $this->builder->implodeParams($sql, $params));
     }
     
     public function getFields($table)

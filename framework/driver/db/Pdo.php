@@ -3,12 +3,6 @@ namespace Framework\Driver\Db;
 
 class Pdo extends Db
 {
-    public function __construct($config)
-    {
-        $this->link = $this->connect($config);
-        $this->builder = new builder\Builder();
-    }
-    
     protected function connect($config)
     {
 		try {
@@ -31,9 +25,10 @@ class Pdo extends Db
     
     public function exec($sql, $params = null)
     {
+        $this->debug && $this->setLog($sql, $params);
         $cmd = trim(strtoupper(strtok($sql, ' ')), "\t(");
         if ($params) {
-            $query = $this->prepare_execute($sql, $params);
+            $query = $this->prepareExecute($sql, $params);
             if ($query) {
                 switch ($cmd) {
                     case 'INSERT':
@@ -75,8 +70,9 @@ class Pdo extends Db
     
     public function query($sql, $params = null)
     {
+        $this->debug && $this->setLog($sql, $params);
         if ($params) {
-            return $this->prepare_execute($sql, $params);
+            return $this->prepareExecute($sql, $params);
         } else {
             $query = $this->link->query($sql);
             if ($query === false) {
@@ -87,10 +83,10 @@ class Pdo extends Db
         }
     }
     
-    public function prepare_execute($sql, $params)
+    public function prepareExecute($sql, $params)
     {
         $query = $this->link->prepare($sql);
-        if (@$query->execute($params)) {
+        if ($query->execute($params)) {
             return $query;
         } else {
             $error = $query->errorInfo();
@@ -101,56 +97,32 @@ class Pdo extends Db
         }
     }
     
-    public function prepare($sql)
-    {
-        return $this->link->prepare($sql);
-    }
-    
-    public function execute($prepare, $params)
-    {
-        return $prepare->execute($params);
-    }
-    
-    public function fetch($query, $type = 'ASSOC')
-    {
-        switch ($type) {
-            case 'ASSOC':
-                return $query->fetch(\PDO::FETCH_ASSOC);
-            case 'NUM':
-                return $query->fetch(\PDO::FETCH_NUM);
-            case 'OBJECT':
-                return $query->fetch(\PDO::FETCH_OBJ);
-            default:
-                return $query->fetch(\PDO::FETCH_BOTH);
-        }
-    }
-    
-    public function fetch_all($query)
-    {
-        return $query->fetchAll(\PDO::FETCH_ASSOC);
-    }
-
-    public function fetch_array($query)
+    public function fetch($query)
     {
         return $query->fetch(\PDO::FETCH_ASSOC);
     }
-    
-    public function fetch_row($query)
+
+    public function fetchRow($query)
     {
         return $query->fetch(\PDO::FETCH_NUM);
     }
     
-    public function num_rows($query)
+    public function fetchAll($query)
+    {
+        return $query->fetchAll(\PDO::FETCH_ASSOC);
+    }
+    
+    public function numRows($query)
     {
         return $query->rowCount();
     }
     
-    public function affected_rows($query)
+    public function affectedRows($query)
     {
         return $query->rowCount();
     }
     
-    public function insert_id()
+    public function insertId()
     {
         return $this->link->lastInsertId();
     }
@@ -180,15 +152,4 @@ class Pdo extends Db
         $error = $query ? $query->errorInfo : $this->link->errorInfo;
         return array($error[1], $error[2]);
     }
-    
-    public function close()
-    {
-        return $this->link = null;
-    }
-    /*
-    public function __destruct()
-    {
-        var_dump($this->config);
-    }
-    */
 }

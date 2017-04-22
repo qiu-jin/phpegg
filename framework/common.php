@@ -79,6 +79,7 @@ function driver($type, $driver, $config = [])
 
 function dump(...$vars)
 {
+    ob_start();
     if (class_exists('Symfony\Component\VarDumper\VarDumper')) {
         foreach ($vars as $var) {
             Symfony\Component\VarDumper\VarDumper::dump($var);
@@ -86,7 +87,7 @@ function dump(...$vars)
     } else {
         var_dump($vars);
     }
-    App::exit();
+    Response::send(ob_get_clean());
 }
 
 function abort()

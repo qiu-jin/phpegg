@@ -53,7 +53,7 @@ class SubQuery extends QueryChain
             $sql .= 'id IN ';
             $this->option['fields'] = [$this->table.'_id'];
         }
-        $sub = $builder->select($this->sub, $this->option);
+        $sub = $this->builder->select($this->sub, $this->option);
         $sql .= '('.$sub[0].') ';
         $params = $sub[1];
         if (isset($this->master_option['where'])) {

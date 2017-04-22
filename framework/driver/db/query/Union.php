@@ -32,17 +32,10 @@ class Union extends QueryChain
         return $this;
     }
     
-    public function field()
-    {
-        $this->fields = func_get_args();
-        return $this;
-    }
-    
     public function find()
     {
         $sql = [];
         $params = [];
-        
         $union = $this->all ? ' UNION ALL ' : ' UNION ';
         $this->options[$this->union] = $this->option;
         foreach ($this->options as $table => $option) {

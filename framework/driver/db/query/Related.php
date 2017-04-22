@@ -41,7 +41,7 @@ class Related extends With
             $item = $this->builder->whereItem($field1[1], 'IN', $field1_data);
             $query = $this->db->query("SELECT $field1[1], $field2[1] FROM $rtable WHERE $item[0]", $item[1]);
             if ($query && $this->db->numRows($query) > 0) {
-                while ($row = $this->db->fetch($query, 'NUM')) {
+                while ($row = $this->db->fetchRow($query)) {
                     $related_data[] = $row[1];
                     $field1_field2_related[$row[0]][] = $row[1];
                 }
@@ -57,7 +57,7 @@ class Related extends With
                 $query = $this->db->query(...$this->builder->select($this->with, $option));
                 if ($query && $this->db->numRows($query) > 0) {
                     $subdata = [];
-                    while ($row = $this->db->fetchArray($query)) {
+                    while ($row = $this->db->fetch($query)) {
                         $subdata[$row[$field2[0]]][] = $row;
                     }
                     for ($i = 0; $i < $count;  $i++) {
