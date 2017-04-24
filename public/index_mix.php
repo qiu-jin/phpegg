@@ -4,20 +4,13 @@ define('APP_DEBUG', true);
 
 include __DIR__.'/../framework/app.php';
 
-$app = framework\App::start('test', 'closure');
+$app = framework\App::start('test', 'mix');
 
-$app->route('/user/([0-9])', function ($id) {
-    
-    //load('email', 'sendmail')->send('qiu-jin@qq.com', 'test', '测试');
-
-    //return load('queue', 'kafka')->producer('test')->push(time());
-
-    //return load('queue', 'amqp')->consumer('test')->pop();
-
-    //return cache('mfile')->get('test');
-    
-    //return cache('opcache')->set('test', $_SERVER, 30);
-    return db()->user->select('name')->get($id);
-});
-
+if (isset($_GET['c']) && isset($_GET['a'])) {
+    $app->query($_GET['c'], $_GET['a']);
+} else {
+    $app->route('/user/([0-9])', function ($id) {
+        return db()->user->select('name')->get($id);
+    });
+}
 $app->run('print_r');

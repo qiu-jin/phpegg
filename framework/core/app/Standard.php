@@ -41,11 +41,13 @@ class Standard extends App
         $action = $this->dispatch['action'];
         $params = $this->dispatch['params'];
         $controller = $this->dispatch['controller'];
+        if (isset($this->dispatch['method'])) {
+            $method = $this->dispatch['method'];
+        }
+        $this->dispatch = null;
         
         if ($this->config['param_mode']) {
-            if (isset($this->dispatch['method'])) {
-                $method = $this->dispatch['method'];
-            } else {
+            if (empty($method)) {
                 $method = new \ReflectionMethod($controller, $action);
             }
             if ($this->config['param_mode'] == 1) {
@@ -182,11 +184,11 @@ class Standard extends App
     
     protected function setTpl($class, $action)
     {
-        if (isset($this->config['tpl_to_snake'])) {
+        if (empty($this->config['tpl_to_snake'])) {
+            $class[] = $action;
+        } else {
             $class[] = Str::toSnake(array_pop($class));
             $class[] = Str::toSnake($action);
-        } else {
-            $class[] = $action;
         }
         $this->tpl = implode('/', $class);
     }

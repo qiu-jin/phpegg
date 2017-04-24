@@ -42,6 +42,9 @@ class Rest extends App
         $action = $this->dispatch['action'];
         $params = $this->dispatch['params'];
         $controller = $this->dispatch['controller'];
+        if (isset($this->dispatch['method'])) {
+            $method = $this->dispatch['method'];
+        }
         $this->dispatch = null;
         
         switch ($this->config['param_mode']) {
@@ -50,9 +53,7 @@ class Rest extends App
                 break;
             case 2:
                 $parameters = [];
-                if ($this->method) {
-                    $method = $this->method;
-                } else {
+                if (empty($method)) {
                     $method = new \ReflectionMethod($controller, $action);
                 }
                 if ($method->getnumberofparameters() > 0) {
