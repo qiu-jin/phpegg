@@ -13,16 +13,10 @@ class Mailgun extends Email
     {
 
     }
-    
-    public function raw($name, $value)
+
+    public function handle()
     {
-        $this->option['raw'][$name] = $value;
-        return $this;
-    }
-    
-    public function send($to, $subject, $content)
-    {
-        $form = $this->buildFrom($to, $subject, $content);
+        $form = $this->buildFrom();
         if ($form) {
             $client = Client::post($this->baseurl)->header('Authorization', 'api: '.$this->apikey)->form($form);
             $result = $client->json;
@@ -39,11 +33,10 @@ class Mailgun extends Email
         return false;
     }
     
-    protected function buildFrom($to, $subject, $content)
+    protected function buildFrom()
     {
-        $this->option['to'][] = (array) $to;
         $form = [
-            'subject'   => $subject,
+            'subject'   => $this->option['subject'],
             'to'        => $this->buildaddrs($this->option['to']),
             'from'      => $this->buildaddr($this->option['from'])
         ];
@@ -57,11 +50,10 @@ class Mailgun extends Email
             $from = array_merge($this->option['raw'], $from);
         }
         if (empty($this->option['ishtml'])) {
-            $from['test'] = $content;
+            $from['test'] = $this->option['content'];
         } else {
-            $from['html'] = $content;
+            $from['html'] = $this->option['content'];
         }
-        
         return $from;
     }
     

@@ -10,10 +10,11 @@ class Sendmail extends Email
         }
     }
     
-    public function send($to, $subject, $content)
+    public function handle()
     {
         try {
-            $data = Mime\Builder::build($to, $subject, $content, $this->option);
+            $subject = Mime::buildUtf8Header($this->option['subject']);
+            $data = Mime\Builder::build($this->option);
         } catch (\Exception $e) {
             $this->log = $e->getMessage();
             return false;  

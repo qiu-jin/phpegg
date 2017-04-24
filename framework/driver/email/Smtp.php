@@ -17,12 +17,12 @@ class Smtp extends Email
         $this->password = $config['password'];
     }
     
-    public function send($to, $subject, $content)
+    public function handle()
     {
         $this->log = [];
         if ($this->connect()) {
             try {
-                $data = Mime\Builder::build($to, $subject, $content, $this->option);
+                $data = builder\Mime::build($this->option);
             } catch (\Exception $e) {
                 $this->log['MIME'] = $e->getMessage();
                 return false;  

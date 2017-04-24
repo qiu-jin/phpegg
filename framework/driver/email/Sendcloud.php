@@ -19,23 +19,16 @@ class Sendcloud extends Email
         }
     }
     
-    public function raw($name, $value)
+    public function handle()
     {
-        $this->option['raw'][$name] = $value;
-        return $this;
-    }
-    
-    public function send($to, $subject, $content)
-    {
-        $this->option['to'][] = (array) $to;
-        $from = $this->buildFrom();
-        $from['subject'] = $subject;
+        $form = $this->buildForm();
+        $form['subject'] = $this->option['subject'];
         if (empty($this->option['ishtml'])) {
-            $from['plain'] = $content;
+            $form['plain'] = $this->option['content'];
         } else {
-            $from['html'] = $content;
+            $form['html'] = $this->option['content'];
         }
-        return $this->sendFrom('send', $from);
+        return $this->sendForm('send', $form);
     }
     
     public function sendTemplate($to, $template, $vars = null, $use_api_template = false)
@@ -47,7 +40,7 @@ class Sendcloud extends Email
     {
         if (isset($this->apitemplate[$template])) {
             $this->option['to'][] = (array) $to;
-            $from = $this->buildFrom();
+            $from = $this->buildForm();
             $from['templateInvokeName'] = $this->apitemplate[$template];
             if (!empty($vars)) {
                 foreach ($vars as $k => $v) {
@@ -61,9 +54,9 @@ class Sendcloud extends Email
         return false;
     }
     
-    protected function sendFrom($method, $from)
+    protected function sendForm($method, $form)
     {
-        $client = Client::post($this->apiurl.$method)->form($from);
+        $client = Client::post($this->apiurl.$method)->form($form);
         $result = $client->json;
         if (empty($result['result'])) {
             if (isset($result['statusCode'])) {
@@ -77,7 +70,7 @@ class Sendcloud extends Email
         return true;
     }
     
-    protected function buildFrom()
+    protected function buildForm()
     {
         $from = [
             'apiUser'   => $this->apiuser,
@@ -94,8 +87,8 @@ class Sendcloud extends Email
         if (isset($this->option['bcc'])) {
             $from['bcc'] = implode(';', array_column($this->option['bcc'], 0));
         }
-        if (isset($this->option['raw'])) {
-            $from = array_merge($this->option['raw'], $from);
+        if (isset($this->option['option'])) {
+            $from = array_merge($this->option['option'], $from);
         }
         return $from;
     }

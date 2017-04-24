@@ -1,9 +1,9 @@
 <?php
-namespace framework\driver\email\mime;
+namespace framework\driver\email\builder;
 
-class Builder
+class Mime
 {
-    public static function build($to, $subject, $content, $option = null)
+    public static function build($option)
     {
         $mime = '';
         $addrs = []; 
@@ -12,9 +12,10 @@ class Builder
         if (isset($option['from'])) {
             $mime .= 'From: '.self::buildAddr($option['from'])."\r\n";
         }
-        $addr = self::buildAddr(is_array($to) ? $to : [$to]);
-        $mime .= "To: $addr\r\n";
-        $addrs[] = $addr;
+        foreach ($option['to'] as $to) {
+            $mime .= "To: ".self::buildAddr($to)."\r\n";
+            $addrs[] = $to[0];
+        }
         if (isset($option['cc'])) {
             foreach ($option['cc'] as $cc) {
                 $mime .= "CC: ".self::buildAddr($cc)."\r\n";
@@ -30,14 +31,14 @@ class Builder
         if (isset($option['replyto'])) {
             $mime .= 'Reply-To: '.self::buildAddr($option['replyto'])."\r\n";
         }
-        if ($subject) {
-            $mime .= "Subject: ".self::buildUtf8Header($subject)."\r\n";
+        if (isset($option['subject'])) {
+            $mime .= "Subject: ".self::buildUtf8Header($option['subject'])."\r\n";
         }
         if (isset($option['attachment'])) {
-            $mime .= "Content-Type: text/html; charset=utf-8\r\n\r\n$content";
+            $mime .= "Content-Type: text/html; charset=utf-8\r\n\r\n".$option['content'];
             $mime .= self::buildAttachment($option['attachment']);
         } else {
-            $mime .= "Content-Type: text/html; charset=utf-8\r\n\r\n$content";
+            $mime .= "Content-Type: text/html; charset=utf-8\r\n\r\n".$option['content'];
         }
         return [$addrs, $mime];
     }

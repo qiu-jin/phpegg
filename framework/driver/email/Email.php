@@ -8,7 +8,7 @@ abstract class Email
 {
     protected $option = [];
     
-    abstract public function send($to, $subject, $content);
+    abstract public function handle();
     
     public function __construct($config)
     {
@@ -66,35 +66,38 @@ abstract class Email
         return $this;
     }
     
-    public function raw($name, $value)
+    public function option($name, $value)
     {
-        $this->option['raw'][$name] = $value;
+        $this->option['option'][$name] = $value;
         return $this;
     }
-    /*
+
     public function delay()
     {
         $this->option['delay'] = true;
         return $this;
     }
-    
+    /*
     public function queue($name)
     {
         $this->option['queue'] = $name;
         return $this;
     }
-    
-    public function sends($to, $subject, $content)
+    */
+    public function send($to, $subject, $content)
     {
         $this->option['to'][] = (array) $to;
+        $this->option['subject'] = $subject;
+        $this->option['content'] = $content;
         if (!empty($this->option['delay'])) {
-            Hook::add('close', [$this, 'send'], [$to, $subject, $content]);
+            Hook::add('close', [$this, 'handle']);
         } elseif (!empty($this->option['queue'])) {
+            
         } else {
-            return $this->send($to, $subject, $content);
+            return $this->handle();
         }
     }
-*/
+
     public function sendTemplate($to, $template, $vars = null)
     {
         $data = View::render($template, $vars);
