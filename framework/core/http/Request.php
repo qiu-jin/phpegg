@@ -89,7 +89,7 @@ class Request
     
     public static function header($name, $default = null)
     {
-        $name = 'HTTP_'.strtoupper($name);
+        $name = 'HTTP_'.strtoupper(strtr('-', '_', $name));
         return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
     }
     

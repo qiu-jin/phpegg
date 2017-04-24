@@ -14,7 +14,7 @@ class Query extends QueryChain
         return new SubQuery($this->db, $this->table, $this->option, $table);
     }
     
-    public function join($table, $type = 'LEFT', $field_prefix = false)
+    public function join($table, $type = 'LEFT', $field_prefix = true)
     {
         return new Join($this->db, $this->table, $this->option, $table, $type, $field_prefix);
     }

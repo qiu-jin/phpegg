@@ -32,12 +32,12 @@ class Mysqli extends Db
         $this->link->select_db($raw_dbname);
     }
     
-    public function async($sql, callable $call = null)
+    public function async($sql, array $params = null)
     {
         $query = $this->link->query($sql, MYSQLI_ASYNC);
     }
     
-    public function exec($sql, $params = null, $is_assoc = false)
+    public function exec($sql, array $params = null, $is_assoc = false)
     {
         $this->debug && $this->setLog($sql, $params, $is_assoc);
         $cmd = trim(strtoupper(strtok($sql, ' ')),"\t(");
@@ -76,7 +76,7 @@ class Mysqli extends Db
         return false;
     }
     
-    public function query($sql, $params = null, $is_assoc = false)
+    public function query($sql, array $params = null, $is_assoc = false)
     {
         $this->debug && $this->setLog($sql, $params, $is_assoc);
         if ($params) {

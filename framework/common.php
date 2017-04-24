@@ -16,6 +16,11 @@ function auth()
     
 }
 
+function view()
+{
+    
+}
+
 function input($name, ...$params)
 {
     return Request::$name(...$params);
@@ -108,12 +113,4 @@ function jsonencode($data)
 function jsondecode($data)
 {
     return json_decode($data, true);
-}
-
-function _include($file, array $params = null)
-{
-    if ($params !== null) {
-        extract($vars, $params);
-    }
-    return include $file;
 }

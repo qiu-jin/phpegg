@@ -11,6 +11,7 @@ class Cli extends App
     public function dispatch()
     {
         if (PHP_SAPI === 'cli' || defined('STDIN')) {
+            define('IS_CLI', true);
             $this->pid = getmypid();
             $this->option = getopt('m:c:a:');
         }

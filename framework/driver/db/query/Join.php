@@ -69,6 +69,7 @@ class Join extends QueryChain
         $limit = 0;
         $order = [];
         $where = [];
+        $group = [];
         $fields = [];
         $params = [];
         foreach ($this->options as $table => $options) {
@@ -84,12 +85,15 @@ class Join extends QueryChain
                         $where[] = $this->builder->whereClause($value, $params, $table.'.');
                         break;
                     case 'group':
+                        $group = $value[0];
                         break;
                     case 'order':
-                        $order[] = [$table.'.'.$value[0], $value[1]];
+                        foreach ($value as $v) {
+                            $order[] = $table.'.'.$v;
+                        }
                         break;
                     case 'limit':
-                        $limit = $field;
+                        $limit = $value;
                         break;
                 }
             }
@@ -106,8 +110,12 @@ class Join extends QueryChain
         if ($where) {
             $sql .= ' WHERE '.implode(' AND ', $where);
         }
-        //$option = ['order' => $order, 'limit' => $limit];
-        //$sql .= Builder::selectOption($option);
+        if ($order) {
+            $sql .= $this->builder->orderClause($order);
+        }
+        if ($limit) {
+            $sql .= $this->builder->limitClause($limit);
+        }
         return [$sql, $params];
     }
     

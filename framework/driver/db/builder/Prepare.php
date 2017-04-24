@@ -62,11 +62,7 @@ class Prepare
     
     public static function groupHaving($group, $having)
     {
-        if (is_array($option['limit'])) {
-            return " LIMIT ".$option['limit'][0].", ".$option['limit'][1];
-        } else {
-            return " LIMIT ".$option['limit'];
-        }
+
     }
     
 	public static function orderClause($orders)

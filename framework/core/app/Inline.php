@@ -13,7 +13,7 @@ class Inline extends App
         'route_mode' => 0,
         'view_enable' => 0,
     ];
-    private $dir = APP_DIR.'controller/';
+    protected $dir = APP_DIR.'controller/';
     
     public function dispatch()
     {
