@@ -43,7 +43,7 @@ class Join extends QueryChain
     
     public function get($id, $pk = 'id')
     {
-        $this->options[$this->table] = ['where' => [$pk => $id], 'fields' => $this->options[$this->table]['fields']];
+        $this->options[$this->table] = ['where' => [[$pk, '=', $id]], 'fields' => $this->options[$this->table]['fields']];
         return $this->find(1);
     }
 
@@ -81,11 +81,7 @@ class Join extends QueryChain
                         }
                         break;
                     case 'where':
-                        $pairs = $builder->where($value, $table.'.');
-                        $where[] = $pairs[0];
-                        if ($pairs[1]) {
-                            $params = array_merge($params, $pairs[1]);
-                        }
+                        $where[] = $this->builder->whereClause($value, $params, $table.'.');
                         break;
                     case 'group':
                         break;

@@ -27,16 +27,18 @@ abstract class QueryChain
     {
         switch (count($where)) {
             case 1:
-                $this->option['where'] = $where;
-                break;
+                if (is_array($where[0])) {
+                    $this->option['where'][] = $where[0];
+                    return $this;
+                }
             case 2:
-                $this->option['where'] = [[$where[0], '=', $where[1]]];
-                break;
+                $this->option['where'][] = [$where[0], '=', $where[1]];
+                return $this;
             case 3:
-                $this->option['where'] = [[$where[0],  $where[1], $where[2]]];
-                break;
+                $this->option['where'][] = [$where[0], $where[1], $where[2]];
+                return $this;
         }
-        return $this;
+        throw new \Exception('SQL WHERE ERROR: '.jsonecode($where));
     }
     
     public function order($order, $desc = false)

@@ -57,16 +57,19 @@ class SubQuery extends QueryChain
         $sql .= '('.$sub[0].') ';
         $params = $sub[1];
         if (isset($this->master_option['where'])) {
-            $where = $this->builder->where($this->master_option['where']);
-            $sql .= ' AND '.$where[0];
-            if ($where[1]) {
-                $params = array_merge($params, $where[1]) ;
-            }
+            $sql .= ' AND '.$this->builder->where($this->master_option['where'], $params);
         }
-        $option = $this->builder->selectOption($this->master_option);
-        if ($option[1]) {
-            $params = array_merge($params, $option[1]);
+        /*
+        if (isset($option['group'])) {
+            $sql .= self::groupHaving($option['group'], isset($option['having']) ? $option['having'] : null, $params);
         }
-        return [$sql.$option[0], $params];
+        */
+        if (isset($this->master_option['order'])) {
+            $sql .= $this->builder->orderClause($this->master_option['order']);
+        }
+        if (isset($this->master_option['limit'])) {
+            $sql .= $this->builder->limitClause($this->master_option['limit']);
+        }
+        return [$sql, $params];
     }
 }

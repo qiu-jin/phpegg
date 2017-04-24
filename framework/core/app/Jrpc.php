@@ -16,7 +16,7 @@ class Jsonrpc extends App
         if (empty($data) || !is_array($data)) {
             $this->abort('-32700', 'Parse error');
         }
-        if (Arr::isAssoc($data)) {
+        if (!Arr::isAssoc($data)) {
             $this->is_batch_request = true;
         } 
         $this->id = isset($data['id']) ? $data['id'] : null;

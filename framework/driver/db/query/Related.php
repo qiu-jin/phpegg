@@ -38,8 +38,9 @@ class Related extends With
         list($rtable, $field1, $field2) = $this->getOnFields();
         $field1_data = array_unique(array_column($data, $field1[0]));
         if ($field1_data) {
-            $item = $this->builder->whereItem($field1[1], 'IN', $field1_data);
-            $query = $this->db->query("SELECT $field1[1], $field2[1] FROM $rtable WHERE $item[0]", $item[1]);
+            $params = [];
+            $sql = $this->builder->whereItem($params, $field1[1], 'IN', $field1_data);
+            $query = $this->db->query("SELECT $field1[1], $field2[1] FROM $rtable WHERE $sql", $params);
             if ($query && $this->db->numRows($query) > 0) {
                 while ($row = $this->db->fetchRow($query)) {
                     $related_data[] = $row[1];

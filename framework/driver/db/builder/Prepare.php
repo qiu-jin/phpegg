@@ -1,96 +1,85 @@
 <?php
 namespace framework\driver\db\builder;
 
-class PrepareBuilder
+class Prepare
 {   
     private static $where_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
-    private static $where_operator = ['=', '!=', '>', '>=', '<', '<=', 'LIKE', 'IN', 'IS', 'BETWEEN']
+    private static $where_operator = ['=', '!=', '>', '>=', '<', '<=', 'LIKE', 'IN', 'IS', 'BETWEEN'];
 
-    public function select($table, array $option)
+    public static function select($table, array $option)
     {
-        $sql = self::selectClause($option[''])
-        foreach ($select_clause as $clause) {
-            if (isset($option[$clause])) {
-                $sql .= self::$clause($option[$clause], $params);
-            }
+        $params = [];
+        $sql = self::selectFrom($table, isset($option['fields']) ? $option['fields'] : '*');
+        if (isset($option['where'])) {
+            $sql .= ' WHERE '.self::whereClause($option['where'], $params);
         }
-    }
-    
-    public function selectClause($fields)
-    {
-        return 'SELECT '.isset($fields) ? implode(',', (array) $fields) : '*';
-    }
-    
-    public function fromClause($table)
-    {
-        return ' FROM '.$table;
+        if (isset($option['group'])) {
+            $sql .= self::groupHaving($option['group'], isset($option['having']) ? $option['having'] : null, $params);
+        }
+        if (isset($option['order'])) {
+            $sql .= self::orderClause($option['order']);
+        }
+        if (isset($option['limit'])) {
+            $sql .= self::limitClause($option['limit']);
+        }
+        return [$sql, $params];
     }
 
-    public function whereClause($data, $prefix = '')
+    public static function selectFrom($table, $fields)
+    {
+        return 'SELECT '.implode(',', (array) $fields).' FROM '.$table;
+    }
+
+    public static function whereClause($data, &$params, $prefix = '')
     {
         $i = 0;
+        $sql = '';
 		foreach ($data as $k => $v) {
-            if (is_array($v)) {
-                if (is_string($k)) {
-                    $k = strtoupper($k);
-                    if (in_array($k, self::$where_logic, true)) {
-                        $sql = $sql.' '.$k.' ';
-                    } else {
-                        throw new \Exception('SQL WHERE ERROR: '.$k);
-                    }
-                } elseif (is_integer($k)) {
-                    if ($i > 0) $sql = $sql.' AND ';
-                } else {
-                    throw new \Exception('SQL WHERE ERROR: '.$k);
-                }
-                if (count($v) === 3 && isset($v[1]) && isset($v[2]) && in_array($v[1], self::$where_operator, true)) {
-                    $item = self::whereItem(...$v);
-                    $sql .= $prefix.$item[0];
-                    $params = array_merge($params, $item[1]);
-                } else {
-                    $where = self::where($v, $prefix);
-                    $sql =  $sql.'('.$where[0].')';
-                    $params = array_merge($params, $where[1]);
-                }
-            } else {
-                if ($k === 0) {
-                    if (count($data) === 3 && isset($data[1]) && isset($data[2]) && in_array($data[1], self::$where_operator, true)) {
-                        $item = self::whereItem(...$data);
-                        return [$prefix.$item[0], $item[1]];
-                    }
-                }
+            if (is_integer($k)) {
                 if ($i > 0) {
                     $sql = $sql.' AND ';
                 }
-                $item = self::whereItem($k, '=', $v);
-                $sql .= $prefix.$item[0];
-                $params = array_merge($params, $item[1]);
+            } else {
+                $k = strtoupper($k);
+                if (in_array($k, self::$where_logic, true)) {
+                    $sql = $sql.' '.$k.' ';
+                } elseif (preg_match('/^('.implode('|', self::$where_logic).')\#.+$/', $k, $match)) {
+                    $sql = $sql.' '.$match[1].' ';
+                } else {
+                    throw new \Exception('SQL WHERE ERROR: '.$k);
+                }
+            }
+            if (count($v) === 3 && in_array($v[1], self::$where_operator, true)) {
+                $sql .= $prefix.self::whereItem($params, ...$v);
+            } else {
+                $where = self::whereClause($v, $params, $prefix);
+                $sql .=  $sql.'('.$where[0].')';
             }
             $i++;
-		}
+        }
         return $sql;
     }
     
-	public static function orderClause($order)
-    {
-        $sql = '';
-		foreach ($order as $k => $v) {
-            $v = strtoupper($v);
-            if (!preg_match('/^\w+$/', $k) || $v !== 'DESC' || $v !== 'ASC') {
-                throw new \Exception('SQL ORDER ERROR: '.$k);
-            }
-            if ($sql) $sql .= ',';
-			$sql .= " `$k` $v";
-		}
-        return $sql;
-	}
-
-    public static function limitClause($limit)
+    public static function groupHaving($group, $having)
     {
         if (is_array($option['limit'])) {
             return " LIMIT ".$option['limit'][0].", ".$option['limit'][1];
         } else {
             return " LIMIT ".$option['limit'];
+        }
+    }
+    
+	public static function orderClause($orders)
+    {
+        return ' ORDER BY '.implode(',', $orders);
+	}
+
+    public static function limitClause($limit)
+    {
+        if (is_array($limit)) {
+            return " LIMIT ".$limit[0].", ".$limit[1];
+        } else {
+            return " LIMIT ".$limit;
         }
     }
     
@@ -105,36 +94,61 @@ class PrepareBuilder
         return [implode(" $glue ", $item), $params];
 	}
     
-    public static function whereItem($field, $exp, $value)
+    public static function whereItem(&$params, $field, $exp, $value)
     {
         switch ($exp) {
             case 'IN':
                 if(is_array($value)) {
-                    return [
-                        $field." IN (".implode(",", array_fill(0, count($value), '?')).")",
-                        $value
-                    ];
+                    $params = array_merge($params, $value);
+                    return $field." IN (".implode(",", array_fill(0, count($value), '?')).")";
                 }
                 break;
             case 'BETWEEN':
                 if (count($value) === 2) {
-                    return [
-                        $field.' BETWEEN ?  AND ?',array_values($value)
-                    ];
+                    $params = array_merge($params, $value);
+                    return $field.' BETWEEN ?  AND ?';
                 }
                 break;
             case 'IS':
                 if ($value === NULL) {
-                    return [$value.' IS NULL', []];
+                    return $field.' IS NULL';
                 }
                 break;
             default :
-                return [$field.' '.$exp.' ?', [$value]];
+                $params[] = $value;
+                return $field.' '.$exp.' ?';
         }
+    }
+    
+    public static function implodeParams($sql, $params)
+    {
+        if ($params) {
+            if (isset($params[0])) {
+                $str = '';
+                $num = 0;
+                $len = strlen($sql);
+                for ($i = 1; $i < $len; $i++) {
+                    if ($sql{$i} === '?') {
+                        $str .= $params[$num];
+                        $num++;
+                    } else {
+                        $str .= $sql{$i};
+                    }
+                }
+                return $str;
+            } else {
+                $replace_pairs = array();
+                foreach ($params as $k => $v) {
+                    $replace_pairs[':'.$k] = addslashes($v);
+                }
+                return strtr($sql, $replace_pairs);
+            }
+        }
+        return $sql;
     }
     
     public static function isField($str)
     {
-        return preg_match('/^[a-zA-Z_]\w*$/', $str);
+        return preg_match('/^\w*$/', $str);
     }
 }
