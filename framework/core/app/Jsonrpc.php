@@ -37,7 +37,7 @@ class Jsonrpc extends App
         $this->abort('-32600', 'Invalid Request');
     }
 
-    public function run($return_handler = null)
+    public function run(callable $return_handler = null)
     {
         $this->runing();
         $action = $this->dispatch['action'];

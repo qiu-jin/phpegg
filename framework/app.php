@@ -23,7 +23,6 @@ abstract class App
     private function __construct($config)
     {
         $this->config = array_merge($this->config, $config);
-        $this->dispatch = $this->dispatch();
     }
     
     public static function init($name)
@@ -68,7 +67,9 @@ abstract class App
             } else {
                 throw new \Exception('Illegal app class :'.$app);
             }
-            if (self::$app->dispatch) {
+            $dispatch = self::$app->dispatch();
+            if ($dispatch) {
+                self::$app->dispatch = $dispatch;
                 if (isset(self::$app->config['auth_enable'])) {
                     Auth::passport();
                 }

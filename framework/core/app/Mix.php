@@ -10,8 +10,6 @@ class Mix extends App
 {
     private $query;
     private $route;
-    private $route_index = 0;
-    private $ns = 'App\\'.APP_NAME.'\Controller\\';
     
     public function dispatch()
     {
@@ -37,12 +35,13 @@ class Mix extends App
             $this->abort(404);
         }
         $return_handler && $return_handler($return);
+        App::exit();
     }
     
     public function query($controller, $action)
     {
-        $class = $this->ns.$controller;
-        if (class_exists($class, $action) && $action{0} ==! '_') {
+        $class = 'app\controller\\'.$controller;
+        if (class_exists($class, $action) && $action{0} !== '_') {
             $controller = new $class;
             if (is_callable([$controller, $action])) {
                 $this->query = [$controller, $action];
@@ -52,13 +51,13 @@ class Mix extends App
     
     public function route($role, callable $call, $method = null)
     {
+        $index = count($this->route['call']);
         $this->route['call'][] = $call;
         if ($method && in_array($method, ['get','post', 'put', 'delete', 'options', 'head', 'patch'], true)) {
-            $this->route['rule'][$role][$method] = $this->route_index;
+            $this->route['rule'][$role][$method] = $index;
         } else {
-            $this->route['rule'][$role] = $this->route_index;
+            $this->route['rule'][$role] = $index;
         }
-        $this->route_index++;
     }
     
     protected function routeDispatch($path)

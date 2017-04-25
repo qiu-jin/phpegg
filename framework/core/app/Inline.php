@@ -95,5 +95,5 @@ function __inline_require($file, $params)
     if ($__return === 1) {
         $__return = null;
     }
-    return isset($return) ? array_merge((array) $return,(array) $_return) : $__return;
+    return isset($return) ? array_merge((array) $return,(array) $__return) : $__return;
 }

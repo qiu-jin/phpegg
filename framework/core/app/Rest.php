@@ -14,7 +14,6 @@ class Rest extends App
         'route_mode' => 0,
         'controller_level' => 0,
     ];
-    private $method;
     private $ns = 'app\controller\\';
     
     public function dispatch()
@@ -35,7 +34,7 @@ class Rest extends App
         return false;
     }
 
-    public function run($return_handler = null)
+    public function run(callable $return_handler = null)
     {
         $this->runing();
         $this->setPostParams();
