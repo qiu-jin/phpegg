@@ -66,15 +66,6 @@ class Response
         App::exit();
     }
     
-    public static function sendfile($file)
-    {
-        $file = realpath($file);
-        self::$response->headers['X-Sendfile'] = $file;
-        self::$response->headers['X-Accel-Redirect'] = $file;
-        if (isset(self::$response->body)) self::$response->body = null;
-        App::exit();
-    }
-    
     public static function redirect($url, $code = 302)
     {
         self::$response->status = ($code === 301) ? 301 : 302;

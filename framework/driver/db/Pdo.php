@@ -18,8 +18,8 @@ class Pdo extends Db
 			$link->exec('SET SQL_MODE=ANSI_QUOTES');
             $this->dbname = $config['dbname'];
             return $link;
-		} catch (PDOException $e) {
-			throw new Exception($e->getMessage());
+		} catch (\PDOException $e) {
+			throw new \Exception($e->getMessage());
 		}
     }
     
@@ -48,7 +48,7 @@ class Pdo extends Db
                 $query = $this->link->query($sql);
                 if ($query === false) {
                     $error = $this->link->errorInfo();
-                    throw new \Exception('SQL ERROR: ['.$error[1].']'.$error[2]);
+                    throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
                 } else {
                     return $query->fetchAll(\PDO::FETCH_ASSOC);
                 }
@@ -56,7 +56,7 @@ class Pdo extends Db
                 $affected = $this->link->exec($sql);
                 if ($affected === false) {
                     $error = $this->link->errorInfo();
-                    throw new \Exception('SQL ERROR: ['.$error[1].']'.$error[2]);
+                    throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
                 } else {
                     if ($cmd === 'INSERT') {
                         return $this->link->lastInsertId();
@@ -77,7 +77,7 @@ class Pdo extends Db
             $query = $this->link->query($sql);
             if ($query === false) {
                 $error = $this->link->errorInfo();
-                throw new \Exception('SQL ERROR: ['.$error[1].']'.$error[2]);
+                throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
             }
             return $query;
         }
@@ -91,9 +91,9 @@ class Pdo extends Db
         } else {
             $error = $query->errorInfo();
             if ($error[0] === 'HY093') {
-                throw new \Exception('SQL ERROR: Invalid parameter number');
+                throw new \Exception('DB ERROR: Invalid parameter number');
             }
-            throw new \Exception('SQL ERROR: ['.$error[1].']'.$error[2]);
+            throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
         }
     }
     

@@ -123,7 +123,7 @@ class Prepare
                 $str = '';
                 $num = 0;
                 $len = strlen($sql);
-                for ($i = 1; $i < $len; $i++) {
+                for ($i = 0; $i < $len; $i++) {
                     if ($sql{$i} === '?') {
                         $str .= $params[$num];
                         $num++;

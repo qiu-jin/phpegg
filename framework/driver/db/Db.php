@@ -55,17 +55,15 @@ abstract class Db
     {
         return new query\Query($this, $name);
     }
-   
+
     public function action(callable $call)
-    {   
+    {
         try {
             $this->begin();
-            if ($call($this)) {
-                return $this->commit();
-            } 
-            return $this->rollback();
+            return $call($this) ? $this->commit() : $this->rollback();
         } catch (\Exception $e) {
             $this->rollback();
+            throw new \Exception($e->getMessage());
         }
     }
 
@@ -85,17 +83,16 @@ abstract class Db
     
     public function update($table, $data, $where, $limit = 0)
     {
-        $data = $this->builder->setData($data);
-        $where = $this->builder->where($where);
-        $sql = "UPDATE $table SET ".$data[0].' WHERE '.$where[0];
-        return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, array_merge($data[1], $where[1]));
+        list($set, $params) = $this->builder->setData($data);
+        $sql = "UPDATE $table SET ".$set.' WHERE '.$this->builder->whereClause($where, $params);
+        return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $params);
     }
    
     public function delete($table, $where, $limit = 0)
     {
-        $where = $this->builder->where($where);
-        $sql = "DELETE FROM `$table` WHERE ".$where[0];
-        return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $where[1]);
+        $params = [];
+        $sql = "DELETE FROM `$table` WHERE ".$this->builder->whereClause($where, $params);
+        return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $params);
     }
     
     public function builder()

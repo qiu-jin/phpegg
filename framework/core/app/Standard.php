@@ -13,9 +13,10 @@ class Standard extends App
     protected $config = [
         'param_mode' => 0,
         'route_mode' => 0,
-        'view_enable' => 0,
-        'ctl_to_camel' => 1,
+        'enable_view' => 0,
+        'tpl_to_snake' => true,
         'controller_level' => 0,
+        'controller_to_camel' => true,
     ];
     private $tpl;
     private $ns = 'app\controller\\';
@@ -82,7 +83,7 @@ class Standard extends App
     
     public function error($code = null, $message = null)
     {
-        if ($this->config['view_enable']) {
+        if ($this->config['enable_view']) {
             View::error($code, $message);
         } else {
             Response::json(['error' => ['code' => $code, 'message' => $message]]);
@@ -92,7 +93,7 @@ class Standard extends App
     protected function response($return = null)
     {
         
-        if (empty($this->config['view_enable'])) {
+        if (empty($this->config['enable_view'])) {
             Response::json($return);
         } else {
             Response::view($this->tpl, $return);
@@ -105,8 +106,8 @@ class Standard extends App
         $count = count($path);
         $level = $this->config['controller_level'];
         if (empty($path)) {
-            if (isset($this->config['index'])) {
-                $index = explode('/', $this->config['index']);
+            if (isset($this->config['index_dispatch'])) {
+                $index = explode('/', $this->config['index_dispatch']);
                 $action = array_pop($index);
                 $classarr = $index;
             }
@@ -128,7 +129,7 @@ class Standard extends App
             }
         }
         if (isset($classarr)) {
-            if (!empty($this->config['ctl_to_camel'])) {
+            if (!empty($this->config['controller_to_camel'])) {
                 $action = Str::toCamel($action);
                 $classarr[] = Str::toCamel(array_pop($classarr));
             }
@@ -136,7 +137,7 @@ class Standard extends App
             if (class_exists($class)) {
                 $controller = new $class();
                 if (is_callable([$controller, $action])) {
-                    if ($this->config['view_enable']) {
+                    if ($this->config['enable_view']) {
                         $this->setTpl($classarr, $action);
                     }
                     return ['controller' => $controller, 'action' => $action, 'params' => $params];
@@ -163,7 +164,7 @@ class Standard extends App
                     }
                 }
                 $this->config['param_mode'] = 2;
-                if ($this->config['view_enable']) {
+                if ($this->config['enable_view']) {
                     $this->setTpl($dispatch[0], $action);
                 }
                 return ['controller'=> $controller, 'action' => $action, 'params' => $dispatch[1], 'method' => $method];

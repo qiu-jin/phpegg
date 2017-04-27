@@ -97,7 +97,7 @@ function dump(...$vars)
 
 function abort()
 {
-    App::exit();
+    App::abort();
 }
 
 function error($message)

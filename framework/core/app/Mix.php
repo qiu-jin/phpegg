@@ -35,7 +35,7 @@ class Mix extends App
             $this->abort(404);
         }
         $return_handler && $return_handler($return);
-        App::exit();
+        $this->exit();
     }
     
     public function query($controller, $action)
@@ -53,7 +53,7 @@ class Mix extends App
     {
         $index = count($this->route['call']);
         $this->route['call'][] = $call;
-        if ($method && in_array($method, ['get','post', 'put', 'delete', 'options', 'head', 'patch'], true)) {
+        if ($method && in_array($method, ['get','post', 'put', 'delete', 'head', 'options', 'patch'], true)) {
             $this->route['rule'][$role][$method] = $index;
         } else {
             $this->route['rule'][$role] = $index;

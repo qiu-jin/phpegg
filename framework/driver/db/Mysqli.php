@@ -84,7 +84,7 @@ class Mysqli extends Db
         } else {
             $query = $this->link->query($sql);
             if (!$query) {
-                throw new \Exception('SQL ERROR: ['.$this->link->errno.']'.$this->link->error);
+                throw new \Exception('DB ERROR: ['.$this->link->errno.']'.$this->link->error);
             }
             return $query;
         }
@@ -116,10 +116,12 @@ class Mysqli extends Db
             $type = str_pad('', count($bind_params), 's');
             array_unshift($bind_params, $type);
             $query->bind_param(...$bind_params);
-            $query->execute();
+            if (!$query->execute()) {
+                throw new \Exception('DB ERROR: ['.$this->link->errno.']'.$this->link->error);
+            }
             return $query;
         } else {
-            throw new \Exception('SQL ERROR: ['.$this->link->errno.']'.$this->link->error);
+            throw new \Exception('DB ERROR: ['.$this->link->errno.']'.$this->link->error);
         }
     }
     

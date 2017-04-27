@@ -70,7 +70,7 @@ class Error
                 self::record($level, $message, $last_error['file'], $last_error['line']);
                 self::response();
     		} else {
-                Logger::write(Logger::WARNING, 'unknown exit');
+                //Logger::write(Logger::WARNING, 'unknown exit');
     		}
         }
         self::$error = null;

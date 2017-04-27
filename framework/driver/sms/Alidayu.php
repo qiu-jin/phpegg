@@ -22,7 +22,7 @@ class Alidayu extends Sms
     public function send($to, $type, $data)
     {
         if (isset($this->template[$type])) {
-            return $this->sendFrom([
+            return $this->sendForm([
                 'app_key'           => $this->appkey,
                 'format'            => 'json',
                 'method'            => 'alibaba.aliqin.fc.sms.num.send',
@@ -41,30 +41,7 @@ class Alidayu extends Sms
         return false;
     }
     
-    /*拨打语音电话
-    public function sendTTS($to, $type, $data)
-    {
-        if (isset($this->ttstemplate[$type])) {
-            return $this->sendFrom([
-                'app_key'           => $this->appkey,
-                'format'            => 'json',
-                'method'            => 'alibaba.aliqin.fc.tts.num.singlecall',
-                'sign_method'       => 'md5',
-                'tts_param'         => json_encode($data),
-                'timestamp'         => date('Y-m-d H:i:s'),
-                'v'                 => '2.0',
-                'called_num'        => $to,
-                'called_show_num'   => $this->shownum,
-                'tts_code'          => $this->ttstemplate[$type]
-            ], 'alibaba_aliqin_fc_tts_num_singlecall_response');
-        } else {
-            $this->log = 'Audio not exists';
-        }
-        return false;
-    }
-    */
-    
-    protected function sendFrom($data, $result_name)
+    protected function sendForm($data, $result_name)
     {
         $str = '';
         ksort($data);

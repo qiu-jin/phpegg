@@ -21,6 +21,7 @@ class View
         if (empty(self::$config['dir'])) {
             self::$config['dir'] = APP_DIR.'view/';
         }
+        Hook::add('exit', __CLASS__.'::clear');
     }
     
     public static function assign($name, $value)
@@ -73,7 +74,7 @@ class View
         return self::error(404);
     }
     
-    private static function _import($tpl, $dir = null)
+    protected static function _import($tpl, $dir = null)
     {
         if ($tpl{0} === '/') {
             $path = self::$config['dir'].$tpl;

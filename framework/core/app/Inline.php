@@ -11,7 +11,7 @@ class Inline extends App
 {
     protected $config = [
         'route_mode' => 0,
-        'view_enable' => 0,
+        'enable_view' => 0,
     ];
     protected $dir = APP_DIR.'controller/';
     
@@ -41,7 +41,7 @@ class Inline extends App
 
     public function error($code = null, $message = null)
     {
-        if (isset($this->config['view_enable'])) {
+        if (isset($this->config['enable_view'])) {
             View::error($code, $message);
         } else {
             Response::json(['error' => ['code' => $code, 'message' => $message]]);
@@ -50,7 +50,7 @@ class Inline extends App
     
     public function response($return = null)
     {
-        if (isset($this->config['view_enable'])) {
+        if (isset($this->config['enable_view'])) {
             $tpl = str_replace($this->dir, '', basename($this->dispatch['file'], '.php'), 1);
             Response::view($tpl, $return);
         } else {
@@ -67,8 +67,8 @@ class Inline extends App
                     return ['file' => $file];
                 }
             }
-        } elseif (isset($this->config['index'])) {
-            $file = $this->dir.$this->config['index'].'.php';
+        } elseif (isset($this->config['index_dispatch'])) {
+            $file = $this->dir.$this->config['index_dispatch'].'.php';
             if (is_file($file)) {
                 return ['file' => $file]; 
             }

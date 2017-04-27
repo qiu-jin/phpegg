@@ -44,7 +44,7 @@ abstract class Queue
             }
         }
         $this->role = $role;
-        $class = 'framework\driver\queue\\'.$role.strrchr(static::class, '\\');
+        $class = __NAMESPACE__.'\\'.$role.strrchr(static::class, '\\');
         $this->instance = new $class($this->connect(), $job, $this->config);
         return $this->instance;
     }

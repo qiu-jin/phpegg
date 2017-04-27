@@ -40,6 +40,7 @@ abstract class App
         require(FW_DIR.'core/error.php');
         require(FW_DIR.'core/hook.php');
         register_shutdown_function(function () {
+            //self::$exit || self::$exit = 1;
             Hook::listen('exit');
             if (function_exists('fastcgi_finish_request')) {
                 fastcgi_finish_request();
