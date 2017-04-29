@@ -23,6 +23,9 @@ class Standard extends App
     
     public function dispatch()
     {
+        if (isset($this->config['sub_controller'])) {
+            $this->ns .= $this->config['sub_controller'].'\\';
+        }
         $path = explode('/', trim(Request::path(), '/'));
         switch ($this->config['route_mode']) {
             case 0:

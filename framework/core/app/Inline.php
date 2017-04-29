@@ -17,6 +17,9 @@ class Inline extends App
     
     public function dispatch()
     {
+        if (isset($this->config['sub_controller'])) {
+            $this->dir .= $this->config['sub_controller'].'/';
+        }
         $path = trim(Request::path(), '/');
         switch ($this->config['route_mode']) {
             case 0:

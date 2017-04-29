@@ -32,23 +32,12 @@ class Model
         if (isset(self::$_models[$name])) {
             return self::$_models[$name];
         } else {
-            $class = 'app\\'.APP_NAME.'\model\\'.strtr($name, '.', '\\');
+            $class = 'app\model\\'.strtr($name, '.', '\\');
             if ((class_exists($class))) {
                 return self::$_models[$name] = new $class();
             }
         }
         return null;
-    }
-    
-    public static function table($name, $db = null)
-    {
-        list($db_name, $table_name) = explode('.', $name);
-        $class = 'app\\'.APP_NAME.'\table\\'.$db_name.'\\'.ucfirst($table_name);
-        if ((class_exists($class))) {
-            return new $class($db);
-        } else {
-            return new Table($table_name, $db);
-        }
     }
     
     public static function connect($type, $name = null)

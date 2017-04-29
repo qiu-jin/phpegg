@@ -6,7 +6,7 @@ class Str
     public static function random($length = 16, $type = null)
     {
         $str = '';
-        $string = 'qwertyuiopasdfghjklzxcvbnm1234567890';
+        $string = '0123456789qwertyuiopasdfghjklzxcvbnm';
         for ($i = 0; $i < $length; $i++) {
             $str .= $string{rand(0, 33)};
         }

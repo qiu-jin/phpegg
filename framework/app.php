@@ -25,14 +25,13 @@ abstract class App
         $this->config = array_merge($this->config, $config);
     }
     
-    public static function init($name)
+    public static function init()
     {
         if (self::$init) return;
         self::$init = true;
-        define('APP_NAME', $name);
         define('FW_DIR', __DIR__.'/');
         defined('ROOT_DIR')   || define('ROOT_DIR', dirname(__DIR__).'/');
-        defined('APP_DIR')    || define('APP_DIR', ROOT_DIR.'app/'.APP_NAME.'/');
+        defined('APP_DIR')    || define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
         defined('APP_DEBUG')  || define('APP_DEBUG', false);
         require(FW_DIR.'common.php');
         require(FW_DIR.'core/config.php');
@@ -40,7 +39,6 @@ abstract class App
         require(FW_DIR.'core/error.php');
         require(FW_DIR.'core/hook.php');
         register_shutdown_function(function () {
-            //self::$exit || self::$exit = 1;
             Hook::listen('exit');
             if (function_exists('fastcgi_finish_request')) {
                 fastcgi_finish_request();
@@ -50,7 +48,7 @@ abstract class App
         Hook::listen('init');
     }
     
-    public static function start($name, $app = 'standard',array $config = null)
+    public static function start($app = 'standard', array $config = null)
     {
         if (!self::$app) {
             self::init($name);

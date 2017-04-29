@@ -18,11 +18,12 @@ class Chain
     public function __call($name, $params = [])
     {
         if (in_array($name, $this->chain_methods, true)) {
-            $this->option[$name][] = $params;
+            $this->option[$name] = $params;
             return $this;
         }
         if (in_array($name, $this->call_methods, true)) {
             return call_user_func([$this->object, $this->call_methods[$name]], $this->option, ...$params);
         }
+        throw new \Exception('no method: '.$name);
     }
 }

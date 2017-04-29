@@ -18,6 +18,9 @@ class Rest extends App
     
     public function dispatch()
     {
+        if (isset($this->config['sub_controller'])) {
+            $this->ns .= $this->config['sub_controller'].'\\';
+        }
         $method = strtolower(Request::method());
         if (in_array($method, ['get','post', 'put', 'delete', 'options', 'head', 'patch'], true)) {
             $path = explode('/', trim(Request::path(), '/'));

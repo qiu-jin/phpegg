@@ -34,6 +34,11 @@ class View
         self::$view->func[$name] = $value;
     }
     
+    public static function output($tpl, array $vars = [])
+    {
+        
+    }
+    
     public static function render($tpl, array $vars = [])
     {
         $phpfile = self::_include(trim($tpl));
@@ -69,7 +74,8 @@ class View
     public static function __callStatic($method, $params = [])
     {
         if (isset($this->config['view_method'][$method])) {
-            //render($tpl, array $vars = [])
+            $vars = array_combine($this->config['view_method'][$method][1], $params);
+            self::render($this->config['view_method'][$method][0], $vars);
         }
         return self::error(404);
     }
