@@ -19,8 +19,8 @@ class Mailgun extends Email
         $form = $this->buildFrom();
         if ($form) {
             $client = Client::post($this->baseurl)->header('Authorization', 'api: '.$this->apikey)->form($form, $this->option['attach_is_buffer']);
-            if (isset($this->option['attachs'])) {
-                foreach ($this->option['attachs'] as $attach) {
+            if (isset($this->option['attach'])) {
+                foreach ($this->option['attach'] as $attach) {
                     $client->file('attachment[]', ...$attach);
                 }
             }
@@ -51,8 +51,8 @@ class Mailgun extends Email
         if (isset($this->option['bcc'])) {
             $from['bcc'] = $this->buildaddrs($this->option['bcc'])
         }
-        if (isset($this->option['raw'])) {
-            $from = array_merge($this->option['raw'], $from);
+        if (isset($this->option['option'])) {
+            $from = array_merge($this->option['option'], $from);
         }
         if (empty($this->option['ishtml'])) {
             $from['test'] = $this->option['content'];

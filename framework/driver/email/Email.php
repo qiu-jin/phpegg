@@ -62,9 +62,9 @@ abstract class Email
     public function attach($content, $filename = null, $mimetype = null, $is_buffer = false)
     {
         if (!isset($this->option['attach_is_buffer'])) {
-            $this->option['attach_is_buffer'] = $is_buffer;
+            $this->option['attach_is_buffer'] = (bool) $is_buffer;
         }
-        $this->option['attachs'][] = [$content, $filename, $mimetype];
+        $this->option['attach'][] = [$content, $filename, $mimetype];
         return $this;
     }
     

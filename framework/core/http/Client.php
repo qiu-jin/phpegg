@@ -82,7 +82,7 @@ class Client
                 $this->headers[] = 'Content-Type: multipart/form-data; boundary='.$this->boundary;
                 if ($data) {
                     foreach ($data as $pk => $pv) {
-                        $this->body .= "--$this->boundary\r\ncontent-disposition: form-data; name=\"$pk\"\r\n\r\n$pv\r\n";
+                        $this->body .= "--$this->boundary\r\nContent-Disposition: form-data; name=\"$pk\"\r\n\r\n$pv\r\n";
                     }
                 }
             } else {
@@ -241,7 +241,7 @@ class Client
         if (empty($mimetype)) {
             $mimetype = 'application/octet-stream';
         }
-        $file .= "--$boundary\r\ncontent-disposition: form-data; name=\"$name\"; filename=\"$filename\"\r\n";
+        $file .= "--$boundary\r\nContent-Disposition: form-data; name=\"$name\"; filename=\"$filename\"\r\n";
         $file .= "Content-Type: $mimetype\r\nContent-Transfer-Encoding: binary\r\n\r\n".(string) $content."\r\n";
         $file .= "--$boundary--\r\n";
         return $file;
