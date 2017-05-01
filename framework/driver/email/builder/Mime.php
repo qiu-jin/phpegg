@@ -34,7 +34,7 @@ class Mime
         if (isset($option['subject'])) {
             $mime .= "Subject: ".self::buildUtf8Header($option['subject'])."\r\n";
         }
-        if (isset($option['attachment'])) {
+        if (isset($option['attachs'])) {
             $mime .= "Content-Type: text/html; charset=utf-8\r\n\r\n".$option['content'];
             $mime .= self::buildAttachment($option['attachment']);
         } else {
@@ -53,10 +53,8 @@ class Mime
         return '=?utf-8?B?'.base64_encode($str).'?=';
     }
     
-    public static function buildAttach(array $attchs)
+    public static function buildAttachment()
     {
-        foreach ($attchs as $attch) {
-            
-        }
+
     }
 }

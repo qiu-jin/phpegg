@@ -87,9 +87,9 @@ class Loader
     private static function autoload($class)
     {
         $fn = strtok($class, '\\');
-        if (strcasecmp($fn, 'framework') === 0) {
+        if ($fn === 'framework') {
             self::import(FW_DIR.substr(strtr($class, '\\', '/'), 9));
-        }elseif (strcasecmp($fn, 'app') === 0) {
+        }elseif ($fn === 'app') {
             self::import(APP_DIR.substr(strtr($class, '\\', '/'), 4));
         } elseif(isset(self::$class_psr[$fn])) {
             self::import(self::$class_psr[$fn].strtr($class, '\\', '/'));

@@ -2,11 +2,10 @@
 namespace framework\driver\email;
 
 use framework\core\Hook;
-use framework\extend\email\Template;
 
 abstract class Email
 {
-    protected $option = [];
+    protected $option = ['attach_is_buffer' => null];
     
     abstract public function handle();
     
@@ -60,9 +59,12 @@ abstract class Email
         return $this;
     }
     
-    public function attach($value, $is_buffer = false)
+    public function attach($content, $filename = null, $mimetype = null, $is_buffer = false)
     {
-        $this->option['attach'] = [$value, $is_buffer];
+        if (!isset($this->option['attach_is_buffer'])) {
+            $this->option['attach_is_buffer'] = $is_buffer;
+        }
+        $this->option['attachs'][] = [$content, $filename, $mimetype];
         return $this;
     }
     

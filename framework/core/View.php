@@ -68,7 +68,7 @@ class View
             }
         }
         self::clear();
-        echo $code === '404' ? ViewError::print404($message) : ViewError::printError($message);
+        echo $code === '404' ? ViewError::render404($message) : ViewError::renderError($message);
     }
     
     public static function __callStatic($method, $params = [])
@@ -80,7 +80,7 @@ class View
         return self::error(404);
     }
     
-    protected static function _import($tpl, $dir = null)
+    protected static function import($tpl, $dir = null)
     {
         if ($tpl{0} === '/') {
             $path = self::$config['dir'].$tpl;
@@ -115,9 +115,9 @@ class View
         return false;
     }
     
-    private function _inline($tpl, $dir = null){}
+    private function inline($tpl, $dir = null){}
 
-    private function _layout($tpl, $phpfile, $str = null)
+    private function layout($tpl, $phpfile, $str = null)
     {
         if (!isset($this->template_engine)) return;
         if ($this->textend_num > 2) {
@@ -150,7 +150,7 @@ class View
         }
     }
     
-    private static function _template_handler()
+    private static function template_handler()
     {
         return isset(self::$template_handler) ? self::$template_handler : self::$template_handler = new Template(self::$config['template']);
     }

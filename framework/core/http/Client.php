@@ -10,6 +10,8 @@ class Client
     private $method;
     private $headers = [];
     private $curlopt = [];
+    private $boundary;
+    private $file_is_buffer;
     private $return_headers = false;
     private static $timeout = 3;
     
@@ -71,30 +73,44 @@ class Client
         return $this;
     }
     
-    public function form(array $data, $files = null, $is_buffer = false)
+    public function form(array $data, $file_is_buffer = null)
     {
-        if ($files) {
-            if ($is_buffer) {
-                $boundary = uniqid();
-                $data = self::multipart($data, $files, $boundary);
-                $this->headers[] = 'Content-Type: multipart/form-data; boundary='.$boundary;
-            } else {
-                foreach ($files as $name => $file) {
-                    if (is_array($file)) {
-                        foreach ($file as $f) {
-                            $data[$name][] = new \CURLFile(realpath($f));
-                        }
-                    } else {
-                        $data[$name] = new \CURLFile(realpath($file));
+        if (isset($file_is_buffer)) {
+            if ($file_is_buffer) {
+                $this->body = '';
+                $this->boundary = uniqid();
+                $this->headers[] = 'Content-Type: multipart/form-data; boundary='.$this->boundary;
+                if ($data) {
+                    foreach ($data as $pk => $pv) {
+                        $this->body .= "--$this->boundary\r\ncontent-disposition: form-data; name=\"$pk\"\r\n\r\n$pv\r\n";
                     }
                 }
+            } else {
+                $this->body = $data;
             }
+            $this->file_is_buffer = $file_is_buffer;
         } else {
-            $data = http_build_query($data);
+            $this->body = http_build_query($data);
             $this->headers[] = 'Content-Type: application/x-www-form-urlencoded';
         }
-        $this->body = $data;
         return $this;
+    }
+
+    public function file($name, $content, $filename = null, $mimetype = null)
+    {
+        if (isset($this->file_is_buffer)) {
+            if ($this->file_is_buffer) {
+                $this->body .= self::multipartFile($this->boundary, $name, $content, $filename, $mimetype);
+            } else {
+                if (substr($name, -2) === '[]') {
+                    $this->body[substr($name, 0, -2)][] = self::curlFile($content, $filename, $mimetype);
+                } else {
+                    $this->body[$name] = self::curlFile($content, $filename, $mimetype);
+                }
+            }
+            return $this;
+        }
+        throw new \Exception('Must call after form method');
     }
 
     public function header($name, $value)
@@ -193,7 +209,7 @@ class Client
         }
     }
     
-    private static function parseHeaders($header)
+    protected static function parseHeaders($header)
     {
         $header_arr = array();
         $arr = explode("\r\n", $header);
@@ -204,25 +220,30 @@ class Client
         return $header_arr;
     }
     
-    private static function multipart($post, $files, $boundary)
+    protected static function curlFile($filepath, $filename, $mimetype)
     {
-        $data = '';
-        if ($post) {
-            foreach ($post as $pk => $pv) {
-                $data .= "--$boundary\r\ncontent-disposition: form-data; name=\"$pk\"\r\n\r\n$pv\r\n";
-            }
+        $file = new \CURLFile(realpath($filepath));
+        if (isset($mimetype)) {
+            $file->setMimeType($mimetype);
         }
-        if ($files) {
-            foreach ($files as $name => $file) {
-                $fname = $name;
-                $ftype = 'application/octet-stream';
-                $fcode = 'binary';
-                $content = $file;
-                $data .= "--$boundary\r\ncontent-disposition: form-data; name=\"$name\"; filename=\"$fname\"\r\n";
-                $data .= "Content-Type: $ftype\r\nContent-Transfer-Encoding: $fcode\r\n\r\n".(string) $content."\r\n";
-                $data .= "--$boundary--\r\n";
-            }
+        if (isset($filename)) {
+            $file->setPostFilename($filename);
         }
-        return $data;
+        return $file;
+    }
+    
+    protected static function multipartFile($boundary, $name, $content, $filename, $mimetype)
+    {
+        $file = '';
+        if (empty($filename)) {
+            $filename = $name;
+        }
+        if (empty($mimetype)) {
+            $mimetype = 'application/octet-stream';
+        }
+        $file .= "--$boundary\r\ncontent-disposition: form-data; name=\"$name\"; filename=\"$filename\"\r\n";
+        $file .= "Content-Type: $mimetype\r\nContent-Transfer-Encoding: binary\r\n\r\n".(string) $content."\r\n";
+        $file .= "--$boundary--\r\n";
+        return $file;
     }
 }

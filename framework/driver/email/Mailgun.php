@@ -18,7 +18,12 @@ class Mailgun extends Email
     {
         $form = $this->buildFrom();
         if ($form) {
-            $client = Client::post($this->baseurl)->header('Authorization', 'api: '.$this->apikey)->form($form);
+            $client = Client::post($this->baseurl)->header('Authorization', 'api: '.$this->apikey)->form($form, $this->option['attach_is_buffer']);
+            if (isset($this->option['attachs'])) {
+                foreach ($this->option['attachs'] as $attach) {
+                    $client->file('attachment[]', ...$attach);
+                }
+            }
             $result = $client->json;
             if (isset($result['id'])) {
                 return true;

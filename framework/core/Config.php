@@ -10,8 +10,8 @@ class Config
     public static function init()
     {
         if (self::$configs) return;
-        self::$configs = new \stdClass();
         self::setEnv();
+        self::$configs = new \stdClass();
         $config_name = defined('CONFIG_NAME') ? CONFIG_NAME : 'config';
         if (is_dir(APP_DIR.$config_name.'/')) {
             self::$path = APP_DIR.$config_name.'/';

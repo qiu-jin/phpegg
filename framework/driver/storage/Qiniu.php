@@ -46,8 +46,8 @@ class Qiniu extends Storage
         $to = $this->path($to);
         $data = $this->encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
         $token = $this->sign($data).':'.$data;
-        $res = Client::post($this->uploadurl)->form(['token' => $token, 'key' => $to], ['file' => $from], $is_buffer)->timeout(30);
-        return $res->status == 200 && !empty($res->json['data']);
+        $res = Client::post($this->uploadurl)->form(['token' => $token, 'key' => $to], $is_buffer)->file('file', $from)->timeout(30);
+        return $res->status == 200 && !empty($res->json['hash']);
     }
     
     public function stat($from)

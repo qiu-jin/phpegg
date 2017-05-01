@@ -1,15 +1,15 @@
 <?php
 
-use Framework\App;
-use Framework\Core\Auth;
-use Framework\Core\View;
-use Framework\Core\Error;
-use Framework\Core\Model;
-use Framework\Core\Loader;
-use Framework\Core\Logger;
-use Framework\Core\Config;
-use Framework\Core\Http\Request;
-use Framework\Core\Http\Response;
+use framework\App;
+use framework\core\Auth;
+use framework\core\View;
+use framework\core\Error;
+use framework\core\Model;
+use framework\core\Loader;
+use framework\core\Logger;
+use framework\core\Config;
+use framework\core\http\Request;
+use framework\core\http\Response;
 
 function auth()
 {

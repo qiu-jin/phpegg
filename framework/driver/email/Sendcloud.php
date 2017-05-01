@@ -56,7 +56,12 @@ class Sendcloud extends Email
     
     protected function sendForm($method, $form)
     {
-        $client = Client::post($this->apiurl.$method)->form($form);
+        $client = Client::post($this->apiurl.$method)->form($form, $this->option['attach_is_buffer']);
+        if (isset($this->option['attachs'])) {
+            foreach ($this->option['attachs'] as $attach) {
+                $client->file('attachments[]', ...$attach);
+            }
+        }
         $result = $client->json;
         if (empty($result['result'])) {
             if (isset($result['statusCode'])) {
