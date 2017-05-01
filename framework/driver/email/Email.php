@@ -102,6 +102,9 @@ abstract class Email
 
     public function sendTemplate($to, $template, $vars = null)
     {
+        if (!isset($this->option['ishtml'])) {
+            $this->option['ishtml'] = true;
+        }
         $data = View::render($template, $vars);
         if ($data && preg_match('/<title>(.+)<\/title>/', $data, $match)) {
             $subject = $match[1];
