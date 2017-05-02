@@ -34,7 +34,7 @@ class Mime
         if (isset($option['subject'])) {
             $mime .= "Subject: ".self::buildUtf8Header($option['subject'])."\r\n";
         }
-        $type = $option['ishtml'] ? 'text/html' : 'text/plain';
+        $type = empty($option['ishtml']) ? 'text/plain' : 'text/html';
         if (isset($option['attach'])) {
             $boundary = uniqid();
             $mime .= "Content-Type:multipart/mixed;boundary=\"$boundary\"\r\n\r\n";

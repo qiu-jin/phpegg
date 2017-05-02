@@ -11,18 +11,19 @@ class Mailgun extends Email
     
     protected function init($config)
     {
-
+        $this->domain = $config['domain'];
+        $this->apikey = $config['apikey'];
     }
 
     public function handle()
     {
-        $form = $this->buildFrom();
+        $form = $this->buildForm();
         if ($form) {
-            $client = Client::post($this->baseurl)->header('Authorization', 'api: '.$this->apikey)->form($form, $this->option['attach_is_buffer']);
+            $client = Client::post($this->apiurl.$this->domain.'/messages')
+                            ->header('Authorization', 'Basic '.base64_encode('api:'.$this->apikey))
+                            ->form($form, $this->option['attach_is_buffer']);
             if (isset($this->option['attach'])) {
-                foreach ($this->option['attach'] as $attach) {
-                    $client->file('attachment[]', ...$attach);
-                }
+                $client->file('attachment', ...end($this->option['attach']));
             }
             $result = $client->getJson();
             if (isset($result['id'])) {
@@ -38,39 +39,39 @@ class Mailgun extends Email
         return false;
     }
     
-    protected function buildFrom()
+    protected function buildForm()
     {
         $form = [
             'subject'   => $this->option['subject'],
-            'to'        => $this->buildaddrs($this->option['to']),
-            'from'      => $this->buildaddr($this->option['from'])
+            'to'        => $this->buildAddrs($this->option['to']),
+            'from'      => $this->buildAddr($this->option['from'])
         ];
         if (isset($this->option['cc'])) {
-            $from['cc'] = $this->buildaddrs($this->option['cc'])
+            $form['cc'] = $this->buildAddrs($this->option['cc']);
         }
         if (isset($this->option['bcc'])) {
-            $from['bcc'] = $this->buildaddrs($this->option['bcc'])
-        }
-        if (isset($this->option['option'])) {
-            $from = array_merge($this->option['option'], $from);
+            $form['bcc'] = $this->buildAddrs($this->option['bcc']);
         }
         if (empty($this->option['ishtml'])) {
-            $from['test'] = $this->option['content'];
+            $form['text'] = $this->option['content'];
         } else {
-            $from['html'] = $this->option['content'];
+            $form['html'] = $this->option['content'];
         }
-        return $from;
+        if (isset($this->option['option'])) {
+            $form = array_merge($this->option['option'], $from);
+        }
+        return $form;
     }
     
-    protected function buildaddr(array $addr)
+    protected function buildAddr(array $addr)
     {
-        return isset($addr[1]) ? "$addr[0]<$addr[1]>" : $addr[0];
+        return isset($addr[1]) ? "$addr[1] <$addr[0]>" : $addr[0];
     }
     
-    protected function buildaddrs(array $addrs)
+    protected function buildAddrs(array $addrs)
     {
         foreach ($addrs as $addr) {
-            $arr[] = $this->buildaddr($addr);
+            $arr[] = $this->buildAddr($addr);
         }
         return implode(',', $arr);
     }

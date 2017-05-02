@@ -46,14 +46,24 @@ class Qiniu extends Storage
         $to = $this->path($to);
         $data = $this->encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
         $token = $this->sign($data).':'.$data;
-        $res = Client::post($this->uploadurl)->form(['token' => $token, 'key' => $to], $is_buffer)->file('file', $from)->timeout(30);
-        return $res->status == 200 && !empty($res->json['hash']);
+        $client = Client::post($this->uploadurl)->form(['token' => $token, 'key' => $to], $is_buffer)->file('file', $from)->timeout(30);
+        $result = $result->getJson();
+        if ($client->getStatus() === 200 && !empty($result['hash'])) {
+            return true;
+        }
+        if (isset($result['error'])) {
+            $this->log = $result['error'];
+        } else {
+            $clierr = $client->getError();
+            $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
+        }
+        return false;
     }
     
     public function stat($from)
     {
-        $res = $this->send($this->rsurl, '/stat/'.$this->bencode($from), 'GET');
-        return $res ? ['size' => $res['fsize'], 'mtime' => substr($res['putTime'], 0 ,10)] : false;
+        $data = $this->send($this->rsurl, '/stat/'.$this->bencode($from), 'GET');
+        return $data ? ['size' => $data['fsize'], 'mtime' => substr($data['putTime'], 0 ,10)] : false;
     }
 
     public function move($from, $to)
@@ -83,12 +93,19 @@ class Qiniu extends Storage
     private function send($url, $resource, $method = 'POST')
     {
         $result = Client::send($method, $url.$resource, null, ['Authorization: QBox '.$this->sign($resource."\n")], ['timeout' => 15], true);
-        if ($result['status'] == 200) {
+        if ($result['body']) {
             $data = json_decode($result['body'], true);
-            if ($data) {
-                return $method === 'POST' ? (bool) $data : $data;
+            if ($result['status'] === 200) {
+                if ($data) {
+                    return $method === 'POST' ? (bool) $data : $data;
+                }
+                return true;
             }
-            return true;
+        }
+        if (isset($data['error'])) {
+            $this->log = $data['error'];
+        } else {
+            $this->log = isset($result['error']) ? $result['error'] : 'unknown error';
         }
         return false;
     }

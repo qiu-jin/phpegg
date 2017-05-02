@@ -20,14 +20,14 @@ class Oss extends Storage
     
     public function get($from, $to = null)
     {
-        $res = Client::send('GET', $this->url($from), null, $this->buildHeader('GET', $from), null, true);
-        if ($res && $res['status'] == 200) {
+        $result = Client::send('GET', $this->url($from), null, $this->buildHeader('GET', $from), null, true);
+        if ($result['status'] === 200) {
             if ($to) {
                 return file_put_contents($to, $res['body']);
             }
-            return $res['body'];
+            return $result['body'];
         }
-        return false;
+        return $this->setError($result);
     }
     
     public function put($from, $to, $is_buffer = false)
@@ -47,7 +47,7 @@ class Oss extends Storage
             'Content-Type: '.$type,
             'Authorization: OSS '.$this->sign("PUT\n$fmd5\n$type\n$date\n$ossr")
         ], ['timeout' => 30], true);
-        return $res && $res['status'] == 200;
+        return $result['status'] === 200 || $this->setError($result);
     }
     
     public function append($from, $to, $pos = 0, $is_buffer = false)
@@ -58,18 +58,17 @@ class Oss extends Storage
     public function stat($from)
     {
         $from = $this->path($from);
-        $client = Client::head($this->url($from))->return_headers()->headers($this->buildHeader('HEAD', $from));
-        if ($client->status == 200) {
-            $headers = $client->headers;
-            if ($headers) {
+        $result = Client::send('HEAD', $this->url($from), null, $this->buildHeader('HEAD', $from), null, true, true);
+        if ($result['status'] === 200) {
+            if (!empty($result['headers'])) {
                 return [
-                    'size' => $headers['Content-Length'],
-                    'mtime' => strtotime($headers['Last-Modified']),
-                    'type' => $headers['Content-Type']
+                    'size' => $result['headers']['Content-Length'],
+                    'mtime' => strtotime($result['headers']['Last-Modified']),
+                    'type' => $result['headers']['Content-Type']
                 ];
             }
         }
-        return false;
+        return $this->setError($result);
     }
 
     public function move($from, $to)
@@ -84,20 +83,15 @@ class Oss extends Storage
     {
         $to = $this->path($to);
         $from = $this->path($from);
-        $res = Client::send('PUT', $this->url($to), null, $this->buildHeader('PUT', $to, 'x-oss-copy-source:/'.$this->bucket.$from), null, true);
-        return $res && $res['status'] == 200;
+        $result = Client::send('PUT', $this->url($to), null, $this->buildHeader('PUT', $to, 'x-oss-copy-source:/'.$this->bucket.$from), null, true);
+        return $result['status'] === 200 || $this->setError($result);
     }
 
     public function delete($from)
     {
         $from = $this->path($from);
-        $res = Client::send('DELETE', $this->url($from), null, $this->buildHeader('DELETE', $from), null, true);
-        return $res && $res['status'] == 204;
-    }
-    
-    protected function send()
-    {
-        
+        $result = Client::send('DELETE', $this->url($from), null, $this->buildHeader('DELETE', $from), null, true);
+        return $result['status'] === 204 || $this->setError($result);
     }
     
     protected function url($path)
@@ -114,11 +108,7 @@ class Oss extends Storage
     protected function mime($file, $is_buffer = false)
     {
         $finfo = finfo_open(FILEINFO_MIME); 
-        if ($is_buffer) {
-            $mime = finfo_buffer($finfo, $file);
-        } else {
-            $mime = finfo_file($finfo, $file);
-        }
+        $mime = $is_buffer ? finfo_buffer($finfo, $file) : finfo_file($finfo, $file);
         finfo_close($finfo);
         return $mime;
     }
@@ -138,5 +128,16 @@ class Oss extends Storage
             $headers[] = $ossh;
         }
         return $headers;
+    }
+    
+    protected function setError($result)
+    {
+        $data = json_decode($result['body'], true);
+        if (isset($data['error'])) {
+            $this->log = $data['error'];
+        } else {
+            $this->log = isset($result['error']) ? $result['error'] : 'unknown error';
+        }
+        return false;
     }
 }

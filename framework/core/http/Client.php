@@ -41,13 +41,13 @@ class Client
     
     public function getStatus()
     {
-        isset($this->result) || $this->getResult();
+        isset($this->result) || $this->getResult(false);
         return $this->result['status'];
     }
     
     public function getHeader($name = null)
     {
-        isset($this->result) || $this->getResult();
+        isset($this->result) || $this->getResult(false);
         if ($name) {
             return isset($this->result['headers'][$name]) ? $this->result['headers'][$name] : null;
         }
@@ -56,46 +56,32 @@ class Client
     
     public function getBody()
     {
-        isset($this->result) || $this->getResult();
+        isset($this->result) || $this->getResult(false);
         return $this->result['body'];
     }
     
     public function getJson()
     {
-        isset($this->result) || $this->getResult();
+        isset($this->result) || $this->getResult(false);
         return isset($this->result['body']) ? jsondecode($this->result['body']) : null;
     }
     
     public function getError()
     {
-        isset($this->result) || $this->getResult();
+        isset($this->result) || $this->getResult(false);
         return isset($this->result['error']) ? $this->result['error'] : null;
     }
     
     public function getResult($return = true)
     {
-        $this->result = $this->send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true, $this->return_headers);
-        if ($return) return $this->result;
-    }
-    /*
-    public function __get($name)
-    {
-        if (!isset($this->result)) {
-            if ($name === 'headers') {
-                $this->return_headers = true;
-            }
-            $this->result = $this->send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true, $this->return_headers);
+        $result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true, $this->return_headers);
+        if ($return) {
+            return $result;
+        } else {
+            $this->result = $result;
         }
-        if (isset($this->result[$name])) {
-            return $this->result[$name];
-        } elseif ($name === 'json') {
-            if (!empty($this->result['body'])) {
-                return json_decode($this->result['body'], true);
-            }
-        }
-        return null;
     }
-    */
+
     public function body($body, $type = null)
     {
         $this->body = $body;
