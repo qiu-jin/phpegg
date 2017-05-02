@@ -39,14 +39,14 @@ class Aliyun extends Sms
             ]);
             $query .= '&Signature='.hash_hmac('SHA1', rawurlencode('GET&'.$query), $this->keysecret.'&');
             $client = Client::get('https://sms.aliyuncs.com/?'.$query);
-            $result = $client->json;
+            $result = $client->getJson();
             if (isset($result['RequestId'])) {
                 return true;
             }
             if (isset($result['error_response'])) {
                 $this->log = jsonencode($result['error_response']);
             } else {
-                $clierr = $client->error;
+                $clierr = $client->getError();
                 $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
             }
         } else {

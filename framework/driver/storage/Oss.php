@@ -95,18 +95,23 @@ class Oss extends Storage
         return $res && $res['status'] == 204;
     }
     
-    private function url($path)
+    protected function send()
+    {
+        
+    }
+    
+    protected function url($path)
     {
         return 'http://'.$this->bucket.'.'.$this->endpoint.$path;
     }
 
-    private function sign($str)
+    protected function sign($str)
     {
         $digest = hash_hmac('sha1', $str, $this->keysecret, true);
         return $this->keyid.':'.base64_encode($digest);
     }
     
-    private function mime($file, $is_buffer = false)
+    protected function mime($file, $is_buffer = false)
     {
         $finfo = finfo_open(FILEINFO_MIME); 
         if ($is_buffer) {
@@ -118,12 +123,12 @@ class Oss extends Storage
         return $mime;
     }
 
-    private function date()
+    protected function date()
     { 
         return gmdate('D, d M Y H:i:s').' GMT';
     }
     
-    private function buildHeader($method, $path, $ossh = null)
+    protected function buildHeader($method, $path, $ossh = null)
     {
         $date = $this->date();
         $ossr = '/'.$this->bucket.$path;

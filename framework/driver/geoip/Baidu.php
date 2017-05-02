@@ -15,8 +15,8 @@ class Baidu extends Geoip
     
     public function handle($ip, $raw = false)
     {
-        $client = Client::get("$this->appurl?ip=$ip&ak=$this->acckey")->json;
-        $result = $client->json;
+        $client = Client::get("$this->appurl?ip=$ip&ak=$this->acckey");
+        $result = $client->getJson();
         if (isset($result['status']) && $result['status'] === 0) {
             return $raw ? $result['content'] : [
                 'state' => $result['content']['address_detail']['province'],
@@ -26,7 +26,7 @@ class Baidu extends Geoip
         if (isset($result['message'])) {
             $this->log = jsonencode($result);
         } else {
-            $clierr = $client->error;
+            $clierr = $client->getError();
             $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
         }
         return false;

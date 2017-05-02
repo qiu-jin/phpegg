@@ -42,7 +42,7 @@ class Mime
             $mime .= "\r\n\r\n".base64_encode($option['content'])."\r\n\r\n";
             $mime .= self::buildAttachments($option['attach'], $boundary, $option['attach_is_buffer']);
         } else {
-            $mime .= "Content-Type: $type; charset=utf-8\r\n\r\n".$option['content'];
+            $mime .= "Content-Type: $type; charset=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n".$option['content'];
         }
         return [$addrs, $mime];
     }

@@ -50,14 +50,14 @@ class Alidayu extends Sms
         }
         $data['sign'] = strtoupper(md5($this->appsecret.$str.$this->appsecret));
         $client = Client::post($this->apiurl)->form($data);
-        $result = $client->json;
+        $result = $client->getJson();
         if (isset($result[$result_name]['result'])) {
             return true;
         }
         if (isset($result['error_response'])) {
             $this->log = jsonencode($result['error_response']);
         } else {
-            $clierr = $client->error;
+            $clierr = $client->getError();
             $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
         }
         return false;

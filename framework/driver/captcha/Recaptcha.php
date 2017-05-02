@@ -40,14 +40,15 @@ class Recaptcha
             'response' => $value ? $value : Request::post('g-recaptcha-response'),
             'remoteip' => Request::ip()
         ];
-        $result = Client::post($this->apiurl)->form($form)->json;
+        $client = Client::post($this->apiurl)->form($form);
+        $result = $client->getJson();
         if (isset($result['success']) && $result['success'] === true) {
             return true;
         }
         if (isset($result['error-codes'])) {
             $this->log = $result['error-codes'];
         } else {
-            $clierr = $client->error;
+            $clierr = $client->getError();
             $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
         }
         return false;

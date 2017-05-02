@@ -82,9 +82,9 @@ class Qiniu extends Storage
     
     private function send($url, $resource, $method = 'POST')
     {
-        $res = Client::send($method, $url.$resource, null, ['Authorization: QBox '.$this->sign($resource."\n")], ['timeout' => 15], true);
-        if ($res['status'] == 200) {
-            $data = json_decode($res['body'], true);
+        $result = Client::send($method, $url.$resource, null, ['Authorization: QBox '.$this->sign($resource."\n")], ['timeout' => 15], true);
+        if ($result['status'] == 200) {
+            $data = json_decode($result['body'], true);
             if ($data) {
                 return $method === 'POST' ? (bool) $data : $data;
             }

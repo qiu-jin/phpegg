@@ -60,12 +60,12 @@ class Sendcloud extends Email
         if (isset($this->option['attach'])) {
             $client->file('attachments', ...end($this->option['attach']));
         }
-        $result = $client->json;
+        $result = $client->getJson();
         if (empty($result['result'])) {
             if (isset($result['statusCode'])) {
                 $this->log = $result['statusCode'].': '.$result['message'];
             } else {
-                $clierr = $client->error;
+                $clierr = $client->getError();
                 $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
             }
             return false;

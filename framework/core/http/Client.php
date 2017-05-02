@@ -39,6 +39,45 @@ class Client
         throw new \Exception('Not support HTTP method: '.$name);
     }
     
+    public function getStatus()
+    {
+        isset($this->result) || $this->getResult();
+        return $this->result['status'];
+    }
+    
+    public function getHeader($name = null)
+    {
+        isset($this->result) || $this->getResult();
+        if ($name) {
+            return isset($this->result['headers'][$name]) ? $this->result['headers'][$name] : null;
+        }
+        return $this->result['headers'];
+    }
+    
+    public function getBody()
+    {
+        isset($this->result) || $this->getResult();
+        return $this->result['body'];
+    }
+    
+    public function getJson()
+    {
+        isset($this->result) || $this->getResult();
+        return isset($this->result['body']) ? jsondecode($this->result['body']) : null;
+    }
+    
+    public function getError()
+    {
+        isset($this->result) || $this->getResult();
+        return isset($this->result['error']) ? $this->result['error'] : null;
+    }
+    
+    public function getResult($return = true)
+    {
+        $this->result = $this->send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true, $this->return_headers);
+        if ($return) return $this->result;
+    }
+    /*
     public function __get($name)
     {
         if (!isset($this->result)) {
@@ -56,7 +95,7 @@ class Client
         }
         return null;
     }
-    
+    */
     public function body($body, $type = null)
     {
         $this->body = $body;

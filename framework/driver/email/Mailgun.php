@@ -24,14 +24,14 @@ class Mailgun extends Email
                     $client->file('attachment[]', ...$attach);
                 }
             }
-            $result = $client->json;
+            $result = $client->getJson();
             if (isset($result['id'])) {
                 return true;
             }
             if (isset($result['message'])) {
                 $this->log = $result['message'];
             } else {
-                $clierr = $client->error;
+                $clierr = $client->getError();
                 $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
             }
         }
