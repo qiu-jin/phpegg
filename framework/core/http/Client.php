@@ -74,6 +74,9 @@ class Client
     
     public function getResult($return = true)
     {
+        if ($this->file_is_buffer) {
+            $this->body .= "--$this->boundary--\r\n";
+        }
         $result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true, $this->return_headers);
         if ($return) {
             return $result;
@@ -268,7 +271,6 @@ class Client
         }
         $file .= "--$boundary\r\nContent-Disposition: form-data; name=\"$name\"; filename=\"$filename\"\r\n";
         $file .= "Content-Type: $mimetype\r\nContent-Transfer-Encoding: binary\r\n\r\n".(string) $content."\r\n";
-        $file .= "--$boundary--\r\n";
         return $file;
     }
 }

@@ -24,6 +24,11 @@ class Mailgun extends Email
                             ->form($form, $this->option['attach_is_buffer']);
             if (isset($this->option['attach'])) {
                 $client->file('attachment', ...end($this->option['attach']));
+                /*
+                foreach ($this->option['attach'] as $attach) {
+                    $client->file('attachment[]', ...$attach);
+                }
+                */
             }
             $result = $client->getJson();
             if (isset($result['id'])) {

@@ -11,7 +11,7 @@ class Jsonrpc extends App
     
     public function dispatch()
     {
-        $data = json_decode(Request::body(), true);
+        $data = jsondecode(Request::body());
         if (!$data) {
             $this->abort('-32700', 'Parse error');
         }
@@ -48,29 +48,23 @@ class Jsonrpc extends App
         $params = $this->dispatch['params'];
         $controller = $this->dispatch['controller'];
         $this->dispatch = null;
-        switch ($this->config['param_mode']) {
-            case 1:
-                $return = $controller->$action(...$params);
-                break;
-            case 2:
-                $parameters = [];
-                $method = new \ReflectionMethod($controller, $action);
-                if ($method->getnumberofparameters() > 0) {
-                    foreach ($method->getParameters() as $param) {
-                        if (isset($params[$param->name])) {
-                            $parameters[] = $params[$param->name];
-                        } elseif($param->isDefaultValueAvailable()) {
-                            $parameters[] = $param->getdefaultvalue();
-                        } else {
-                            $this->error('-32602', 'Invalid params');
-                        }
+        if (empty($this->config['param_mode'])) {
+            $return = $controller->$action(...$params);
+        } else {
+            $parameters = [];
+            $method = new \ReflectionMethod($controller, $action);
+            if ($method->getnumberofparameters() > 0) {
+                foreach ($method->getParameters() as $param) {
+                    if (isset($params[$param->name])) {
+                        $parameters[] = $params[$param->name];
+                    } elseif($param->isDefaultValueAvailable()) {
+                        $parameters[] = $param->getdefaultvalue();
+                    } else {
+                        $this->error('-32602', 'Invalid params');
                     }
                 }
-                $return = $method->invokeArgs($controller, $parameters);
-                break;
-            default:
-                $return = $controller->$action($params);
-                break; 
+            }
+            $return = $method->invokeArgs($controller, $parameters);
         }
         $return_handler && $return_handler($return);
         $this->response($return);

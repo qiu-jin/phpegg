@@ -6,20 +6,17 @@ use framework\core\http\Request;
 
 class Recaptcha
 {
-    private $secret;
-    private $sitekey;
-    private $apiurl = 'https://www.google.com/recaptcha/api/siteverify';
-    private $scripturl = 'https://www.google.com/recaptcha/api.js';
+    protected $sitekey;
+    protected $secretkey;
+    protected $apiurl = 'https://www.google.com/recaptcha/api/siteverify';
+    protected $scripturl = 'https://www.google.com/recaptcha/api.js';
     
     public function __construct($config)
     {
-        $this->secret = $config['secret'];
         $this->sitekey = $config['sitekey'];
+        $this->secretkey = $config['secretkey'];
     }
     
-    /*
-     * {{ load('captcha', 'recaptcha')->render() }}
-     */
     public function render($tag = 'div', $attr = [])
     {
         $str = '';
@@ -27,7 +24,7 @@ class Recaptcha
         $attr['data-sitekey'] = $this->sitekey;
         $html = "<script src='$this->scripturl' async defer></script>\r\n";
         foreach ($attr as $k => $v) {
-            $str = "$k = '$v' ";
+            $str .= "$k = '$v' ";
         }
         $html .= "<$tag $str ></$tag>";
         return $html;
