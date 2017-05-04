@@ -1,5 +1,5 @@
 <?php
-namespace Framework\Driver\Crypt;
+namespace framework\driver\crypt;
 
 class Openssl extends Crypt
 {   

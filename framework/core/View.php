@@ -21,7 +21,7 @@ class View
         if (empty(self::$config['dir'])) {
             self::$config['dir'] = APP_DIR.'view/';
         }
-        Hook::add('exit', __CLASS__.'::clear');
+        Hook::add('exit', __CLASS__.'::free');
     }
     
     public static function assign($name, $value)
@@ -155,7 +155,7 @@ class View
         return isset(self::$template_handler) ? self::$template_handler : self::$template_handler = new Template(self::$config['template']);
     }
     
-    private static function clear()
+    public static function free()
     {
         self::$view = null;
         self::$config = null;

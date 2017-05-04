@@ -10,19 +10,21 @@ use framework\core\http\Response;
 
 class Standard extends App
 {
+    private $ns;
     protected $config = [
-        'param_mode' => 0,
         'route_mode' => 0,
+        'param_mode' => 0,
+        'get_to_params' => 0,
         'enable_view' => 0,
         'tpl_to_snake' => true,
         'controller_level' => 0,
         'controller_to_camel' => true,
+        'controller_name' => 'controller',
     ];
-    private $tpl;
-    private $ns = 'app\controller\\';
     
     public function dispatch()
     {
+        $this->ns = 'app\controller\\';
         if (isset($this->config['sub_controller'])) {
             $this->ns .= $this->config['sub_controller'].'\\';
         }
@@ -45,24 +47,24 @@ class Standard extends App
         $action = $this->dispatch['action'];
         $params = $this->dispatch['params'];
         $controller = $this->dispatch['controller'];
-        if (isset($this->dispatch['method'])) {
-            $method = $this->dispatch['method'];
+        if ($this->config['param_mode'] === 2) {
+            if (isset($this->dispatch['method'])) {
+                $method = $this->dispatch['method'];
+            } else {
+                $method =  new \ReflectionMethod($controller, $action);
+            }
         }
         $this->dispatch = null;
-        
-        if ($this->config['param_mode']) {
-            if (empty($method)) {
-                $method = new \ReflectionMethod($controller, $action);
-            }
-            if ($this->config['param_mode'] == 1) {
-                if ($method->getnumberofparameters() >= count($params)) {
-                    $return = $method->invokeArgs($controller, $params);
-                } else {
-                    $this->abort(404);
-                }
-            } elseif ($this->config['param_mode'] == 2) {
+        switch ($this->config['param_mode']) {
+            case 1:
+                $return = $controller->$action(...$params);
+                break;
+            case 2:
                 $parameters = [];
                 if ($method->getnumberofparameters() > 0) {
+                    if ($this->config['get_to_params']) {
+                        $params = $params+$_GET;
+                    }
                     foreach ($method->getParameters() as $param) {
                         if (isset($params[$param->name])) {
                             $parameters[] = $params[$param->name];
@@ -73,33 +75,40 @@ class Standard extends App
                         }
                     }
                 }
-                $return = $method->invokeArgs($controller, $parameters);
-            } else {
-                $this->abort(404);
-            }
-        } else {
-            $return = $controller->$action();
+                $result = $method->invokeArgs($controller, $parameters);
+                break;
+            default:
+                $return = $controller->$action();
+                break; 
         }
         $return_handler && $return_handler($return);
-        $this->response($return);
+        if ($this->config['enable_view']) {
+            $this->response($return, $this->getTpl(get_class($controller), $action));
+        } else {
+            $this->response($return);
+        }
     }
     
     public function error($code = null, $message = null)
     {
-        if ($this->config['enable_view']) {
-            View::error($code, $message);
-        } else {
-            Response::json(['error' => ['code' => $code, 'message' => $message]]);
-        }
+        $this->config['enable_view'] ? View::error($code, $message) : Response::json(['error' => compact('code', 'message')]);
     }
     
-    protected function response($return = null)
+    public function response($return = null, $tpl = null)
     {
-        
-        if (empty($this->config['enable_view'])) {
-            Response::json($return);
+        $tpl ? Response::view($tpl, $return) : Response::json($return);
+    }
+    
+    protected function getTpl($class, $action)
+    {
+        $class = strtr($class, $this->ns, '');
+        if (empty($this->config['tpl_to_snake'])) {
+            return strtr('\\', '/', $class).'/'.$action;
         } else {
-            Response::view($this->tpl, $return);
+            $array = explode('\\', $class);
+            $array[] = Str::toSnake(array_pop($array));
+            $array[] = Str::toSnake($action);
+            return implode('/', $array);
         }
     }
     
@@ -112,36 +121,39 @@ class Standard extends App
             if (isset($this->config['index_dispatch'])) {
                 $index = explode('/', $this->config['index_dispatch']);
                 $action = array_pop($index);
-                $classarr = $index;
+                $class_array = $index;
             }
         } else {
             if ($level > 0) {
                 if ($count > $level) {
                     if ($count == $level+1) {
                         $action = array_pop($path);
-                        $classarr = $path;
+                        $class_array = $path;
                     } else {
                         $action = $path[$level];
-                        $classarr = array_slice($path, 0, $level);
-                        $params = array_slice($path, $level+1);
+                        $class_array = array_slice($path, 0, $level);
                     }
                 }
             } else {
+                $this->config['param_mode'] = 0;
                 $action = array_pop($path);
-                $classarr = $path;
+                $class_array = $path;
             }
         }
-        if (isset($classarr)) {
+        if (isset($class_array)) {
             if (!empty($this->config['controller_to_camel'])) {
                 $action = Str::toCamel($action);
-                $classarr[] = Str::toCamel(array_pop($classarr));
+                $class_array[] = Str::toCamel(array_pop($class_array));
             }
-            $class = $this->ns.implode('\\', $classarr);
+            $class = $this->ns.implode('\\', $class_array);
             if (class_exists($class)) {
                 $controller = new $class();
                 if (is_callable([$controller, $action])) {
-                    if ($this->config['enable_view']) {
-                        $this->setTpl($classarr, $action);
+                    if ($level && $count > $level+1) {
+                        $params = array_slice($path, $level+1);
+                        if ($this->config['param_mode'] === 2) {
+                            $params = $this->getKvParams($params);
+                        }
                     }
                     return ['controller' => $controller, 'action' => $action, 'params' => $params];
                 }
@@ -167,9 +179,6 @@ class Standard extends App
                     }
                 }
                 $this->config['param_mode'] = 2;
-                if ($this->config['enable_view']) {
-                    $this->setTpl($dispatch[0], $action);
-                }
                 return ['controller'=> $controller, 'action' => $action, 'params' => $dispatch[1], 'method' => $method];
             }
         }
@@ -184,16 +193,5 @@ class Standard extends App
             $params[$path[$i]] = isset($path[$i+1]) ? $path[$i+1] : null;
         }
         return $params;
-    }
-    
-    protected function setTpl($class, $action)
-    {
-        if (empty($this->config['tpl_to_snake'])) {
-            $class[] = $action;
-        } else {
-            $class[] = Str::toSnake(array_pop($class));
-            $class[] = Str::toSnake($action);
-        }
-        $this->tpl = implode('/', $class);
     }
 }

@@ -8,6 +8,11 @@ use framework\core\http\Response;
 class Jsonrpc extends App
 {
     private $id;
+    private $ns;
+    private $version = '2.0';
+    protected $config = [
+        
+    ];
     
     public function dispatch()
     {
@@ -20,18 +25,18 @@ class Jsonrpc extends App
             $method = explode('.', $method);
             if (count($method) > 1) {
                 $action = array_pop($method);
+                $this->ns = 'app\controller\\';
                 if (isset($this->config['sub_controller'])) {
-                    $class = 'app\controller\\'.$this->config['sub_controller'].'\\'.implode('\\', $method);
-                } else {
-                    $class = 'app\controller\\'.implode('\\', $method);
+                    $this->ns .= $this->config['sub_controller'].'\\';
                 }
+                $class = $this->ns.implode('\\', $method);
                 if (class_exists($class)) {
                     $controller = new $class();
                     if (is_callable($controller, $action)) {
                         return [
                             'controller'    => $controller,
                             'action'        => $action,
-                            'params'        => isset($data['params']) ? $data['params'] : null
+                            'params'        => isset($data['params']) ? $data['params'] : []
                         ];
                     }
                 }
@@ -72,19 +77,11 @@ class Jsonrpc extends App
     
     public function error($code = null, $message = null)
     {
-        Response::json([
-            'id' => $this->id,
-            'jsonrpc' => '2.0',
-            'error' => ['code' => $code, 'message' => $message]
-        ]);
+        Response::json(['id' => $this->id, 'jsonrpc' => $this->version, 'error' => compact('code', 'message')]);
     }
     
     public function response($return = null)
     {
-        Response::json([
-            'id' => $this->id,
-            'jsonrpc' => '2.0',
-            'result' => $return
-        ]);
+        Response::json(['id' => $this->id, 'jsonrpc' => $this->version, 'result' => $return]);
     }
 }

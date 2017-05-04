@@ -2,6 +2,7 @@
 namespace framework\core\app;
 
 use framework\App;
+use framework\util\Xml;
 use framework\core\Router;
 use framework\core\Config;
 use framework\core\http\Request;
@@ -9,15 +10,17 @@ use framework\core\http\Response;
 
 class Rest extends App
 {
+    private $ns;
     private $config = [
-        'param_mode' => 0,
         'route_mode' => 0,
+        'param_mode' => 0,
+        'get_to_params' => 0,
         'controller_level' => 0,
     ];
-    private $ns = 'app\controller\\';
     
     public function dispatch()
     {
+        $this->ns = 'app\controller\\';
         if (isset($this->config['sub_controller'])) {
             $this->ns .= $this->config['sub_controller'].'\\';
         }
@@ -44,21 +47,24 @@ class Rest extends App
         $action = $this->dispatch['action'];
         $params = $this->dispatch['params'];
         $controller = $this->dispatch['controller'];
-        if (isset($this->dispatch['method'])) {
-            $method = $this->dispatch['method'];
+        if ($this->config['param_mode'] === 2) {
+            if (isset($this->dispatch['method'])) {
+                $method = $this->dispatch['method'];
+            } else {
+                $method =  new \ReflectionMethod($controller, $action);
+            }
         }
         $this->dispatch = null;
-        
         switch ($this->config['param_mode']) {
             case 1:
                 $return = $controller->$action(...$params);
                 break;
             case 2:
                 $parameters = [];
-                if (empty($method)) {
-                    $method = new \ReflectionMethod($controller, $action);
-                }
                 if ($method->getnumberofparameters() > 0) {
+                    if ($this->config['get_to_params']) {
+                        $params = $params+$_GET;
+                    }
                     foreach ($method->getParameters() as $param) {
                         if (isset($params[$param->name])) {
                             $parameters[] = $params[$param->name];
@@ -72,7 +78,7 @@ class Rest extends App
                 $result = $method->invokeArgs($controller, $parameters);
                 break;
             default:
-                $return = $controller->$action($params);
+                $return = $controller->$action();
                 break; 
         }
         $return_handler && $return_handler($return);
@@ -81,11 +87,11 @@ class Rest extends App
     
     public function error($code = null, $message = null)
     {
-        if ($code == null) {
+        if (!$code) {
             $code = 500;
         }
         Response::status($code);
-        Response::json(['error'=>['code'=>$code, 'message'=>$message]]);
+        Response::json(['error' => compact('code', 'message')]);
     }
     
     protected function response($return)
@@ -95,34 +101,33 @@ class Rest extends App
     
     protected function defaultDispatch($path, $method) 
     {
-        $params = null;
         $count = count($path);
         $level = $this->config['controller_level'];
         if ($level > 0) {
             if ($count >= $level) {
-                if ($count === $level) {
-                    $class = $this->ns.implode('\\', $path);
-                } else {
-                    $class = $this->ns.implode('\\', array_slice($path, 0, $level));
-                    $params = array_slice($path, $level);
-                    if ($this->config['param_mode'] === 2) {
-                        $params = $this->getKvParams($params);
-                    }
-                }
+                $class = $this->ns.implode('\\', $count === $level ? $path : array_slice($path, 0, $level));
             }
         } else {
+            $this->config['param_mode'] = 0;
             $class = $this->ns.implode('\\', $path);
         }
         if (isset($class) && class_exists($class)) {
             $controller = new $class();
             if (is_callable([$controller, $method])) {
+                $params = null;
+                if ($level && $count > $level) {
+                    $params = array_slice($path, $level);
+                    if ($this->config['param_mode'] === 2) {
+                        $params = $this->getKvParams($params);
+                    }
+                }
                 return ['controller' => $controller, 'action' => $action, 'params' => $params];
             }
         }
         return false;
     }
 
-    protected function routeDispatch($path, $method) 
+    protected function routeDispatch($path, $method)
     {
         $dispatch = Router::dispatch($path, Config::get('router'), $method);
         if ($dispatch) {
@@ -160,16 +165,20 @@ class Rest extends App
     {
         $type = Request::header('Content-Type');
         if ($type) {
-            $type = strtolower($type);
-            if (strpos($type, ';') !== false) {
-                $type = strtok($type, ';');
-            }
-            if ($type === 'application/json') {
-                Request::set('post', jsondecode(Request::body()));
-            } elseif ($type === 'application/xml') {
-                Request::set('post', Xml::decode(Request::body()));
-            } elseif ($type !== 'multipart/form-data' && $type !== 'application/x-www-form-urlencoded') {
-                Request::set('post', Request::body());
+            switch (trim(strtok(strtolower($type), ';'))) {
+                case 'application/json':
+                    Request::set('post', jsondecode(Request::body()));
+                    break;
+                case 'application/xml';
+                    Request::set('post', Xml::decode(Request::body()));
+                    break;
+                case 'multipart/form-data'; 
+                    break;
+                case 'application/x-www-form-urlencoded'; 
+                    break;
+                default:
+                    Request::set('post', Request::body());
+                    break;
             }
         }
     }

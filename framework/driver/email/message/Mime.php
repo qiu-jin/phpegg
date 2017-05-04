@@ -8,7 +8,7 @@ class Mime
         $mime = '';
         $addrs = []; 
         $mime = "MIME-Version: 1.0\r\n";
-        $mime .= "Date: ".date("D, j M Y G:i:s O")."\r\n";
+        $mime .= "Date: ".date("D, j M Y G:i:s O");
         if (isset($option['from'])) {
             $mime .= 'From: '.self::buildAddr($option['from'])."\r\n";
         }

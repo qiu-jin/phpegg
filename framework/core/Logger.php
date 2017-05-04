@@ -43,7 +43,7 @@ class Logger
             }
             self::$configs = $configs;
         }
-        Hook::add('exit', __CLASS__.'::clear');
+        Hook::add('exit', __CLASS__.'::free');
     }
     
     public static function write($level, $message, $context = [])
@@ -65,7 +65,7 @@ class Logger
         return null;
     }
     
-    public static function clear()
+    public static function free()
     {
         self::$writer = null;
         self::$configs = null;

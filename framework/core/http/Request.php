@@ -16,7 +16,7 @@ class Request
         self::$request->get = $_GET;
         self::$request->post = $_POST;
         self::$request->server = $_SERVER;
-        Hook::add('exit', __CLASS__.'::clear');
+        Hook::add('exit', __CLASS__.'::free');
         Hook::listen('request', self::$request);
     }
     
@@ -111,13 +111,26 @@ class Request
     public static function ip($proxy = false)
     {
         if ($proxy) {
-            if (isset($_SERVER['HTTP_CLIENT_IP'])) {
-                return $_SERVER['HTTP_CLIENT_IP'];
-            } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-                return $_SERVER['HTTP_X_FORWARDED_FOR'];
+            if (isset(self::$request->ip[1])) {
+                return self::$request->ip[1];
             }
+            if (isset($_SERVER['HTTP_CLIENT_IP'])) {
+                $ip = $_SERVER['HTTP_CLIENT_IP'];
+            } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+            } elseif (isset($_SERVER['REMOTE_ADDR'])) {
+                $ip = $_SERVER['REMOTE_ADDR'];
+            } else {
+                $ip = false;
+            }
+            return self::$request->ip[1] = $ip;
+        } else {
+            if (isset(self::$request->ip[0])) {
+                return self::$request->ip[0];
+            }
+            return self::$request->ip[0] = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : false;
         }
-        return isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null;
+        
     }
     
     public static function path()
@@ -176,15 +189,9 @@ class Request
     	return false;
     }
     
-    public static function clear($name = null)
+    public static function free()
     {
-        if ($name) {
-            if (isset(self::$request->$name)) {
-                unset(self::$request->$name);
-            }
-        } else {
-            self::$request = null;
-        }
+        self::$request = null;
     }
 }
 Request::init();

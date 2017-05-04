@@ -15,7 +15,7 @@ class Model
     {
         if (self::$_init) return;
         self::$_init = true;
-        Hook::add('exit', __CLASS__.'::clear');
+        Hook::add('exit', __CLASS__.'::free');
     }
     
     public function __get($name)
@@ -69,7 +69,7 @@ class Model
         return null;
     }
 
-    public static function clear()
+    public static function free()
     {
         self::$_models = null;
         if (self::$_connections) {

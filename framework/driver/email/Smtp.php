@@ -7,14 +7,16 @@ class Smtp extends Email
 {
     protected $ch;
     protected $host;
-    protected $port;
+    protected $port = 25;
     protected $username;
     protected $password;
     
     protected function init($config)
     {
         $this->host = $config['host'];
-        $this->port = $config['port'];
+        if (isset($config['port']) ) {
+            $this->port = $config['port'] ;
+        }
         $this->username = $config['username'];
         $this->password = $config['password'];
     }

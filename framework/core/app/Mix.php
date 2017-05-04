@@ -40,7 +40,11 @@ class Mix extends App
     
     public function query($controller, $action)
     {
-        $class = 'app\controller\\'.$controller;
+        $this->ns = 'app\controller\\';
+        if (isset($this->config['sub_controller'])) {
+            $this->ns .= $this->config['sub_controller'].'\\';
+        }
+        $class = $this->ns.$controller;
         if (class_exists($class, $action) && $action{0} !== '_') {
             $controller = new $class;
             if (is_callable([$controller, $action])) {
@@ -53,7 +57,7 @@ class Mix extends App
     {
         $index = count($this->route['call']);
         $this->route['call'][] = $call;
-        if ($method && in_array($method, ['get','post', 'put', 'delete', 'head', 'options', 'patch'], true)) {
+        if ($method && in_array($method, ['get', 'post', 'put', 'delete', 'head', 'options', 'patch'], true)) {
             $this->route['rule'][$role][$method] = $index;
         } else {
             $this->route['rule'][$role] = $index;

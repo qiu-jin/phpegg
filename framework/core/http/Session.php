@@ -14,31 +14,16 @@ class Session
         self::$init = true;
         $config = Config::get('session');
         if ($config) {
-            if (isset($config['id'])) {
-                session_id($config['id']);
-            }
-            if (isset($config['name'])) {
-                session_name($config['name']);
-            }
-            if (isset($config['save_path'])) {
-                session_save_path($config['save_path']);
-            }
-            if (isset($config['cache_limiter'])) {
-                session_cache_limiter($config['cache_limiter']);
-            }
-            if (isset($config['cache_expire'])) {
-                session_cache_expire($config['cache_expire']);
-            }
-            if (isset($config['ini_set'])) {
-                $allow_set = ['cookie_domain', 'gc_maxlifetime', 'cookie_lifetime', 'cookie_secure', 'cookie_httponly', 'use_cookies'];
-                foreach ($config['ini_set'] as $setk => $setv) {
-                    if (in_array($setk, $allow_set, true)) {
-                        ini_set('session.'.$setk, $setv);
-                    }
-                }
+            isset($config['id']) && session_id($config['id']);
+            isset($config['name']) && session_name($config['name']);
+            isset($config['save_path']) && session_save_path($config['save_path']);
+            isset($config['cache_expire']) && session_cache_expire($config['cache_expire']);
+            isset($config['cache_limiter']) && session_cache_limiter($config['cache_limiter']);
+            if (isset($config['cookie_params'])) {
+                session_set_cookie_params(...$config['cookie_params']);
             }
             if (isset($config['save_handler'])) {
-                session_save_handler(new $config['save_handler'][0]($config['save_handler'][1]));
+                session_set_save_handler(new $config['save_handler'][0]($config['save_handler'][1]));
             }
         }
         session_start();
@@ -59,7 +44,7 @@ class Session
         if ($name === null) {
             return $_SEESION;
         }
-        return isset($_SEESION[$key]) ? $_SEESION[$key] : $default;
+        return isset($_SEESION[$name]) ? $_SEESION[$name] : $default;
     }
     
     public static function set($name, $value)

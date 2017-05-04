@@ -39,6 +39,7 @@ abstract class App
         require(FW_DIR.'core/error.php');
         require(FW_DIR.'core/hook.php');
         register_shutdown_function(function () {
+            self::$app = null;
             Hook::listen('exit');
             function_exists('fastcgi_finish_request') && fastcgi_finish_request();
             Hook::listen('close');
@@ -49,7 +50,7 @@ abstract class App
     public static function start($app = 'standard', array $config = null)
     {
         if (!self::$app) {
-            self::init($name);
+            self::init();
             if (static::class !== __CLASS__) {
                 throw new \Exception('Illegal start call');
             }

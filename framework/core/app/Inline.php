@@ -9,14 +9,15 @@ use framework\core\http\Response;
 
 class Inline extends App
 {
+    private $dir;
     protected $config = [
         'route_mode' => 0,
         'enable_view' => 0,
     ];
-    protected $dir = APP_DIR.'controller/';
     
     public function dispatch()
     {
+        $this->dir = APP_DIR.'controller/';
         if (isset($this->config['sub_controller'])) {
             $this->dir .= $this->config['sub_controller'].'/';
         }
@@ -44,21 +45,17 @@ class Inline extends App
 
     public function error($code = null, $message = null)
     {
-        if (isset($this->config['enable_view'])) {
-            View::error($code, $message);
-        } else {
-            Response::json(['error' => ['code' => $code, 'message' => $message]]);
-        }
+        $this->config['enable_view'] ? View::error($code, $message) : Response::json(['error' => compact('code', 'message')]);
     }
     
     public function response($return = null)
     {
-        if (isset($this->config['enable_view'])) {
-            $tpl = str_replace($this->dir, '', basename($this->dispatch['file'], '.php'), 1);
-            Response::view($tpl, $return);
-        } else {
-            Response::json($return);
-        }
+        $this->config['enable_view'] ? Response::view($this->getTpl(), $return) : Response::json($return);
+    }
+    
+    protected function getTpl()
+    {
+         return strtr(basename($this->dispatch['file'], '.php'), $this->dir, '');
     }
     
     protected function defaultDispatch($path) 
