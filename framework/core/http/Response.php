@@ -45,6 +45,11 @@ class Response
         self::$response->headers = array_merge((array) self::$response->headers, $headers);
     }
     
+    public static function cookie($name, $value, $expire = 0, $path = '/', $domain = null, $secure = false, $httponly = false)
+    {
+        Cookie::set($name, $value, $expire, $path, $domain, $secure, $httponly);
+    }
+    
     public static function wirte($body)
     {
         self::$response->body = isset(self::$response->body) ? self::$response->body.$body : $body;

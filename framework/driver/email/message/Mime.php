@@ -1,5 +1,5 @@
 <?php
-namespace framework\driver\email\builder;
+namespace framework\driver\email\message;
 
 class Mime
 {

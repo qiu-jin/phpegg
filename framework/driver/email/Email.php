@@ -5,13 +5,14 @@ use framework\core\Hook;
 
 abstract class Email
 {
-    protected $option = ['attach_is_buffer' => null];
+    protected $option;
     
     abstract public function handle();
     
     public function __construct($config)
     {
         $this->init($config);
+        $this->option = ['attach_is_buffer' => null];
         if ($config['from']) {
             $this->option['from'] = $config['from'];
         }
@@ -79,6 +80,7 @@ abstract class Email
         $this->option['delay'] = true;
         return $this;
     }
+
     /*
     public function queue($name)
     {
@@ -86,6 +88,12 @@ abstract class Email
         return $this;
     }
     */
+    
+    public function clear()
+    {
+
+    }
+    
     public function send($to, $subject, $content)
     {
         $this->option['to'][] = (array) $to;

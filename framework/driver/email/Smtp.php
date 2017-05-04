@@ -1,6 +1,8 @@
 <?php
 namespace framework\driver\email;
 
+use framework\driver\email\message\Mime;
+
 class Smtp extends Email
 {
     protected $ch;
@@ -22,7 +24,7 @@ class Smtp extends Email
         $this->log = [];
         if ($this->connect()) {
             try {
-                $data = builder\Mime::build($this->option);
+                list($addrs, $mime) = Mime::build($this->option);
             } catch (\Exception $e) {
                 $this->log['MIME'] = $e->getMessage();
                 return false;  
@@ -31,14 +33,14 @@ class Smtp extends Email
             if (substr($this->log['FROM'], 0, 3) != '250') {
                 return false; 
             }
-            foreach ($data[0] as $addr) {
+            foreach ($addrs as $addr) {
                 $this->log['RCPT'] = $this->command("RCPT TO: <$addr>");
                 if (substr($this->log['RCPT'], 0, 3) != '250') {
                     return false;
                 }
             }
             $this->log['DATA'] = $this->command('DATA');
-            $this->log['SEND'] = $this->command($data[1]."\r\n.");
+            $this->log['SEND'] = $this->command($mime."\r\n.");
             if (substr($this->log['SEND'], 0, 3) != '250') {
                 return false;
             }

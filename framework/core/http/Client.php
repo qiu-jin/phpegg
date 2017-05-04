@@ -237,17 +237,6 @@ class Client
         }
     }
     
-    protected static function parseHeaders($header)
-    {
-        $header_arr = array();
-        $arr = explode("\r\n", $header);
-        foreach ($arr as $v) {
-            $line = explode(":", $v, 2);
-            if(count($line) === 2) $header_arr[$line[0]] = trim($line[1]);
-        }
-        return $header_arr;
-    }
-    
     protected static function curlFile($filepath, $filename, $mimetype)
     {
         $file = new \CURLFile(realpath($filepath));
@@ -272,5 +261,16 @@ class Client
         $file .= "--$boundary\r\nContent-Disposition: form-data; name=\"$name\"; filename=\"$filename\"\r\n";
         $file .= "Content-Type: $mimetype\r\nContent-Transfer-Encoding: binary\r\n\r\n".(string) $content."\r\n";
         return $file;
+    }
+    
+    protected static function parseHeaders($header)
+    {
+        $header_arr = array();
+        $arr = explode("\r\n", $header);
+        foreach ($arr as $v) {
+            $line = explode(":", $v, 2);
+            if(count($line) === 2) $header_arr[$line[0]] = trim($line[1]);
+        }
+        return $header_arr;
     }
 }
