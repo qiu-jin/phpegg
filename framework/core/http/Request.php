@@ -71,6 +71,31 @@ class Request
         return Session::get($name, $default);
     }
     
+    public static function files($name = null, $default = null)
+    {
+        if ($name === null) {
+            return $_FILES;
+        }
+        return isset($_FILES[$name]) ? $_FILES[$name] : $default;
+    }
+    
+    public static function uploaded($name, $validate = null)
+    {
+        if (isset($_FILES[$name])) {
+            if (is_array($_FILES[$name]['name'])) {
+                $keys = array_keys($_FILES[$name]);
+                $count = count($_FILES[$name]['name']);
+                for ($i = 0; $i < $count; $i++) {
+                    $files[] = new Uploaded(array_combine($keys, array_column($_FILES[$name], $i)), $validate);
+                }
+                return $files;
+            } else {
+                return new Uploaded($_FILES[$name], $validate);
+            }
+        }
+        return null;
+    }
+    
     public static function request($name = null, $default = null)
     {
         if ($name === null) {
@@ -155,11 +180,6 @@ class Request
     public static function agent()
     {
         return isset(self::$request->agent) ? self::$request->agent : self::$request->agent = new Agent(self::header('user-agent'));
-    }
-    
-    public static function uploaded($name)
-    {
-        return isset($_FILES[$name]) ? new Uploaded($_FILES[$name]) : null;
     }
     
     public static function isPost()
