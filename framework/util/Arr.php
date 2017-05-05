@@ -3,7 +3,7 @@ namespace framework\util;
 
 class Arr
 {
-    public static function pop(array &$array, $key)
+    public static function pull(array &$array, $key)
     {
         if (isset($array[$key])) {
             $value =  $array[$key];

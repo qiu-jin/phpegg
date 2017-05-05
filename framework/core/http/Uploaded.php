@@ -6,6 +6,7 @@ use framework\core\Model;
 class Uploaded
 {
     private $file;
+    private $check;
     private $validate;
     private static $error = [
         UPLOAD_ERR_INI_SIZE     => 'UPLOAD_ERR_INI_SIZE',
@@ -67,15 +68,26 @@ class Uploaded
     
     public function move($to)
     {
-        if (stripos($to, '://')) {
-            list($scheme, $uri) = explode('://', $to, 2);
-            return Model::connect('storage', $scheme)->put($this->file['tmp_name'], $to);
+        isset($this->check) || $this->check();
+        if ($this->check) {
+            if (stripos($to, '://')) {
+                list($scheme, $uri) = explode('://', $to, 2);
+                return Model::connect('storage', $scheme)->put($this->file['tmp_name'], $to);
+            }
+            return move_uploaded_file($this->file['tmp_name'], $to);
         }
-        return move_uploaded_file($this->file['tmp_name'], $to);
+        return false;
+    }
+    
+    public function save($dir, $is_raw_name = false)
+    {
+        $name = $is_raw_name ? $this->name() : md5(uniqid()).'.'.$this->extension();
+        return $this->move($dir.'/'.$name) ? $name : false;
     }
     
     public function check($validate = null)
     {
+        $this->check = false;
         if ($this->file['error'] === UPLOAD_ERR_OK && is_uploaded_file($this->file['tmp_name'])) {
             if (!$validate && $this->validate) {
                 $validate = $this->validate;
@@ -94,13 +106,19 @@ class Uploaded
                     return false;
                 }
                 if (isset($validate['size'])) {
-                    $size = $this->size();
-                    if ($size < $validate['size'][0] || $size > $validate['size'][1]) {
-                        return false;
+                    if (is_array($validate['size'])) {
+                        $size = $this->size();
+                        if ($size < $validate['size'][0] || $size > $validate['size'][1]) {
+                            return false;
+                        }
+                    } else {
+                        if ($this->size() > $validate['size']) {
+                            return false;
+                        }
                     }
                 }
             }
-            return true;
+            return $this->check = true;
         }
         return false;
     }

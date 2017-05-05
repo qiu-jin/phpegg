@@ -6,6 +6,7 @@ use framework\core\Config;
 class Session
 {
     private static $init;
+    private static $session;
     
     //run this method in last line when load class
     public static function init()
@@ -34,7 +35,7 @@ class Session
         return session_id();
     }
     
-    public static function gen()
+    public static function regen()
     {
         return session_regenerate_id();
     }
@@ -54,14 +55,24 @@ class Session
     
     public static function delete($name)
     {
-        if (isset($_SEESION[$name])) unset($_SEESION[$name]);
+        isset($_SEESION[$name]) && unset($_SEESION[$name]);
     }
     
     public static function clear()
     {
-        $_SEESION = null;
+        $_SEESION = [];
+    }
+    
+    public static function destroy()
+    {
+        $_SEESION = [];
         session_unset();
         session_destroy();
+    }
+
+    public static function free()
+    {
+
     }
 }
 Session::init();

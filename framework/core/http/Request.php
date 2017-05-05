@@ -12,10 +12,8 @@ class Request
     {
         if (self::$request) return;
         self::$request = new \stdClass();
-        self::$request->env = $_ENV;
         self::$request->get = $_GET;
         self::$request->post = $_POST;
-        self::$request->server = $_SERVER;
         Hook::add('exit', __CLASS__.'::free');
         Hook::listen('request', self::$request);
     }
@@ -40,9 +38,9 @@ class Request
     public static function env($name = null, $default = null)
     {
         if ($name === null) {
-            return self::$request->env;
+            return $_ENV;
         }
-        return isset(self::$request->env[$name]) ? self::$request->env[$name] : $default;
+        return isset($_ENV[$name]) ? $_ENV[$name] : $default;
     }
 
     public static function get($name = null, $default = null)
@@ -107,15 +105,15 @@ class Request
     public static function server($name = null, $default = null)
     {
         if ($name === null) {
-            return self::$request->server;
+            return $_SERVER;
         }
-        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
+        return isset($_SERVER[$name]) ? $_SERVER[$name] : $default;
     }
     
     public static function header($name, $default = null)
     {
         $name = 'HTTP_'.strtoupper(strtr('-', '_', $name));
-        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
+        return isset($_SERVER[$name]) ? $_SERVER[$name] : $default;
     }
     
     public static function url()
@@ -131,6 +129,11 @@ class Request
     public static function method()
     {
         return isset(self::$request->method) ? self::$request->method : self::$request->method = $_SERVER['REQUEST_METHOD'];
+    }
+    
+    public static function lang()
+    {
+        return strtok($_SERVER['HTTP_ACCEPT_LANGUAGE'], ',');
     }
     
     public static function ip($proxy = false)
@@ -179,7 +182,7 @@ class Request
     
     public static function agent()
     {
-        return isset(self::$request->agent) ? self::$request->agent : self::$request->agent = new Agent(self::header('user-agent'));
+        return isset(self::$request->agent) ? self::$request->agent : self::$request->agent = new Agent($_SERVER['HTTP_USER_AGENT']);
     }
     
     public static function isPost()
