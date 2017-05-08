@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\storage;
 
-use Framework\Core\Http\Client;
+use framework\core\http\Client;
 
 class Oss extends Storage
 {
@@ -20,33 +20,38 @@ class Oss extends Storage
     
     public function get($from, $to = null)
     {
-        $result = Client::send('GET', $this->url($from), null, $this->buildHeader('GET', $from), null, true);
-        if ($result['status'] === 200) {
-            if ($to) {
-                return file_put_contents($to, $res['body']);
-            }
-            return $result['body'];
+        $client = Client::get($this->url($from))->headers($this->buildHeader('GET', $from));
+        if ($to) {
+            return $client->save($to) ? true : $this->setError($client->getResult());
+        } else {
+            $result = $client->getResult();
+            return $result['status'] === 200 ? $result['body'] : $this->setError($result); 
         }
-        return $this->setError($result);
     }
     
     public function put($from, $to, $is_buffer = false)
     {
         $to = $this->path($to);
         $type = $this->mime($from, $is_buffer);
-        if (!$is_buffer) {
-            $from = file_get_contents($from);
-        }
         $date = $this->date();
         $ossr = '/'.$this->bucket.'/'.trim($to, '/');
-        $fmd5 = base64_encode(md5($from, true));
-        $res = Client::send('PUT', $this->url($to), $from, [
+        $client = Client::put($this->url($to))->timeout(30);
+        if ($is_buffer) {
+            $client->body($from);
+            $size = strlen($from);
+            $fmd5 = base64_encode(md5($from, true));
+        } else {
+            $client->stream($from);
+            $size = filesize($from);
+            $fmd5 = base64_encode(md5_file($from, true));
+        }
+        $result = $client->headers([
             'Date: '.$date,
-            'Content-Length: '.strlen($from),
+            'Content-Length: '.$size,
             'Content-Md5: '.$fmd5,
             'Content-Type: '.$type,
             'Authorization: OSS '.$this->sign("PUT\n$fmd5\n$type\n$date\n$ossr")
-        ], ['timeout' => 30], true);
+        ])->getResult();
         return $result['status'] === 200 || $this->setError($result);
     }
     

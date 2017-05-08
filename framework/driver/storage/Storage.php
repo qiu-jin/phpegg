@@ -35,6 +35,7 @@ abstract class Storage
     
     protected function path($path)
     {
+        $path = trim($path);
         return $path{0} !== '/' ? '/'.$path : $path;
     }
 }

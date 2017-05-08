@@ -33,12 +33,14 @@ class Qiniu extends Storage
     
     public function get($from, $to = null)
     {
-        $from = $this->path($from);
-        $content = Client::send('GET', $this->domain.'/'.$from);
-        if ($to && $content) {
-            return file_put_contents($to, $content);
+        $url = $this->domain.'/'.$this->path($from);
+        $client = Client::get($url.'?token='.$this->sign($url));
+        if ($to) {
+            return $client->save($to) ? true : false;
+        } else {
+            $result = $client->getResult();
+            return $result['status'] === 200 ? $result['body'] : false; 
         }
-        return $content;
     }
     
     public function put($from, $to, $is_buffer = false)
@@ -47,12 +49,10 @@ class Qiniu extends Storage
         $data = $this->encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
         $token = $this->sign($data).':'.$data;
         $client = Client::post($this->uploadurl)->form(['token' => $token, 'key' => $to], $is_buffer)->file('file', $from)->timeout(30);
-        $result = $result->getJson();
-        if ($client->getStatus() === 200 && !empty($result['hash'])) {
-            return true;
-        }
-        if (isset($result['error'])) {
-            $this->log = $result['error'];
+        $data = $result->getJson();
+        if (isset($data['hash'])) return true;
+        if (isset($data['error'])) {
+            $this->log = $data['error'];
         } else {
             $clierr = $client->getError();
             $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';

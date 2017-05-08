@@ -79,10 +79,23 @@ class Client
         }
         $result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true, $this->return_headers);
         if ($return) {
+            $this->result = [];
             return $result;
         } else {
             $this->result = $result;
         }
+    }
+    
+    public function save($path)
+    {
+        $curlopt = $this->curlopt;
+        $fp = fopen($path, 'w+');
+        if ($fp) {
+            $curlopt['file'] = $fp;
+            $this->result = self::send($this->method, $this->url, null, $this->headers, $curlopt, true);
+            return $this->result['status'] === 200 && $this->result['body'] === true;
+        }
+        return false;
     }
 
     public function body($body, $type = null)
@@ -122,6 +135,17 @@ class Client
             $this->headers[] = 'Content-Type: application/x-www-form-urlencoded';
         }
         return $this;
+    }
+    
+    public function stream($path)
+    {
+        $fp = fopen($path, 'r');
+        if ($fp) {
+            $this->curlopt['PUT'] = 1;
+            $this->curlopt['INFILE'] = $fp;
+            return $this;
+        }
+        return false;
     }
 
     public function file($name, $content, $filename = null, $mimetype = null)
@@ -198,9 +222,7 @@ class Client
                 }
             }
         }
-        if (!isset($options['timeout'])) {
-            curl_setopt($ch, CURLOPT_TIMEOUT, self::$timeout);
-        }
+        isset($curlopt['timeout']) || curl_setopt($ch, CURLOPT_TIMEOUT, self::$timeout);
         if ($return_headers) {
             $return = [];
             curl_setopt($ch, CURLOPT_HEADER, 1);

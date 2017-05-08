@@ -2,7 +2,6 @@
 namespace framework\driver\storage;
 
 use framework\core\Hook;
-use framework\core\Exception;
 
 class Ftp extends Storage
 {
@@ -19,7 +18,7 @@ class Ftp extends Storage
         if ($link && ftp_login($link, $config['username'], $config['password']) && ftp_pasv($link, true)) {
             $this->link = $link;
         } else {
-            throw new Exception('Ftp connect error', Exception::STORAGE);
+            throw new \Exception('Ftp connect error');
         }
     }
     
@@ -59,7 +58,10 @@ class Ftp extends Storage
     public function stat($from)
     {
         $from = $this->path($from);
-        return ['size' => ftp_size($this->link, $from), 'mtime' => ftp_mdtm($this->link, $from)];
+        if ($size = ftp_size($this->link, $from) && $mtime = ftp_mdtm($this->link, $from)) {
+            return compact('size', 'mtime');
+        }
+        return false;
     }
     
     public function copy($from, $to)

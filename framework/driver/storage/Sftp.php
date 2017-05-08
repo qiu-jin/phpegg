@@ -5,15 +5,14 @@ use framework\core\Hook;
 
 class Sftp extends Storage
 {
-    private $sftp;
-    private $link;
+    protected $sftp;
+    protected $link;
     
     public function __construct($config)
     {
         $link = ssh2_connect($config['host'], isset($config['port']) ? $config['port'] : 22);
         if ($link && ssh2_auth_password($link, $config['username'], $config['password'])) {
             $this->link = $link;
-            $this->sftp = ssh2_sftp($link);
         } else {
             throw new \Exception('Sftp connect error');
         }
@@ -52,7 +51,7 @@ class Sftp extends Storage
 
     public function stat($from)
     {
-        return ssh2_sftp_stat($this->sftp, $this->path($from));
+        return ssh2_sftp_stat($this->sftp(), $this->path($from));
     }
     
     public function copy($from, $to)
@@ -74,16 +73,23 @@ class Sftp extends Storage
         $to = $this->path($to);
         $from = $this->path($from);
         if (!$this->chdir($to)) return false;
-        return ssh2_sftp_rename($this->sftp, $from, $to);
+        return ssh2_sftp_rename($this->sftp(), $from, $to);
     }
     
     public function delete($from)
     {
-        return ssh2_sftp_unlink($this->sftp, $this->path($from));
+        return ssh2_sftp_unlink($this->sftp(), $this->path($from));
     }
     
-    private function chdir($path) {
+    protected function sftp()
+    {
+        return isset($this->sftp) ? $this->sftp : $this->sftp = ssh2_sftp($this->link);
+    }
+    
+    protected function chdir($path)
+    {
         $dir = dirname($path);
-        return is_dir("ssh2.sftp://$this->sftp/$dir") || ssh2_sftp_mkdir($this->sftp, $dir);
+        $sftp = $this->sftp();
+        return is_dir("ssh2.sftp://$sftp/$dir") || ssh2_sftp_mkdir($sftp, $dir);
     }
 }
