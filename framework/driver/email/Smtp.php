@@ -21,7 +21,7 @@ class Smtp extends Email
         $this->password = $config['password'];
     }
     
-    public function handle()
+    protected function handle()
     {
         $this->log = [];
         if ($this->connect()) {
@@ -85,5 +85,10 @@ class Smtp extends Email
     {
         fputs($this->ch, "$cmd\r\n");
         return $this->read();
+    }
+    
+    public function __destruct()
+    {
+        $this->ch && fclose($this->ch);
     }
 }

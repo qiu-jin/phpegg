@@ -7,7 +7,7 @@ abstract class Email
 {
     protected $option;
     
-    abstract public function handle();
+    abstract public protected handle();
     
     public function __construct($config)
     {
@@ -48,15 +48,30 @@ abstract class Email
         return $this;
     }
     
-    public function sender($email, $name = null)
-    {
-        $this->option['sender'] = [$email, $name];
-        return $this;
-    }
-    
     public function isHtml($bool = true)
     {
         $this->option['ishtml'] = (bool) $bool;
+        return $this;
+    }
+    
+    public function subject($subject)
+    {
+        $this->option['subject'] = $subject;
+        return $this;
+    }
+    
+    public function content($content)
+    {
+        $this->option['content'] = $content;
+        return $this;
+    }
+    
+    public function template($template, $vars = null)
+    {
+        if (!isset($this->option['ishtml'])) {
+            $this->option['ishtml'] = true;
+        }
+        $this->option['content'] = View::render($template, $vars);
         return $this;
     }
     
@@ -80,46 +95,18 @@ abstract class Email
         $this->option['delay'] = true;
         return $this;
     }
-
-    /*
-    public function queue($name)
-    {
-        $this->option['queue'] = $name;
-        return $this;
-    }
-    */
     
-    public function clear()
+    public function send($to = null, $subject = null, $content = null)
     {
-
-    }
-    
-    public function send($to, $subject, $content)
-    {
-        $this->option['to'][] = (array) $to;
-        $this->option['subject'] = $subject;
-        $this->option['content'] = $content;
+        $to && $this->option['to'] = [(array) $to];
+        $subject && $this->option['subject'] = $subject;
+        $content && $this->option['content'] = $content;
         if (!empty($this->option['delay'])) {
             Hook::add('close', [$this, 'handle']);
         } elseif (!empty($this->option['queue'])) {
             
         } else {
             return $this->handle();
-        }
-    }
-
-    public function sendTemplate($to, $template, $vars = null)
-    {
-        if (!isset($this->option['ishtml'])) {
-            $this->option['ishtml'] = true;
-        }
-        $data = View::render($template, $vars);
-        if ($data && preg_match('/<title>(.+)<\/title>/', $data, $match)) {
-            $subject = $match[1];
-            return $this->send($to, $subject, $data);
-        } else {
-            $this->log = 'Local template not exists';
-            return false;
         }
     }
 }

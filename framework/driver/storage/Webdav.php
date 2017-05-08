@@ -5,7 +5,7 @@ use framework\core\http\Client;
 
 /*
  * Apache:  https://httpd.apache.org/docs/2.4/mod/mod_dav.html
- * Ngnix:   http://nginx.org/en/docs/http/ngx_http_dav_module.html
+ * Ngnix:   https://nginx.org/en/docs/http/ngx_http_dav_module.html
  * IIS:     https://www.iis.net/learn/install/installing-publishing-technologies/installing-and-configuring-webdav-on-iis
  * Box:     https://www.box.com/dav
  * OneDrive:https://d.docs.live.net

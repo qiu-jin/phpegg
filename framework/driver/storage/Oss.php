@@ -12,10 +12,10 @@ class Oss extends Storage
     
     public function __construct($config)
     {
-        $this->bucket = $config['bucket'];
-        $this->endpoint = $config['endpoint'];
         $this->keyid = $config['keyid'];
         $this->keysecret = $config['keysecret'];
+        $this->bucket = $config['bucket'];
+        $this->endpoint = (empty($config['https']) ? 'http://' : 'https://').$config['endpoint'];
     }
     
     public function get($from, $to = null)

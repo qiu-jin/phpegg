@@ -1,5 +1,5 @@
 <?php
-namespace Framework\Util;
+namespace framework\util;
 
 class Image
 {

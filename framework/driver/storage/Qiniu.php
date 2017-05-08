@@ -5,36 +5,36 @@ use framework\core\http\Client;
 
 class Qiniu extends Storage
 {
-    private $domain;
-    private $bucket;
-    private $accesskey;
-    private $secretkey;
-    private $private = true;
-    private $rsurl = 'http://rs.qbox.me';
-    private $fetchurl = 'http://iovip.qbox.me';
-    private $uploadurl = 'http://up.qiniu.com';
+    protected $bucket;
+    protected $domain;
+    protected $apiurl;
+    protected $accesskey;
+    protected $secretkey;
+    protected $public_bucket = false;
     
     public function __construct($config)
     {
-        $this->domain = $config['domain'];
         $this->bucket = $config['bucket'];
+        $this->domain = $config['domain'];
         $this->accesskey = $config['accesskey'];
         $this->secretkey = $config['secretkey'];
-        if (isset($config['rsurl'])) {
-            $this->rsurl = $config['rsurl'];
+        if (!empty($config['public_bucket'])) {
+            $this->public_bucket = true;
         }
-        if (isset($config['fetchurl'])) {
-            $this->fetchurl = $config['fetchurl'];
-        }
-        if (isset($config['uploadurl'])) {
-            $this->uploadurl = $config['uploadurl'];
-        }
+        $scheme = empty($config['https']) ? 'https' : 'http';
+        $region = isset($config['region']) ? '-'.$config['region'] : ''; 
+        $apiurl['rs'] = "$scheme://rs.qbox.me";
+        $apiurl['fetch'] = "$scheme://iovip$region.qbox.me";
+        $apiurl['upload'] = "$scheme://up$region.qbox.me";
     }
     
     public function get($from, $to = null)
     {
         $url = $this->domain.'/'.$this->path($from);
-        $client = Client::get($url.'?token='.$this->sign($url));
+        if (!$this->public_bucket) {
+            $url .= '?token='.$this->sign($url);
+        }
+        $client = Client::get($url);
         if ($to) {
             return $client->save($to) ? true : false;
         } else {
@@ -48,9 +48,11 @@ class Qiniu extends Storage
         $to = $this->path($to);
         $data = $this->encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
         $token = $this->sign($data).':'.$data;
-        $client = Client::post($this->uploadurl)->form(['token' => $token, 'key' => $to], $is_buffer)->file('file', $from)->timeout(30);
+        $client = Client::post($this->apiurl['upload'])->form(['token' => $token, 'key' => $to], $is_buffer)->file('file', $from)->timeout(30);
         $data = $result->getJson();
-        if (isset($data['hash'])) return true;
+        if (isset($data['hash'])) {
+            return true;
+        }
         if (isset($data['error'])) {
             $this->log = $data['error'];
         } else {
@@ -62,30 +64,30 @@ class Qiniu extends Storage
     
     public function stat($from)
     {
-        $data = $this->send($this->rsurl, '/stat/'.$this->bencode($from), 'GET');
+        $data = $this->send($this->apiurl['rs'], '/stat/'.$this->bencode($from), 'GET');
         return $data ? ['size' => $data['fsize'], 'mtime' => substr($data['putTime'], 0 ,10)] : false;
     }
 
     public function move($from, $to)
     {
-        return $this->send($this->rsurl, '/move/'.$this->bencode($from).'/'.$this->bencode($to));
+        return $this->send($this->apiurl['rs'], '/move/'.$this->bencode($from).'/'.$this->bencode($to));
     }
     
     public function copy($from, $to)
     {
-        return $this->send($this->rsurl, '/copy/'.$this->bencode($from).'/'.$this->bencode($to));
+        return $this->send($this->apiurl['rs'], '/copy/'.$this->bencode($from).'/'.$this->bencode($to));
     }
     
     public function delete($from)
     {
-        return $this->send($this->rsurl, '/delete/'.$this->bencode($from));
+        return $this->send($this->apiurl['rs'], '/delete/'.$this->bencode($from));
     }
     
     public function fetch($from, $to)
     {
         $scheme = strtolower(strtok($from, '://'));
         if ($scheme === 'http' || $scheme === 'https') {
-            return $this->send($this->fetchurl, '/fetch/'.$this->encode($from).'/to/'.$this->bencode($$to));
+            return $this->send($this->apiurl['fetch'], '/fetch/'.$this->encode($from).'/to/'.$this->bencode($$to));
         }
         return parent::fetch($from, $to);
     }

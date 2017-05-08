@@ -26,10 +26,10 @@ class Ftp extends Storage
     {
         $from = $this->path($from);
         if ($to) {
-            return ftp_get($this->link, $to, $from, FTP_BINARY);
+            return ftp_get($this->link, $to, $from, 2);
         } else {
             $ch = tmpfile();
-            if (ftp_fget($this->link, $ch, $from, FTP_BINARY)) {
+            if (ftp_fget($this->link, $ch, $from, 2)) {
                 fseek($ch, 0);
                 $data = stream_get_contents($ch);
                 fclose($ch);
@@ -47,11 +47,11 @@ class Ftp extends Storage
             $ch = tmpfile();
             fwrite($ch, $from);
             fseek($ch, 0);
-            $rel = ftp_fput($this->link, $to, $ch, FTP_BINARY);
+            $rel = ftp_fput($this->link, $to, $ch, 2);
             fclose($ch);
             return $rel;
         } else {
-            return ftp_put($this->link, $to, $from, FTP_BINARY);
+            return ftp_put($this->link, $to, $from, 2);
         }
     }
 
@@ -70,9 +70,9 @@ class Ftp extends Storage
         $from = $this->path($from);
         if (!$this->chdir($to)) return false;
         $ch = tmpfile();
-        if (ftp_fget($this->link, $ch, $from, FTP_BINARY)) {
+        if (ftp_fget($this->link, $ch, $from, 2)) {
             fseek($ch, 0);
-            $rel = ftp_fput($this->link, $to, $ch, FTP_BINARY);
+            $rel = ftp_fput($this->link, $to, $ch, 2);
             fclose($ch);
             return $rel;
         }
@@ -95,7 +95,7 @@ class Ftp extends Storage
     
     private function chdir($path) {
         $dir = dirname($path);
-        return @ftp_chdir($this->link, $dir)) || ftp_mkdir($this->link, $dir);
+        return @ftp_chdir($this->link, $dir) || ftp_mkdir($this->link, $dir);
     }
     
     public function close()

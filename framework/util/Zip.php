@@ -46,6 +46,43 @@ class Zip
         return isset($is_buffer) ? $this->zip->addFromString($name, $value) : $this->zip->addFile($value, $name);
     }
     
+    public function num() 
+    {
+        return $this->zip->numFiles;
+    }
+
+    public function name($index) 
+    {
+        return $this->zip->getNameIndex($index);
+    }
+    
+    public function names() 
+    {
+        $names = [];
+        $num = $this->zip->numFiles;
+        if ($num > 0) {
+            for ($i = 0; $i < $num; $i++) {
+                $names[] = $this->zip->getNameIndex($i);
+            }
+        }
+        return $names;
+    }
+
+	public function stat($name)
+    {
+        return $this->zip->statName($name);
+    }
+    
+    public function move($name, $newname)
+    {
+        return $this->zip->renameName ($name, $newname);
+    }
+    
+	public function stream($name)
+    {
+        return $this->zip->getStream($name);
+    }
+    
 	public function save($name, $to)
     {
         $data = $this->zip->getFromName($name);
@@ -53,11 +90,6 @@ class Zip
             return (bool) file_put_contents($to, $data);
         }
         return false;
-    }
-    
-	public function stat($name)
-    {
-        return $this->zip->statName($name);
     }
     
 	public function delete($name)

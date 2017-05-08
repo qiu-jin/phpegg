@@ -15,36 +15,7 @@ class Mailgun extends Email
         $this->apikey = $config['apikey'];
     }
 
-    public function handle()
-    {
-        $form = $this->buildForm();
-        if ($form) {
-            $client = Client::post($this->apiurl.$this->domain.'/messages')
-                            ->header('Authorization', 'Basic '.base64_encode('api:'.$this->apikey))
-                            ->form($form, $this->option['attach_is_buffer']);
-            if (isset($this->option['attach'])) {
-                $client->file('attachment', ...end($this->option['attach']));
-                /*
-                foreach ($this->option['attach'] as $attach) {
-                    $client->file('attachment[]', ...$attach);
-                }
-                */
-            }
-            $result = $client->getJson();
-            if (isset($result['id'])) {
-                return true;
-            }
-            if (isset($result['message'])) {
-                $this->log = $result['message'];
-            } else {
-                $clierr = $client->getError();
-                $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
-            }
-        }
-        return false;
-    }
-    
-    protected function buildForm()
+    protected function handle()
     {
         $form = [
             'subject'   => $this->option['subject'],
@@ -65,7 +36,23 @@ class Mailgun extends Email
         if (isset($this->option['option'])) {
             $form = array_merge($this->option['option'], $from);
         }
-        return $form;
+        $client = Client::post($this->apiurl.$this->domain.'/messages')
+                        ->header('Authorization', 'Basic '.base64_encode('api:'.$this->apikey))
+                        ->form($form, $this->option['attach_is_buffer']);
+        if (isset($this->option['attach'])) {
+            $client->file('attachment', ...end($this->option['attach']));
+        }
+        $result = $client->getJson();
+        if (isset($result['id'])) {
+            return true;
+        }
+        if (isset($result['message'])) {
+            $this->log = $result['message'];
+        } else {
+            $clierr = $client->getError();
+            $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
+        }
+        return false;
     }
     
     protected function buildAddr(array $addr)
