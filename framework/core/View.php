@@ -1,8 +1,9 @@
 <?php
-namespace Framework\Core;
+namespace framework\core;
 
-use Framework\Extend\View\Template;
-use Framework\Extend\View\Error as ViewError;
+use framework\core\http\Response;
+use framework\extend\view\Template;
+use framework\extend\view\Error as ViewError;
 
 class View
 {    
@@ -24,7 +25,39 @@ class View
         Hook::add('exit', __CLASS__.'::free');
     }
     
-    public static function assign($name, $value)
+    public static function __callStatic($method, $params = [])
+    {
+        if (isset($this->config['methods'][$method])) {
+            $vars = null;
+            $method_array = $this->config['methods'][$method];
+            $tpl = array_pop($method_array);
+            if ($method_array) {
+                $i = 0;
+                foreach ($method_array as $k => $v) {
+                    if (is_int($k)) {
+                        if (isset($params[$i])) {
+                            $vars[$v] = $params[$i];
+                        } else {
+                            throw new \Exception('Illegal view method: '.$method);
+                        }
+                    } else {
+                        $vars[$k] = isset($params[$i]) ? $params[$i] : $v;
+                    }
+                    $i++;
+                }
+            }
+            /*
+            $count = count($this->config['methods'][$method]);
+            if ($count) {
+                $vars = array_combine($this->config['methods'][$method], array_pad($params, $count, null));
+            }
+            */
+            Response::view($tpl, $vars);
+        }
+        throw new \Exception('Illegal view method: '.$method);
+    }
+    
+    public static function var($name, $value)
     {
         self::$view->vars[$name] = $value;
     }
@@ -34,53 +67,45 @@ class View
         self::$view->func[$name] = $value;
     }
     
-    public static function output($tpl, array $vars = [])
+    public static function display($tpl, array $vars = null)
     {
-        
+        Response::view($tpl, $vars);
     }
     
-    public static function render($tpl, array $vars = [])
+    public static function render($tpl, array $vars = null)
     {
-        $phpfile = self::_include(trim($tpl));
+        $phpfile = self::import(trim($tpl));
         if ($phpfile) {
-            if (isset(self::$view->vars)) {
-                extract(self::$view->vars, EXTR_SKIP);
-                self::$view->vars = null;
-            }
             if ($vars) {
                 extract($vars, EXTR_SKIP);
                 unset($vars);
             }
+            if (isset(self::$view->vars)) {
+                extract(self::$view->vars, EXTR_SKIP);
+                self::$view->vars = null;
+            }
+            ob_start();
             include $phpfile;
-            self::clear();
+            return ob_get_clean();
         } else {
-            self::error('404', 'Not found template: '.$tpl);
+            return self::error('404', 'Not found template: '.$tpl);
         }
     }
     
     public static function error($code, array $message = [])
     {   
         if (isset(self::$config['error'][$name])) {
-            $phpfile = self::_include(self::$config['error'][$name]);
+            $phpfile = self::import(self::$config['error'][$name]);
             if ($phpfile) {
+                ob_start();
                 include $phpfile;
-                return self::clear();
+                return ob_get_clean();
             }
         }
-        self::clear();
-        echo $code === '404' ? ViewError::render404($message) : ViewError::renderError($message);
+        return $code === '404' ? ViewError::render404($message) : ViewError::renderError($message);
     }
     
-    public static function __callStatic($method, $params = [])
-    {
-        if (isset($this->config['view_method'][$method])) {
-            $vars = array_combine($this->config['view_method'][$method][1], $params);
-            self::render($this->config['view_method'][$method][0], $vars);
-        }
-        return self::error(404);
-    }
-    
-    protected static function import($tpl, $dir = null)
+    private static function import($tpl, $dir = null)
     {
         if ($tpl{0} === '/') {
             $path = self::$config['dir'].$tpl;
@@ -91,23 +116,29 @@ class View
         }
         $phpfile = $path.'.php';
         if (isset(self::$config['template'])) {
-            if (isset(self::$config['template']['dir'])) {
-                $htmfile = str_replace(self::$config['template']['dir'], self::$config['dir'], $path, 1).'.htm';
-                $dir = dirname($phpfile);
-                if (!is_dir($dir)) mkdir($dir, 0777, true);
-            } else {
+            if (empty(self::$config['template']['dir'])) {
                 $htmfile = $path.'.htm';
+            } else {
+                $dir = dirname($phpfile);
+                if (!is_dir($dir)) {
+                    mkdir($dir, 0777, true);
+                }
+                $htmfile = str_replace(self::$config['template']['dir'], self::$config['dir'], $path, 1).'.htm';
             }
             if (file_exists($phpfile)) {
-                if (!file_exists($htmfile) || filemtime($phpfile) > filemtime($htmfile)) {
-                    return $phpfile;
-                } else {
-                    file_put_contents($phpfile, self::_template_handler()->complie(file_get_contents($htmfile)));
-                    return $phpfile;
+                if (file_exists($htmfile)) {
+                    if (filemtime($phpfile) > filemtime($htmfile)) {
+                        return $phpfile;
+                    } else {
+                        if (file_put_contents($phpfile, self::template_handler()->complie(file_get_contents($htmfile)))) {
+                            return $phpfile;
+                        }
+                    }
                 }
             } elseif (file_exists($htmfile)) {
-                file_put_contents($phpfile, self::_template_handler()->complie(file_get_contents($htmfile)));
-                return $phpfile;
+                if (file_put_contents($phpfile, self::template_handler()->complie(file_get_contents($htmfile)))) {
+                    return $phpfile;
+                }
             }
         } elseif (file_exists($phpfile)) {
             return $phpfile;
@@ -115,7 +146,10 @@ class View
         return false;
     }
     
-    private function inline($tpl, $dir = null){}
+    private function inline($tpl, $dir = null)
+    {
+        
+    }
 
     private function layout($tpl, $phpfile, $str = null)
     {
@@ -152,7 +186,10 @@ class View
     
     private static function template_handler()
     {
-        return isset(self::$template_handler) ? self::$template_handler : self::$template_handler = new Template(self::$config['template']);
+        if (isset(self::$template_handler)) {
+            return self::$template_handler;
+        }
+        return self::$template_handler = new Template(self::$config['template']);
     }
     
     public static function free()

@@ -133,7 +133,7 @@ class Request
     
     public static function lang()
     {
-        return strtok($_SERVER['HTTP_ACCEPT_LANGUAGE'], ',');
+        return strtolower(strtok($_SERVER['HTTP_ACCEPT_LANGUAGE'], ','));
     }
     
     public static function ip($proxy = false)
@@ -182,7 +182,7 @@ class Request
     
     public static function agent()
     {
-        return isset(self::$request->agent) ? self::$request->agent : self::$request->agent = new Agent($_SERVER['HTTP_USER_AGENT']);
+        return isset(self::$request->agent) ? self::$request->agent : self::$request->agent = new UserAgent($_SERVER['HTTP_USER_AGENT']);
     }
     
     public static function isPost()

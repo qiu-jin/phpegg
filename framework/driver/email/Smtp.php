@@ -5,7 +5,7 @@ use framework\driver\email\message\Mime;
 
 class Smtp extends Email
 {
-    protected $ch;
+    protected $link;
     protected $host;
     protected $port = 25;
     protected $username;
@@ -47,7 +47,6 @@ class Smtp extends Email
                 return false;
             }
             $this->log['QUIT'] = $this->command('QUIT');
-            fclose($this->ch);
             return true;
         }
         return false;
@@ -55,18 +54,20 @@ class Smtp extends Email
     
     protected function connect()
     {
-        $this->ch = fsockopen($this->host, $this->port, $errno, $error, 15);
-        if (!is_resource($this->ch)) {
-            $this->log['CONN'] = 'connect error '.$errno.': '.$error;
-            return false;
-        }
-        $this->log['OPEN'] = $this->read();
-        $this->log['EHLO'] = $this->command('EHLO '.$this->host);
-        $this->log['AUTH'] = $this->command('AUTH LOGIN');
-        $this->log['USER'] = $this->command(base64_encode($this->username));
-        $this->log['PSWD'] = $this->command(base64_encode($this->password));
-        if (substr($this->log['PSWD'], 0, 3) != '235') {
-            return false;
+        if (!$this->link) {
+            $this->link = fsockopen($this->host, $this->port, $errno, $error, 15);
+            if (!is_resource($this->link)) {
+                $this->log['CONN'] = 'connect error '.$errno.': '.$error;
+                return false;
+            }
+            $this->log['OPEN'] = $this->read();
+            $this->log['EHLO'] = $this->command('EHLO '.$this->host);
+            $this->log['AUTH'] = $this->command('AUTH LOGIN');
+            $this->log['USER'] = $this->command(base64_encode($this->username));
+            $this->log['PSWD'] = $this->command(base64_encode($this->password));
+            if (substr($this->log['PSWD'], 0, 3) != '235') {
+                return false;
+            }
         }
         return true;
     }
@@ -74,7 +75,7 @@ class Smtp extends Email
     protected function read()
     {
         $res = '';
-        while ($str = fgets($this->ch, 4096)) {
+        while ($str = fgets($this->link, 4096)) {
             $res .= $str;
             if (substr($str, 3, 1) == " ") break;
         }
@@ -83,12 +84,12 @@ class Smtp extends Email
     
     protected function command($cmd)
     {
-        fputs($this->ch, "$cmd\r\n");
+        fputs($this->link, "$cmd\r\n");
         return $this->read();
     }
     
     public function __destruct()
     {
-        $this->ch && fclose($this->ch);
+        $this->link && fclose($this->link);
     }
 }

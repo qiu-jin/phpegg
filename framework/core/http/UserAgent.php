@@ -5,30 +5,27 @@ class UserAgent
 {
     private $agent;
     private static $macths = [
-        'win' => '',
-        'mac' => '',
-        'linux' => '',
-        'pc' => '',
-        'moblie' => '',
-        'tablet' => '',
-        'ios' => '',
-        'android' => '',
-        'weixin' => '',
+        'win' => 'Windows NT',
+        'mac' => 'Mac OS X',
+        'linux' => 'Linux',
+        'chromeos' => 'CrOS',
         
-        'ie' => '',
-        'edge' => '',
-        'chrome' => '',
-        'firefox' => '',
-        'safari' => '',
+        'edge' => 'Edge',
+        'chrome' => 'Chrome',
+        'firefox' => 'Firefox',
         
-        'ipad'  => 'iPad.*CPU[a-z ]+[VER]',
-        'iphone'  => 'iPhone.*CPU[a-z ]+[VER]',
-        'ipod'  => 'iPod.*CPU[a-z ]+[VER]',
+        'android' => 'Android',
+        'weixin' => 'Weixin',
         
-        'bot' => '',
+        'ipad'  => 'iPad',
+        'ipod'  => 'iPod',
+        'iphone'  => 'iPhone',
     ];
     private static $regex_macths = [
-
+        'ie' => 'MSIE|IEMobile|MSIEMobile|Trident\/[.0-9]+',
+        'ios' => '\biPhone.*Mobile|\biPod|\biPad',
+        'safari' => 'Version\/.+ Safari',
+        'opera' => 'Opera|OPR',
     ];
     
     public function __construct($agent)
@@ -38,6 +35,7 @@ class UserAgent
     
     public function is($name)
     {
+        $name = strtolower($name);
         if (isset(self::$macths[$name])) {
             return $this->macth(self::$macths[$name]);
         } elseif (self::$regex_macths[$name]) {
@@ -51,13 +49,13 @@ class UserAgent
     
     public function macth($role, $regex = false)
     {
-        return $regex ? stripos($this->agent, $role) === true : preg_match("/$role/i", $this->agent);
+        return $regex ? (bool) preg_match("/($role)/i", $this->agent) : stripos($this->agent, $role) !== false;
     }
 
     public function __call($name, $params = [])
     {
         if (strlen($name) > 2 && substr($name, 0, 2) === 'is') {
-            $ret = $this->is(strtolower(substr($name, 2)));
+            $ret = $this->is(substr($name, 2));
             if (isset($ret)) {
                 return $ret;
             }
@@ -67,7 +65,7 @@ class UserAgent
     
     public function isMoblie()
     {
-        return $this->macth('Moblie') || $this->macth(self::$macths['ios']) || $this->macth(self::$macths['android']);
+        return $this->macth('Moblie') || $this->macth(self::$macths['android']) || $this->macth(self::$regex_macths['ios'], true);
     }
     
     public function isTablet()

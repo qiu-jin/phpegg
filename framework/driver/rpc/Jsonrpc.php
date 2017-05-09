@@ -12,7 +12,7 @@ class Jsonrpc
     {
         $this->server = $config['server'];
         if (isset($config['throw_exception'])) {
-            $throw_exception = (bool) $config['throw_exception'];
+            $this->throw_exception = (bool) $config['throw_exception'];
         }
     }
 
@@ -52,18 +52,6 @@ class Jsonrpc
         }
         return false;
     }
-    
-    /*
-    public function batch()
-    {
-        return new Batch($this);
-    }
-    
-    public function _batchCall()
-    {
-        
-    }
-    */
     
     protected function _error($code, $message)
     {

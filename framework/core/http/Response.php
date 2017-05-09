@@ -3,6 +3,7 @@ namespace framework\core\http;
 
 use \framework\App;
 use \framework\core\Hook;
+use \framework\core\View;
 use \framework\core\Logger;
 
 class Response
@@ -58,9 +59,7 @@ class Response
     public static function view($tpl, $vars)
     {
         self::$response->headers['Content-Type'] = 'text/html; charset=UTF-8';
-        ob_start();
-        \Framework\Core\View::render($tpl, $vars);
-        self::$response->body = ob_get_clean();
+        self::$response->body = View::render($tpl, $vars);
         App::exit();
     }
     

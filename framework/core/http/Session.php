@@ -43,29 +43,31 @@ class Session
     public static function get($name = null, $default = null)
     {
         if ($name === null) {
-            return $_SEESION;
+            return $_SESSION;
         }
-        return isset($_SEESION[$name]) ? $_SEESION[$name] : $default;
+        return isset($_SESSION[$name]) ? $_SESSION[$name] : $default;
     }
     
     public static function set($name, $value)
     {
-        $_SEESION[$name] = $value;
+        $_SESSION[$name] = $value;
     }
     
     public static function delete($name)
     {
-        isset($_SEESION[$name]) && unset($_SEESION[$name]);
+        if (isset($_SESSION[$name])) {
+            unset($_SESSION[$name]);
+        }
     }
     
     public static function clear()
     {
-        $_SEESION = [];
+        $_SESSION = [];
     }
     
     public static function destroy()
     {
-        $_SEESION = [];
+        $_SESSION = [];
         session_unset();
         session_destroy();
     }

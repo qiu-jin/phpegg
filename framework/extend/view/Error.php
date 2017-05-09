@@ -1,21 +1,16 @@
 <?php
-namespace Framework\Extend\View;
+namespace framework\extend\view;
 
-use Framework\Core\Logger;
+use framework\core\Logger;
 
 class Error
-{
-    public static function print($page, $vars = [])
+{   
+    public static function dump($vars)
     {
         
     }
     
-    public static function dump($var)
-    {
-        
-    }
-    
-    private static function page_404($message)
+    private static function render404($message)
     {
         $html = '<h1 style="text-align: center">🙁 404 Page Not Found 🙁</h1>';
         if ($message) {
@@ -24,7 +19,7 @@ class Error
         return $html;
     }
     
-    private static function page_error($message)
+    private static function renderError($message)
     {
         $loglevel = [
             Logger::EMERGENCY  => ['icon'=>'❌', 'class' => 'error', 'txt' => 'error'],
