@@ -48,14 +48,14 @@ class Inline extends App
         $this->config['enable_view'] ? View::error($code, $message) : Response::json(['error' => compact('code', 'message')]);
     }
     
-    public function response($return = null)
+    public function response($return = [])
     {
         $this->config['enable_view'] ? Response::view($this->getTpl(), $return) : Response::json($return);
     }
     
     protected function getTpl()
     {
-         return strtr(basename($this->dispatch['file'], '.php'), $this->dir, '');
+         return '/'.strtr(basename($this->dispatch['file'], '.php'), $this->dir, '');
     }
     
     protected function defaultDispatch($path) 

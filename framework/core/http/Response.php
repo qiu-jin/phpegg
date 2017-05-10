@@ -56,7 +56,7 @@ class Response
         self::$response->body = isset(self::$response->body) ? self::$response->body.$body : $body;
     }
     
-    public static function view($tpl, $vars)
+    public static function view($tpl, $vars = null)
     {
         self::$response->headers['Content-Type'] = 'text/html; charset=UTF-8';
         self::$response->body = View::render($tpl, $vars);

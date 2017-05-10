@@ -10,7 +10,7 @@ class Error
         
     }
     
-    private static function render404($message)
+    public static function render404($message)
     {
         $html = '<h1 style="text-align: center">🙁 404 Page Not Found 🙁</h1>';
         if ($message) {
@@ -19,7 +19,7 @@ class Error
         return $html;
     }
     
-    private static function renderError($message)
+    public static function renderError($message)
     {
         $loglevel = [
             Logger::EMERGENCY  => ['icon'=>'❌', 'class' => 'error', 'txt' => 'error'],

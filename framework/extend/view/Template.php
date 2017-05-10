@@ -1,29 +1,35 @@
 <?php
-namespace Framework\Extend\View;
+namespace framework\extend\view;
 
 class Template
 {
-    private $blank_tag = 'php';
-    private $tag_attr_prefix = 'php-';
-    private $ebp = array('{$', '}');
-    private $sbp = array('{{', '}}');
-    private $operator = array(
+    //private $blank_tag = 'php';
+    //private $tag_attr_prefix = 'php-';
+    private $ebp = ['{$', '}'];
+    
+    private $sbp = ['{{', '}}'];
+    
+    private $operator = [
         '!', '&', '|', '=', '>', '<', '+', '-', '*', '/', '%', '?', ':'
-    );
-    private $structure = array(
-        'as', 'if', 'elseif', 'else', 'switch', 'case', 'default', 'each', 'for', 'include'
-    );
-    private $var_alias = array(
+    ];
+    
+    private $structure = [
+        'eq', 'if', 'elseif', 'else', 'switch', 'case', 'default', 'each', 'for', 'import', 'layout'
+    ];
+    
+    private $var_alias = [
         'get'       => '_GET',
         'post'      => '_POST',
         'cookie'    => '_COOKIE',
         'seesion'   => '_SEESION',
         'server'    => '_SERVER',
         'request'   => '_REQUEST'
-    );
-    private $alias_function = array(
-        'is'        => 'in_array(strtolower($1),array("string","numeric","null","bool","array","object")) ? call_user_func("is_".$1,$0) : false',
+    ];
+    
+    private $alias_function = [
+        'is'        => 'call_user_func("is_".$1, $0)',
         'has'       => 'isset($0)',
+        'default'   => 'isset($0) ? $0 : $1',
         
         'str'       => 'strval($0)',
         'num'       => '($0+0)',
@@ -52,169 +58,28 @@ class Template
         'round'     => 'round($0)',
         'ceil'      => 'ceil($0)',
         'rand'      => 'rand($0, $1)',
-        'numformat' => 'number_format($0)',
+        'number'    => 'number_format($0)',
     
         'time'      => 'time()',
         'date'      => 'date($1, $0)',
-        
-    );
-    private $render_function = array();
-    
-    private $allow_source_function = false;
-    
+    ];
 
-    public function __construct($config = null)
+
+    public function __construct($config)
     {
 
     }
     
-    public function complie($str, $extend = null)
-    {
-        if ($extend) {
-            $str = $this->extend_merge($str, $extend);
-        } else {
-            $extend = $this->extend_prepare($str);
-            if ($extend !== false) return $extend;
-        }
-        if (isset($this->sbp)) {
-            return $this->ebp_parser($this->sbp_parser($str));
-        } else {
-            return $this->ebp_parser($this->tag_parser($str));
-        }
-    }
-    
-    private function extend_prepare($str) 
+    public function complie($template, $layout = null)
     {
         if (isset($this->sbp)) {
-            $re = "/".$this->sbp[0]."extend[ \t]+.+/";
+            $template = $this->ebp_parser($this->sbp_parser($template));
         } else {
-            $re = "/<extend[ \t]+.+[ \t]*>/";
+            $template = $this->ebp_parser($this->tag_parser($template));
         }
-        if (preg_match($re, $str, $match, PREG_OFFSET_CAPTURE)) {
+        return $layout ? $this->layout_merge($template, $layout) : $template;
+    }
 
-            
-            $ret = $this->replace_strvars($match[0][0], $this->sbp[0], $this->sbp[1]);
-            $structure_ret = $this->read_structure('extend', $ret['vars']);
-            
-            print_r($match);
-            print_r($ret);
-            die;
-
-            return '<?php $this->_extend("'.$match[1][0].'", __FILE__, "'.base64_encode(substr($str, $match[0][1]+strlen($match[0][0]))).'"); ?>';
-        }
-        die('extend_prepare');
-        return false;
-    }
-    
-    
-    private function _layout_prepare($str) 
-    {
-        $re = isset($this->sbp) ?  '/{{layout (\w+)}}/' : '/<layout name="(\w+)" />/';
-        if (preg_match($re, $str, $match, PREG_OFFSET_CAPTURE)) {
-            if ($match[0][1] > 0 && trim(substr($str,0, $match[0][1])) !== '') {
-                throw new \Exception('sub_parser error');
-            }
-            if (isset($this->sbp)) {
-                $start_re = '/'.$this->sbp[0].'block (\w+)'.$this->sbp[1].'/';
-                $end_find = $this->sbp[0].'/block'.$this->sbp[1];
-            } else {
-                $start_re = '/<block name="(\w+)">/';
-                $end_find = '</block>';
-            }
-            if (preg_match_all($start_re, $extend, $matchs, PREG_OFFSET_CAPTURE)) {
-                $end_pos = 0;
-                foreach ($matchs[0] as $i => $match) {
-                    if ($match[1] >= $end_pos) {
-                        $end_pos = stripos($extend, $end_find, $match[1]);
-                        if ($end_pos) {
-                            $start = $match[1]+strlen($match[0]);
-                            $sub_block[$matchs[1][$i][0]] = substr($extend, $start, $end_pos-$start);
-                        }else {
-                            throw new \Exception('extend_merge error');
-                        }
-                    } else {
-                        throw new \Exception('extend_merge error');
-                    }
-                }
-            }
-            $code = '<?php'.PHP_EOL;
-            foreach ($blocks as $id => $block) {
-                $code .= '$_blocks["'.$id.'"] = <<<EOT'.PHP_EOL.$block.PHP_EOL.'EOT;'.PHP_EOL;
-            }
-            $code = '$this->_layout("'.$match[1][0].'", $_blocks, __FILE__); ?>';
-            
-            
-            //base64_encode(substr($str, $match[0][1]+strlen($match[0][0])))
-        }
-        return false;
-    }
-    
-    private function _extend_prepare($str) 
-    {
-        $re = isset($this->sbp) ?  '/{{extend (\w+)}}/' : '/<extend name="(\w+)" />/';
-        if (preg_match($re, $str, $match, PREG_OFFSET_CAPTURE)) {
-            if ($match[0][1] > 0 && trim(substr($str,0, $match[0][1])) !== '') {
-                throw new \Exception('sub_parser error');
-            }
-            return '<?php $this->_extend("'.$match[1][0].'", __FILE__, "'.base64_encode(substr($str, $match[0][1]+strlen($match[0][0]))).'"); ?>';
-        }
-        return false;
-    }
-    
-    private function extend_merge($str, $extend)
-    {
-        if (isset($this->sbp)) {
-            $start_re = '/'.$this->sbp[0].'block (\w+)'.$this->sbp[1].'/';
-            $end_find = $this->sbp[0].'/block'.$this->sbp[1];
-        } else {
-            $start_re = '/<block name="(\w+)">/';
-            $end_find = '</block>';
-        }
-        $sub_block = array();
-        if (preg_match_all($start_re, $extend, $matchs, PREG_OFFSET_CAPTURE)) {
-            $end_pos = 0;
-            foreach ($matchs[0] as $i => $match) {
-                if ($match[1] >= $end_pos) {
-                    $end_pos = stripos($extend, $end_find, $match[1]);
-                    if ($end_pos) {
-                        $start = $match[1]+strlen($match[0]);
-                        $sub_block[$matchs[1][$i][0]] = substr($extend, $start, $end_pos-$start);
-                    }else {
-                        throw new \Exception('extend_merge error');
-                    }
-                } else {
-                    throw new \Exception('extend_merge error');
-                }
-            }
-        }
-        if (preg_match_all($start_re, $str, $matchs, PREG_OFFSET_CAPTURE)) {
-            $start_pos = 0;
-            $end_pos = 0;
-            foreach ($matchs[0] as $i => $match) {
-                if ($match[1] >= $end_pos) {
-                    $code .= substr($str, $start_pos, $match[1]-$start_pos);
-                    $end_pos = stripos($str, $end_find, $match[1]);
-                    if ($end_pos) {
-                        $block_name = $matchs[1][$i][0];
-                        if (isset($sub_block[$block_name])) {
-                            $code .= $sub_block[$block_name];
-                        } else {
-                            $start = $match[1]+strlen($match[0]);
-                            $code .= substr($str, $start, $end_pos-$start);
-                        }
-                        $start_pos = $end_pos+strlen($end_find);
-                    } else {
-                        throw new \Exception('extend_merge error');
-                    }
-                } else {
-                    throw new \Exception('extend_merge error');
-                }
-            }
-            if ($start_pos < strlen($str)) $code .= substr($str, $start_pos);
-        }
-        return $code; 
-    }
-    
     private function ebp_parser($str)
     {
         $i = 1;
@@ -313,6 +178,61 @@ class Template
         return $str;
     }
     
+    private function layout_merge($str1, $str2)
+    {
+        if (isset($this->sbp)) {
+            $start_re = '/'.$this->sbp[0].'block (\w+)'.$this->sbp[1].'/';
+            $end_find = $this->sbp[0].'/block'.$this->sbp[1];
+        } else {
+            $start_re = '/<block name="(\w+)">/';
+            $end_find = '</block>';
+        }
+        $sub_block = array();
+        if (preg_match_all($start_re, $str2, $matchs, PREG_OFFSET_CAPTURE)) {
+            $end_pos = 0;
+            foreach ($matchs[0] as $i => $match) {
+                if ($match[1] >= $end_pos) {
+                    $end_pos = stripos($str2, $end_find, $match[1]);
+                    if ($end_pos) {
+                        $start = $match[1]+strlen($match[0]);
+                        $sub_block[$matchs[1][$i][0]] = substr($str2, $start, $end_pos-$start);
+                    }else {
+                        throw new \Exception('extend_merge error');
+                    }
+                } else {
+                    throw new \Exception('extend_merge error');
+                }
+            }
+        }
+        $code = '';
+        if (preg_match_all($start_re, $str1, $matchs, PREG_OFFSET_CAPTURE)) {
+            $start_pos = 0;
+            $end_pos = 0;
+            foreach ($matchs[0] as $i => $match) {
+                if ($match[1] >= $end_pos) {
+                    $code .= substr($str1, $start_pos, $match[1]-$start_pos);
+                    $end_pos = stripos($str1, $end_find, $match[1]);
+                    if ($end_pos) {
+                        $block_name = $matchs[1][$i][0];
+                        if (isset($sub_block[$block_name])) {
+                            $code .= $sub_block[$block_name];
+                        } else {
+                            $start = $match[1]+strlen($match[0]);
+                            $code .= substr($str1, $start, $end_pos-$start);
+                        }
+                        $start_pos = $end_pos+strlen($end_find);
+                    } else {
+                        throw new \Exception('extend_merge error');
+                    }
+                } else {
+                    throw new \Exception('extend_merge error');
+                }
+            }
+            if ($start_pos < strlen($str1)) $code .= substr($str1, $start_pos);
+        }
+        return $code; 
+    }
+    
     private function complete_end_tag($str, &$end_tags, &$skip_num, $blank = null)
     {
         $code = '';
@@ -394,7 +314,7 @@ class Template
         $code = '';
         if ($val) $ret = $this->replace_strvars($val);
         switch ($structure) {
-            case 'as':
+            case 'eq':
                 $pairs = explode(';', $ret['code']);
                 foreach ($pairs as $pair) {
                     $item = explode('=', trim($pair));
@@ -458,14 +378,13 @@ class Template
                     throw new \Exception('read_structure error: '.$ret['code']);
                 }
                 break;
-            case 'include':
+            case 'import':
                 $argument = $this->read_argument($ret['code'], $ret['vars']);
-                $code = 'include $this->_include('.$argument['value'].', __DIR__);';
+                $code = 'include View::import('.$argument['value'].', __DIR__);';
                 break;
-            case 'extend':
+            case 'layout':
                 $argument = $this->read_argument($ret['code'], $ret['vars']);
-                print_r($ret);
-                $code = '$this->_extend('.$argument['value'].', __FILE__);';
+                $code = 'return View::layout('.$argument['value'].', __FILE__);';
                 break;    
             default:
                 throw new \Exception('read_structure error: '.$structure);

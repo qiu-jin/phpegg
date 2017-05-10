@@ -6,7 +6,7 @@ use framework\core\Router;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
-class Mix extends App
+class Simple extends App
 {
     private $query;
     private $route;

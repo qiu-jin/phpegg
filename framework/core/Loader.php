@@ -96,8 +96,7 @@ class Loader
         } elseif(isset(self::$class_map[$class])) {
             self::import(self::$class_map[$class]);
         } elseif (isset(self::$class_alias[$class])) {
-            $class = self::$class_alias[$class];
-            class_alias($class, self::$class_alias[$class]);
+            class_alias(self::$class_alias[$class], $class);
         } 
     }
 }

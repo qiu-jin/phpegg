@@ -10,7 +10,7 @@ class View
     private static $init;
     private static $view;
     private static $config;
-    private static $template_handler;
+    private static $template;
     
     //run this method in last line when load class
     public static function init()
@@ -35,23 +35,13 @@ class View
                 $i = 0;
                 foreach ($method_array as $k => $v) {
                     if (is_int($k)) {
-                        if (isset($params[$i])) {
-                            $vars[$v] = $params[$i];
-                        } else {
-                            throw new \Exception('Illegal view method: '.$method);
-                        }
+                        $vars[$v] = isset($params[$i]) ? $params[$i] : '';
                     } else {
                         $vars[$k] = isset($params[$i]) ? $params[$i] : $v;
                     }
                     $i++;
                 }
             }
-            /*
-            $count = count($this->config['methods'][$method]);
-            if ($count) {
-                $vars = array_combine($this->config['methods'][$method], array_pad($params, $count, null));
-            }
-            */
             Response::view($tpl, $vars);
         }
         throw new \Exception('Illegal view method: '.$method);
@@ -67,12 +57,12 @@ class View
         self::$view->func[$name] = $value;
     }
     
-    public static function display($tpl, array $vars = null)
+    public static function output($tpl, $vars = null)
     {
         Response::view($tpl, $vars);
     }
     
-    public static function render($tpl, array $vars = null)
+    public static function render($tpl, $vars = null)
     {
         $phpfile = self::import(trim($tpl));
         if ($phpfile) {
@@ -92,10 +82,10 @@ class View
         }
     }
     
-    public static function error($code, array $message = [])
+    public static function error($code, $message = null)
     {   
-        if (isset(self::$config['error'][$name])) {
-            $phpfile = self::import(self::$config['error'][$name]);
+        if (isset(self::$config['error'][$code])) {
+            $phpfile = self::import(self::$config['error'][$code]);
             if ($phpfile) {
                 ob_start();
                 include $phpfile;
@@ -107,36 +97,30 @@ class View
     
     private static function import($tpl, $dir = null)
     {
-        if ($tpl{0} === '/') {
-            $path = self::$config['dir'].$tpl;
-        } elseif ($dir) {
-            $path = $dir.'/'.$tpl;
-        } else {
-            return false;
-        }
+        $path = $tpl{0} === '/' ? self::$config['dir'].$tpl : $dir.'/'.$tpl;
         $phpfile = $path.'.php';
         if (isset(self::$config['template'])) {
             if (empty(self::$config['template']['dir'])) {
-                $htmfile = $path.'.htm';
+                $tplfile = $path.'.htm';
             } else {
                 $dir = dirname($phpfile);
-                if (!is_dir($dir)) {
-                    mkdir($dir, 0777, true);
+                if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
+                    return false;
                 }
-                $htmfile = str_replace(self::$config['template']['dir'], self::$config['dir'], $path, 1).'.htm';
+                $tplfile = str_replace(self::$config['template']['dir'], self::$config['dir'], $path).'.htm';
             }
             if (file_exists($phpfile)) {
-                if (file_exists($htmfile)) {
-                    if (filemtime($phpfile) > filemtime($htmfile)) {
+                if (file_exists($tplfile)) {
+                    if (filemtime($phpfile) > filemtime($tplfile)) {
                         return $phpfile;
                     } else {
-                        if (file_put_contents($phpfile, self::template_handler()->complie(file_get_contents($htmfile)))) {
+                        if (file_put_contents($phpfile, self::template()->complie(file_get_contents($tplfile)))) {
                             return $phpfile;
                         }
                     }
                 }
-            } elseif (file_exists($htmfile)) {
-                if (file_put_contents($phpfile, self::template_handler()->complie(file_get_contents($htmfile)))) {
+            } elseif (file_exists($tplfile)) {
+                if (file_put_contents($phpfile, self::template()->complie(file_get_contents($tplfile)))) {
                     return $phpfile;
                 }
             }
@@ -145,58 +129,54 @@ class View
         }
         return false;
     }
-    
-    private function inline($tpl, $dir = null)
-    {
-        
-    }
 
-    private function layout($tpl, $phpfile, $str = null)
+    private static function layout($tpl, $file)
     {
-        if (!isset($this->template_engine)) return;
-        if ($this->textend_num > 2) {
-            error('Repeat execution _extend');
+        if (empty(self::$config['template'])) {
+            return;
         }
-        $this->textend_num++;
-        $path = ($tpl{0} === '/' ? $tpl : dirname($phpfile).'/'.$tpl);
-        $htmfile = isset($this->tpl_dir) ? str_replace($this->view_dir, $this->tpl_dir, $path, 1).'.htm' : $path.'.htm';
-        if (is_null($str)) {
-            if (file_exists($htmfile) && filemtime($htmfile) > filemtime($phpfile)) {
-                $htmfile = substr($phpfile, 0, -3).'htm';
-                if (isset($this->tpl_dir)) {
-                    $htmfile = str_replace($this->view_dir, $this->tpl_dir, $htmfile, 1);
-                }
-                if (file_put_contents($phpfile, $this->_template_handler()->complie(file_get_contents($htmfile)))) {
-                    if (function_exists('opcache_invalidate')) {
-                        opcache_invalidate($phpfile);
-                    }
-                    include($phpfile);
-                    return true;
-                } 
-            }
+        $path = $tpl{0} === '/' ? $tpl : dirname($file).'/'.$tpl;
+        if (isset(self::$config['template']['dir'])) {
+            $tplfile = str_replace(self::$config['dir'], self::$config['template']['dir'], $path).'.htm';
         } else {
-            $code = '<?php if($this->_extend("'.$tpl.'", __FILE__)) return; ?>'.PHP_EOL;
-            $code .= $this->_template_handler()->complie(file_get_contents($htmfile), base64_decode($str));
-            if (file_put_contents($phpfile, $code)) {
-                if (function_exists('opcache_invalidate')) opcache_invalidate($phpfile);
-                include($phpfile);
-            }
+            $tplfile = $path.'.htm';
         }
+        $phpfile = $path.'.php';
+        if (file_exists($tplfile) && (!file_exists($file) || filemtime($tplfile) > filemtime($file))) {
+            $php_content = file_get_contents($file);
+            $complie_content = "<?php View::layout('$tpl', __FILE__); ?>".PHP_EOL;
+            $complie_content .= self::template()->complie(file_get_contents($tplfile), $php_content);
+            if (file_put_contents($file, $complie_content)) {
+                if (!empty(self::$config['template']['layout'])) {
+                    $dir = dirname($file).'/.layout/';
+                    if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
+                        return false;
+                    }
+                    file_put_contents($dir.basename($file), $content);
+                }
+                if (extension_loaded('opcache')) {
+                    opcache_compile_file($file);
+                }
+                include $file;
+                return true;
+            } 
+        }
+        return false;
     }
     
-    private static function template_handler()
+    private static function template()
     {
-        if (isset(self::$template_handler)) {
-            return self::$template_handler;
+        if (isset(self::$template)) {
+            return self::$template;
         }
-        return self::$template_handler = new Template(self::$config['template']);
+        return self::$template = new Template(self::$config['template']);
     }
     
     public static function free()
     {
         self::$view = null;
         self::$config = null;
-        self::$template_handler = null;
+        self::$template = null;
     }
 }
 View::init();
