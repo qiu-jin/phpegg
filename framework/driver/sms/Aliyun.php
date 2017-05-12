@@ -19,13 +19,13 @@ class Aliyun extends Sms
         $this->template = $config['template'];
     }
 
-    public function send($to, $type, $data)
+    public function send($to, $type, $data, $signname = null)
     {
-        if (isset($this->template[$type])) {
+        if (isset($this->template[$template])) {
             $query = http_build_query([
                 'Action'            => 'SingleSendSms',
-                'SignName'          => $this->signname,
-                'TemplateCode'      => $this->template[$type],
+                'SignName'          => $signname ? $signname : $this->signname,
+                'TemplateCode'      => $this->template[$template],
                 'RecNum'            => $to,
                 'ParamString'       => json_encode($data),
                 

@@ -40,6 +40,9 @@ class Thrift
         } catch(\Exception $e) {
             throw new \Exception($e->message());
         }
+        if (isset($config['throw_exception'])) {
+            $this->throw_exception = (bool) $config['throw_exception'];
+        }
     }
 
     public function __get($class)
@@ -55,19 +58,19 @@ class Thrift
     public function call($ns, $method, $params = [])
     {
         if (!isset($this->rpc[$ns])) {
-            $class = $this->_className($ns);
+            $class = $this->className($ns);
             $this->rpc[$ns] = new $class(new TMultiplexedProtocol($this->protocol, $client));
         }
-        $this->_bindParams($class, $method, $params);
+        $this->bindParams($class, $method, $params);
         return $this->rpc[$ns]->$method(...$params);
     }
     
-    private function _className($ns)
+    private function className($ns)
     {
         return '\\'.str_replace('.', '\\', $ns);
     }
     
-    private function _bindParams($class, $method, &$params)
+    private function bindParams($class, $method, &$params)
     {
         if (isset($this->method_params_type[$class][$method])) {
             foreach ($this->method_params_type[$class][$method] as $i => $type) {
@@ -91,6 +94,6 @@ class Thrift
     
     public function __destruct()
     {
-        $this->transport->close();
+        $this->transport && $this->transport->close();
     }
 }

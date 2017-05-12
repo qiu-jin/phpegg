@@ -3,7 +3,6 @@ namespace framework\driver\captcha;
 
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\extend\image\Captcha as CaptchaBuilder;
 
 class Image
 {
@@ -22,9 +21,7 @@ class Image
         $this->imageurl = $config['imageurl'];
     }
     
-    /*
-     * {{ load('captcha', 'image')->render() }}
-     */
+
     public function render($tag = 'div', $attrs = [])
     {
         if ($attrs) {
@@ -50,6 +47,6 @@ class Image
         Response::headers([
             'Content-Type: image/png'
         ]);
-        Response::send(CaptchaBuilder::build($value));
+        Response::send(Image::build($value));
     }
 }

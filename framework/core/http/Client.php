@@ -9,11 +9,10 @@ class Client
     private $result;
     private $method;
     private $headers = [];
-    private $curlopt = [];
     private $boundary;
     private $file_is_buffer;
     private $return_headers = false;
-    private static $timeout = 3;
+    private $curlopt = ['TIMEOUT' => 5];
     
     private function __construct($method, $url)
     {
@@ -31,12 +30,13 @@ class Client
         return new self('POST', $url);
     }
     
-    public static function __callStatic($name, $params)
+    public function __get($name)
     {
-        if (in_array($name, ['put', 'delete', 'options', 'head', 'patch'], true)) {
-            return new self(strtoupper($name), $params[0]);
+        isset($this->result) || $this->getResult(false);
+        if (isset($this->result[$name])) {
+            return $this->result[$name];
         }
-        throw new \Exception('Not support HTTP method: '.$name);
+        return $name === 'json' && isset($this->result['body']) ? jsondecode($this->result['body']) : null;
     }
     
     public function getStatus()
@@ -77,25 +77,10 @@ class Client
         if ($this->file_is_buffer) {
             $this->body .= "--$this->boundary--\r\n";
         }
-        $result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true, $this->return_headers);
+        $this->result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true);
         if ($return) {
-            $this->result = [];
-            return $result;
-        } else {
-            $this->result = $result;
+            return $this->result;
         }
-    }
-    
-    public function save($path)
-    {
-        $curlopt = $this->curlopt;
-        $fp = fopen($path, 'w+');
-        if ($fp) {
-            $curlopt['file'] = $fp;
-            $this->result = self::send($this->method, $this->url, null, $this->headers, $curlopt, true);
-            return $this->result['status'] === 200 && $this->result['body'] === true;
-        }
-        return false;
     }
 
     public function body($body, $type = null)
@@ -136,17 +121,6 @@ class Client
         }
         return $this;
     }
-    
-    public function stream($path)
-    {
-        $fp = fopen($path, 'r');
-        if ($fp) {
-            $this->curlopt['PUT'] = 1;
-            $this->curlopt['INFILE'] = $fp;
-            return $this;
-        }
-        return false;
-    }
 
     public function file($name, $content, $filename = null, $mimetype = null)
     {
@@ -164,6 +138,13 @@ class Client
         }
         throw new \Exception('Must call after form method');
     }
+    
+    public function stream($fp)
+    {
+        $this->curlopt['PUT'] = 1;
+        $this->curlopt['INFILE'] = $fp;
+        return $this;
+    }
 
     public function header($name, $value)
     {
@@ -179,23 +160,36 @@ class Client
     
     public function timeout($timeout)
     {
-        $this->curlopt['timeout'] = $timeout;
+        $this->curlopt['TIMEOUT'] = (int) $timeout;
         return $this;
     }
     
     public function curlopt($name, $value)
     {
-        $this->curlopt[$name] = $value;
+        $this->curlopt[strtoupper($name)] = $value;
         return $this;
     }
     
     public function return_headers($bool = true)
     {
-        $this->return_headers = (bool) $bool;
+        $this->curlopt['HEADER'] = (bool) $bool;
         return $this;
     }
     
-    public static function send($method, $url, $body = null, array $headers = null, array $curlopt = null, $return_status = false, $return_headers = false)
+    public function save($path)
+    {
+        $fp = fopen($path, 'w+');
+        if ($fp) {
+            $this->curlopt['FILE'] = $fp;
+            $this->result = self::send($this->method, $this->url, null, $this->headers, $this->curlopt, true);
+            fclose($fp);
+            return $this->result['status'] === 200 && $this->result['body'] === true;
+        }
+        $this->result = [];
+        return false;
+    }
+    
+    public static function send($method, $url, $body = null, array $headers = null, array $curlopt = null, $return_status = false)
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -222,41 +216,27 @@ class Client
                 }
             }
         }
-        isset($curlopt['timeout']) || curl_setopt($ch, CURLOPT_TIMEOUT, self::$timeout);
-        if ($return_headers) {
-            $return = [];
-            curl_setopt($ch, CURLOPT_HEADER, 1);
-            $res = curl_exec($ch);
-            if ($res) {
-                $pairs = explode("\r\n\r\n", $res, 2);
-                if (isset($pairs[0])) {
-                    $return['headers'] = self::parseHeaders($pairs[0]);
-                }
-                if (isset($pairs[1])) {
-                    $return['body'] = $pairs[1];
-                }
+        $result = curl_exec($ch);
+        if ($return_status) {
+            $return['status'] = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        }
+        if (!empty($curlopt['HEADER'])) {
+            if ($result) {
+                $pairs = explode("\r\n\r\n", $result, 2);
+                $result = isset($pairs[1]) ? $pairs[1] : null;
+                $return['headers'] = isset($pairs[0]) ? self::parseHeaders($pairs[0]) : null;
             } else {
-                $return = ['headers' => null, 'body' => null];
-            }
-            if ($res === false) {
-                $return['error'] = [curl_errno($ch), curl_error($ch)];
-            }
-            if ($return_status) {
-                $return['status'] = curl_getinfo($ch,CURLINFO_HTTP_CODE);
-            }
-            return $return;
-        } else {
-            $res = curl_exec($ch);
-            if ($return_status) {
-                $return = ['status' => curl_getinfo($ch,CURLINFO_HTTP_CODE), 'body' => $res];
-                if ($res === false) {
-                    $return['error'] = [curl_errno($ch), curl_error($ch)];
-                }
-                return $return;
-            } else {
-                return $res;
+                $return['headers'] = null;
             }
         }
+        if (isset($return)) {
+            if ($result === false) {
+                $return['error'] = [curl_errno($ch), curl_error($ch)];
+            }
+            $return['body'] = $result;
+            return $return;
+        }
+        return $result;
     }
     
     protected static function curlFile($filepath, $filename, $mimetype)
@@ -291,7 +271,7 @@ class Client
         $arr = explode("\r\n", $header);
         foreach ($arr as $v) {
             $line = explode(":", $v, 2);
-            if(count($line) === 2) $header_arr[$line[0]] = trim($line[1]);
+            if(count($line) === 2) $header_arr[trim($line[0])] = trim($line[1]);
         }
         return $header_arr;
     }

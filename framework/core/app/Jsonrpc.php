@@ -10,9 +10,7 @@ class Jsonrpc extends App
     private $id;
     private $ns;
     private $version = '2.0';
-    protected $config = [
-        
-    ];
+    protected $config = [];
     
     public function dispatch()
     {

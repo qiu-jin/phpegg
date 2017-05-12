@@ -19,7 +19,15 @@ class Error
         register_shutdown_function(__CLASS__.'::fatalHandler');
     }
     
-    public static function trace($message, $level = 'error', $limit = 0)
+    public static function get($level = null)
+    {
+        if ($level === null) {
+            return self::$error;
+        }
+        return isset(self::$error[$level]) : self::$error[$level] : null;
+    }
+    
+    public static function set($message, $level = 'error', $limit = 0)
     {
         $file = null;
         $line = null;

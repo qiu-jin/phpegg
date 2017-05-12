@@ -17,45 +17,51 @@ use framework\core\http\Client;
 
 class Webdav extends Storage
 {
-    protected $auth;
     protected $server;
-    protected $auto_create_dir = true;
+    protected $username;
+    protected $password;
+    protected $public_read = false;
+    protected $auto_create_dir = false;
     
     public function __construct($config)
     {
-        $this->server = trim($config['server']);
-        if (substr($this->server, -1) !== '/') {
-            $this->server .= '/';
-        }
-        if (isset($config['auto_create_dir'])) {
-            $this->auto_create_dir = $config['auto_create_dir'];
-        }
-        $this->auth = 'Authorization: Basic '.base64_encode($config['username'].':'.$config['password']);
+        $this->server = $config['server'];
+        $this->username = $config['username'];
+        $this->password = $config['password'];
+        isset($config['auto_create_dir']) && $this->auto_create_dir = (bool) $config['auto_create_dir'];
     }
     
     public function get($from, $to = null)
     {
+        $client_methods['timeout'] = [30];
         if ($to) {
-            $client = Client::get($this->url($from))->headers([$this->auth]);
-            return $client->save($to) ? true : $this->setError($client->getResult());
+            $client_methods['save'] = [$to];
         }
-        return $this->send('GET', $this->url($from));
+        return $this->send('GET', $from, null, $client_methods, !$this->public_read);
     }
     
     public function put($from, $to, $is_buffer = false)
     {
-        if ($this->auto_create_dir || $this->mkdir($to)) {
-            $client = Client::put($this->url($to))->timeout(30)->headers([$this->auth]);
-            $is_buffer ? $client->body($from) : $client->stream($from);
-            $result = $client->getResult();
-            return $result['status'] === 201 ? true : $this->setError($result);
+        if ($this->ckdir($to)) {
+            $client_methods['timeout'] = [30];
+            if ($is_buffer) {
+                $client_methods['body'] = [$from];
+                return $this->send('PUT', $to, null, $client_methods);
+            }
+            $fp = fopen($from, 'r');
+            if ($fp) {
+                $client_methods['stream'] = [$fp];
+                $return = $this->send('PUT', $to, null, $client_methods);
+                fclose($fp);
+                return $return;
+            }
         }
         return false;
     }
 
     public function stat($from)
     {
-        $stat = $this->send('HEAD', $this->url($from), null, null, null, true);
+        $stat = $this->send('HEAD', $from, null, null, !$this->public_read);
         return $stat ? [
             'type'  => $stat['headers']['Content-Type'],
             'size'  => (int) $stat['headers']['Content-Length'],
@@ -65,39 +71,34 @@ class Webdav extends Storage
     
     public function copy($from, $to)
     {
-        if ($this->auto_create_dir || $this->mkdir($to)) {
-            return $this->send('COPY', $this->url($from), null, ['Destination: '.$this->url($to)]);
-        }
-        return false;
+        return $this->ckdir($to) ? $this->send('COPY', $from, ['Destination: '.$this->url($to)]) : false;
     }
     
     public function move($from, $to)
     {
-        if ($this->auto_create_dir || $this->mkdir($to)) {
-            return $this->send('MOVE', $this->url($from), null, ['Destination: '.$this->url($to)]);
-        }
-        return false;
+        return $this->ckdir($to) ? $this->send('MOVE', $from, ['Destination: '.$this->url($to)]) : false;
     }
     
     public function delete($from)
     {
-        return $this->send('DELETE', $this->url($from));
+        return $this->send('DELETE', $from);
     }
     
-    protected function mkdir($path)
+    protected function send($method, $path, $headers = [], $client_methods = [], $auth = true)
     {
-        return $this->send('MKCOL', dirname($this->url($path)).'/');
-    }
-    
-    protected function url($path)
-    {
-        return $this->server.trim(trim($path), '/');
-    }
-    
-    protected function send($method, $path, $body = null, $headers = null, $curlopt = null, $return_headers = false)
-    {
-        $headers[] = $this->auth;
-        $result = Client::send($method, $path, $body, $headers, $curlopt, true, $return_headers);
+        $client = new Client($method, $this->url($path));
+        if ($client_methods) {
+            foreach ($client_methods as $client_method => $params) {
+                $client->$client_method(... (array) $params);
+            }
+        }
+        if ($auth) {
+            $headers[] = $this->auth();
+        }
+        if ($headers) {
+            $client->headers($headers);
+        }
+        $result = $client->getResult();
         if ($result['status'] >= 200 && $result['status'] < 300) {
             switch ($method) {
                 case 'GET':
@@ -117,6 +118,21 @@ class Webdav extends Storage
             }
         }
         return $this->setError($result);
+    }
+    
+    protected function url($path)
+    {
+        return $this->server.trim(trim($path), '/');
+    }
+    
+    protected function auth()
+    {
+        return 'Authorization: Basic '.base64_encode("$this->username:$this->password");
+    }
+    
+    protected function ckdir($path)
+    {
+        return $this->auto_create_dir || $this->send('MKCOL', dirname($this->url($path)).'/');
     }
     
     protected function setError($result)

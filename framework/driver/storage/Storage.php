@@ -20,7 +20,7 @@ abstract class Storage
     
     public function fetch($from, $to)
     {
-        if (stripos($from, '://')) {
+        if (strpos($from, '://')) {
             list($scheme, $uri) = explode('://', $from, 2);
             $scheme = strtolower($scheme);
             if ($scheme === 'http' || $scheme === 'https') {

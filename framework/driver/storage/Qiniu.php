@@ -7,125 +7,117 @@ class Qiniu extends Storage
 {
     protected $bucket;
     protected $domain;
-    protected $apiurl;
-    protected $accesskey;
-    protected $secretkey;
-    protected $public_bucket = false;
+    protected $acckey;
+    protected $seckey;
+    protected $region;
+    protected $public_read = false;
     
     public function __construct($config)
     {
         $this->bucket = $config['bucket'];
         $this->domain = $config['domain'];
-        $this->accesskey = $config['accesskey'];
-        $this->secretkey = $config['secretkey'];
-        if (!empty($config['public_bucket'])) {
-            $this->public_bucket = true;
-        }
-        $scheme = empty($config['https']) ? 'https' : 'http';
-        $region = isset($config['region']) ? '-'.$config['region'] : ''; 
-        $apiurl['rs'] = "$scheme://rs.qbox.me";
-        $apiurl['fetch'] = "$scheme://iovip$region.qbox.me";
-        $apiurl['upload'] = "$scheme://up$region.qbox.me";
+        $this->acckey = $config['acckey'];
+        $this->seckey = $config['seckey'];
+        isset($config['region']) && $this->region = '-'.$config['region'];
     }
-    
+
     public function get($from, $to = null)
     {
-        $url = $this->domain.'/'.$this->path($from);
-        if (!$this->public_bucket) {
+        $client_methods['timeout'] = [30];
+        if ($to) {
+            $client_methods['save'] = [$to];
+        }
+        $url = "$this->domain/$from";
+        if (!$this->public_read) {
             $url .= '?token='.$this->sign($url);
         }
-        $client = Client::get($url);
-        if ($to) {
-            return $client->save($to) ? true : false;
-        } else {
-            $result = $client->getResult();
-            return $result['status'] === 200 ? $result['body'] : false; 
-        }
+        return $this->send($url, null, $client_methods, 'GET');
     }
-    
+
     public function put($from, $to, $is_buffer = false)
     {
         $to = $this->path($to);
-        $data = $this->encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
-        $token = $this->sign($data).':'.$data;
-        $client = Client::post($this->apiurl['upload'])->form(['token' => $token, 'key' => $to], $is_buffer)->file('file', $from)->timeout(30);
-        $data = $result->getJson();
-        if (isset($data['hash'])) {
-            return true;
-        }
-        if (isset($data['error'])) {
-            $this->log = $data['error'];
-        } else {
-            $clierr = $client->getError();
-            $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
-        }
-        return false;
+        $str = $this->base64Encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
+        $token = $this->sign($str).':'.$str;
+        
+        $client_methods['timeout'] = [30];
+        $client_methods['form'] = [['token' => $token, 'key' => $to], $is_buffer];
+        $client_methods['file'] = [$from];
+        return $this->send("https://up{$this->region}.qbox.me", null, $client_methods);
     }
     
     public function stat($from)
     {
-        $data = $this->send($this->apiurl['rs'], '/stat/'.$this->bencode($from), 'GET');
-        return $data ? ['size' => $data['fsize'], 'mtime' => substr($data['putTime'], 0 ,10)] : false;
+        $stat = $this->send('https://rs.qbox.me', '/stat/'.$this->path($from), 'GET');
+        if ($stat) {
+            $stat = jsondecode($stat);
+            return [
+                'type'  => $stat['mimeType'],
+                'size'  => $stat['fsize'],
+                'mtime' => substr($stat['putTime'], 0 ,10),
+            ];
+        }
+        return false;
     }
 
     public function move($from, $to)
     {
-        return $this->send($this->apiurl['rs'], '/move/'.$this->bencode($from).'/'.$this->bencode($to));
+        return $this->send('https://rs.qbox.me', '/move/'.$this->path($from).'/'.$this->path($to));
     }
     
     public function copy($from, $to)
     {
-        return $this->send($this->apiurl['rs'], '/copy/'.$this->bencode($from).'/'.$this->bencode($to));
+        return $this->send('https://rs.qbox.me', '/copy/'.$this->path($from).'/'.$this->path($to));
     }
     
     public function delete($from)
     {
-        return $this->send($this->apiurl['rs'], '/delete/'.$this->bencode($from));
+        return $this->send('https://rs.qbox.me', '/delete/'.$this->path($from));
     }
     
     public function fetch($from, $to)
     {
-        $scheme = strtolower(strtok($from, '://'));
-        if ($scheme === 'http' || $scheme === 'https') {
-            return $this->send($this->apiurl['fetch'], '/fetch/'.$this->encode($from).'/to/'.$this->bencode($$to));
+        if (stripos($from, 'http://') === 0 || stripos($from, 'https://') === 0) {
+            return $this->send("https://iovip{$this->region}.qbox.me", '/fetch/'.$this->path($$to));
         }
         return parent::fetch($from, $to);
     }
     
-    private function send($url, $resource, $method = 'POST')
+    protected function send($host, $path, $client_methods = [], $method = 'POST')
     {
-        $result = Client::send($method, $url.$resource, null, ['Authorization: QBox '.$this->sign($resource."\n")], ['timeout' => 15], true);
-        if ($result['body']) {
-            $data = json_decode($result['body'], true);
-            if ($result['status'] === 200) {
-                if ($data) {
-                    return $method === 'POST' ? (bool) $data : $data;
-                }
-                return true;
+        $client = new Client($method, $host.$path);
+        if ($client_methods) {
+            foreach ($client_methods as $client_method => $params) {
+                $client->$client_method(... (array) $params);
             }
         }
-        if (isset($data['error'])) {
-            $this->log = $data['error'];
-        } else {
-            $this->log = isset($result['error']) ? $result['error'] : 'unknown error';
+        if ($path) {
+            $client->header('Authorization', 'QBox '.$this->sign($path."\n"));
         }
+        $result = $client->getResult();
+        if ($result['status'] === 200) {
+            return $method === 'GET' ? $result['body'] : true;
+        }
+        return $this->setError($result);
+    }
+
+    protected function path($str)
+    {
+        return $this->base64Encode($this->bucket.':'.parent::path($str));
+    }
+    
+    protected function sign($str)
+    { 
+        return $this->acckey.':'.$this->base64Encode(hash_hmac('sha1', $str, $this->seckey, true));
+    }
+    
+    protected function setError($result)
+    {
         return false;
     }
     
-    private function sign($str)
-    { 
-        $digest = hash_hmac('sha1', $str, $this->secretkey, true);
-        return $this->accesskey.':'.$this->encode($digest);
-    }
-    
-    private function encode($str)
+    protected function base64Encode($str)
     { 
         return str_replace(array("+", "/"), array("-", "_"), base64_encode($str)); 
-    }
-    
-    private function bencode($str)
-    {
-        $str = $this->path($str);
-        return $this->encode($this->bucket.':'.$str);
     }
 }

@@ -28,32 +28,32 @@ class Jsonrpc
     
     public function call($ns, $method, $params = null, $id = null)
     {
+        $ns[] = $method;
         $data = [
             'jsonrpc'   => '2.0',
             'params'    => $params,
-            'method'    => $ns ? implode('.', $ns).'.'.$method : $method,
+            'method'    => implode('.', $ns),
             'id'        => empty($id) ? uniqid() : $id
         ];
         $client = Client::post($this->server)->json($data);
-        $result = $client->json;
-        if (isset($result['result'])) {
-            return $result['result'];
+        $data = $client->getJson();
+        if (isset($data['result'])) {
+            return $data['result'];
         }
         if (isset($data['error'])) {
-            $this->_error($data['error']['code'], $data['error']['message']);
+            $this->setError($data['error']['code'], $data['error']['message']);
         } else {
-            if ($result->status == 200) {
-                $this->_error('-32603', 'nvalid JSON-RPC response');
+            $clierr = $client->getError();
+            if ($clierr) {
+                $this->setError('-32000', "Internet error $clierr[0]: $clierr[1]");
+            } else {
+                $this->setError('-32603', 'nvalid JSON-RPC response');
             }
-            if ($clierr = $client->error) {
-                $this->_error('-32000', "Internet error $clierr[0]: $clierr[1]");
-            }
-            $this->_error('-32000', 'Unknown internet error');
         }
         return false;
     }
     
-    protected function _error($code, $message)
+    protected function setError($code, $message)
     {
         if ($this->throw_exception) {
             throw new \Exception("Jsonrpc error $code: $message");

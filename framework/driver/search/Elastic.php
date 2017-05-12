@@ -52,15 +52,13 @@ class Elastic extends Search;
         return $this->send('POST', '_search', $query, $index, $type);
     }
     
-    private function send($method, $query, $body, $index, $type)
+    protected function send($method, $query, $body, $index, $type)
     {
         $url = "$this->host:$this->port/$index/$type/$query";
-        
-        
-        return \Util\Http::request_json($this->host.':'.$this->port.$path, json_encode($body), null, $method);
+        $result = Client::send($method, $this->host.':'.$this->port.$path, json_encode($body));
     }
     
-    public function build($query)
+    protected function build($query)
     {
         
     }

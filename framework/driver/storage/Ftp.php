@@ -98,13 +98,8 @@ class Ftp extends Storage
         return @ftp_chdir($this->link, $dir) || ftp_mkdir($this->link, $dir);
     }
     
-    public function close()
-    {
-        ftp_close($this->link);
-    }
-    
     public function __destruct()
     {
-        $this->close();
+        $this->link && ftp_close($this->link);
     }
 }

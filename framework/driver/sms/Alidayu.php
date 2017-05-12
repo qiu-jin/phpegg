@@ -19,18 +19,18 @@ class Alidayu extends Sms
         $this->template = $config['template'];
     }
     
-    public function send($to, $type, $data)
+    public function send($to, $template, $data, $signname = null)
     {
-        if (isset($this->template[$type])) {
+        if (isset($this->template[$template])) {
             return $this->sendForm([
                 'app_key'           => $this->appkey,
                 'format'            => 'json',
                 'method'            => 'alibaba.aliqin.fc.sms.num.send',
                 'rec_num'           => $to,
                 'sign_method'       => 'md5',
-                'sms_free_sign_name'=> $this->signname,
+                'sms_free_sign_name'=> $signname ? $signname : $this->signname,
                 'sms_param'         => json_encode($data),
-                'sms_template_code' => $this->template[$type],
+                'sms_template_code' => $this->template[$template],
                 'sms_type'          => 'normal',
                 'timestamp'         => date('Y-m-d H:i:s'),
                 'v'                 => '2.0',

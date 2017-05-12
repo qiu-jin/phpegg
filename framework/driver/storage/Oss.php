@@ -1,79 +1,63 @@
 <?php
 namespace framework\driver\storage;
 
+use framework\util\File;
 use framework\core\http\Client;
 
 class Oss extends Storage
 {
-    private $bucket;
-    private $endpoint;
-    private $keyid;
-    private $keysecret;
+    protected $bucket;
+    protected $acckey;
+    protected $seckey;
+    protected $endpoint;
+    protected $public_read = false;
     
     public function __construct($config)
     {
-        $this->keyid = $config['keyid'];
-        $this->keysecret = $config['keysecret'];
         $this->bucket = $config['bucket'];
-        $this->endpoint = (empty($config['https']) ? 'http://' : 'https://').$config['endpoint'];
+        $this->acckey = $config['acckey'];
+        $this->seckey = $config['seckey'];
+        $this->endpoint = $config['endpoint'];
     }
     
     public function get($from, $to = null)
     {
-        $client = Client::get($this->url($from))->headers($this->buildHeader('GET', $from));
+        $client_methods['timeout'] = [30];
         if ($to) {
-            return $client->save($to) ? true : $this->setError($client->getResult());
-        } else {
-            $result = $client->getResult();
-            return $result['status'] === 200 ? $result['body'] : $this->setError($result); 
+            $client_methods['save'] = [$to];
         }
+        return $this->send('GET', $from, null, $client_methods, !$this->public_read);
     }
     
     public function put($from, $to, $is_buffer = false)
     {
-        $to = $this->path($to);
-        $type = $this->mime($from, $is_buffer);
-        $date = $this->date();
-        $ossr = '/'.$this->bucket.'/'.trim($to, '/');
-        $client = Client::put($this->url($to))->timeout(30);
+        $client_methods['timeout'] = [30];
+        $headers['Content-Type'] = File::mime($from, $is_buffer);
         if ($is_buffer) {
-            $client->body($from);
-            $size = strlen($from);
-            $fmd5 = base64_encode(md5($from, true));
-        } else {
-            $client->stream($from);
-            $size = filesize($from);
-            $fmd5 = base64_encode(md5_file($from, true));
+            $client_methods['body'] = [$from];
+            $headers['Content-Length'] = strlen($from);
+            $headers['Content-Md5'] = hash('sha256', $from);
+            return $this->send('PUT', $to, $headers, $client_methods);
         }
-        $result = $client->headers([
-            'Date: '.$date,
-            'Content-Length: '.$size,
-            'Content-Md5: '.$fmd5,
-            'Content-Type: '.$type,
-            'Authorization: OSS '.$this->sign("PUT\n$fmd5\n$type\n$date\n$ossr")
-        ])->getResult();
-        return $result['status'] === 200 || $this->setError($result);
-    }
-    
-    public function append($from, $to, $pos = 0, $is_buffer = false)
-    {
-
+        $fp = fopen($from, 'r');
+        if ($fp) {
+            $client_methods['stream'] = [$fp];
+            $headers['Content-Length'] = filesize($from);
+            $headers['Content-Md5'] = hash_file('sha256', $from);
+            $return = $this->send('PUT', $to, $headers, $client_methods);
+            fclose($fp);
+            return $return;
+        }
     }
 
     public function stat($from)
     {
-        $from = $this->path($from);
-        $result = Client::send('HEAD', $this->url($from), null, $this->buildHeader('HEAD', $from), null, true, true);
-        if ($result['status'] === 200) {
-            if (!empty($result['headers'])) {
-                return [
-                    'size' => $result['headers']['Content-Length'],
-                    'mtime' => strtotime($result['headers']['Last-Modified']),
-                    'type' => $result['headers']['Content-Type']
-                ];
-            }
-        }
-        return $this->setError($result);
+        $stat = $this->send('HEAD', $from, null, ['return_headers' => [true]], !$this->public_read);
+        return $stat ? [
+            'type'  => $stat['headers']['Content-Type'],
+            'size'  => $stat['headers']['Content-Length'],
+            'mtime' => strtotime($stat['headers']['Last-Modified']),
+        ] : false;
     }
 
     public function move($from, $to)
@@ -86,63 +70,59 @@ class Oss extends Storage
     
     public function copy($from, $to)
     {
-        $to = $this->path($to);
-        $from = $this->path($from);
-        $result = Client::send('PUT', $this->url($to), null, $this->buildHeader('PUT', $to, 'x-oss-copy-source:/'.$this->bucket.$from), null, true);
-        return $result['status'] === 200 || $this->setError($result);
+        return $this->send('PUT', $to, ['x-oss-copy-source' => '/'.$this->bucket.$from]);
     }
 
     public function delete($from)
     {
-        $from = $this->path($from);
-        $result = Client::send('DELETE', $this->url($from), null, $this->buildHeader('DELETE', $from), null, true);
-        return $result['status'] === 204 || $this->setError($result);
+        return $this->send('DELETE', $from);
     }
     
-    protected function url($path)
+    protected function send($method, $path, $headers = [], $client_methods = [], $auth = true)
     {
-        return 'http://'.$this->bucket.'.'.$this->endpoint.$path;
-    }
-
-    protected function sign($str)
-    {
-        $digest = hash_hmac('sha1', $str, $this->keysecret, true);
-        return $this->keyid.':'.base64_encode($digest);
-    }
-    
-    protected function mime($file, $is_buffer = false)
-    {
-        $finfo = finfo_open(FILEINFO_MIME); 
-        $mime = $is_buffer ? finfo_buffer($finfo, $file) : finfo_file($finfo, $file);
-        finfo_close($finfo);
-        return $mime;
-    }
-
-    protected function date()
-    { 
-        return gmdate('D, d M Y H:i:s').' GMT';
-    }
-    
-    protected function buildHeader($method, $path, $ossh = null)
-    {
-        $date = $this->date();
-        $ossr = '/'.$this->bucket.$path;
-        $sign = $this->sign("$method\n\n\n$date\n".($ossh ? "$ossh\n" : '').$ossr);
-        $headers = ['Date: '.$date, 'Authorization: OSS '.$sign];
-        if ($ossh) {
-            $headers[] = $ossh;
+        $client = new Client($method, 'http://'.$this->bucket.'.'.$this->endpoint.$path);
+        if ($client_methods) {
+            foreach ($client_methods as $client_method => $params) {
+                $client->$client_method(... (array) $params);
+            }
         }
-        return $headers;
+        if ($auth) {
+            $client->headers($this->setHeaders($method, $path, $headers));
+        }
+        $result = $client->getResult();
+        if ($result['status'] >= 200 && $result['status'] < 300) {
+            switch ($method) {
+                case 'GET':
+                    return $result['body'];
+                case 'PUT':
+                    return true;
+                case 'HEAD':
+                    return $result['headers'];
+                case 'DELETE':
+                    return true;
+            }
+        }
+        return $this->setError($result);
     }
     
     protected function setError($result)
     {
-        $data = json_decode($result['body'], true);
-        if (isset($data['error'])) {
-            $this->log = $data['error'];
-        } else {
-            $this->log = isset($result['error']) ? $result['error'] : 'unknown error';
-        }
         return false;
+    }
+    
+    protected function setHeaders($method, $path, $headers)
+    {
+        $headers['Date'] = gmdate('D, d M Y H:i:s').' GMT';
+        $str = "$method\n";
+        $str .= isset($headers['Content-Md5']) ? $headers['Content-Md5']."\n" : "\n";
+        $str .= isset($headers['Content-Type']) ? $headers['Content-Type']."\n" : "\n";
+        $str .= $headers['Date']."\n";
+        $str .= isset($headers['x-oss-copy-source']) ? 'x-oss-copy-source:'.$headers['x-oss-copy-source']."\n" : "";
+        $str .= '/'.$this->bucket.$path;
+        $sendheaders[] = "Authorization: OSS $this->acckey:".base64_encode(hash_hmac('sha1', $str, $this->seckey, true));
+        foreach ($headers as $k => $v) {
+            $sendheaders[] = "$k: $v";
+        }
+        return $sendheaders;
     }
 }
