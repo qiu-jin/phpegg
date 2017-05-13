@@ -12,9 +12,9 @@ class Client
     private $boundary;
     private $file_is_buffer;
     private $return_headers = false;
-    private $curlopt = ['TIMEOUT' => 5];
+    private $curlopt = ['TIMEOUT' => 30];
     
-    private function __construct($method, $url)
+    public function __construct($method, $url)
     {
         $this->url = $url;
         $this->method = $method;
@@ -143,6 +143,7 @@ class Client
     {
         $this->curlopt['PUT'] = 1;
         $this->curlopt['INFILE'] = $fp;
+        $this->curlopt['INFILESIZE'] = fstat($fp)['size'];
         return $this;
     }
 

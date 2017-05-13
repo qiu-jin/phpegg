@@ -14,20 +14,16 @@ class Local extends Storage
         }
     }
     
-    public function get($from)
+    public function get($from, $to)
     {
-        return file_get_contents($this->path($from));
+        return $to ? copy($this->path($from), $this->path($to)) : file_get_contents($this->path($from));
     }
     
     public function put($from, $to, $is_buffer = false)
     {
         $to = $this->path($to);
         if ($this->ckdir($to)) {
-            if ($is_buffer) {
-                return (bool) file_put_contents($to, $from);
-            } else {
-                return copy($from, $to);
-            }
+            return $is_buffer ? (bool) file_put_contents($to, $from) : copy($from, $to);
         }
         return false;
     }
@@ -36,9 +32,9 @@ class Local extends Storage
     {
         $fp = fopen($this->path($from), 'r');
         if ($fp) {
-            $fstat = fstat($fp);
+            $stat = fstat($fp);
             fclose($fp);
-            return array('size' => $fstat['size'], 'mtime' => $fstat['mtime'], 'ctime' => $fstat['ctime']);
+            return array('size' => $stat['size'], 'mtime' => $stat['mtime'], 'ctime' => $stat['ctime']);
         }
         return false;
     }
@@ -46,15 +42,13 @@ class Local extends Storage
     public function copy($from, $to)
     {
         $to = $this->path($to);
-        $from = $this->path($from);
-        return $this->ckdir($to) && copy($from, $to);
+        return $this->ckdir($to) && copy($this->path($from), $to);
     }
     
     public function move($from, $to)
     {
         $to = $this->path($to);
-        $from = $this->path($from);
-        return $this->ckdir($to) && rename($from, $to);
+        return $this->ckdir($to) && rename($this->path($from), $to);
     }
     
     public function delete($from)

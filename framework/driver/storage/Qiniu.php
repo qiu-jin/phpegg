@@ -23,11 +23,11 @@ class Qiniu extends Storage
 
     public function get($from, $to = null)
     {
-        $client_methods['timeout'] = [30];
+        $client_methods['timeout'] = 30;
         if ($to) {
-            $client_methods['save'] = [$to];
+            $client_methods['save'] = $to;
         }
-        $url = "$this->domain/$from";
+        $url = "$this->domain/".parent::path($from);
         if (!$this->public_read) {
             $url .= '?token='.$this->sign($url);
         }
@@ -36,25 +36,25 @@ class Qiniu extends Storage
 
     public function put($from, $to, $is_buffer = false)
     {
-        $to = $this->path($to);
+        $to = parent::path($to);
         $str = $this->base64Encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
         $token = $this->sign($str).':'.$str;
         
-        $client_methods['timeout'] = [30];
+        $client_methods['timeout'] = 30;
         $client_methods['form'] = [['token' => $token, 'key' => $to], $is_buffer];
-        $client_methods['file'] = [$from];
+        $client_methods['file'] = ['file', $from];
         return $this->send("https://up{$this->region}.qbox.me", null, $client_methods);
     }
     
     public function stat($from)
     {
-        $stat = $this->send('https://rs.qbox.me', '/stat/'.$this->path($from), 'GET');
+        $stat = $this->send('https://rs.qbox.me', '/stat/'.$this->path($from), null, 'GET');
         if ($stat) {
             $stat = jsondecode($stat);
             return [
                 'type'  => $stat['mimeType'],
                 'size'  => $stat['fsize'],
-                'mtime' => substr($stat['putTime'], 0 ,10),
+                'mtime' => (int) substr($stat['putTime'], 0 ,10),
             ];
         }
         return false;
@@ -78,7 +78,8 @@ class Qiniu extends Storage
     public function fetch($from, $to)
     {
         if (stripos($from, 'http://') === 0 || stripos($from, 'https://') === 0) {
-            return $this->send("https://iovip{$this->region}.qbox.me", '/fetch/'.$this->path($$to));
+            $path = '/fetch/'.$this->base64Encode($from).'/to/'.$this->path($to);
+            return $this->send("https://iovip{$this->region}.qbox.me", $path);
         }
         return parent::fetch($from, $to);
     }
@@ -95,6 +96,7 @@ class Qiniu extends Storage
             $client->header('Authorization', 'QBox '.$this->sign($path."\n"));
         }
         $result = $client->getResult();
+        var_dump($result);
         if ($result['status'] === 200) {
             return $method === 'GET' ? $result['body'] : true;
         }

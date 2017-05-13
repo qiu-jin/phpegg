@@ -24,7 +24,7 @@ class Error
         if ($level === null) {
             return self::$error;
         }
-        return isset(self::$error[$level]) : self::$error[$level] : null;
+        return isset(self::$error[$level]) ? self::$error[$level] : null;
     }
     
     public static function set($message, $level = 'error', $limit = 0)

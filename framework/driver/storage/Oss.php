@@ -22,28 +22,28 @@ class Oss extends Storage
     
     public function get($from, $to = null)
     {
-        $client_methods['timeout'] = [30];
+        $client_methods['timeout'] = 30;
         if ($to) {
-            $client_methods['save'] = [$to];
+            $client_methods['save'] = $to;
         }
         return $this->send('GET', $from, null, $client_methods, !$this->public_read);
     }
     
     public function put($from, $to, $is_buffer = false)
     {
-        $client_methods['timeout'] = [30];
+        $client_methods['timeout'] = 30;
         $headers['Content-Type'] = File::mime($from, $is_buffer);
         if ($is_buffer) {
-            $client_methods['body'] = [$from];
+            $client_methods['body'] = $from;
             $headers['Content-Length'] = strlen($from);
-            $headers['Content-Md5'] = hash('sha256', $from);
+            $headers['Content-Md5'] = base64_encode(md5($from, true));
             return $this->send('PUT', $to, $headers, $client_methods);
         }
         $fp = fopen($from, 'r');
         if ($fp) {
-            $client_methods['stream'] = [$fp];
+            $client_methods['stream'] = $fp;
             $headers['Content-Length'] = filesize($from);
-            $headers['Content-Md5'] = hash_file('sha256', $from);
+            $headers['Content-Md5'] = base64_encode(md5_file($from, true));
             $return = $this->send('PUT', $to, $headers, $client_methods);
             fclose($fp);
             return $return;
@@ -52,11 +52,11 @@ class Oss extends Storage
 
     public function stat($from)
     {
-        $stat = $this->send('HEAD', $from, null, ['return_headers' => [true]], !$this->public_read);
+        $stat = $this->send('HEAD', $from, null, ['return_headers' => true], !$this->public_read);
         return $stat ? [
-            'type'  => $stat['headers']['Content-Type'],
-            'size'  => $stat['headers']['Content-Length'],
-            'mtime' => strtotime($stat['headers']['Last-Modified']),
+            'type'  => $stat['Content-Type'],
+            'size'  => (int) $stat['Content-Length'],
+            'mtime' => strtotime($stat['Last-Modified']),
         ] : false;
     }
 
@@ -70,7 +70,7 @@ class Oss extends Storage
     
     public function copy($from, $to)
     {
-        return $this->send('PUT', $to, ['x-oss-copy-source' => '/'.$this->bucket.$from]);
+        return $this->send('PUT', $to, ['x-oss-copy-source' => '/'.$this->bucket.$this->path($from)]);
     }
 
     public function delete($from)
@@ -80,6 +80,7 @@ class Oss extends Storage
     
     protected function send($method, $path, $headers = [], $client_methods = [], $auth = true)
     {
+        $path = $this->path($path);
         $client = new Client($method, 'http://'.$this->bucket.'.'.$this->endpoint.$path);
         if ($client_methods) {
             foreach ($client_methods as $client_method => $params) {

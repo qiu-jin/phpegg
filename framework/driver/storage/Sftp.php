@@ -5,14 +5,17 @@ use framework\core\Hook;
 
 class Sftp extends Storage
 {
-    protected $sftp;
     protected $link;
+    protected $sftp;
+    protected $chroot;
     
     public function __construct($config)
     {
         $link = ssh2_connect($config['host'], isset($config['port']) ? $config['port'] : 22);
         if ($link && ssh2_auth_password($link, $config['username'], $config['password'])) {
             $this->link = $link;
+            $this->sftp = ssh2_sftp($this->link);
+            $this->chroot = isset($config['chroot']) ? $config['chroot'] : '/home/'.$config['username'];
         } else {
             throw new \Exception('Sftp connect error');
         }
@@ -21,75 +24,53 @@ class Sftp extends Storage
     public function get($from ,$to = null)
     {
         $from = $this->path($from);
-        if ($to) {
-            return ssh2_scp_recv($this->link, $to, $from);
-        } else {
-            $tmpfile = tempnam(sys_get_temp_dir(), 'sftp');
-            if (ssh2_scp_recv($this->link, $tmpfile, $from)) {
-                $data = file_get_contents($tmpfile);
-                unlink($tmpfile);
-                return $data;
-            }
-            return false;
-        }
+        return $to ? ssh2_scp_recv($this->link, $from, $to) : file_get_contents($this->url($from));
     }
     
     public function put($from, $to, $is_buffer = false)
     {
         $to = $this->path($to);
-        if (!$this->chdir($to)) return false;
-        if ($is_buffer) {
-            $tmpfile = tempnam(sys_get_temp_dir(), 'sftp');
-            file_put_contents($tmpfile, $from);
-            $rel = ssh2_scp_send($this->link, $tmpfile, $to);
-            unlink($tmpfile);
-            return $rel;
-        } else {
-            return ssh2_scp_send($this->link, $from, $to);
+        if ($this->ckdir($to)) {
+            return $is_buffer ? (bool) file_put_contents($this->url($to), $from) : ssh2_scp_send($this->link, $from, $to);
         }
+        return false;
     }
 
     public function stat($from)
     {
-        return ssh2_sftp_stat($this->sftp(), $this->path($from));
+        return ssh2_sftp_stat($this->sftp, $this->path($from));
     }
     
     public function copy($from, $to)
     {
         $to = $this->path($to);
-        $from = $this->path($from);
-        if (!$this->chdir($to)) return false;
-        $tmpfile = tempnam(sys_get_temp_dir(), 'sftp');
-        if (ssh2_scp_recv($this->link, $tmpfile, $from)) {
-            $rel = ssh2_scp_send($this->link, $tmpfile, $to);
-            unlink($tmpfile);
-            return $rel;
-        }
-        return false;
+        return $this->ckdir($to) ? copy($this->url($this->path($from)), $this->url($to)) : false;
     }
     
     public function move($from, $to)
     {
         $to = $this->path($to);
-        $from = $this->path($from);
-        if (!$this->chdir($to)) return false;
-        return ssh2_sftp_rename($this->sftp(), $from, $to);
+        return $this->ckdir($to) ? ssh2_sftp_rename($this->sftp, $this->path($from), $to) : false;
     }
     
     public function delete($from)
     {
-        return ssh2_sftp_unlink($this->sftp(), $this->path($from));
+        return ssh2_sftp_unlink($this->sftp, $this->path($from));
     }
     
-    protected function sftp()
+    protected function url($path)
     {
-        return isset($this->sftp) ? $this->sftp : $this->sftp = ssh2_sftp($this->link);
+        return "ssh2.sftp://".intval($this->sftp).$path;
     }
     
-    protected function chdir($path)
+    protected function path($path)
     {
-        $dir = dirname($path);
-        $sftp = $this->sftp();
-        return is_dir("ssh2.sftp://$sftp/$dir") || ssh2_sftp_mkdir($sftp, $dir);
+        return $this->chroot.'/'.trim(trim($path), '/');
+    }
+
+    protected function ckdir($path)
+    {
+        $dir = dirname($path).'/';
+        return @ssh2_sftp_stat($this->sftp, $dir) || ssh2_sftp_mkdir($this->sftp, $dir);
     }
 }

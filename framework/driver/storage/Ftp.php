@@ -28,12 +28,12 @@ class Ftp extends Storage
         if ($to) {
             return ftp_get($this->link, $to, $from, 2);
         } else {
-            $ch = tmpfile();
-            if (ftp_fget($this->link, $ch, $from, 2)) {
-                fseek($ch, 0);
-                $data = stream_get_contents($ch);
-                fclose($ch);
-                return $data;
+            $fp = fopen('php://memory', 'r+');
+            if (ftp_fget($this->link, $fp, $from, 2)) {
+                rewind($fp);
+                $content = stream_get_contents($fp);
+                fclose($fp);
+                return $content;
             }
             return false;
         }
@@ -42,39 +42,45 @@ class Ftp extends Storage
     public function put($from, $to, $is_buffer = false)
     {
         $to = $this->path($to);
-        if (!$this->chdir($to)) return false;
-        if ($is_buffer) {
-            $ch = tmpfile();
-            fwrite($ch, $from);
-            fseek($ch, 0);
-            $rel = ftp_fput($this->link, $to, $ch, 2);
-            fclose($ch);
-            return $rel;
-        } else {
-            return ftp_put($this->link, $to, $from, 2);
+        if ($this->ckdir($to)) {
+            if ($is_buffer) {
+                $fp = fopen('php://memory', 'r+');
+                fwrite($fp, $from);
+                rewind($fp);
+                $return = ftp_fput($this->link, $to, $fp, 2);
+                fclose($fp);
+                return $return;
+            } else {
+                return ftp_put($this->link, $to, $from, 2);
+            }
         }
+    }
+    
+    public function save($from, $to)
+    {
+        
     }
 
     public function stat($from)
     {
         $from = $this->path($from);
-        if ($size = ftp_size($this->link, $from) && $mtime = ftp_mdtm($this->link, $from)) {
-            return compact('size', 'mtime');
-        }
-        return false;
+        return [
+            'size' => ftp_size($this->link, $from),
+            'mtime' => ftp_mdtm($this->link, $from)
+        ];
     }
     
     public function copy($from, $to)
     {
         $to = $this->path($to);
-        $from = $this->path($from);
-        if (!$this->chdir($to)) return false;
-        $ch = tmpfile();
-        if (ftp_fget($this->link, $ch, $from, 2)) {
-            fseek($ch, 0);
-            $rel = ftp_fput($this->link, $to, $ch, 2);
-            fclose($ch);
-            return $rel;
+        if ($this->ckdir($to)) {
+            $fp = fopen('php://memory', 'r+');
+            if (ftp_fget($this->link, $fp, $this->path($from), 2)) {
+                rewind($fp);
+                $return = ftp_fput($this->link, $to, $fp, 2);
+                fclose($fp);
+                return $return;
+            }
         }
         return false;
     }
@@ -82,18 +88,15 @@ class Ftp extends Storage
     public function move($from, $to)
     {
         $to = $this->path($to);
-        $from = $this->path($from);
-        if (!$this->chdir($to)) return false;
-        return ftp_rename($this->link, $from, $to);
+        return $this->ckdir($to) ? ftp_rename($this->link, $this->path($from), $to) : false;
     }
     
     public function delete($from)
     {
-        $from = $this->path($from);
-        return ftp_delete($this->link, $from);
+        return ftp_delete($this->link, $this->path($from));
     }
     
-    private function chdir($path) {
+    protected function ckdir($path) {
         $dir = dirname($path);
         return @ftp_chdir($this->link, $dir) || ftp_mkdir($this->link, $dir);
     }

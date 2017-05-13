@@ -24,26 +24,26 @@ class S3 extends Storage
     
     public function get($from, $to = null)
     {
-        $client_methods['timeout'] = [30];
+        $client_methods['timeout'] = 30;
         if ($to) {
-            $client_methods['save'] = [$to];
+            $client_methods['save'] = $to;
         }
         return $this->send('GET', $from, null, $client_methods, !$this->public_read);
     }
     
     public function put($from, $to, $is_buffer = false)
     {
-        $client_methods['timeout'] = [30];
+        $client_methods['timeout'] = 30;
         $headers['Content-Type'] = File::mime($from, $is_buffer);
         if ($is_buffer) {
-            $client_methods['body'] = [$from];
+            $client_methods['body'] = $from;
             $headers['Content-Length'] = strlen($from);
             $headers['X-Amz-Content-Sha256'] = hash('sha256', $from);
             return $this->send('PUT', $to, $headers, $client_methods);
         }
         $fp = fopen($from, 'r');
         if ($fp) {
-            $client_methods['stream'] = [$fp];
+            $client_methods['stream'] = $fp;
             $headers['Content-Length'] = filesize($from);
             $headers['X-Amz-Content-Sha256'] = hash_file('sha256', $from);
             $return = $this->send('PUT', $to, $headers, $client_methods);
@@ -55,17 +55,17 @@ class S3 extends Storage
 
     public function stat($from)
     {
-        $stat = $this->send('HEAD', $from, null, ['return_headers' => [true]], !$this->public_read);
+        $stat = $this->send('HEAD', $from, null, ['return_headers' => true], !$this->public_read);
         return $stat ? [
-            'type'  => $stat['headers']['Content-Type'],
-            'size'  => $stat['headers']['Content-Length'],
-            'mtime' => strtotime($stat['headers']['Last-Modified']),
+            'type'  => $stat['Content-Type'],
+            'size'  => $stat['Content-Length'],
+            'mtime' => strtotime($stat['Last-Modified']),
         ] : false;
     }
     
     public function copy($from, $to)
     {
-        return $this->send('PUT', $from, ['x-amz-copy-source', $this->bucket.$this->url($to)]);
+        return $this->send('PUT', $to, ['X-Amz-Copy-Source' => '/'.$this->bucket.$this->path($from)]);
     }
     
     public function move($from, $to)
@@ -83,7 +83,8 @@ class S3 extends Storage
     
     protected function send($method, $path, $headers = [], $client_methods = [], $auth = true)
     {
-        $client = new Client($method, "https://".self::$host."/$this->bucket/$path");
+        $path = $this->path($path);
+        $client = new Client($method, "https://".self::$host."/$this->bucket$path");
         if ($client_methods) {
             foreach ($client_methods as $client_method => $params) {
                 $client->$client_method(... (array) $params);
@@ -118,7 +119,9 @@ class S3 extends Storage
     {
         $headers['Host'] = self::$host;
         $headers['X-Amz-Date'] = gmdate('Ymd\THis\Z');
-        isset($headers['X-Amz-Content-Sha256']) || $headers['X-Amz-Content-Sha256'] = hash('sha256', '');
+        if (empty($headers['X-Amz-Content-Sha256'])) {
+            $headers['X-Amz-Content-Sha256'] = hash('sha256', '');
+        }
         ksort($headers);
         $tmparr = [];
         $sendheaders = [];
@@ -131,7 +134,7 @@ class S3 extends Storage
             $canonicalheaders .= "$k:$v\n";
         }
         $signheaders = implode(';', $tmparr);
-        $str = "$method\n/$this->bucket/$path\n\n$canonicalheaders\n$signheaders\n".$headers['X-Amz-Content-Sha256'];
+        $str = "$method\n/$this->bucket$path\n\n$canonicalheaders\n$signheaders\n".$headers['X-Amz-Content-Sha256'];
         $date = substr($headers['X-Amz-Date'], 0, 8);
         $scope = "$date/$this->region/s3/aws4_request";
         $signstr = "AWS4-HMAC-SHA256\n{$headers['X-Amz-Date']}\n$scope\n".hash('sha256', $str);

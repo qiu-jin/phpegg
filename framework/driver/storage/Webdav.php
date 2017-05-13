@@ -28,29 +28,32 @@ class Webdav extends Storage
         $this->server = $config['server'];
         $this->username = $config['username'];
         $this->password = $config['password'];
-        isset($config['auto_create_dir']) && $this->auto_create_dir = (bool) $config['auto_create_dir'];
+        if (isset($config['auto_create_dir'])) {
+            $this->auto_create_dir = (bool) $config['auto_create_dir'];
+        }
     }
     
     public function get($from, $to = null)
     {
-        $client_methods['timeout'] = [30];
+        $client_methods['timeout'] = 30;
         if ($to) {
-            $client_methods['save'] = [$to];
+            $client_methods['save'] = $to;
         }
-        return $this->send('GET', $from, null, $client_methods, !$this->public_read);
+        return $this->send('GET', $this->url($from), null, $client_methods, !$this->public_read);
     }
     
     public function put($from, $to, $is_buffer = false)
     {
+        $to = $this->url($to);
         if ($this->ckdir($to)) {
-            $client_methods['timeout'] = [30];
+            $client_methods['timeout'] = 30;
             if ($is_buffer) {
-                $client_methods['body'] = [$from];
+                $client_methods['body'] = $from;
                 return $this->send('PUT', $to, null, $client_methods);
             }
             $fp = fopen($from, 'r');
             if ($fp) {
-                $client_methods['stream'] = [$fp];
+                $client_methods['stream'] = $fp;
                 $return = $this->send('PUT', $to, null, $client_methods);
                 fclose($fp);
                 return $return;
@@ -61,32 +64,34 @@ class Webdav extends Storage
 
     public function stat($from)
     {
-        $stat = $this->send('HEAD', $from, null, null, !$this->public_read);
+        $stat = $this->send('HEAD', $this->url($from), null, ['return_headers' => true], !$this->public_read);
         return $stat ? [
-            'type'  => $stat['headers']['Content-Type'],
-            'size'  => (int) $stat['headers']['Content-Length'],
-            'mtime' => strtotime($stat['headers']['Last-Modified']),
+            'type'  => $stat['Content-Type'],
+            'size'  => (int) $stat['Content-Length'],
+            'mtime' => strtotime($stat['Last-Modified']),
         ] : false;
     }
     
     public function copy($from, $to)
     {
-        return $this->ckdir($to) ? $this->send('COPY', $from, ['Destination: '.$this->url($to)]) : false;
+        $to = $this->url($to);
+        return $this->ckdir($to) ? $this->send('COPY', $this->url($from), ['Destination: '.$to]) : false;
     }
     
     public function move($from, $to)
     {
-        return $this->ckdir($to) ? $this->send('MOVE', $from, ['Destination: '.$this->url($to)]) : false;
+        $to = $this->url($to);
+        return $this->ckdir($to) ? $this->send('MOVE', $this->url($from), ['Destination: '.$to]) : false;
     }
     
     public function delete($from)
     {
-        return $this->send('DELETE', $from);
+        return $this->send('DELETE', $this->url($from));
     }
     
-    protected function send($method, $path, $headers = [], $client_methods = [], $auth = true)
+    protected function send($method, $url, $headers = [], $client_methods = [], $auth = true)
     {
-        $client = new Client($method, $this->url($path));
+        $client = new Client($method, $url);
         if ($client_methods) {
             foreach ($client_methods as $client_method => $params) {
                 $client->$client_method(... (array) $params);
@@ -122,7 +127,7 @@ class Webdav extends Storage
     
     protected function url($path)
     {
-        return $this->server.trim(trim($path), '/');
+        return $this->server.'/'.trim(trim($path), '/');
     }
     
     protected function auth()
@@ -132,7 +137,7 @@ class Webdav extends Storage
     
     protected function ckdir($path)
     {
-        return $this->auto_create_dir || $this->send('MKCOL', dirname($this->url($path)).'/');
+        return $this->auto_create_dir || $this->send('MKCOL', dirname($path).'/');
     }
     
     protected function setError($result)
