@@ -1,20 +1,21 @@
 <?php
 namespace framework\driver\email;
 
+use framework\core\Error;
 use framework\core\http\Client;
 
 class Sendcloud extends Email
 {
-    protected $apiuser;
-    protected $apikey;
+    protected $acckey;
+    protected $seckey;
     protected $apiurl = 'http://api.sendcloud.net/apiv2/mail/';
     protected $apitemplate;
     protected $template;
     
     protected function init($config)
     {
-        $this->apiuser = $config['apiuser'];
-        $this->apikey  = $config['apikey'];
+        $this->acckey = $config['acckey'];
+        $this->seckey = $config['seckey'];
         if (isset($config['apitemplate'])) {
             $this->apitemplate  = $config['apitemplate'];
         }
@@ -23,8 +24,8 @@ class Sendcloud extends Email
     protected function handle()
     {
         $from = [
-            'apiUser'   => $this->apiuser,
-            'apiKey'    => $this->apikey,
+            'apiUser'   => $this->acckey,
+            'apiKey'    => $this->seckey,
             'from'      => $this->option['from'][0],
             'to'        => implode(';', array_column($this->option['to'], 0))
         ];
@@ -64,15 +65,11 @@ class Sendcloud extends Email
         if (isset($this->option['attach'])) {
             $client->file('attachments', ...end($this->option['attach']));
         }
-        $result = $client->getJson();
-        if (empty($result['result'])) {
-            if (isset($result['statusCode'])) {
-                $this->log = $result['statusCode'].': '.$result['message'];
-            } else {
-                $clierr = $client->getError();
-                $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
-            }
-            return false;
+        $data = $client->getJson();
+        if (empty($data['result'])) {
+            //$result['statusCode']
+            $error = isset($data['message']) ? $data['message'] : $client->getError('unknown error');
+            return (bool) Error::set($error);
         }
         return true;
     }

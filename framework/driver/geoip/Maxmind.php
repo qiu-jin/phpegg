@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\geoip;
 
+use framework\core\Error;
 use framework\core\http\Client;
 /* 
  * composer require maxmind-db/reader
@@ -19,10 +20,10 @@ class Maxmind extends Geoip
         if (isset($config['dbfile'])) {
             $this->handle = 'dbHandle';
             $this->db = ['file' => $config['dbfile']];
-        } elseif (isset($config['apiuid']) && isset($config['apikey'])) {
+        } elseif (isset($config['acckey']) && isset($config['seckey'])) {
             $this->handle = 'apiHandle';
-            $this->api['uid'] = $config['apiuid'];
-            $this->api['key'] = $config['apikey'];
+            $this->api['acckey'] = $config['acckey'];
+            $this->api['seckey'] = $config['seckey'];
             if (isset($config['type'])) {
                 $this->api['type'] = $config['apitype'];
             }
@@ -34,7 +35,7 @@ class Maxmind extends Geoip
     protected function apiHandle($ip, $raw = false)
     {
         $url = 'https://geoip.maxmind.com/geoip/v2.1/'.$this->api['type'].'/'.$ip;
-        $client = Client::get($url)->header('Authorization', 'Basic '.base64_encode($this->api['uid'].':'.$this->api['key']));
+        $client = Client::get($url)->header('Authorization', 'Basic '.base64_encode($this->api['acckey'].':'.$this->api['seckey']));
         $result = $client->getJson();
         if (isset($result['country'])) {
             if ($raw) {
@@ -51,13 +52,8 @@ class Maxmind extends Geoip
                 return $return;
             }
         }
-        if (isset($result['error'])) {
-            $this->log = jsonencode($result);
-        } else {
-            $clierr = $client->getError();
-            $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
-        }
-        return false;
+        $error = isset($result['error']) ? $result['error'] : $client->getError('unknown error');
+        return (bool) Error::set($error);
     }
     
     protected function dbHandle($ip, $raw = false)
@@ -69,15 +65,12 @@ class Maxmind extends Geoip
             $record = $this->db['reader']->get($ip);
             return $raw ? $record : ['iso_code' => $record['country']['iso_code'], 'country' => $record['country']['names'][$this->lang]];
         } catch (\Exception $e) {
-            $this->log = $e->message();
-            return false;
+            return (bool) Error::set($e->getMessage());
         }
     }
     
     public function __destruct()
     {
-        if (isset($this->db['reader'])) {
-            $this->db['reader']->close();
-        }
+        isset($this->db['reader']) && $this->db['reader']->close();
     }
 } 

@@ -92,7 +92,7 @@ class View
                 return ob_get_clean();
             }
         }
-        return $code === '404' ? ViewError::render404($message) : ViewError::renderError($message);
+        return $code == 404 ? ViewError::render404($message) : ViewError::renderError($message);
     }
     
     private static function import($tpl, $dir = null)

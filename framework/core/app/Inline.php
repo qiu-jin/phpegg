@@ -2,6 +2,7 @@
 namespace framework\core\app;
 
 use framework\App;
+use framework\core\View;
 use framework\core\Router;
 use framework\core\Config;
 use framework\core\http\Request;
@@ -45,7 +46,12 @@ class Inline extends App
 
     public function error($code = null, $message = null)
     {
-        $this->config['enable_view'] ? View::error($code, $message) : Response::json(['error' => compact('code', 'message')]);
+        Response::status($code ? $code : 500);
+        if ($this->config['enable_view']) {
+            Response::send(View::error($code, $message));
+        } else {
+            Response::json(['error' => compact('code', 'message')]);
+        }
     }
     
     public function response($return = [])

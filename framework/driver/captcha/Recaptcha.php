@@ -1,27 +1,28 @@
 <?php
 namespace framework\driver\captcha;
 
+use framework\core\Error;
 use framework\core\http\Client;
 use framework\core\http\Request;
 
 class Recaptcha
 {
-    protected $sitekey;
-    protected $secretkey;
+    protected $acckey;
+    protected $seckey;
     protected $apiurl = 'https://www.google.com/recaptcha/api/siteverify';
     protected $scripturl = 'https://www.google.com/recaptcha/api.js';
     
     public function __construct($config)
     {
-        $this->sitekey = $config['sitekey'];
-        $this->secretkey = $config['secretkey'];
+        $this->acckey = $config['acckey'];
+        $this->seckey = $config['seckey'];
     }
     
     public function render($tag = 'div', $attr = [])
     {
         $str = '';
         $attr['class'] = 'g-recaptcha';
-        $attr['data-sitekey'] = $this->sitekey;
+        $attr['data-sitekey'] = $this->acckey;
         $html = "<script src='$this->scripturl' async defer></script>\r\n";
         foreach ($attr as $k => $v) {
             $str .= "$k = '$v' ";
@@ -33,7 +34,7 @@ class Recaptcha
     public function verify($value = null)
     {
         $form = [
-            'secret' => $this->secret,
+            'secret' => $this->seckey,
             'response' => $value ? $value : Request::post('g-recaptcha-response'),
             'remoteip' => Request::ip()
         ];
@@ -42,12 +43,7 @@ class Recaptcha
         if (isset($result['success']) && $result['success'] === true) {
             return true;
         }
-        if (isset($result['error-codes'])) {
-            $this->log = $result['error-codes'];
-        } else {
-            $clierr = $client->getError();
-            $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
-        }
-        return false;
+        $error = isset($result['error-codes']) ? $result['error-codes'] : $client->getError('unknown error');
+        return (bool) Error::set($error);
     }
 }

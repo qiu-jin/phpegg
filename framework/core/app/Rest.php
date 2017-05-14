@@ -87,10 +87,7 @@ class Rest extends App
     
     public function error($code = null, $message = null)
     {
-        if (!$code) {
-            $code = 500;
-        }
-        Response::status($code);
+        Response::status($code ? $code : 500);
         Response::json(['error' => compact('code', 'message')]);
     }
     

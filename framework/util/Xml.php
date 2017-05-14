@@ -5,47 +5,39 @@ class Xml
 {
     public static function encode($arr, $root = null)
     {
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>';
-        foreach ($array as $key => $val) {
-            if ($key{0} = ':') {
-                is_array($val)
-            } else {
-                is_array($val)
-            }
+        $xml = new \XmlWriter();  
+        $xml->openMemory();  
+        $xml->startDocument('1.0', 'utf-8');
+        if ($root) {
+            $xml->startElement($root);
+            self::arrayToXml($xml, $arr);
+            $xml->endElement();  
+        } else {
+            self::arrayToXml($xml, $arr);
         }
-        return '<'.$root.'>'.$xml.'</'.$root.'>'
+        return $xml->outputMemory(true);  
     }
 
     public static function decode($str, $root = false)
     {
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>
-                    <data>
-                        <item attr="1">1</itme>
-                        <item attr="2">2</itme>
-                        <item attr="3">3</itme>
-                    <\data>
-        ';
-        $arr = [
-            'item' = [
-                '1',
-                '2',
-                '3'
-            ],
-            '@item' = [
-                ['attr' => '1'],
-                ['attr' => '2'],
-                ['attr' => '3'],
-            ]
-        ];
-        $arr['data']['item'];
-        
-        $arr['data']['@item']['attr'];
-        
-        $xml->data->attr('abc', '123123')
-        
-        $xml->data = '123';
-        
-        $xml['data']['_item'][0]
-        $array['_abc']['att1']
+        $obj = simplexml_load_string($str);
+        if ($obj) {
+            $arr = json_decode(json_encode($obj), true);
+            return $root ? [$obj->getName() => $arr] : $arr;
+        }
+        return false;
+    }
+    
+    private static function arrayToXml($xml, $arr)
+    {
+        foreach($arr as $key => $value){
+            $xml->startElement($key);
+            if(is_array($value)){
+                self::arrayToXml($xml, $value);
+            } else {
+                $xml->text($value);
+            }
+            $xml->endElement();
+        }
     }
 }

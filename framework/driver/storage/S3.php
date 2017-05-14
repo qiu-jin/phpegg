@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\storage;
 
+use framework\util\Xml;
 use framework\util\File;
 use framework\core\Error;
 use framework\core\http\Client;
@@ -111,8 +112,14 @@ class S3 extends Storage
     
     protected function setError($result)
     {
-        //Error::set();
-        return false;
+        if ($result['body']) {
+            $data = Xml::decode($result['body']);
+            if ($data) {
+                return (bool) Error::set($data['Code'].': '.$data['Message'], Error::ERROR, 3);
+            }
+        }
+        $error = isset($result['error']) ? 'Curl error '.$result['error'][0].': '.$result['error'][1] : 'unknown error';
+        return (bool) Error::set($error, Error::ERROR, 3);
     }
     
     protected function setHeaders($method, $path, $headers)

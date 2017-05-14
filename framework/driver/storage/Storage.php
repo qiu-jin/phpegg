@@ -8,7 +8,7 @@ abstract class Storage
 {
     abstract public function get($from);
     
-    abstract public function put($from, $to, $is_buffer);
+    abstract public function put($from, $to);
     
     abstract public function stat($from);
     

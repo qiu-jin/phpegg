@@ -35,10 +35,8 @@ class Error
         if($message) {
             $html .= '<style type="text/css">.table {background: #AAAAAA}tr{ background-color: #EEEEEE;}.error{ background-color: #FFCCCC;}.warning{ background-color: #FFFFCC;}.info{ background-color: #EEEEEE;}</style>';
             $html .= '<table table cellpadding="5" cellspacing="1" width="100%" class="table">';
-            foreach ($message as $level => $logs){
-                foreach ($logs as $log){
-                    $html .= '<tr class="'.$loglevel[$level]['class'].'"><td title="'.$loglevel[$level]['txt'].'">'.$loglevel[$level]['icon'].' '.$log.'</td></tr>';
-                }
+            foreach ($logs as $log){
+                $html .= '<tr class="'.$loglevel[$level]['class'].'"><td title="'.$loglevel[$level]['txt'].'">'.$loglevel[$level]['icon'].' '.$log.'</td></tr>';
             }
             $html .= '</table>';
         }

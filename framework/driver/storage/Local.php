@@ -30,13 +30,8 @@ class Local extends Storage
 
     public function stat($from)
     {
-        $fp = fopen($this->path($from), 'r');
-        if ($fp) {
-            $stat = fstat($fp);
-            fclose($fp);
-            return array('size' => $stat['size'], 'mtime' => $stat['mtime'], 'ctime' => $stat['ctime']);
-        }
-        return false;
+        $stat = stat($from);
+        return $stat ? ['size' => $stat['size'], 'mtime' => $stat['mtime'], 'ctime' => $stat['ctime']] : false;
     }
     
     public function copy($from, $to)

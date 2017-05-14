@@ -5,6 +5,10 @@ use framework\App;
 
 class Error
 {
+    const ERROR    = E_USER_ERROR;
+    const WARNING  = E_USER_WARNING;
+    const NOTICE   = E_USER_NOTICE;
+    
     private static $init;
     private static $error;
     
@@ -27,14 +31,15 @@ class Error
         return isset(self::$error[$level]) ? self::$error[$level] : null;
     }
     
-    public static function set($message, $level = 'error', $limit = 0)
+    public static function set($message, $code = E_USER_ERROR, $limit = 1)
     {
         $file = null;
         $line = null;
+        $level = self::getErrorCodeInfo($code)[0];
         $traces = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         if (isset($traces[$limit])) {
-            $file = $traces[$limit]['file'];
-            $line = $traces[$limit]['line'];
+            extract($traces[$limit]);
+            $message = "$class$type$function() $message";
         }
         self::record($level, $message, $file, $line);
     }

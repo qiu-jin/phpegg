@@ -1,21 +1,22 @@
 <?php
 namespace framework\driver\geoip;
 
+use framework\core\Error;
 use framework\core\http\Client;
 
 class Ipip extends Geoip
 {
     protected $db;
-    protected $apitoken;
+    protected $acckey;
 
     protected function init($config)
     {
         if (isset($config['dbfile'])) {
             $this->handle = 'dbHandle';
             $this->db = ['file' => $config['dbfile']];
-        } elseif (isset($config['apitoken'])) {
+        } elseif (isset($config['acckey'])) {
             $this->handle = 'apiHandle';
-            $this->apitoken = $config['apitoken'];
+            $this->apitoken = $config['acckey'];
         } else {
             throw new \Exception("Invalid configuration");
         }
@@ -23,17 +24,17 @@ class Ipip extends Geoip
     
     public function apiHandle($ip, $raw = false)
     {
-        $client = Client::get('http://ipapi.ipip.net/find/?addr='.$ip)->header('Token', $this->token);
+        $client = Client::get('http://ipapi.ipip.net/find/?addr='.$ip)->header('Token', $this->acckey);
         $result = $client->getJson();
         if (isset($result['ret'])) {
             if ($result['ret'] === 'ok') {
                 $result = $result['data'];
                 return $raw ? $result : ['country' => $result[0], 'state' => $result[1], 'city' => $result[2]];
             } elseif ($result['ret'] === 'err') {
-                $this->log = $result['msg'];
+                return (bool) Error::set($result['msg']);
             }
         }
-        return false;
+        return (bool) Error::set($client->getError('unknown error'));
     }
     
     public function dbHandle($ip,  $raw = false)
@@ -47,7 +48,7 @@ class Ipip extends Geoip
                 return false;
             }
         }
-        $long   = pack('N', ip2long($ip));
+        $long = pack('N', ip2long($ip));
         if (!$long) return false;
         $index  = $this->db['index'];
         $start  = unpack('Vlen', substr($index, strtok($ip, '.') * 4, 4));
@@ -70,8 +71,6 @@ class Ipip extends Geoip
     
     public function __destruct()
     {
-        if (isset($this->db['fp'])) {
-            fclose($this->db['fp']);
-        }
+        isset($this->db['fp']) && fclose($this->db['fp']);
     }
 } 

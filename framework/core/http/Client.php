@@ -66,10 +66,10 @@ class Client
         return isset($this->result['body']) ? jsondecode($this->result['body']) : null;
     }
     
-    public function getError()
+    public function getError($default = null)
     {
         isset($this->result) || $this->getResult(false);
-        return isset($this->result['error']) ? $this->result['error'] : null;
+        return isset($this->result['error']) ? $this->result['error'] : $default;
     }
     
     public function getResult($return = true)

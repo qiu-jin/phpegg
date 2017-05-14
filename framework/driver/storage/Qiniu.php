@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\storage;
 
+use framework\core\Error;
 use framework\core\http\Client;
 
 class Qiniu extends Storage
@@ -27,7 +28,7 @@ class Qiniu extends Storage
         if ($to) {
             $client_methods['save'] = $to;
         }
-        $url = "$this->domain/".parent::path($from);
+        $url = "$this->domain".parent::path($from);
         if (!$this->public_read) {
             $url .= '?token='.$this->sign($url);
         }
@@ -96,7 +97,6 @@ class Qiniu extends Storage
             $client->header('Authorization', 'QBox '.$this->sign($path."\n"));
         }
         $result = $client->getResult();
-        var_dump($result);
         if ($result['status'] === 200) {
             return $method === 'GET' ? $result['body'] : true;
         }
@@ -115,7 +115,14 @@ class Qiniu extends Storage
     
     protected function setError($result)
     {
-        return false;
+        if ($result['body']) {
+            $data = jsondecode($result['body']);
+            if ($data) {
+                return (bool) Error::set($data['error'], Error::ERROR, 3);
+            }
+        }
+        $error = isset($result['error']) ? 'Curl error '.$result['error'][0].': '.$result['error'][1] : 'unknown error';
+        return (bool) Error::set($error, Error::ERROR, 3);
     }
     
     protected function base64Encode($str)

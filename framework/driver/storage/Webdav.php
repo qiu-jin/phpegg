@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\storage;
 
+use framework\core\Error;
 use framework\core\http\Client;
 
 /*
@@ -142,6 +143,10 @@ class Webdav extends Storage
     
     protected function setError($result)
     {
-        return false;
+        if ($result['status']) {
+            return (bool) Error::set($result['status'], Error::ERROR, 3);
+        }
+        $error = isset($result['error']) ? 'Curl error '.$result['error'][0].': '.$result['error'][1] : 'unknown error';
+        return (bool) Error::set($error, Error::ERROR, 3);
     }
 }

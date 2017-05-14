@@ -1,20 +1,21 @@
 <?php
 namespace framework\driver\sms;
 
+use framework\core\Error;
 use framework\core\http\Client;
 
 class Aliyun extends Sms
 {
-    protected $keyid;
-    protected $keysecret;
+    protected $acckey;
+    protected $seckey;
     protected $signname
     protected $template;
     protected $apiurl = 'https://sms.aliyuncs.com';
     
     public function __construct($config)
     {
-        $this->keyid  = $config['keyid'];
-        $this->keysecret = $config['keysecret'];
+        $this->acckey = $config['acckey'];
+        $this->seckey = $config['seckey'];
         $this->signname = $config['signname'];
         $this->template = $config['template'];
     }
@@ -31,26 +32,25 @@ class Aliyun extends Sms
                 
                 'Format'            => 'JSON',
                 'Version'           => '2016-09-27',
-                'AccessKeyId'       => $this->keyid,,
+                'AccessKeyId'       => $this->acckey,,
                 'SignatureMethod'   => 'HMAC-SHA1',
                 'Timestamp'         => date(\DateTime::ISO8601),
                 'SignatureVersion'  => '1.0',
                 'SignatureNonce'    => uniqid(),
             ]);
-            $query .= '&Signature='.hash_hmac('SHA1', rawurlencode('GET&'.$query), $this->keysecret.'&');
+            $query .= '&Signature='.hash_hmac('SHA1', rawurlencode('GET&'.$query), $this->seckey.'&');
             $client = Client::get('https://sms.aliyuncs.com/?'.$query);
             $result = $client->getJson();
             if (isset($result['RequestId'])) {
                 return true;
             }
             if (isset($result['error_response'])) {
-                $this->log = jsonencode($result['error_response']);
+                Error::set(jsonencode($result['error_response']));
             } else {
-                $clierr = $client->getError();
-                $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
+                Error::set($client->getError('unknown error'));
             }
         } else {
-            $this->log = 'Template not exists';
+            Error::set('Template not exists');
         }
         return false;
     }

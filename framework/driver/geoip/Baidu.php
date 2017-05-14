@@ -1,12 +1,13 @@
 <?php
 namespace framework\driver\geoip;
 
+use framework\core\Error;
 use framework\core\http\Client;
 
 class Baidu extends Geoip
 {
     private $acckey;
-    private $appurl = 'http://api.map.baidu.com/location/ip';
+    private $apiurl = 'http://api.map.baidu.com/location/ip';
 
     protected function init($config)
     {
@@ -15,7 +16,7 @@ class Baidu extends Geoip
     
     public function handle($ip, $raw = false)
     {
-        $client = Client::get("$this->appurl?ip=$ip&ak=$this->acckey");
+        $client = Client::get("$this->apiurl?ip=$ip&ak=$this->acckey");
         $result = $client->getJson();
         if (isset($result['status']) && $result['status'] === 0) {
             return $raw ? $result['content'] : [
@@ -23,12 +24,7 @@ class Baidu extends Geoip
                 'city'  => $result['content']['address_detail']['city']
             ];
         }
-        if (isset($result['message'])) {
-            $this->log = jsonencode($result);
-        } else {
-            $clierr = $client->getError();
-            $this->log = $clierr ? "$clierr[0]: $clierr[1]" : 'unknown error';
-        }
-        return false;
+        $error = isset($result['message']) ? $result['message'] : $client->getError('unknown error');
+        return (bool) Error::set($error);
     }
 }
