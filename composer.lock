@@ -4,9 +4,44 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "0e52564dc7d9d21ad1f52202bfc5ce8d",
-    "content-hash": "14a661c01e6eaf86dcb0cdf29ba3140f",
+    "hash": "fcf157ae3cf21d54fbeadfd9c68fec52",
+    "content-hash": "f7abc641b7cb5e3016a960906f70143c",
     "packages": [
+        {
+            "name": "apache/thrift",
+            "version": "0.10.0",
+            "source": {
+                "type": "git",
+                "url": "https://git-wip-us.apache.org/repos/asf/thrift.git",
+                "reference": "b2a4d4ae21c789b689dd162deb819665567f481c"
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": []
+            },
+            "autoload": {
+                "psr-0": {
+                    "Thrift": "lib/php/lib/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Apache Thrift Developers",
+                    "email": "dev@thrift.apache.org",
+                    "homepage": "http://thrift.apache.org"
+                }
+            ],
+            "description": "Apache Thrift RPC system",
+            "homepage": "http://thrift.apache.org/",
+            "time": "2016-04-04 18:25:03"
+        },
         {
             "name": "aws/aws-sdk-php",
             "version": "3.27.1",

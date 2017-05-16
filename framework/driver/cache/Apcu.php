@@ -5,6 +5,8 @@ use Framework\Core\Hook;
 
 class Apcu extends Cache
 {
+    protected $prefix;
+    
     protected function init($config)
     {
         if (isset($config['prefix'])) {

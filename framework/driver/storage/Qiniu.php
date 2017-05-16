@@ -100,7 +100,7 @@ class Qiniu extends Storage
         if ($result['status'] === 200) {
             return $method === 'GET' ? $result['body'] : true;
         }
-        return $this->setError($result);
+        return $result['status'] !== 404 && $this->setError($result);
     }
 
     protected function path($str)

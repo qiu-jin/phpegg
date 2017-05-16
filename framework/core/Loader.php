@@ -6,15 +6,18 @@ class Loader
     private static $init;
     private static $cache = [];
     private static $class_map = [];
-    private static $class_psr = [];
     private static $class_alias = [];
+    private static $class_prefix = [
+        'app' => APP_DIR,
+        'framework' => FW_DIR
+    ];
     
     //run this method in last line when load class
     public static function init()
     {
         if (self::$init) return;
         self::$init = true;
-        self::import((defined('VENDOR_DIR') ? VENDOR_DIR : ROOT_DIR.'vendor/').'autoload');
+        self::import('vendor/autoload');
         if ($config = Config::get('loader')) {
             foreach ($config as $type => $rules) {
                 self::add($rules, $type);
@@ -23,45 +26,25 @@ class Loader
         spl_autoload_register(__CLASS__.'::autoload', true, true);
     }
     
-    public static function add(array $rules, $type = 'psr')
+    public static function add(array $rules, $type = 'prefix')
     {
         if (count($rules) > 0) {
             switch ($type) {
-                case 'psr':
-                    self::$class_psr = self::$class_psr+$rules;
-                    break;
+                case 'prefix':
+                    self::$class_prefix = self::$class_prefix+$rules;
+                    return;
                 case 'map':
                     self::$class_map = self::$class_map+$rules;
-                    break;
+                    return;
                 case 'alias':
                     self::$class_alias = self::$class_alias+$rules;
-                    break;
+                    return;
                 case 'files':
                     foreach ($rules as $name) {
                         self::import($name);
                     }
-                    break;
+                    return;
             }
-        }
-    }
-    
-    public static function clear($type = null)
-    {
-        switch ($type) {
-            case 'psr':
-                self::$class_psr = [];
-                return;
-            case 'map':
-                self::$class_map = [];
-                return;
-            case 'alias':
-                self::$class_alias = [];
-                return;
-            case null:
-                self::$class_map = [];
-                self::$class_psr = [];
-                self::$class_alias = [];
-                return;
         }
     }
     
@@ -72,32 +55,27 @@ class Loader
         }
         if ($cache) {
             $realname = realpath($name);
-            if (isset(self::$cache[$realname])) return;
+            if (isset(self::$cache[$realname])) {
+                return;
+            }
             self::$cache[$realname] = true;
         }
-        if ($ignore) {
-            if (is_file($name.'.php')) {
-                include($name.'.php');
-            }
-        } else {
-            require($name.'.php');
+        $file = $name.'.php';
+        if (!$ignore || is_file($file)) {
+            __require($file);
         }
     }
 
     private static function autoload($class)
     {
-        $fn = strtok($class, '\\');
-        if ($fn === 'framework') {
-            self::import(FW_DIR.substr(strtr($class, '\\', '/'), 9));
-        }elseif ($fn === 'app') {
-            self::import(APP_DIR.substr(strtr($class, '\\', '/'), 4));
-        } elseif(isset(self::$class_psr[$fn])) {
-            self::import(self::$class_psr[$fn].strtr($class, '\\', '/'));
+        $fn = strstr($class, '\\', true);
+        if(isset(self::$class_prefix[$fn])) {
+            self::import(self::$class_prefix[$fn].strstr(strtr($class, '\\', '/'), '/'));
         } elseif(isset(self::$class_map[$class])) {
             self::import(self::$class_map[$class]);
         } elseif (isset(self::$class_alias[$class])) {
             class_alias(self::$class_alias[$class], $class);
-        } 
+        }
     }
 }
 Loader::init();

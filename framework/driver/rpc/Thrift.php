@@ -1,53 +1,46 @@
 <?php
 namespace framework\driver\rpc;
 
+use framework\util\Arr;
 use framework\core\Loader;
-use framework\extend\rpc\Names;
+
+use Thrift\Transport\TSocket;
+use Thrift\Transport\TBufferedTransport;
+use Thrift\Protocol\TBinaryProtocol;
+use Thrift\Protocol\TMultiplexedProtocol;
 
 /* 
  * composer require apache/thrift
  * https://github.com/apache/thrift
  */
-use Thrift\TMultiplexedProtocol;
-use Thrift\Transport\TSocket;
-use Thrift\Transport\THttpClient;
-use Thrift\Transport\TBufferedTransport;
-use Thrift\Exception\TException;
-use Thrift\Protocol\TBinaryProtocol;
 
 class Thrift
 {
-    private $rpc;
-    private $protocol;
-    private $transport;
-    private $method_params_type = [];
+    protected $rpc;
+    protected $prefix;
+    protected $protocol;
+    protected $transport;
+    protected $tmultiplexed = false;
+    protected $struct_params_class;
+    protected $reflect_struct_params = false;
     
     public function __construct($config)
     {
-        if ($config['class']) {
-            foreach ($config['class'] as $class) {
-                $psr4[] = $class;
-            }
-            Loader::add($psr4);
-        } else {
-            throw new \Exception('class is empty');
-        }
         try {
             $socket = new TSocket($config['host'], $config['port']);
             $this->ransport = new TBufferedTransport($socket, 1024, 1024);
-            $protocol = new TBinaryProtocol($this->ransport);
+            $this->protocol = new TBinaryProtocol($this->ransport);
             $this->ransport->open();
         } catch(\Exception $e) {
-            throw new \Exception($e->message());
+            throw new \Exception($e->getMessage());
         }
-        if (isset($config['throw_exception'])) {
-            $this->throw_exception = (bool) $config['throw_exception'];
-        }
+        isset($config['class']) && Loader::add($config['class']);
+        isset($config['prefix']) && $this->prefix = $config['prefix'];
     }
 
     public function __get($class)
     {
-        return new Names($this, $class);
+        return new query\Names($this, $class);
     }
 
     public function __call($method, $params = [])
@@ -57,39 +50,37 @@ class Thrift
     
     public function call($ns, $method, $params = [])
     {
-        if (!isset($this->rpc[$ns])) {
-            $class = $this->className($ns);
-            $this->rpc[$ns] = new $class(new TMultiplexedProtocol($this->protocol, $client));
-        }
-        $this->bindParams($class, $method, $params);
-        return $this->rpc[$ns]->$method(...$params);
-    }
-    
-    private function className($ns)
-    {
-        return '\\'.str_replace('.', '\\', $ns);
-    }
-    
-    private function bindParams($class, $method, &$params)
-    {
-        if (isset($this->method_params_type[$class][$method])) {
-            foreach ($this->method_params_type[$class][$method] as $i => $type) {
-                if ($type === 'object') {
-                    $paramclass = $parameter->getName();
-                    $params[$i] = new $paramclass($params[$i]);
-                }
-            }
-        } else {
-            $parameters = (new \ReflectionMethod($class, $method))->getParameters();
-            foreach ($parameters as $i => $parameter) {
-                $type = (string) $parameter->getType();
-                if ($type === 'object') {
-                    $paramclass = $parameter->getName();
-                    $params[$i] = new $paramclass($params[$i]);
-                }
-                $this->method_params_type[$class][$method][] = $type;
+        $class = $ns ? $this->prefix.'\\'.implode('\\', $ns) : $this->prefix;
+        if (!isset($this->rpc[$class])) {
+            if ($this->tmultiplexed) {
+                $name = substr(strrchr($class, '\\'), 1);
+                $this->rpc[$class] = new $class(new TMultiplexedProtocol($this->protocol, $name));
+            } else {
+                $this->rpc[$class] = new $class($this->protocol);
             }
         }
+        if ($params && $this->reflect_struct_params) {
+            if (!isset($this->struct_params_class[$class][$method])) {
+                $this->struct_params_class[$class][$method] = $this->reflectStructParams($this->rpc[$class], $method);
+            }
+            if ($this->struct_params_class[$class][$method]) {
+                foreach ($this->struct_params_class[$class][$method] as $i => $param_class) {
+                    $params[$i] = new $param_class($params[$i]);
+                }
+            }
+        }
+        return $this->rpc[$class]->$method(...$params);
+    }
+    
+    protected function reflectStructParams($class, $method)
+    {
+        $struct_params_class = false;
+        foreach ((new \ReflectionMethod($class, $method))->getParameters() as $i => $parameter) {
+            if ($param_class = $parameter->getClass()) {
+                $struct_params_class[$i] = $param_class->getName();
+            }
+        }
+        return $struct_params_class;
     }
     
     public function __destruct()

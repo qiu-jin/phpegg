@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\rpc;
 
+use framework\core\Error;
 use framework\core\http\Client;
 
 class Jsonrpc
@@ -58,7 +59,7 @@ class Jsonrpc
         if ($this->throw_exception) {
             throw new \Exception("Jsonrpc error $code: $message");
         } else {
-            $this->log = "$code: $message";
+            Error::set("$code: $message");
         }
     }
 }

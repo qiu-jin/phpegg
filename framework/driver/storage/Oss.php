@@ -105,7 +105,7 @@ class Oss extends Storage
                     return true;
             }
         }
-        return $this->setError($result);
+        return $result['status'] !== 404 && $this->setError($result);
     }
     
     protected function setError($result)

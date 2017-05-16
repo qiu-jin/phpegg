@@ -67,8 +67,7 @@ class Sendcloud extends Email
         }
         $data = $client->getJson();
         if (empty($data['result'])) {
-            //$result['statusCode']
-            $error = isset($data['message']) ? $data['message'] : $client->getError('unknown error');
+            $error = isset($data['message']) ? $data['statusCode'].': '.$data['message'] : $client->getError('unknown error');
             return (bool) Error::set($error);
         }
         return true;

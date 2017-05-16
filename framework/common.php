@@ -113,3 +113,8 @@ function jsondecode($data)
 {
     return json_decode($data, true);
 }
+
+function __require($file)
+{
+    return require $file;
+}

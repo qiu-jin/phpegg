@@ -76,14 +76,12 @@ class Error
     {
         if (!App::exit(0)) {
     		$last_error = error_get_last();
-    		if (isset($last_error) && ($last_error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR))) {
+    		if ($last_error && ($last_error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR))) {
                 App::exit(4);
                 list($level, $prefix) = self::getErrorCodeInfo($last_error['type']);
                 $message = 'Fatal Error '.$prefix.': '.$last_error['message'];
                 self::record($level, $message, $last_error['file'], $last_error['line']);
                 self::response();
-    		} else {
-                //Logger::write(Logger::WARNING, 'unknown exit');
     		}
         }
         self::$error = null;

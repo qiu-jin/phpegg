@@ -111,7 +111,7 @@ class Config
             if (isset(self::$path)) {
                 $file = self::$path.$name.'.php';
                 if (is_file($file)) {
-                    $config = include($file);
+                    $config = __require($file);
                     if (is_array($config)) {
                         self::$configs->$name = $config;
                         return;

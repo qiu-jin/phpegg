@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\captcha;
 
+use framework\util\Str;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
@@ -12,25 +13,18 @@ class Image
 
     public function __construct($config)
     {
-        if (isset($config['inputname'])) {
-            $this->inputname = $config['inputname'];
-        }
-        if (isset($config['valuestore'])) {
-            $this->valuestore = $config['valuestore'];
-        }
         $this->imageurl = $config['imageurl'];
+        isset($config['inputname']) && $this->inputname = $config['inputname'];
+        isset($config['valuestore']) && $this->valuestore = $config['valuestore'];
     }
-    
 
-    public function render($tag = 'div', $attrs = [])
+    public function render($tag = 'input', $attrs = [])
     {
-        if ($attrs) {
-            foreach ($attrs as $k => $v) {
-                $str = "$k = '$v' ";
-            }
+        $attrs['name'] = $this->inputname;
+        foreach ($attrs as $k => $v) {
+            $str = "$k = '$v' ";
         }
-        $input = "<input name='$this->inputname' /><image src='$this->imageurl' />";
-        return "<$tag $str >$input</$tag>";
+        return "<$tag $str ></$tag><image src='$this->imageurl' />";
     }
     
     public function verify($value = null)
@@ -43,10 +37,11 @@ class Image
     
     public function output($value = null)
     {
+        if ($value === null) {
+            $value = Str::random(5);
+        }
         $this->valuestore::set($this->inputname, $value);
-        Response::headers([
-            'Content-Type: image/png'
-        ]);
+        Response::header('Content-Type', 'image/png');
         Response::send(Image::build($value));
     }
 }
