@@ -4,7 +4,7 @@ namespace framework\core\http;
 use \framework\App;
 use \framework\core\Hook;
 use \framework\core\View;
-use \framework\core\Logger;
+use \framework\core\Error;
 
 class Response
 {
@@ -111,7 +111,7 @@ class Response
                 }
             }
         } else {
-            Logger::write(Logger::WARNING, 'Response headers sent fail');
+            Error::set('Response headers sent fail');
         }
         if (isset(self::$response->body)) {
             echo self::$response->body;

@@ -272,7 +272,9 @@ class Client
         $arr = explode("\r\n", $header);
         foreach ($arr as $v) {
             $line = explode(":", $v, 2);
-            if(count($line) === 2) $header_arr[trim($line[0])] = trim($line[1]);
+            if(count($line) === 2) {
+                $header_arr[trim($line[0])] = trim($line[1]);
+            }
         }
         return $header_arr;
     }

@@ -1,6 +1,7 @@
 <?php
 namespace framework\core\http;
 
+use framework\util\File;
 use framework\core\Model;
 
 class Uploaded
@@ -40,13 +41,7 @@ class Uploaded
     
     public function mime()
     {
-        if (isset($this->file['tmp_name'])) {
-            $finfo = finfo_open(FILEINFO_MIME_TYPE); 
-            $mime = finfo_file($finfo, $this->file['tmp_name']);
-            finfo_close($finfo);
-            return $mime;
-        }
-        return false;
+        return isset($this->file['tmp_name']) ? File::mime($this->file['tmp_name']) : false;
     }
     
     public function isImage()

@@ -23,12 +23,9 @@ class Error
         register_shutdown_function(__CLASS__.'::fatalHandler');
     }
     
-    public static function get($level = null)
+    public static function get($all = false)
     {
-        if ($level === null) {
-            return self::$error;
-        }
-        return isset(self::$error[$level]) ? self::$error[$level] : null;
+        return $all ? self::$error : end(self::$error);
     }
     
     public static function set($message, $code = E_USER_ERROR, $limit = 1)
@@ -87,9 +84,9 @@ class Error
         self::$error = null;
     }
     
-    private static function record($level, $message, $file, $line)
+    private static function record($level, $message, $file, $line, $trace = null)
     {
-        self::$error[] = ['level' => $level, 'message' => $message, 'file' => $file, 'line' => $line];
+        self::$error[] = ['level' => $level, 'message' => $message, 'file' => $file, 'line' => $line, 'trace' => $trace];
         Logger::write($level, $message, ['file' => $file, 'line' => $line]);
     }
     

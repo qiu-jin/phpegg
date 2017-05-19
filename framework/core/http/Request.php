@@ -34,14 +34,6 @@ class Request
         }
         return isset(self::$request->$name[$key]);
     }
-    
-    public static function env($name = null, $default = null)
-    {
-        if ($name === null) {
-            return $_ENV;
-        }
-        return isset($_ENV[$name]) ? $_ENV[$name] : $default;
-    }
 
     public static function get($name = null, $default = null)
     {
@@ -92,14 +84,6 @@ class Request
             }
         }
         return null;
-    }
-    
-    public static function request($name = null, $default = null)
-    {
-        if ($name === null) {
-            return self::$request->request;
-        }
-        return isset(self::$request->request[$name]) ? self::$request->request[$name] : $default;
     }
     
     public static function server($name = null, $default = null)
@@ -158,7 +142,6 @@ class Request
             }
             return self::$request->ip[0] = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : false;
         }
-        
     }
     
     public static function path()

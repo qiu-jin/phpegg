@@ -1,7 +1,6 @@
 <?php
 namespace framework\driver\rpc;
 
-use framework\util\Arr;
 use framework\core\Loader;
 
 use Thrift\Transport\TSocket;
@@ -13,7 +12,6 @@ use Thrift\Protocol\TMultiplexedProtocol;
  * composer require apache/thrift
  * https://github.com/apache/thrift
  */
-
 class Thrift
 {
     protected $rpc;

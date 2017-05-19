@@ -17,9 +17,8 @@ class Standard extends App
         'get_to_params' => 0,
         'enable_view' => 0,
         'tpl_to_snake' => true,
-        'controller_level' => 0,
+        'controller_depth' => 0,
         'controller_to_camel' => true,
-        'controller_name' => 'controller',
     ];
     
     public function dispatch()
@@ -121,7 +120,7 @@ class Standard extends App
     {
         $params = [];
         $count = count($path);
-        $level = $this->config['controller_level'];
+        $depth = $this->config['controller_depth'];
         if (empty($path)) {
             if (isset($this->config['index_dispatch'])) {
                 $index = explode('/', $this->config['index_dispatch']);
@@ -129,14 +128,14 @@ class Standard extends App
                 $class_array = $index;
             }
         } else {
-            if ($level > 0) {
-                if ($count > $level) {
-                    if ($count == $level+1) {
+            if ($depth > 0) {
+                if ($count > $depth) {
+                    if ($count == $depth+1) {
                         $action = array_pop($path);
                         $class_array = $path;
                     } else {
-                        $action = $path[$level];
-                        $class_array = array_slice($path, 0, $level);
+                        $action = $path[$depth];
+                        $class_array = array_slice($path, 0, $depth);
                     }
                 }
             } else {
@@ -154,8 +153,8 @@ class Standard extends App
             if (class_exists($class)) {
                 $controller = new $class();
                 if (is_callable([$controller, $action])) {
-                    if ($level && $count > $level+1) {
-                        $params = array_slice($path, $level+1);
+                    if ($depth && $count > $depth+1) {
+                        $params = array_slice($path, $depth+1);
                         if ($this->config['param_mode'] === 2) {
                             $params = $this->getKvParams($params);
                         }

@@ -6,10 +6,14 @@ class Loader
     private static $init;
     private static $cache = [];
     private static $class_map = [];
-    private static $class_alias = [];
     private static $class_prefix = [
         'app' => APP_DIR,
         'framework' => FW_DIR
+    ];
+    private static $class_alias = [
+        'App' => 'framework\App',
+        'Request' => 'framework\core\http\Request',
+        'Response' => 'framework\core\http\Response',
     ];
     
     //run this method in last line when load class

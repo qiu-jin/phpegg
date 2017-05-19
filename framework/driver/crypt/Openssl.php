@@ -9,9 +9,6 @@ class Openssl extends Crypt
     
     protected function init($config)
     {
-        if (!extension_loaded('openssl')) {
-            throw new \Exception('openssl extension not loaded');
-        }
         if (isset($config['key'])) {
             $this->config['key'] = $config['key'];
         } else {

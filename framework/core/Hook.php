@@ -12,8 +12,10 @@ class Hook
         self::$hooks = new \stdClass();
         $config = Config::get('hook');
         if ($config) {
-            foreach ($config as $name => $item) {
-                self::add($name, ...$item);
+            foreach ($config as $name => $hooks) {
+                foreach ($hooks as $hook) {
+                    self::add($name, $hook);
+                }
             }
         }
     }
@@ -23,7 +25,7 @@ class Hook
         if (empty(self::$hooks->$name)) {
             self::$hooks->$name = new \SplPriorityQueue();
         }
-        self::$hooks->$name->insert([$call, $params],(int) $priority);
+        self::$hooks->$name->insert([$call, $params], (int) $priority);
     }
     
     public static function clear($name)

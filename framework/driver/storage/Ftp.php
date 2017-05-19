@@ -55,11 +55,6 @@ class Ftp extends Storage
             }
         }
     }
-    
-    public function save($from, $to)
-    {
-        
-    }
 
     public function stat($from)
     {

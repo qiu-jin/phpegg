@@ -7,13 +7,13 @@ abstract class Auth
     private static $pass;
     private static $cache;
 
+    abstract protected function user();
+
     abstract protected function check();
 
-    abstract protected function fail();
+    abstract protected function faildo();
 
-    abstract protected function user();
-    
-    abstract protected function login($data);
+    abstract protected function login();
     
     abstract protected function logout();
     
@@ -54,7 +54,7 @@ abstract class Auth
                 }
             }
         }
-        return self::$auth->check() || self::$auth->fail();
+        return self::$auth->check() || self::$auth->faildo();
     }
     
     public static function clear()

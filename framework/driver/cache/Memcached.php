@@ -23,11 +23,7 @@ class Memcached extends Cache
             $link->setOption(\Memcached::OPT_BINARY_PROTOCOL, true);
             $link->setSaslAuthData($config['username'], $config['password']);
         }
-    }
-    
-    public function link()
-    {
-        return $this->link;
+        $this->link = $link;
     }
     
     public function get($key)

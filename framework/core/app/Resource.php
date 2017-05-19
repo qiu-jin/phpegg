@@ -8,14 +8,14 @@ use framework\core\Config;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
-class Rest extends App
+class Resource extends App
 {
     private $ns;
     private $config = [
         'route_mode' => 0,
         'param_mode' => 0,
         'get_to_params' => 0,
-        'controller_level' => 0,
+        'controller_depth' => 0,
     ];
     
     public function dispatch()
@@ -99,10 +99,10 @@ class Rest extends App
     protected function defaultDispatch($path, $method) 
     {
         $count = count($path);
-        $level = $this->config['controller_level'];
-        if ($level > 0) {
-            if ($count >= $level) {
-                $class = $this->ns.implode('\\', $count === $level ? $path : array_slice($path, 0, $level));
+        $depth = $this->config['controller_depth'];
+        if ($depth > 0) {
+            if ($count >= $depth) {
+                $class = $this->ns.implode('\\', $count === $depth ? $path : array_slice($path, 0, $depth));
             }
         } else {
             $this->config['param_mode'] = 0;
@@ -112,8 +112,8 @@ class Rest extends App
             $controller = new $class();
             if (is_callable([$controller, $method])) {
                 $params = null;
-                if ($level && $count > $level) {
-                    $params = array_slice($path, $level);
+                if ($depth && $count > $depth) {
+                    $params = array_slice($path, $depth);
                     if ($this->config['param_mode'] === 2) {
                         $params = $this->getKvParams($params);
                     }

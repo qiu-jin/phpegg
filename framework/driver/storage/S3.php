@@ -71,10 +71,7 @@ class S3 extends Storage
     
     public function move($from, $to)
     {
-        if ($this->copy($from, $to)) {
-            return (bool) $this->delete($from);
-        }
-        return false;
+        return $this->copy($from, $to) && $this->delete($from);
     }
     
     public function delete($from)

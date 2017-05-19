@@ -12,9 +12,6 @@ class Apcu extends Cache
         if (isset($config['prefix'])) {
             $this->prefix = $config['prefix'].'_';
         }
-        if (!extension_loaded('apcu')) {
-            throw new \Exception('Apcu extension not loaded');
-        }
     }
     
     public function get($key)

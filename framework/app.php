@@ -124,7 +124,7 @@ abstract class App
         }
     }
     
-    public static function setErrorHandler($handler)
+    public static function setErrorHandler(callable $handler)
     {
         self::$error_handler = $handler;
     }

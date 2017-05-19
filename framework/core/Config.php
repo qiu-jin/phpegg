@@ -10,36 +10,14 @@ class Config
     public static function init()
     {
         if (self::$configs) return;
-        self::setEnv();
+        self::loadEnv();
         self::$configs = new \stdClass();
-        $config_name = defined('CONFIG_NAME') ? CONFIG_NAME : 'config';
-        if (is_dir(APP_DIR.$config_name.'/')) {
-            self::$path = APP_DIR.$config_name.'/';
-        } elseif(is_file(APP_DIR.$config_name.'.php')) {
-            self::load(include(APP_DIR.$config_name.'.php'));
+        $path = APP_DIR.self::getEnv('CONFIG_PATH', 'config');
+        if (is_dir($path)) {
+            self::$path = "$path/";
+        } elseif(is_file("$path.php")) {
+            self::load(__require("$path.php"));
         }
-    }
-    
-    public static function has($name)
-    {
-        if (strpos($name, '.')) {
-            $namepath = explode('.', $name);
-            $name = array_shift($namepath);
-            self::import($name);
-            $value = self::$configs->$name;
-            foreach ($namepath as $path) {
-                if (isset($value[$path])) {
-                    $value = $value[$path];
-                } else {
-                    return false;
-                }
-            }
-            return true;
-        } else {
-            self::import($name);
-            return bool(self::$configs->$name);
-        }
-        
     }
     
     public static function get($name, $default = null)
@@ -62,6 +40,27 @@ class Config
             return self::$configs->$name;
         }
         return $default;
+    }
+    
+    public static function has($name)
+    {
+        if (strpos($name, '.')) {
+            $namepath = explode('.', $name);
+            $name = array_shift($namepath);
+            self::import($name);
+            $value = self::$configs->$name;
+            foreach ($namepath as $path) {
+                if (isset($value[$path])) {
+                    $value = $value[$path];
+                } else {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            self::import($name);
+            return bool(self::$configs->$name);
+        }
     }
     
     public static function set($name, $value)
@@ -105,6 +104,25 @@ class Config
         }
     }
     
+    public static function getEnv($name, $default = null)
+    {
+        $value = getenv($key);
+        return $value === false ? $value : $default;
+    }
+    
+    private static function loadEnv()
+    {
+        $file = APP_DIR.'.env';
+        if (is_file($file)) {
+            $env = parse_ini_file($file);
+            if ($env) {
+                foreach ($env as $k => $v) {
+                    putenv("$k=$v");
+                }
+            }
+        }
+    }
+    
     private static function import($name)
     {
         if (!isset(self::$configs->$name)) {
@@ -119,19 +137,6 @@ class Config
                 }
             }
             self::$configs->$name = [];
-        }
-    }
-    
-    private static function setEnv()
-    {
-        $envfile = APP_DIR.'.env';
-        if (is_file($envfile)) {
-            $env = parse_ini_file($envfile);
-            if ($env) {
-                foreach ($env as $k => $v) {
-                    putenv("$k=$v");
-                }
-            }
         }
     }
 }
