@@ -1,7 +1,7 @@
 <?php
 namespace framework\core;
 
-use \framework\extend\logger\Formatter;
+use framework\extend\logger\Formatter;
 
 class Logger
 {
@@ -78,7 +78,13 @@ class Logger
         if (isset(self::$handlers[$name])) {
             return self::$handlers[$name];
         } else {
-            return self::$handlers[$name] = driver('logger', self::$configs[$name]['driver'], self::$configs[$name]);
+            $config = self::$configs[$name];
+            $handler = driver('logger', $config['driver'], $config);
+            if (isset($config['format'])) {
+                $handler->setFormatter(new Formatter($config['format']));
+            }
+            self::$handlers[$name] = $handler;
+            return $handler;
         }
     }
 }

@@ -4,7 +4,6 @@ namespace Framework\Extend\Logger;
 trait Writer
 {   
     protected $logs = [];
-    protected $formatter;
     
     public function write($level, $message, $context = [])
     {

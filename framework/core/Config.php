@@ -10,9 +10,10 @@ class Config
     public static function init()
     {
         if (self::$configs) return;
-        self::loadEnv();
+        //self::loadEnv();
         self::$configs = new \stdClass();
-        $path = APP_DIR.self::getEnv('CONFIG_PATH', 'config');
+        $path = APP_DIR.'config';
+        //$path = APP_DIR.self::getEnv('CONFIG_PATH', 'config');
         if (is_dir($path)) {
             self::$path = "$path/";
         } elseif(is_file("$path.php")) {
@@ -106,7 +107,7 @@ class Config
     
     public static function getEnv($name, $default = null)
     {
-        $value = getenv($key);
+        $value = getenv($name);
         return $value === false ? $value : $default;
     }
     

@@ -33,13 +33,13 @@ class Hook
         if (isset(self::$hooks->$name)) unset(self::$hooks->$name);
     }
     
-    public static function listen($name, $params = null)
+    public static function listen($name, ...$params)
     {
         if (isset(self::$hooks->$name)) {
             while (self::$hooks->$name->valid()) {
                 $item = self::$hooks->$name->extract();
                 if (!isset($params)) {
-                    if (isset($params)) {
+                    if (isset($item[1])) {
                         $params = $item[1]; 
                     } else {
                         $item[0]();

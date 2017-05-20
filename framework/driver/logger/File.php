@@ -17,11 +17,11 @@ class File extends Logger
     public function write($level, $message, $context)
     {
         if (!$this->send) return;
-        if (isset($this->formater)) {
-            $log = $this->formater->make($level, $message, $context);
+        if (isset($this->formatter)) {
+            $log = $this->formatter->make($level, $message, $context);
         } else {
             $log = '['.$level.'] '.$message;
-            if ($context) $log .= json_encode($context);
+            if ($context) $log .= jsonencode($context);
         }
         error_log((string) $log."\r\n", 3, $this->logfile);
     }
