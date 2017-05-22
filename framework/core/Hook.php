@@ -20,33 +20,27 @@ class Hook
         }
     }
     
-    public static function add($name, $call, $params = null, $priority = 5)
+    public static function add($name, $call, $priority = 5)
     {
         if (empty(self::$hooks->$name)) {
             self::$hooks->$name = new \SplPriorityQueue();
         }
-        self::$hooks->$name->insert([$call, $params], (int) $priority);
+        self::$hooks->$name->insert($call, (int) $priority);
     }
     
     public static function clear($name)
     {
-        if (isset(self::$hooks->$name)) unset(self::$hooks->$name);
+        if (isset(self::$hooks->$name)) {
+            unset(self::$hooks->$name);
+        }
     }
     
     public static function listen($name, ...$params)
     {
         if (isset(self::$hooks->$name)) {
             while (self::$hooks->$name->valid()) {
-                $item = self::$hooks->$name->extract();
-                if (!isset($params)) {
-                    if (isset($item[1])) {
-                        $params = $item[1]; 
-                    } else {
-                        $item[0]();
-                        continue;
-                    }
-                }
-                $item[0](...$params);
+                $call = self::$hooks->$name->extract();
+                $params ? $call(...$params) : $call();
             }
             unset(self::$hooks->$name);
         }

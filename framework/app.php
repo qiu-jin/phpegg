@@ -30,8 +30,8 @@ abstract class App
         if (self::$init) return;
         self::$init = true;
         define('FW_DIR', __DIR__.'/');
-        defined('ROOT_DIR')   || define('ROOT_DIR', dirname(__DIR__).'/');
         defined('APP_DIR')    || define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
+        defined('ROOT_DIR')   || define('ROOT_DIR', dirname(__DIR__).'/');
         defined('APP_DEBUG')  || define('APP_DEBUG', false);
         require(FW_DIR.'common.php');
         require(FW_DIR.'core/config.php');
@@ -68,8 +68,8 @@ abstract class App
             $dispatch = self::$app->dispatch();
             if ($dispatch) {
                 self::$app->dispatch = $dispatch;
-                if (isset(self::$app->config['auth_enable'])) {
-                    Auth::passport();
+                if (isset(self::$app->config['enable_auth'])) {
+                    Auth::passport($dispatch['call']);
                 }
                 Hook::listen('start');
                 return self::$app;

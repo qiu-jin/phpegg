@@ -21,7 +21,7 @@ class File extends Logger
             $log = $this->formatter->make($level, $message, $context);
         } else {
             $log = '['.$level.'] '.$message;
-            if ($context) $log .= jsonencode($context);
+            if ($context) $log .= PHP_EOL.var_export($context, true);
         }
         error_log((string) $log."\r\n", 3, $this->logfile);
     }

@@ -11,11 +11,6 @@ use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\extend\view\Dumper;
 
-function auth()
-{
-    
-}
-
 function input($name, ...$params)
 {
     return Request::$name(...$params);

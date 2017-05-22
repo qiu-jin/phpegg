@@ -21,8 +21,9 @@ class Loader
     {
         if (self::$init) return;
         self::$init = true;
-        self::import('vendor/autoload');
-        if ($config = Config::get('loader')) {
+        self::import(Config::env('VENDOR_DIR', 'vendor').'/autoload');
+        $config = Config::get('loader');
+        if ($config) {
             foreach ($config as $type => $rules) {
                 self::add($rules, $type);
             }

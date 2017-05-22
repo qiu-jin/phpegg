@@ -10,15 +10,20 @@ class Config
     public static function init()
     {
         if (self::$configs) return;
-        //self::loadEnv();
+        self::loadEnv();
         self::$configs = new \stdClass();
-        $path = APP_DIR.'config';
-        //$path = APP_DIR.self::getEnv('CONFIG_PATH', 'config');
+        $path = APP_DIR.self::env('CONFIG_PATH', 'config');
         if (is_dir($path)) {
             self::$path = "$path/";
         } elseif(is_file("$path.php")) {
-            self::load(__require("$path.php"));
+            self::load("$path.php");
         }
+    }
+    
+    public static function env($name, $default = null)
+    {
+        $value = getenv($name);
+        return $value === false ? $default : $value;
     }
     
     public static function get($name, $default = null)
@@ -83,12 +88,6 @@ class Config
         }
     }
     
-    public static function first_value($name)
-    {
-        self::import($name);
-        return reset(self::$configs->$name);
-    }
-    
     public static function first_pair($name)
     {
         self::import($name);
@@ -96,30 +95,18 @@ class Config
         return [key(self::$configs->$name), $value];
     }
     
-    public static function load(array $configs)
+    public static function first_value($name)
     {
-        if ($configs) {
+        self::import($name);
+        return reset(self::$configs->$name);
+    }
+    
+    private static function load($path)
+    {
+        $configs = __require($path);
+        if ($configs && is_array($configs)) {
             foreach ($configs as $name => $value) {
                 self::$configs->$name = $value;
-            }
-        }
-    }
-    
-    public static function getEnv($name, $default = null)
-    {
-        $value = getenv($name);
-        return $value === false ? $value : $default;
-    }
-    
-    private static function loadEnv()
-    {
-        $file = APP_DIR.'.env';
-        if (is_file($file)) {
-            $env = parse_ini_file($file);
-            if ($env) {
-                foreach ($env as $k => $v) {
-                    putenv("$k=$v");
-                }
             }
         }
     }
@@ -138,6 +125,19 @@ class Config
                 }
             }
             self::$configs->$name = [];
+        }
+    }
+    
+    private static function loadEnv()
+    {
+        $file = APP_DIR.'.env';
+        if (is_file($file)) {
+            $env = parse_ini_file($file);
+            if ($env) {
+                foreach ($env as $k => $v) {
+                    putenv("$k=$v");
+                }
+            }
         }
     }
 }

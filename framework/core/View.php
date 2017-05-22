@@ -25,28 +25,6 @@ class View
         Hook::add('exit', __CLASS__.'::free');
     }
     
-    public static function __callStatic($method, $params = [])
-    {
-        if (isset($this->config['methods'][$method])) {
-            $vars = null;
-            $method_array = $this->config['methods'][$method];
-            $tpl = array_pop($method_array);
-            if ($method_array) {
-                $i = 0;
-                foreach ($method_array as $k => $v) {
-                    if (is_int($k)) {
-                        $vars[$v] = isset($params[$i]) ? $params[$i] : '';
-                    } else {
-                        $vars[$k] = isset($params[$i]) ? $params[$i] : $v;
-                    }
-                    $i++;
-                }
-            }
-            Response::view($tpl, $vars);
-        }
-        throw new \Exception('Illegal view method: '.$method);
-    }
-    
     public static function var($name, $value)
     {
         self::$view->vars[$name] = $value;
@@ -66,13 +44,13 @@ class View
     {
         $phpfile = self::import(trim($tpl));
         if ($phpfile) {
-            if ($vars) {
-                extract($vars, EXTR_SKIP);
-                unset($vars);
-            }
             if (isset(self::$view->vars)) {
                 extract(self::$view->vars, EXTR_SKIP);
                 self::$view->vars = null;
+            }
+            if ($vars) {
+                extract($vars, EXTR_SKIP);
+                unset($vars);
             }
             ob_start();
             include $phpfile;
@@ -93,6 +71,29 @@ class View
             }
         }
         return $code == 404 ? ViewError::render404($message) : ViewError::renderError($message);
+    }
+    
+    
+    public static function __callStatic($method, $params = [])
+    {
+        if (isset($this->config['methods'][$method])) {
+            $vars = null;
+            $method_array = $this->config['methods'][$method];
+            $tpl = array_pop($method_array);
+            if ($method_array) {
+                $i = 0;
+                foreach ($method_array as $k => $v) {
+                    if (is_int($k)) {
+                        $vars[$v] = isset($params[$i]) ? $params[$i] : '';
+                    } else {
+                        $vars[$k] = isset($params[$i]) ? $params[$i] : $v;
+                    }
+                    $i++;
+                }
+            }
+            Response::view($tpl, $vars);
+        }
+        throw new \Exception('Illegal view method: '.$method);
     }
     
     private static function import($tpl, $dir = null)

@@ -4,8 +4,10 @@ namespace framework\core;
 abstract class Auth
 {
     private static $auth;
-    private static $pass;
     private static $cache;
+    private static $except;
+
+    abstract protected function id();
 
     abstract protected function user();
 
@@ -28,10 +30,10 @@ abstract class Auth
         } else {
             throw new \Exception('Illegal auth class');
         }
-        if (isset($config['pass'])) {
-            self::$pass = $config['pass'];
-            if ($config['cache_pass']) {
-                self::$cache = cache($config['cache_pass']);
+        if (isset($config['except'])) {
+            self::$pexcept = $config['except'];
+            if ($config['cache_except']) {
+                self::$cache = cache($config['cache_except']);
             }
         }
         Hook::add('exit', __CLASS__.'::clear');
@@ -39,14 +41,14 @@ abstract class Auth
     
     public static function passport($call = null)
     {
-        if (self::$pass) {
+        if (self::$except) {
             if (self::$cache) {
                 if (self::$cache->has($call)) {
                     return true;
                 }
             }
-            foreach (self::$pass as $pass) {
-                if (stripos($call, $pass) === 0) {
+            foreach (self::$except as $except) {
+                if (stripos($call, $except) === 0) {
                     if (self::$cache) {
                         self::$cache->set($call, 1);
                     }
@@ -60,8 +62,8 @@ abstract class Auth
     public static function clear()
     {
         self::$auth = null;
-        self::$pass = null;
         self::$cache = null;
+        self::$except = null;
     }
     
     public static function __callStatic($method, $params = [])

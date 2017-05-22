@@ -8,7 +8,7 @@ class Dumper
     public static function dump(...$vars)
     {
         ob_start();
-        if (class_exists('VarDumper')) {
+        if (class_exists('Symfony\Component\VarDumper\VarDumper')) {
             foreach ($vars as $var) {
                 VarDumper::dump($var);
             }

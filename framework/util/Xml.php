@@ -20,7 +20,7 @@ class Xml
 
     public static function decode($str, $root = false)
     {
-        $obj = simplexml_load_string($str);
+        $obj = simplexml_load_string($str, null, LIBXML_NOCDATA);
         if ($obj) {
             $arr = json_decode(json_encode($obj), true);
             return $root ? [$obj->getName() => $arr] : $arr;

@@ -1,6 +1,7 @@
 <?php
 namespace framework\core\http;
 
+use framework\util\Str;
 use framework\util\File;
 use framework\core\Model;
 
@@ -72,10 +73,22 @@ class Uploaded
         return false;
     }
     
-    public function save($dir, $is_raw_name = false)
+    public function movePath($path)
     {
-        $name = $is_raw_name ? $this->name() : md5(uniqid()).'.'.$this->extension();
-        return $this->move($dir.'/'.$name) ? $name : false;
+        $ext = $this->extension();
+        return $this->move($path.'.'.$ext) ? basename($path).'.'.$ext : false;
+    }
+    
+    public function moveRawName($dir)
+    {
+        $name = $this->name();
+        return $this->move($dir.$name) ? $name : false;
+    }
+    
+    public function moveRandomName($dir)
+    {
+        $name = Str::random().'.'.$this->extension();
+        return $this->move($dir.$name) ? $name : false;
     }
     
     public function check($validate = null)
@@ -95,17 +108,17 @@ class Uploaded
                 if (isset($validate['extension']) && !in_array($this->extension(), $validate['extension'], true)) {
                     return false;
                 }
-                if (isset($validate['isimage']) && !$this->isImage()) {
+                if (isset($validate['is_image']) && !$this->isImage()) {
                     return false;
                 }
                 if (isset($validate['size'])) {
+                    $size = $this->size();
                     if (is_array($validate['size'])) {
-                        $size = $this->size();
                         if ($size < $validate['size'][0] || $size > $validate['size'][1]) {
                             return false;
                         }
                     } else {
-                        if ($this->size() > $validate['size']) {
+                        if ($size > $validate['size']) {
                             return false;
                         }
                     }
