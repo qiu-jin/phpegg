@@ -1,6 +1,8 @@
 <?php
 namespace framework\extend\logger;
 
+use framework\core\http\Request;
+
 class Formatter
 {
     private $format;
@@ -40,7 +42,7 @@ class Formatter
     
     private static function ip()
     {
-        return $_SERVER['REMOTE_ADDR'];
+        return Request::ip();
     }
     
     private static function pid()
@@ -58,18 +60,18 @@ class Formatter
         return time();
     }
     
-    private static function date($format = null)
+    private static function date()
     {
-        return $format ? date($format) : date("Y-m-d H:i:s");
+        return date("Y-m-d H:i:s");
     }
     
     private static function url()
     {
-        return $_SERVER['REQUEST_URI'];
+        return Request::url();
     }
     
     private static function referrer()
     {
-        return $_SERVER['HTTP_REFERER'];
+        return Request::header('referrer');
     }
 }

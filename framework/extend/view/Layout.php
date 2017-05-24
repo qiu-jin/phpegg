@@ -1,7 +1,7 @@
 <?php
-namespace Framework\Extend\View;
+namespace framework\extend\view;
 
-class Pjax
+class Layout
 {
-
+    
 }

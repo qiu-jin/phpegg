@@ -5,11 +5,6 @@ use framework\core\Logger;
 
 class Error
 {   
-    public static function dump($vars)
-    {
-        
-    }
-    
     public static function render404($message)
     {
         $html = '<h1 style="text-align: center">🙁 404 Page Not Found 🙁</h1>';

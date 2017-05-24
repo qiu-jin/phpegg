@@ -1,7 +1,25 @@
 <?php
-namespace Framework\Extend\View;
+namespace framework\extend\view;
 
-class Form
+use Symfony\Component\VarDumper\VarDumper;
+
+class Debug
 {
+    public static function render()
+    {
 
+    }
+    
+    public static function dump(...$vars)
+    {
+        ob_start();
+        if (class_exists('Symfony\Component\VarDumper\VarDumper')) {
+            foreach ($vars as $var) {
+                VarDumper::dump($var);
+            }
+        } else {
+            var_dump($vars);
+        }
+        return ob_get_clean();
+    }
 }

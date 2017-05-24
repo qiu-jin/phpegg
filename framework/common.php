@@ -9,7 +9,7 @@ use framework\core\Logger;
 use framework\core\Config;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\extend\view\Dumper;
+use framework\extend\view\Debug;
 
 function input($name, ...$params)
 {
@@ -28,7 +28,7 @@ function view($tpl, array $vars = null)
 
 function env($name, $default = null)
 {
-    return Config::getEnv($name, $default);
+    return Config::env($name, $default);
 }
 
 function config($name, $default = null)
@@ -73,12 +73,12 @@ function load($type = null, $name = null)
 
 function dump(...$vars)
 {
-    Response::send(Dumper::dump(...$vars));
+    Response::send(Debug::dump(...$vars));
 }
 
 function debug(...$vars)
 {
-    //Response::send(Debug::render(...$vars));
+    Response::send(Debug::render(...$vars));
 }
 
 function abort($code = null, $message = null)
