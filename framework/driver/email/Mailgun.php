@@ -1,14 +1,13 @@
 <?php
 namespace framework\driver\email;
 
-use framework\core\Error;
 use framework\core\http\Client;
 
 class Mailgun extends Email
 {
-    private $acckey;
-    private $domain;
-    private $apiurl = 'https://api.mailgun.net/v3/';
+    protected $acckey;
+    protected $domain;
+    protected static $host = 'https://api.mailgun.net/v3/';
     
     protected function init($config)
     {
@@ -37,18 +36,17 @@ class Mailgun extends Email
         if (isset($this->option['option'])) {
             $form = array_merge($this->option['option'], $from);
         }
-        $client = Client::post($this->apiurl.$this->domain.'/messages')
+        $client = Client::post(self::$host.$this->domain.'/messages')
                         ->header('Authorization', 'Basic '.base64_encode('api:'.$this->acckey))
                         ->form($form, $this->option['attach_is_buffer']);
         if (isset($this->option['attach'])) {
             $client->file('attachment', ...end($this->option['attach']));
         }
         $result = $client->getJson();
-        if (isset($result['id'])) {
-            return true;
+        if (empty($result['id'])) {
+            return error(isset($result['message']) ? $result['message'] : $client->getError('unknown error'));
         }
-        $error = isset($result['message']) ? $result['message'] : $client->getError('unknown error');
-        return (bool) Error::set($error);
+        return true;
     }
     
     protected function buildAddr(array $addr)
@@ -59,8 +57,8 @@ class Mailgun extends Email
     protected function buildAddrs(array $addrs)
     {
         foreach ($addrs as $addr) {
-            $arr[] = $this->buildAddr($addr);
+            $arrs[] = $this->buildAddr($addr);
         }
-        return implode(',', $arr);
+        return implode(',', $arrs);
     }
 }

@@ -30,7 +30,7 @@ class View
         self::$view->vars[$name] = $value;
     }
     
-    public static function func($name, $value)
+    public static function func($name, callable $value)
     {
         self::$view->func[$name] = $value;
     }
@@ -70,30 +70,23 @@ class View
                 return ob_get_clean();
             }
         }
-        return $code == 404 ? ViewError::render404($message) : ViewError::renderError($message);
+        return $code === 404 ? ViewError::render404($message) : ViewError::renderError($message);
     }
     
-    
-    public static function __callStatic($method, $params = [])
+    public static function __callStatic($name, $params = [])
     {
         if (isset($this->config['methods'][$method])) {
-            $vars = null;
-            $method_array = $this->config['methods'][$method];
-            $tpl = array_pop($method_array);
-            if ($method_array) {
-                $i = 0;
-                foreach ($method_array as $k => $v) {
-                    if (is_int($k)) {
-                        $vars[$v] = isset($params[$i]) ? $params[$i] : '';
-                    } else {
-                        $vars[$k] = isset($params[$i]) ? $params[$i] : $v;
-                    }
-                    $i++;
+            $vars = $this->config['methods'][$name];
+            $tpl = array_pop($vars);
+            if ($vars) {
+                foreach (array_keys($vars) as $i => $v) {
+                    if (!isset($params[$i]))  break;
+                    $vars[$v] = $params[$i];
                 }
             }
             Response::view($tpl, $vars);
         }
-        throw new \Exception('Illegal view method: '.$method);
+        throw new \Exception('Illegal View method: '.$method);
     }
     
     private static function import($tpl, $dir = null)

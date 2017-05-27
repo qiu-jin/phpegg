@@ -3,7 +3,6 @@ namespace framework\driver\storage;
 
 use framework\util\Xml;
 use framework\util\File;
-use framework\core\Error;
 use framework\core\http\Client;
 
 class Oss extends Storage
@@ -89,34 +88,26 @@ class Oss extends Storage
         if ($auth) {
             $client->headers($this->setHeaders($method, $path, $headers));
         }
-        $result = $client->getResult();
-        if ($result['status'] >= 200 && $result['status'] < 300) {
+        $status = $client->status;
+        if ($status >= 200 && $status < 300) {
             switch ($method) {
                 case 'GET':
-                    return $result['body'];
+                    return $client->body;
                 case 'PUT':
                     return true;
                 case 'HEAD':
-                    return $result['headers'];
+                    return $client->headers;
                 case 'DELETE':
                     return true;
             }
         }
-        return $result['status'] !== 404 && $this->setError($result);
-    }
-    
-    protected function setError($result)
-    {
-        if ($result['body']) {
-            $data = Xml::decode($result['body']);
-            if ($data) {
-                return (bool) Error::set($data['Code'].': '.$data['Message'], Error::ERROR, 3);
-            }
+        if ($status === 404 && $method === 'HEAD') {
+            return false;
         }
-        $error = isset($result['error']) ? $result['error'][0].': '.$result['error'][1] : 'unknown error';
-        return (bool) Error::set($error, Error::ERROR, 3);
+        $data = $client->xml;
+        return error(isset($data['Message']) ? $data['Message'] : $client->error, 2);
     }
-    
+
     protected function setHeaders($method, $path, $headers)
     {
         $headers['Date'] = gmdate('D, d M Y H:i:s').' GMT';

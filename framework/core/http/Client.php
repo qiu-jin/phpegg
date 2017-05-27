@@ -1,6 +1,8 @@
 <?php
 namespace framework\core\http;
 
+use framework\util\Xml;
+
 //Curl
 class Client
 {
@@ -32,55 +34,34 @@ class Client
     
     public function __get($name)
     {
-        isset($this->result) || $this->getResult(false);
-        if (isset($this->result[$name])) {
-            return $this->result[$name];
+        switch ($name) {
+            case 'status':
+                return $this->getResult('status');
+            case 'headers':
+                return $this->getResult('headers');
+            case 'body':
+                return $this->getResult('body');
+            case 'error':
+                return $this->getResult('error');
+            case 'json':
+                return jsondecode($this->getResult('body'));
+            case 'xml':
+                return Xml::decode($this->getResult('body'));
         }
-        return $name === 'json' && isset($this->result['body']) ? jsondecode($this->result['body']) : null;
     }
     
-    public function getStatus()
+    public function getResult($name = null)
     {
-        isset($this->result) || $this->getResult(false);
-        return $this->result['status'];
-    }
-    
-    public function getHeader($name = null)
-    {
-        isset($this->result) || $this->getResult(false);
-        if ($name) {
-            return isset($this->result['headers'][$name]) ? $this->result['headers'][$name] : null;
+        if (!$this->result) {
+            if ($this->file_is_buffer) {
+                $this->body .= "--$this->boundary--\r\n";
+            }
+            $this->result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true);
         }
-        return $this->result['headers'];
-    }
-    
-    public function getBody()
-    {
-        isset($this->result) || $this->getResult(false);
-        return $this->result['body'];
-    }
-    
-    public function getJson()
-    {
-        isset($this->result) || $this->getResult(false);
-        return isset($this->result['body']) ? jsondecode($this->result['body']) : null;
-    }
-    
-    public function getError($default = null)
-    {
-        isset($this->result) || $this->getResult(false);
-        return isset($this->result['error']) ? $this->result['error'] : $default;
-    }
-    
-    public function getResult($return = true)
-    {
-        if ($this->file_is_buffer) {
-            $this->body .= "--$this->boundary--\r\n";
-        }
-        $this->result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true);
-        if ($return) {
+        if ($name === null) {
             return $this->result;
         }
+        return isset($this->result[$name]) ? $this->result[$name] : null;
     }
 
     public function body($body, $type = null)
@@ -232,7 +213,7 @@ class Client
         }
         if (isset($return)) {
             if ($result === false) {
-                $return['error'] = [curl_errno($ch), curl_error($ch)];
+                $return['error'] = curl_errno($ch).': '.curl_error($ch);
             }
             $return['body'] = $result;
             return $return;
@@ -268,7 +249,7 @@ class Client
     
     protected static function parseHeaders($header)
     {
-        $header_arr = array();
+        $header_arr = [];
         $arr = explode("\r\n", $header);
         foreach ($arr as $v) {
             $line = explode(":", $v, 2);

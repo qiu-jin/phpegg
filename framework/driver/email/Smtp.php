@@ -1,7 +1,6 @@
 <?php
 namespace framework\driver\email;
 
-use framework\core\Error;
 use framework\driver\email\message\Mime;
 
 class Smtp extends Email
@@ -27,22 +26,22 @@ class Smtp extends Email
             try {
                 list($addrs, $mime) = Mime::build($this->option);
             } catch (\Exception $e) {
-                return (bool) Error::set($e->getMessage()); 
+                return error($e->getMessage()); 
             }
             $this->log['FROM'] = $this->command('MAIL FROM: <'.$this->option['from'][0].'>');
             if (substr($this->log['FROM'], 0, 3) != '250') {
-                return (bool) Error::set($this->log['FROM']);
+                return error($this->log['FROM']);
             }
             foreach ($addrs as $addr) {
                 $this->log['RCPT'] = $this->command("RCPT TO: <$addr>");
                 if (substr($this->log['RCPT'], 0, 3) != '250') {
-                    return (bool) Error::set($this->log['RCPT']);
+                    return error($this->log['RCPT']);
                 }
             }
             $this->log['DATA'] = $this->command('DATA');
             $this->log['SEND'] = $this->command($mime."\r\n.");
             if (substr($this->log['SEND'], 0, 3) != '250') {
-                return (bool) Error::set($this->log['SEND']);
+                return error($this->log['SEND']);
             }
             $this->log['QUIT'] = $this->command('QUIT');
             return true;
@@ -55,7 +54,7 @@ class Smtp extends Email
         if (!$this->link) {
             $this->link = fsockopen($this->host, $this->port, $errno, $error, 15);
             if (!is_resource($this->link)) {
-                return (bool) Error::set('connect error '.$errno.': '.$error);
+                return error('connect error '.$errno.': '.$error);
             }
             $this->log['OPEN'] = $this->read();
             $this->log['EHLO'] = $this->command('EHLO '.$this->host);
@@ -63,7 +62,7 @@ class Smtp extends Email
             $this->log['USER'] = $this->command(base64_encode($this->username));
             $this->log['PSWD'] = $this->command(base64_encode($this->password));
             if (substr($this->log['PSWD'], 0, 3) != '235') {
-                return (bool) Error::set($this->log['PSWD']);
+                return error($this->log['PSWD']);
             }
         }
         return true;

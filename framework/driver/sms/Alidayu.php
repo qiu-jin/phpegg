@@ -1,29 +1,16 @@
 <?php
 namespace framework\driver\sms;
 
-use framework\core\Error;
 use framework\core\http\Client;
 
 class Alidayu extends Sms
 {
-    protected $acckey;
-    protected $seckey;
-    protected $signname;
-    protected $template;
-    protected $apiurl = 'http://gw.api.taobao.com/router/rest';
-    
-    public function __construct($config)
-    {
-        $this->acckey = $config['acckey'];
-        $this->seckey = $config['seckey'];
-        $this->signname = $config['signname'];
-        $this->template = $config['template'];
-    }
+    protected static $host = 'http://gw.api.taobao.com/router/rest';
     
     public function send($to, $template, $data, $signname = null)
     {
         if (isset($this->template[$template])) {
-            return $this->sendForm([
+            $form = [
                 'app_key'           => $this->acckey,
                 'format'            => 'json',
                 'method'            => 'alibaba.aliqin.fc.sms.num.send',
@@ -35,31 +22,19 @@ class Alidayu extends Sms
                 'sms_type'          => 'normal',
                 'timestamp'         => date('Y-m-d H:i:s'),
                 'v'                 => '2.0',
-            ], 'alibaba_aliqin_fc_sms_num_send_response');
-        } else {
-            Error::set('Template not exists');
+            ];
+            $str = '';
+            foreach ($form as $k => $v) {
+                $str .= $k.$v;
+            }
+            $form['sign'] = strtoupper(md5($this->seckey.$str.$this->seckey));
+            $client = Client::post(self::$host)->form($form);
+            $data = $client->json;
+            if (isset($data['alibaba_aliqin_fc_sms_num_send_response']['result'])) {
+                return true;
+            }
+            return error(isset($data['error_response']) ? jsonencode($data['error_response']) : $client->error);
         }
-        return false;
-    }
-    
-    protected function sendForm($form, $result_name)
-    {
-        $str = '';
-        ksort($form);
-        foreach ($form as $k => $v) {
-            $str .= $k.$v;
-        }
-        $form['sign'] = strtoupper(md5($this->appsecret.$str.$this->seckey));
-        $client = Client::post($this->apiurl)->form($form);
-        $data = $client->getJson();
-        if (isset($data[$result_name]['result'])) {
-            return true;
-        }
-        if (isset($data['error_response'])) {
-            Error::set(jsonencode($data['error_response']), Error::ERROR, 2);
-        } else {
-            Error::set($client->getError('unknown error'), Error::ERROR, 2);
-        }
-        return false;
+        return error('Template not exists');
     }
 }

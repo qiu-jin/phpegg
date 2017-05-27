@@ -1,7 +1,6 @@
 <?php
 namespace framework\driver\geoip;
 
-use framework\core\Error;
 use framework\core\http\Client;
 
 class Ipip extends Geoip
@@ -16,7 +15,7 @@ class Ipip extends Geoip
             $this->db = ['file' => $config['dbfile']];
         } elseif (isset($config['acckey'])) {
             $this->handle = 'apiHandle';
-            $this->apitoken = $config['acckey'];
+            $this->acckey = $config['acckey'];
         } else {
             throw new \Exception("Invalid configuration");
         }
@@ -31,10 +30,10 @@ class Ipip extends Geoip
                 $result = $result['data'];
                 return $raw ? $result : ['country' => $result[0], 'state' => $result[1], 'city' => $result[2]];
             } elseif ($result['ret'] === 'err') {
-                return (bool) Error::set($result['msg']);
+                return error($result['msg']);
             }
         }
-        return (bool) Error::set($client->getError('unknown error'));
+        return error($client->getError('unknown error'));
     }
     
     public function dbHandle($ip,  $raw = false)

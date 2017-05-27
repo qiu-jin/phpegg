@@ -1,7 +1,6 @@
 <?php
 namespace framework\driver\storage;
 
-use framework\core\Error;
 use framework\core\http\Client;
 
 /*
@@ -18,7 +17,7 @@ use framework\core\http\Client;
 
 class Webdav extends Storage
 {
-    protected $server;
+    protected $host;
     protected $username;
     protected $password;
     protected $public_read = false;
@@ -26,7 +25,7 @@ class Webdav extends Storage
     
     public function __construct($config)
     {
-        $this->server = $config['server'];
+        $this->host = $config['host'];
         $this->username = $config['username'];
         $this->password = $config['password'];
         if (isset($config['auto_create_dir'])) {
@@ -104,15 +103,15 @@ class Webdav extends Storage
         if ($headers) {
             $client->headers($headers);
         }
-        $result = $client->getResult();
-        if ($result['status'] >= 200 && $result['status'] < 300) {
+        $status = $client->status;
+        if ($status >= 200 && $status < 300) {
             switch ($method) {
                 case 'GET':
-                    return $result['body'];
+                    return $client->body;
                 case 'PUT':
                     return true;
                 case 'HEAD':
-                    return $result['headers'];
+                    return $client->headers;
                 case 'COPY':
                     return true;
                 case 'MOVE':
@@ -123,12 +122,15 @@ class Webdav extends Storage
                     return true;
             }
         }
-        return $result['status'] !== 404 && $this->setError($result);
+        if ($status === 404 && $method === 'HEAD') {
+            return false;
+        }
+        return error($status ? $status : $client->error, 2);
     }
     
     protected function url($path)
     {
-        return $this->server.'/'.trim(trim($path), '/');
+        return $this->host.'/'.trim(trim($path), '/');
     }
     
     protected function auth()
@@ -139,14 +141,5 @@ class Webdav extends Storage
     protected function ckdir($path)
     {
         return $this->auto_create_dir || $this->send('MKCOL', dirname($path).'/');
-    }
-    
-    protected function setError($result)
-    {
-        if ($result['status']) {
-            return (bool) Error::set($result['status'], Error::ERROR, 3);
-        }
-        $error = isset($result['error']) ? 'Curl error '.$result['error'][0].': '.$result['error'][1] : 'unknown error';
-        return (bool) Error::set($error, Error::ERROR, 3);
     }
 }

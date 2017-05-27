@@ -1,24 +1,11 @@
 <?php
 namespace framework\driver\sms;
 
-use framework\core\Error;
 use framework\core\http\Client;
 
 class Aliyun extends Sms
 {
-    protected $acckey;
-    protected $seckey;
-    protected $apiurl = 'https://sms.aliyuncs.com';
-    protected $signname;
-    protected $template;
-    
-    public function __construct($config)
-    {
-        $this->acckey = $config['acckey'];
-        $this->seckey = $config['seckey'];
-        $this->signname = $config['signname'];
-        $this->template = $config['template'];
-    }
+    protected static $host = 'https://sms.aliyuncs.com';
 
     public function send($to, $template, $data, $signname = null)
     {
@@ -33,20 +20,18 @@ class Aliyun extends Sms
                 'Version'           => '2016-09-27',
                 'AccessKeyId'       => $this->acckey,
                 'SignatureMethod'   => 'HMAC-SHA1',
-                'Timestamp'         => date(\DateTime::ISO8601),
                 'SignatureVersion'  => '1.0',
                 'SignatureNonce'    => uniqid(),
+                'Timestamp'         => gmdate('Y-m-d\TH:i:s\Z'),
             ]);
-            $query .= '&Signature='.hash_hmac('SHA1', rawurlencode('GET&'.$query), $this->seckey.'&');
-            $client = Client::get('https://sms.aliyuncs.com/?'.$query);
-            if ($client->getStatus() === 200) {
+            $query .= '&Signature='.hash_hmac('SHA1', rawurlencode("GET&$query"), "$this->seckey&");
+            $client = Client::get(self::$host."/?$query");
+            if ($client->status === 200) {
                 return true;
             }
-            $data = $client->getJson();
-            Error::set(isset($data['Code']) ? $data['Message'] : $client->getError('unknown error'));
-        } else {
-            Error::set('Template not exists');
+            $data = $client->json;
+            return error(isset($data['Message']) ? $data['Message'] : $client->error);
         }
-        return false;
+        return error('Template not exists');
     }
 }

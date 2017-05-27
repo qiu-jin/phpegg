@@ -1,7 +1,6 @@
 <?php
 namespace framework\driver\geoip;
 
-use framework\core\Error;
 use framework\core\http\Client;
 /* 
  * composer require maxmind-db/reader
@@ -52,8 +51,7 @@ class Maxmind extends Geoip
                 return $return;
             }
         }
-        $error = isset($result['error']) ? $result['error'] : $client->getError('unknown error');
-        return (bool) Error::set($error);
+        return error(isset($result['error']) ? $result['error'] : $client->getError('unknown error'));
     }
     
     protected function dbHandle($ip, $raw = false)
@@ -65,7 +63,7 @@ class Maxmind extends Geoip
             $record = $this->db['reader']->get($ip);
             return $raw ? $record : ['iso_code' => $record['country']['iso_code'], 'country' => $record['country']['names'][$this->lang]];
         } catch (\Exception $e) {
-            return (bool) Error::set($e->getMessage());
+            return error($e->getMessage());
         }
     }
     

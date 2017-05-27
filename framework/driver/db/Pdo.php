@@ -1,5 +1,5 @@
 <?php
-namespace Framework\Driver\Db;
+namespace framework\driver\db;
 
 class Pdo extends Db
 {

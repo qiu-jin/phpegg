@@ -39,6 +39,7 @@ class Error
             $message = "$class$type$function() $message";
         }
         self::record($level, $message, $file, $line);
+        return false;
     }
     
     public static function errorHandler($code, $message, $file = null, $line = null)

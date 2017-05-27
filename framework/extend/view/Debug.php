@@ -13,7 +13,7 @@ class Debug
     public static function dump(...$vars)
     {
         ob_start();
-        if (class_exists('Symfony\Component\VarDumper\VarDumper')) {
+        if (class_exists(VarDumper::class)) {
             foreach ($vars as $var) {
                 VarDumper::dump($var);
             }

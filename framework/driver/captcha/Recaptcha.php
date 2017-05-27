@@ -1,7 +1,6 @@
 <?php
 namespace framework\driver\captcha;
 
-use framework\core\Error;
 use framework\core\http\Client;
 use framework\core\http\Request;
 
@@ -43,7 +42,6 @@ class Recaptcha
         if (isset($result['success']) && $result['success'] === true) {
             return true;
         }
-        $error = isset($result['error-codes']) ? $result['error-codes'] : $client->getError('unknown error');
-        return (bool) Error::set($error);
+        return error(isset($result['error-codes']) ? $result['error-codes'] : $client->getError('unknown error'));
     }
 }
