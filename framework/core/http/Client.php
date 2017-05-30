@@ -34,20 +34,40 @@ class Client
     
     public function __get($name)
     {
-        switch ($name) {
-            case 'status':
-                return $this->getResult('status');
-            case 'headers':
-                return $this->getResult('headers');
-            case 'body':
-                return $this->getResult('body');
-            case 'error':
-                return $this->getResult('error');
-            case 'json':
-                return jsondecode($this->getResult('body'));
-            case 'xml':
-                return Xml::decode($this->getResult('body'));
+        $this->result || $this->getResult();
+        if (isset($this->result[$name])) {
+            return $this->result[$name];
         }
+    }
+    
+    public function getStatus()
+    {
+        return $this->getResult('status');
+    }
+    
+    public function getHeaders()
+    {
+        return $this->getResult('headers');
+    }
+    
+    public function getBody()
+    {
+        return $this->getResult('body');
+    }
+    
+    public function getError($name = null)
+    {
+        return $this->getResult('error');
+    }
+    
+    public function getJson($name = null)
+    {
+        return jsondecode($this->getResult('body'));
+    }
+    
+    public function getXml($name = null)
+    {
+        return Xml::decode($this->getResult('body'));
     }
     
     public function getResult($name = null)
@@ -152,7 +172,7 @@ class Client
         return $this;
     }
     
-    public function return_headers($bool = true)
+    public function returnHeaders($bool = true)
     {
         $this->curlopt['HEADER'] = (bool) $bool;
         return $this;

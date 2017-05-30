@@ -33,7 +33,7 @@ class Ipip extends Geoip
                 return error($result['msg']);
             }
         }
-        return error($client->getError('unknown error'));
+        return error($client->getError());
     }
     
     public function dbHandle($ip,  $raw = false)

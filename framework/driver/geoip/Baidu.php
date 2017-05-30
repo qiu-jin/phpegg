@@ -23,6 +23,6 @@ class Baidu extends Geoip
                 'city'  => $result['content']['address_detail']['city']
             ];
         }
-        return error(isset($result['message']) ? $result['message'] : $client->getError('unknown error'));
+        return error(isset($result['message']) ? $result['message'] : $client->getError());
     }
 }

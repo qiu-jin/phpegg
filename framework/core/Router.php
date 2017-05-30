@@ -1,5 +1,5 @@
 <?php
-namespace Framework\Core;
+namespace framework\core;
 
 class Router
 {
@@ -80,7 +80,7 @@ class Router
                     if ($unit && preg_match('/^'.$unit.'$/i', $path[$i], $matchs)) {
                         $count = count($matchs);
                         if ($count > 1) {
-                            for ($j = 1;$j < $count;$j++) {
+                            for ($j = 1; $j < $count; $j++) {
                                 $macth[] = $matchs[$j];
                             }
                         } else {
