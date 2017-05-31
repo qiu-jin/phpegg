@@ -26,10 +26,10 @@ class Memcached extends Cache
         $this->link = $link;
     }
     
-    public function get($key)
+    public function get($key, $default = null)
     {
         $value = $this->link->get($key);
-        return $value ? $this->unserialize($value) : false;
+        return $value ? $this->unserialize($value) : $default;
     }
     
     public function has($key)
@@ -37,14 +37,14 @@ class Memcached extends Cache
         return (bool) $this->link->get($key);
     }
     
-    public function set($key, $value, $ttl = 0)
+    public function set($key, $value, $ttl = null)
     {
-        return $this->link->set($key, $this->serialize($value), $ttl); 
+        return $this->link->set($key, $this->serialize($value), $ttl ? $ttl+time() : 0); 
     }
 
     public function delete($key)
     {
-        return $this->link->del($key);
+        return $this->link->delete($key);
     }
     
     public function clear()
@@ -54,6 +54,6 @@ class Memcached extends Cache
     
     public function __destruct()
     {
-        $this->close();
+        $this->link->quit();
     }
 }

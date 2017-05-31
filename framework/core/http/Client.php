@@ -34,9 +34,12 @@ class Client
     
     public function __get($name)
     {
-        $this->result || $this->getResult();
-        if (isset($this->result[$name])) {
-            return $this->result[$name];
+        if (in_array($name, ['status', 'headers', 'body', 'error'])) {
+            return $this->getResult($name);
+        } elseif ($name === 'json') {
+            return $this->getJson();
+        } elseif ($name === 'xml') {
+            return $this->getXml();
         }
     }
     
@@ -55,17 +58,17 @@ class Client
         return $this->getResult('body');
     }
     
-    public function getError($name = null)
+    public function getError()
     {
         return $this->getResult('error');
     }
     
-    public function getJson($name = null)
+    public function getJson()
     {
         return jsondecode($this->getResult('body'));
     }
     
-    public function getXml($name = null)
+    public function getXml()
     {
         return Xml::decode($this->getResult('body'));
     }

@@ -53,7 +53,7 @@ class Oss extends Storage
 
     public function stat($from)
     {
-        $stat = $this->send('HEAD', $from, null, ['return_headers' => true], !$this->public_read);
+        $stat = $this->send('HEAD', $from, null, ['returnHeaders' => true], !$this->public_read);
         return $stat ? [
             'type'  => $stat['Content-Type'],
             'size'  => (int) $stat['Content-Length'],

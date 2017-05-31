@@ -8,6 +8,8 @@ abstract class Storage
 {
     abstract public function get($from);
     
+    abstract public function has($from);
+    
     abstract public function put($from, $to);
     
     abstract public function stat($from);

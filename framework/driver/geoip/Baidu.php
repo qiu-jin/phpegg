@@ -16,13 +16,13 @@ class Baidu extends Geoip
     public function handle($ip, $raw = false)
     {
         $client = Client::get(self::$host."?ip=$ip&ak=$this->acckey");
-        $result = $client->getJson();
-        if (isset($result['status']) && $result['status'] === 0) {
-            return $raw ? $result['content'] : [
-                'state' => $result['content']['address_detail']['province'],
-                'city'  => $result['content']['address_detail']['city']
+        $data = $client->json;
+        if (isset($data['status']) && $data['status'] === 0) {
+            return $raw ? $data['content'] : [
+                'state' => $data['content']['address_detail']['province'],
+                'city'  => $data['content']['address_detail']['city']
             ];
         }
-        return error(isset($result['message']) ? $result['message'] : $client->getError());
+        return error(isset($data['message']) ? $data['message'] : $client->error);
     }
 }

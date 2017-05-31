@@ -14,10 +14,10 @@ class Apcu extends Cache
         }
     }
     
-    public function get($key)
+    public function get($key, $default = null)
     {
         $value = apcu_fetch($this->prefix.$key);
-        return $value ? $this->unserialize($value) : $value;
+        return $value ? $this->unserialize($value) : $default;
     }
 
     public function has($key)
@@ -25,12 +25,9 @@ class Apcu extends Cache
         return apcu_exists($this->prefix.$key);
     }
     
-    public function set($key, $value, $ttl = 0)
+    public function set($key, $value, $ttl = null)
     {
-        if ($ttl !== 0) {
-            $ttl = $ttl+time();
-        }
-        return apcu_store($this->prefix.$key, $this->serialize($value), $ttl);
+        return apcu_store($this->prefix.$key, $this->serialize($value), $ttl ? $ttl+time() : 0);
     }
     
     public function delete($key)

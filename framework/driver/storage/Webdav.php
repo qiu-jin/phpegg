@@ -64,7 +64,7 @@ class Webdav extends Storage
 
     public function stat($from)
     {
-        $stat = $this->send('HEAD', $this->url($from), null, ['return_headers' => true], !$this->public_read);
+        $stat = $this->send('HEAD', $this->url($from), null, ['returnHeaders' => true], !$this->public_read);
         return $stat ? [
             'type'  => $stat['Content-Type'],
             'size'  => (int) $stat['Content-Length'],

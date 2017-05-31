@@ -16,12 +16,12 @@ class SingleFile extends Cache
         }
     }
     
-    public function get($key)
+    public function get($key, $default = null)
     {
-        return isset($this->cache[$key]) ? $this->cache[$key]['value'] : null;
+        return isset($this->cache[$key]) ? $this->cache[$key]['value'] : $default;
     }
     
-    public function set($key, $value, $ttl = 0)
+    public function set($key, $value, $ttl = null)
     {
         $this->cache[$key] = ['value' => $value, 'ttl' => ($ttl ? $ttl + time() : 0)];
         return $this->save();
@@ -51,7 +51,7 @@ class SingleFile extends Cache
         }
     }
 
-    public function load()
+    protected function load()
     {
         $time = time();
         if (is_file($this->file)) {
@@ -66,7 +66,7 @@ class SingleFile extends Cache
         }
     }
     
-    public function save()
+    protected function save()
     {
         $fp = fopen($this->file, 'w');
         if ($fp) {

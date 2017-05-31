@@ -55,7 +55,7 @@ class S3 extends Storage
 
     public function stat($from)
     {
-        $stat = $this->send('HEAD', $from, null, ['return_headers' => true], !$this->public_read);
+        $stat = $this->send('HEAD', $from, null, ['returnHeaders' => true], !$this->public_read);
         return $stat ? [
             'type'  => $stat['Content-Type'],
             'size'  => $stat['Content-Length'],

@@ -10,13 +10,12 @@
     ],
     "require": {
         "php": ">=5.6",
+    },
+    "require-dev": {
         "maxmind-db/reader": "^1.1",
         "pda/pheanstalk": "^3.1",
         "symfony/var-dumper": "^3.2",
-        "aws/aws-sdk-php": "^3.27",
-        "apache/thrift": "^0.10.0"
-    },
-    "require-dev": {
+        "apache/thrift": "^0.10.0",
         "phpunit/phpunit": "^5.3"
     }
 }

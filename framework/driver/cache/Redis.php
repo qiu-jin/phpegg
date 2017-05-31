@@ -27,10 +27,10 @@ class Redis extends Cache
         return $this->link;
     }
     
-    public function get($key)
+    public function get($key, $default = null)
     {
         $value = $this->link->get($key);
-        return $value ? $this->unserialize($value) : false;
+        return $value ? $this->unserialize($value) : $default;
     }
     
     public function has($key)
@@ -38,12 +38,12 @@ class Redis extends Cache
         return $this->link->exists($key);
     }
     
-    public function set($key, $value, $ttl = 0)
+    public function set($key, $value, $ttl = null)
     {
-        if ($ttl > 0) {
-            return $this->link->setex($key, $ttl, $this->serialize($value));
-        } else {
+        if ($ttl) {
             return $this->link->set($key, $this->serialize($value)); 
+        } else {
+            return $this->link->setex($key, $ttl, $this->serialize($value));
         }
     }
 
@@ -57,13 +57,8 @@ class Redis extends Cache
         return $this->link->flushdb();
     }
     
-    public function close()
-    {
-        return $this->link->close();
-    }
-    
     public function __destruct()
     {
-        $this->close();
+        $this->link->close();
     }
 }
