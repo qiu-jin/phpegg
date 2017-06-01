@@ -38,10 +38,10 @@ class Recaptcha
             'remoteip' => Request::ip()
         ];
         $client = Client::post($this->apiurl)->form($form);
-        $result = $client->getJson();
-        if (isset($result['success']) && $result['success'] === true) {
+        $data = $client->json;
+        if (isset($data['success']) && $data['success'] === true) {
             return true;
         }
-        return error(isset($result['error-codes']) ? $result['error-codes'] : $client->getError('unknown error'));
+        return error(isset($data['error-codes']) ? $data['error-codes'] : $client->error);
     }
 }

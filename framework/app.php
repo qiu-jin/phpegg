@@ -9,7 +9,7 @@ use framework\core\http\Response;
 abstract class App
 {
     private static $app;
-    private static $init;
+    private static $boot;
     private static $exit;
     private static $runing;
     private static $error_handler;
@@ -25,14 +25,13 @@ abstract class App
         $this->config = array_merge($this->config, $config);
     }
     
-    public static function init()
+    public static function boot()
     {
-        if (self::$init) return;
-        self::$init = true;
+        if (self::$boot) return;
+        self::$boot = true;
         define('FW_DIR', __DIR__.'/');
-        defined('APP_DIR')    || define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
-        defined('ROOT_DIR')   || define('ROOT_DIR', dirname(__DIR__).'/');
-        defined('APP_DEBUG')  || define('APP_DEBUG', false);
+        defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
+        defined('APP_DIR')  || define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
         require(FW_DIR.'common.php');
         require(FW_DIR.'core/config.php');
         require(FW_DIR.'core/loader.php');
@@ -50,7 +49,7 @@ abstract class App
     public static function start($app = 'standard', array $config = null)
     {
         if (!self::$app) {
-            self::init();
+            self::boot();
             if (static::class !== __CLASS__) {
                 throw new \Exception('Illegal start call');
             }

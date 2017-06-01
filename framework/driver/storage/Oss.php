@@ -23,29 +23,29 @@ class Oss extends Storage
     
     public function get($from, $to = null)
     {
-        $client_methods['timeout'] = 30;
+        $methods['timeout'] = 30;
         if ($to) {
-            $client_methods['save'] = $to;
+            $methods['save'] = $to;
         }
-        return $this->send('GET', $from, null, $client_methods, !$this->public_read);
+        return $this->send('GET', $from, null, $methods, !$this->public_read);
     }
     
     public function put($from, $to, $is_buffer = false)
     {
-        $client_methods['timeout'] = 30;
+        $methods['timeout'] = 30;
         $headers['Content-Type'] = File::mime($from, $is_buffer);
         if ($is_buffer) {
-            $client_methods['body'] = $from;
+            $methods['body'] = $from;
             $headers['Content-Length'] = strlen($from);
             $headers['Content-Md5'] = base64_encode(md5($from, true));
-            return $this->send('PUT', $to, $headers, $client_methods);
+            return $this->send('PUT', $to, $headers, $methods);
         }
         $fp = fopen($from, 'r');
         if ($fp) {
-            $client_methods['stream'] = $fp;
+            $methods['stream'] = $fp;
             $headers['Content-Length'] = filesize($from);
             $headers['Content-Md5'] = base64_encode(md5_file($from, true));
-            $return = $this->send('PUT', $to, $headers, $client_methods);
+            $return = $this->send('PUT', $to, $headers, $methods);
             fclose($fp);
             return $return;
         }

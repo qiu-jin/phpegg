@@ -23,15 +23,15 @@ class Qiniu extends Storage
 
     public function get($from, $to = null)
     {
-        $client_methods['timeout'] = 30;
+        $methods['timeout'] = 30;
         if ($to) {
-            $client_methods['save'] = $to;
+            $methods['save'] = $to;
         }
         $url = "$this->domain".parent::path($from);
         if (!$this->public_read) {
             $url .= '?token='.$this->sign($url);
         }
-        return $this->send($url, null, $client_methods, 'GET');
+        return $this->send($url, null, $methods, 'GET');
     }
 
     public function put($from, $to, $is_buffer = false)
@@ -39,11 +39,10 @@ class Qiniu extends Storage
         $to = parent::path($to);
         $str = $this->base64Encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
         $token = $this->sign($str).':'.$str;
-        
-        $client_methods['timeout'] = 30;
-        $client_methods['form'] = [['token' => $token, 'key' => $to], $is_buffer];
-        $client_methods['file'] = ['file', $from];
-        return $this->send("https://up{$this->region}.qbox.me", null, $client_methods);
+        $methods['timeout'] = 30;
+        $methods['form'] = [['token' => $token, 'key' => $to], $is_buffer];
+        $methods['file'] = ['file', $from];
+        return $this->send("https://up{$this->region}.qbox.me", null, $methods);
     }
     
     public function stat($from)

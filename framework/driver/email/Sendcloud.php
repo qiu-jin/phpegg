@@ -48,7 +48,7 @@ class Sendcloud extends Email
                 }
                 $from['templateInvokeName'] = $this->template[$template];
             } else {
-                return (bool) Error::set('Template not exists');;
+                return error('Template not exists');;
             }
         } else {
             $method = 'send';
@@ -66,9 +66,9 @@ class Sendcloud extends Email
         if (isset($this->option['attach'])) {
             $client->file('attachments', ...end($this->option['attach']));
         }
-        $data = $client->getJson();
+        $data = $client->json;
         if (empty($data['result'])) {
-            return error(isset($data['message']) ? $data['message'] : $client->getError());
+            return error(isset($data['message']) ? $data['message'] : $client->error);
         }
         return true;
     }

@@ -42,24 +42,24 @@ class Jsonrpc
             return $data['result'];
         }
         if (isset($data['error'])) {
-            $this->setError($data['error']['code'], $data['error']['message']);
+            $this->error($data['error']['code'], $data['error']['message']);
         } else {
-            $clierr = $client->getError();
+            $clierr = $client->error;
             if ($clierr) {
-                $this->setError('-32000', "Internet error $clierr[0]: $clierr[1]");
+                $this->error('-32000', "Internet error $clierr[0]: $clierr[1]");
             } else {
-                $this->setError('-32603', 'nvalid JSON-RPC response');
+                $this->error('-32603', 'nvalid JSON-RPC response');
             }
         }
         return false;
     }
     
-    protected function setError($code, $message)
+    protected function error($code, $message)
     {
         if ($this->throw_exception) {
             throw new \Exception("Jsonrpc error $code: $message");
         } else {
-            Error::set("$code: $message");
+            return error("$code: $message");
         }
     }
 }

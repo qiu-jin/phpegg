@@ -14,7 +14,6 @@ use framework\core\http\Client;
  * Dropbox:
  * GoogleDrive: 
  */
-
 class Webdav extends Storage
 {
     protected $host;
@@ -35,26 +34,26 @@ class Webdav extends Storage
     
     public function get($from, $to = null)
     {
-        $client_methods['timeout'] = 30;
+        $methods['timeout'] = 30;
         if ($to) {
-            $client_methods['save'] = $to;
+            $methods['save'] = $to;
         }
-        return $this->send('GET', $this->url($from), null, $client_methods, !$this->public_read);
+        return $this->send('GET', $this->url($from), null, $methods, !$this->public_read);
     }
     
     public function put($from, $to, $is_buffer = false)
     {
         $to = $this->url($to);
         if ($this->ckdir($to)) {
-            $client_methods['timeout'] = 30;
+            $methods['timeout'] = 30;
             if ($is_buffer) {
-                $client_methods['body'] = $from;
-                return $this->send('PUT', $to, null, $client_methods);
+                $methods['body'] = $from;
+                return $this->send('PUT', $to, null, $methods);
             }
             $fp = fopen($from, 'r');
             if ($fp) {
-                $client_methods['stream'] = $fp;
-                $return = $this->send('PUT', $to, null, $client_methods);
+                $methods['stream'] = $fp;
+                $return = $this->send('PUT', $to, null, $methods);
                 fclose($fp);
                 return $return;
             }

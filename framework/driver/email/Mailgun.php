@@ -42,9 +42,9 @@ class Mailgun extends Email
         if (isset($this->option['attach'])) {
             $client->file('attachment', ...end($this->option['attach']));
         }
-        $result = $client->getJson();
+        $result = $client->json;
         if (empty($result['id'])) {
-            return error(isset($result['message']) ? $result['message'] : $client->getError());
+            return error(isset($result['message']) ? $result['message'] : $client->error);
         }
         return true;
     }

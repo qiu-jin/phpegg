@@ -24,11 +24,11 @@ class S3 extends Storage
     
     public function get($from, $to = null)
     {
-        $client_methods['timeout'] = 30;
+        $methods['timeout'] = 30;
         if ($to) {
-            $client_methods['save'] = $to;
+            $methods['save'] = $to;
         }
-        return $this->send('GET', $from, null, $client_methods, !$this->public_read);
+        return $this->send('GET', $from, null, $methods, !$this->public_read);
     }
     
     public function put($from, $to, $is_buffer = false)
@@ -36,17 +36,17 @@ class S3 extends Storage
         $client_methods['timeout'] = 30;
         $headers['Content-Type'] = File::mime($from, $is_buffer);
         if ($is_buffer) {
-            $client_methods['body'] = $from;
+            $methods['body'] = $from;
             $headers['Content-Length'] = strlen($from);
             $headers['X-Amz-Content-Sha256'] = hash('sha256', $from);
-            return $this->send('PUT', $to, $headers, $client_methods);
+            return $this->send('PUT', $to, $headers, $methods);
         }
         $fp = fopen($from, 'r');
         if ($fp) {
-            $client_methods['stream'] = $fp;
+            $methods['stream'] = $fp;
             $headers['Content-Length'] = filesize($from);
             $headers['X-Amz-Content-Sha256'] = hash_file('sha256', $from);
-            $return = $this->send('PUT', $to, $headers, $client_methods);
+            $return = $this->send('PUT', $to, $headers, $methods);
             fclose($fp);
             return $return;
         }

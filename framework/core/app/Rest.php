@@ -8,7 +8,7 @@ use framework\core\Config;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
-class Resource extends App
+class Rest extends App
 {
     private $ns;
     private $config = [
