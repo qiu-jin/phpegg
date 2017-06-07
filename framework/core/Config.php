@@ -88,17 +88,23 @@ class Config
         }
     }
     
-    public static function first_pair($name)
+    public static function first($name)
+    {
+        self::import($name);
+        return reset(self::$configs->$name);
+    }
+    
+    public static function random($name)
+    {
+        self::import($name);
+        return self::$configs->$name[array_rand($configs->$name)];
+    }
+    
+    public static function firstPair($name)
     {
         self::import($name);
         $value = reset(self::$configs->$name);
         return [key(self::$configs->$name), $value];
-    }
-    
-    public static function first_value($name)
-    {
-        self::import($name);
-        return reset(self::$configs->$name);
     }
     
     private static function load($path)

@@ -16,7 +16,7 @@ class Inline extends App
         'enable_view' => 0,
     ];
     
-    public function dispatch()
+    protected function dispatch()
     {
         $this->dir = APP_DIR.'controller/';
         if (isset($this->config['sub_controller'])) {

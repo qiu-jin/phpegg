@@ -380,7 +380,7 @@ class Template
                 break;
             case 'import':
                 $argument = $this->read_argument($ret['code'], $ret['vars']);
-                $code = 'include View::import('.$argument['value'].', __DIR__);';
+                $code = 'include View::path('.$argument['value'].', __DIR__);';
                 break;
             case 'layout':
                 $argument = $this->read_argument($ret['code'], $ret['vars']);

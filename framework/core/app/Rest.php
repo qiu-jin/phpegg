@@ -18,7 +18,7 @@ class Rest extends App
         'controller_depth' => 0,
     ];
     
-    public function dispatch()
+    protected function dispatch()
     {
         $this->ns = 'app\controller\\';
         if (isset($this->config['sub_controller'])) {

@@ -14,14 +14,14 @@ class Standard extends App
     protected $config = [
         'route_mode' => 0,
         'param_mode' => 0,
-        'get_to_params' => 0,
         'enable_view' => 0,
+        'query_to_params' => 0,
         'tpl_to_snake' => true,
         'controller_depth' => 0,
         'controller_to_camel' => true,
     ];
     
-    public function dispatch()
+    protected function dispatch()
     {
         $this->ns = 'app\controller\\';
         if (isset($this->config['sub_controller'])) {
@@ -144,7 +144,7 @@ class Standard extends App
                 $class_array = $path;
             }
         }
-        if (isset($class_array)) {
+        if ($action{0} !== '_' && isset($class_array)) {
             if (!empty($this->config['controller_to_camel'])) {
                 $action = Str::toCamel($action);
                 $class_array[] = Str::toCamel(array_pop($class_array));

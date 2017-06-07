@@ -18,6 +18,10 @@ class Uploaded
         UPLOAD_ERR_NO_TMP_DIR   => 'UPLOAD_ERR_NO_TMP_DIR',
         UPLOAD_ERR_CANT_WRITE   => 'UPLOAD_ERR_CANT_WRITE'
     ];
+    private static $image_type = [
+        1 => 'GIF', 2 => 'JPG', 3 => 'PNG', 4 => 'SWF',5 => 'PSD', 6 => 'BMP', 7 => 'TIFF', 8 => 'TIFF', 9 => 'JPC',
+        10 => 'JP2', 11 => 'JPX', 12 => 'JB2', 13 => 'SWC', 14 => 'IFF', 15 => 'WBMP', 16 => 'XBM'
+    ];
     
     public function __construct($file, $validate = null)
     {
@@ -45,14 +49,14 @@ class Uploaded
         return isset($this->file['tmp_name']) ? File::mime($this->file['tmp_name']) : false;
     }
     
-    public function isImage()
+    public function image()
     {
         if (function_exists('exif_imagetype')) {
             $type = exif_imagetype($this->file['tmp_name']);
         } else {
             $type = getimagesize($this->file['tmp_name'])[2];
         }
-        return $type && in_array($type, [1, 2, 3], true);
+        return $type && isset(self::$image_type[$type]) ? self::$image_type[$type] : false;
     }
     
     public function extension()
@@ -60,35 +64,22 @@ class Uploaded
         return isset($this->file['name']) ? pathinfo($this->file['name'], PATHINFO_EXTENSION) : false;
     }
     
-    public function move($to)
+    public function move($to, $random = false)
     {
         isset($this->check) || $this->check();
         if ($this->check) {
+            if (substr($to, -1) === '/') {
+                $name = $random ? Str::random().'.'.$this->extension() : $this->name();
+                $to .= $name;
+            }
             if (stripos($to, '://')) {
                 list($scheme, $uri) = explode('://', $to, 2);
                 return Model::connect('storage', $scheme)->put($this->file['tmp_name'], $to);
+            } else {
+                return move_uploaded_file($this->file['tmp_name'], $to);
             }
-            return move_uploaded_file($this->file['tmp_name'], $to);
         }
         return false;
-    }
-    
-    public function movePath($path)
-    {
-        $ext = $this->extension();
-        return $this->move($path.'.'.$ext) ? basename($path).'.'.$ext : false;
-    }
-    
-    public function moveRawName($dir)
-    {
-        $name = $this->name();
-        return $this->move($dir.$name) ? $name : false;
-    }
-    
-    public function moveRandomName($dir)
-    {
-        $name = Str::random().'.'.$this->extension();
-        return $this->move($dir.$name) ? $name : false;
     }
     
     public function check($validate = null)
@@ -99,6 +90,9 @@ class Uploaded
                 $validate = $this->validate;
             }
             if ($validate) {
+                if (isset($validate['image']) && !in_array($this->image(), $validate['image'])) {
+                    return false;
+                }
                 if (isset($validate['type']) && !in_array($this->type(), $validate['type'], true)) {
                     return false;
                 }
@@ -106,9 +100,6 @@ class Uploaded
                     return false;
                 }
                 if (isset($validate['extension']) && !in_array($this->extension(), $validate['extension'], true)) {
-                    return false;
-                }
-                if (isset($validate['is_image']) && !$this->isImage()) {
                     return false;
                 }
                 if (isset($validate['size'])) {
@@ -132,10 +123,7 @@ class Uploaded
     public function error()
     {
         if ($this->file['error'] !== UPLOAD_ERR_OK) {
-            if (isset(self::$error[$this->file['error']])) {
-                return self::$error[$this->file['error']];
-            }
-            return 'UPLOAD_ERR_UNKNOWN';
+            return self::$error[$this->file['error']];
         }
         return null;
     }

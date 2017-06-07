@@ -7,6 +7,7 @@ use framework\core\Model;
 use framework\core\Loader;
 use framework\core\Logger;
 use framework\core\Config;
+use framework\core\Container;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\extend\view\Debug;
@@ -41,34 +42,34 @@ function logger($name = null)
     return Logger::channel($name);
 }
 
-function model($name)
+function container($name)
 {
-    return Model::get($name);
+    return Container::get($name);
 }
 
 function db($name = null)
 {
-    return Model::connect('db', $name);
+    return Container::connect('db', $name);
 }
 
 function cache($name = null)
 {
-    return Model::connect('cache', $name);
+    return Container::connect('cache', $name);
 }
 
 function storage($name = null)
 {
-    return Model::connect('storage', $name);
+    return Container::connect('storage', $name);
 }
 
 function connect($type, $name = null)
 {
-    return Model::connect($type, $name);
+    return Container::connect($type, $name);
 }
 
 function load($type = null, $name = null)
 {
-    return App::load($type, $name);
+    return Container::load($type, $name);
 }
 
 function dump(...$vars)

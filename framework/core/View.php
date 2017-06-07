@@ -42,7 +42,7 @@ class View
     
     public static function render($tpl, $vars = null)
     {
-        $phpfile = self::import(trim($tpl));
+        $phpfile = self::path(trim($tpl));
         if ($phpfile) {
             if (isset(self::$view->vars)) {
                 extract(self::$view->vars, EXTR_SKIP);
@@ -63,7 +63,7 @@ class View
     public static function error($code, $message = null)
     {   
         if (isset(self::$config['error'][$code])) {
-            $phpfile = self::import(self::$config['error'][$code]);
+            $phpfile = self::path(self::$config['error'][$code]);
             if ($phpfile) {
                 ob_start();
                 include $phpfile;
@@ -89,7 +89,7 @@ class View
         throw new \Exception('Illegal View method: '.$method);
     }
     
-    private static function import($tpl, $dir = null)
+    private static function path($tpl, $dir = null)
     {
         $path = $tpl{0} === '/' ? self::$config['dir'].$tpl : $dir.'/'.$tpl;
         $phpfile = $path.'.php';

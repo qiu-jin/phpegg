@@ -11,7 +11,7 @@ class Simple extends App
     private $query;
     private $route;
     
-    public function dispatch()
+    protected function dispatch()
     {
         return true;
     }

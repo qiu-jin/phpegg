@@ -12,7 +12,7 @@ class Jsonrpc extends App
     private $version = '2.0';
     protected $config = [];
     
-    public function dispatch()
+    protected function dispatch()
     {
         $data = jsondecode(Request::body());
         if (!$data) {
@@ -23,19 +23,21 @@ class Jsonrpc extends App
             $method = explode('.', $method);
             if (count($method) > 1) {
                 $action = array_pop($method);
-                $this->ns = 'app\controller\\';
-                if (isset($this->config['sub_controller'])) {
-                    $this->ns .= $this->config['sub_controller'].'\\';
-                }
-                $class = $this->ns.implode('\\', $method);
-                if (class_exists($class)) {
-                    $controller = new $class();
-                    if (is_callable($controller, $action)) {
-                        return [
-                            'controller'    => $controller,
-                            'action'        => $action,
-                            'params'        => isset($data['params']) ? $data['params'] : []
-                        ];
+                if ($action{0} !== '_' ) {
+                    $this->ns = 'app\controller\\';
+                    if (isset($this->config['sub_controller'])) {
+                        $this->ns .= $this->config['sub_controller'].'\\';
+                    }
+                    $class = $this->ns.implode('\\', $method);
+                    if (class_exists($class)) {
+                        $controller = new $class();
+                        if (is_callable($controller, $action)) {
+                            return [
+                                'controller'    => $controller,
+                                'action'        => $action,
+                                'params'        => isset($data['params']) ? $data['params'] : []
+                            ];
+                        }
                     }
                 }
             }

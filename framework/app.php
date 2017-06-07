@@ -18,7 +18,7 @@ abstract class App
     protected $dispatch = [];
     
     abstract public function run(callable $return_handler);
-    abstract public function dispatch();
+    abstract protected function dispatch();
     
     private function __construct($config)
     {
@@ -74,27 +74,6 @@ abstract class App
                 return self::$app;
             }
             self::abort(404);
-        }
-    }
-
-    public static function load($type = null, $name = null)
-    {
-        if ($type) {
-            if ($name) {
-                if (is_array($name)) {
-                    $config = $name;
-                } else {
-                    $config = Config::get($type.'.'.$name);
-                }
-            } else {
-                $config = Config::first_value($type);
-            }
-            if (isset($config['driver'])) {
-                return driver($type, $config['driver'], $config);
-            }
-            return null;
-        } else {
-            return self::$app;
         }
     }
     
