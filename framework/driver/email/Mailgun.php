@@ -38,9 +38,13 @@ class Mailgun extends Email
         }
         $client = Client::post(self::$host.$this->domain.'/messages')
                         ->header('Authorization', 'Basic '.base64_encode('api:'.$this->acckey))
-                        ->form($form, $this->option['attach_is_buffer']);
+                        ->form($form);
         if (isset($this->option['attach'])) {
-            $client->file('attachment', ...end($this->option['attach']));
+            if (empty($this->option['attach_is_buffer'])) {
+                $client->file('attachments', ...end($this->option['attach']));
+            } else {
+                $client->buffer('attachments', ...end($this->option['attach']));
+            }
         }
         $result = $client->json;
         if (empty($result['id'])) {

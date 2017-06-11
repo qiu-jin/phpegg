@@ -36,7 +36,7 @@ class Maxmind extends Geoip
     {
         $url = 'https://geoip.maxmind.com/geoip/v2.1/'.$this->api['type'].'/'.$ip;
         $client = Client::get($url)->header('Authorization', 'Basic '.base64_encode($this->api['acckey'].':'.$this->api['seckey']));
-        $result = $client->getJson();
+        $result = $client->json;
         if (isset($result['country'])) {
             if ($raw) {
                 return $result;
@@ -52,7 +52,7 @@ class Maxmind extends Geoip
                 return $return;
             }
         }
-        return error(isset($result['error']) ? $result['error'] : $client->getError());
+        return error(isset($result['error']) ? $result['error'] : $client->error);
     }
     
     protected function dbHandle($ip, $raw = false)

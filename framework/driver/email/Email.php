@@ -7,12 +7,11 @@ abstract class Email
 {
     protected $option;
     
-    abstract public protected handle();
+    abstract protected function handle();
     
     public function __construct($config)
     {
         $this->init($config);
-        $this->option = ['attach_is_buffer' => null];
         if ($config['from']) {
             $this->option['from'] = $config['from'];
         }

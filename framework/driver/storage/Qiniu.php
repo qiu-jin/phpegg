@@ -40,8 +40,12 @@ class Qiniu extends Storage
         $str = $this->base64Encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
         $token = $this->sign($str).':'.$str;
         $methods['timeout'] = 30;
-        $methods['form'] = [['token' => $token, 'key' => $to], $is_buffer];
-        $methods['file'] = ['file', $from];
+        $methods['form'] = [['token' => $token, 'key' => $to]];
+        if ($is_buffer) {
+            $methods['buffer'] = ['file', $from];
+        } else {
+            $methods['file'] = ['file', $from];
+        }
         return $this->send("https://up{$this->region}.qbox.me", null, $methods);
     }
     

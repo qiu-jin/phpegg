@@ -14,6 +14,7 @@ class Inline extends App
     protected $config = [
         'route_mode' => 0,
         'enable_view' => 0,
+        'safe_require' => 1,
     ];
     
     protected function dispatch()
@@ -39,7 +40,15 @@ class Inline extends App
     {
         $this->runing();
         $params = isset($this->dispatch['params']) ? $this->dispatch['params'] : null;
-        $return = __inline_require($this->dispatch['file'], $params);
+        if ($this->config['safe_require']) {
+            $return = __safe_require($this->dispatch['file'], $params);
+        } else {
+            $__return = require($file);
+            if ($__return === 1) {
+                $__return = null;
+            }
+            $return = isset($return) ? array_merge((array) $return,(array) $__return) : $__return;
+        }
         $return_handler && $return_handler($return);
         $this->response($return);
     }
@@ -95,7 +104,7 @@ class Inline extends App
     }
 }
 
-function __inline_require($file, $params)
+function __safe_require($file, ...$params)
 {
     $__return = require($file);
     if ($__return === 1) {

@@ -62,9 +62,13 @@ class Sendcloud extends Email
         if (isset($this->option['option'])) {
             $from = array_merge($this->option['option'], $from);
         }
-        $client = Client::post(self::$host.$method)->form($form, $this->option['attach_is_buffer']);
+        $client = Client::post(self::$host.$method)->form($form);
         if (isset($this->option['attach'])) {
-            $client->file('attachments', ...end($this->option['attach']));
+            if (empty($this->option['attach_is_buffer'])) {
+                $client->file('attachments', ...end($this->option['attach']));
+            } else {
+                $client->buffer('attachments', ...end($this->option['attach']));
+            }
         }
         $data = $client->json;
         if (empty($data['result'])) {

@@ -12,7 +12,6 @@ class Client
     private $method;
     private $headers = [];
     private $boundary;
-    private $file_is_buffer;
     private $return_headers = false;
     private $curlopt = ['TIMEOUT' => 30];
     
@@ -31,61 +30,6 @@ class Client
     {
         return new self('POST', $url);
     }
-    
-    public function __get($name)
-    {
-        if (in_array($name, ['status', 'headers', 'body', 'error'])) {
-            return $this->getResult($name);
-        } elseif ($name === 'json') {
-            return $this->getJson();
-        } elseif ($name === 'xml') {
-            return $this->getXml();
-        }
-    }
-    
-    public function getStatus()
-    {
-        return $this->getResult('status');
-    }
-    
-    public function getHeaders()
-    {
-        return $this->getResult('headers');
-    }
-    
-    public function getBody()
-    {
-        return $this->getResult('body');
-    }
-    
-    public function getError()
-    {
-        return $this->getResult('error');
-    }
-    
-    public function getJson()
-    {
-        return jsondecode($this->getResult('body'));
-    }
-    
-    public function getXml()
-    {
-        return Xml::decode($this->getResult('body'));
-    }
-    
-    public function getResult($name = null)
-    {
-        if (!$this->result) {
-            if ($this->file_is_buffer) {
-                $this->body .= "--$this->boundary--\r\n";
-            }
-            $this->result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true);
-        }
-        if ($name === null) {
-            return $this->result;
-        }
-        return isset($this->result[$name]) ? $this->result[$name] : null;
-    }
 
     public function body($body, $type = null)
     {
@@ -102,45 +46,40 @@ class Client
         $this->headers[] = 'Content-Type: application/json; charset=UTF-8';
         return $this;
     }
-    
-    public function form(array $data, $file_is_buffer = null)
+
+    public function form(array $data, $x_www_form_urlencoded = false)
     {
-        if (isset($file_is_buffer)) {
-            if ($file_is_buffer) {
-                $this->body = '';
-                $this->boundary = uniqid();
-                $this->headers[] = 'Content-Type: multipart/form-data; boundary='.$this->boundary;
-                if ($data) {
-                    foreach ($data as $pk => $pv) {
-                        $this->body .= "--$this->boundary\r\nContent-Disposition: form-data; name=\"$pk\"\r\n\r\n$pv\r\n";
-                    }
-                }
-            } else {
-                $this->body = $data;
-            }
-            $this->file_is_buffer = $file_is_buffer;
-        } else {
+        if ($x_www_form_urlencoded) {
             $this->body = http_build_query($data);
             $this->headers[] = 'Content-Type: application/x-www-form-urlencoded';
+        } else {
+            $this->body = $data;
         }
         return $this;
     }
 
     public function file($name, $content, $filename = null, $mimetype = null)
     {
-        if (isset($this->file_is_buffer)) {
-            if ($this->file_is_buffer) {
-                $this->body .= self::multipartFile($this->boundary, $name, $content, $filename, $mimetype);
-            } else {
-                if (substr($name, -2) === '[]') {
-                    $this->body[substr($name, 0, -2)][] = self::curlFile($content, $filename, $mimetype);
-                } else {
-                    $this->body[$name] = self::curlFile($content, $filename, $mimetype);
-                }
-            }
-            return $this;
+        if (substr($name, -2) === '[]') {
+            $this->body[substr($name, 0, -2)][] = self::curlFile($content, $filename, $mimetype);
+        } else {
+            $this->body[$name] = self::curlFile($content, $filename, $mimetype);
         }
-        throw new \Exception('Must call after form method');
+    }
+    
+    public function buffer($name, $content, $filename = null, $mimetype = null)
+    {
+        if (!$this->boundary) {
+            $this->boundary = uniqid();
+            $this->headers[] = 'Content-Type: multipart/form-data; boundary='.$this->boundary;
+        }
+        if (is_array($this->body)) {
+            foreach ($this->body as $pk => $pv) {
+                $body .= "--$this->boundary\r\nContent-Disposition: form-data; name=\"$pk\"\r\n\r\n$pv\r\n";
+            }
+            $this->body = $body;
+        }
+        $this->body .= self::multipartFile($this->boundary, $name, $content, $filename, $mimetype);
     }
     
     public function stream($fp)
@@ -181,16 +120,43 @@ class Client
         return $this;
     }
     
+    public function result($name = null)
+    {
+        if (!$this->result) {
+            if ($this->boundary) {
+                $this->body .= "--$this->boundary--\r\n";
+            }
+            $this->result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true);
+        }
+        if ($name === null) {
+            return $this->result;
+        }
+        return isset($this->result[$name]) ? $this->result[$name] : null;
+    }
+    
+    public function __get($name)
+    {
+        if (in_array($name, ['status', 'headers', 'body', 'error'])) {
+            return $this->getResult($name);
+        } elseif ($name === 'json') {
+            return jsondecode($this->getResult('body'));
+        } elseif ($name === 'xml') {
+            return Xml::decode($this->getResult('body'));
+        }
+    }
+    
     public function save($path)
     {
-        $fp = fopen($path, 'w+');
-        if ($fp) {
-            $this->curlopt['FILE'] = $fp;
-            $this->result = self::send($this->method, $this->url, null, $this->headers, $this->curlopt, true);
-            fclose($fp);
-            return $this->result['status'] === 200 && $this->result['body'] === true;
+        if (!isset($this->result)) {
+            $fp = fopen($path, 'w+');
+            if ($fp) {
+                $this->curlopt['FILE'] = $fp;
+                $this->result = $this->result();
+                fclose($fp);
+                return $this->result['status'] === 200 && $this->result['body'] === true;
+            }
+            $this->result = [];
         }
-        $this->result = [];
         return false;
     }
     

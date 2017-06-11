@@ -24,7 +24,7 @@ class Ipip extends Geoip
     public function apiHandle($ip, $raw = false)
     {
         $client = Client::get('http://ipapi.ipip.net/find/?addr='.$ip)->header('Token', $this->acckey);
-        $result = $client->getJson();
+        $result = $client->json;
         if (isset($result['ret'])) {
             if ($result['ret'] === 'ok') {
                 $result = $result['data'];
@@ -33,7 +33,7 @@ class Ipip extends Geoip
                 return error($result['msg']);
             }
         }
-        return error($client->getError());
+        return error($client->error);
     }
     
     public function dbHandle($ip,  $raw = false)
