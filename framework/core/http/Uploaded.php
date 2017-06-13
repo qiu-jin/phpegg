@@ -3,7 +3,6 @@ namespace framework\core\http;
 
 use framework\util\Str;
 use framework\util\File;
-use framework\core\Model;
 
 class Uploaded
 {
@@ -74,7 +73,7 @@ class Uploaded
             }
             if (stripos($to, '://')) {
                 list($scheme, $uri) = explode('://', $to, 2);
-                return Model::connect('storage', $scheme)->put($this->file['tmp_name'], $to);
+                return storage($scheme)->put($this->file['tmp_name'], $to);
             } else {
                 return move_uploaded_file($this->file['tmp_name'], $to);
             }

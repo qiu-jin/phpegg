@@ -19,8 +19,6 @@ class Thrift
     protected $protocol;
     protected $transport;
     protected $tmultiplexed = false;
-    protected $struct_params_class;
-    protected $reflect_struct_params = false;
     
     public function __construct($config)
     {
@@ -43,10 +41,10 @@ class Thrift
 
     public function __call($method, $params = [])
     {
-        return $this->call(null, $method, $params);
+        return $this->__send(null, $method, $params);
     }
     
-    public function call($ns, $method, $params = [])
+    public function __send($ns, $method, $params = [])
     {
         $class = $ns ? $this->prefix.'\\'.implode('\\', $ns) : $this->prefix;
         if (!isset($this->rpc[$class])) {
@@ -57,28 +55,7 @@ class Thrift
                 $this->rpc[$class] = new $class($this->protocol);
             }
         }
-        if ($params && $this->reflect_struct_params) {
-            if (!isset($this->struct_params_class[$class][$method])) {
-                $this->struct_params_class[$class][$method] = $this->reflectStructParams($this->rpc[$class], $method);
-            }
-            if ($this->struct_params_class[$class][$method]) {
-                foreach ($this->struct_params_class[$class][$method] as $i => $param_class) {
-                    $params[$i] = new $param_class($params[$i]);
-                }
-            }
-        }
         return $this->rpc[$class]->$method(...$params);
-    }
-    
-    protected function reflectStructParams($class, $method)
-    {
-        $struct_params_class = false;
-        foreach ((new \ReflectionMethod($class, $method))->getParameters() as $i => $parameter) {
-            if ($param_class = $parameter->getClass()) {
-                $struct_params_class[$i] = $param_class->getName();
-            }
-        }
-        return $struct_params_class;
     }
     
     public function __destruct()

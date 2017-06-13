@@ -1,7 +1,7 @@
 <?php
-namespace Framework\Driver\Mongo;
+namespace framework\driver\nosql;
 
-class Mongodb
+class Mongo
 {
     private $db;
     private $link;
@@ -9,18 +9,14 @@ class Mongodb
     private $collection;
     private $collections = array();
     
-    public function __construct($config){
+    public function __construct($config)
+    {
         try { 
             $this->link = new \mongoClient( $this->config['server'],$this->config);
             $this->db = $this->link->selectDb($this->config['dbname']);
         } catch(\MongoConnectionException $e) {
             throw new \Exception($e->getmessage());
         }
-    }
-    
-    public function link()
-    {
-        return $this->link;
     }
     
     public function table($table)
@@ -115,16 +111,6 @@ class Mongodb
         
     }
     
-    public function error()
-    {
-        return $this->link->lastError();
-    }
-    
-    public function close()
-    {
-        if($this->link) $this->link->close();
-    }
-    
     private function fields($fields)
     {
         
@@ -133,6 +119,16 @@ class Mongodb
     private function where($where)
     {
         
+    }
+    
+    public function error()
+    {
+        return $this->link->lastError();
+    }
+    
+    public function __construct()
+    {
+        $this->link && $this->link->close();
     }
 }
 

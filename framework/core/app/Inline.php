@@ -44,10 +44,7 @@ class Inline extends App
             $return = __safe_require($this->dispatch['file'], $params);
         } else {
             $__return = require($file);
-            if ($__return === 1) {
-                $__return = null;
-            }
-            $return = isset($return) ? array_merge((array) $return,(array) $__return) : $__return;
+            $return = $__return === 1 ? null : $__return;
         }
         $return_handler && $return_handler($return);
         $this->response($return);
@@ -104,11 +101,8 @@ class Inline extends App
     }
 }
 
-function __safe_require($file, ...$params)
+function __safe_require($file, $params)
 {
     $__return = require($file);
-    if ($__return === 1) {
-        $__return = null;
-    }
-    return isset($return) ? array_merge((array) $return,(array) $__return) : $__return;
+    return $__return === 1 ? null : $__return;
 }

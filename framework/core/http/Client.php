@@ -155,7 +155,7 @@ class Client
                 fclose($fp);
                 return $this->result['status'] === 200 && $this->result['body'] === true;
             }
-            $this->result = [];
+            $this->result = false;
         }
         return false;
     }

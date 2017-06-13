@@ -1,5 +1,4 @@
 <?php
-
 use framework\App;
 use framework\core\Auth;
 use framework\core\Error;

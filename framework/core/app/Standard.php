@@ -16,9 +16,9 @@ class Standard extends App
         'param_mode' => 0,
         'enable_view' => 0,
         'query_to_params' => 0,
-        'tpl_to_snake' => true,
+        'tpl_to_snake' => 1,
         'controller_depth' => 0,
-        'controller_to_camel' => true,
+        'controller_to_camel' => 1,
     ];
     
     protected function dispatch()

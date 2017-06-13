@@ -1,13 +1,21 @@
 <?php
 namespace framework\core;
 
-use framework\extend\misc;
-
 abstract class Container
 {
     private static $_init;
     private static $_class_map = [];
     private static $_connection_map = [];
+    private static $_connection_names = [
+        'cache'     => true,
+        'db'        => true,
+        'rpc'       => true,
+        'storage'   => true,
+        'queue'     => false,
+        'email'     => false,
+        'sms'       => false,
+        'geoip'     => false,
+    ];
     
     //run this method in last line when load class
     public static function init()
@@ -19,17 +27,17 @@ abstract class Container
     
     public function __get($name)
     {
-        if (in_array($name, ['cache', 'db', 'rpc', 'storage'])) {
-            if (isset($this->connections[$name])) {
-                $config = $this->connections[$name];
-                return $this->$name = is_array($config) ? self::connect($name, $config) : self::load($name, $config);
+        if (isset(self::$_connection_names[$name])) {
+            if (self::$_connection_names[$name]) {
+                if (isset($this->connections[$name])) {
+                    $config = $this->connections[$name];
+                    return $this->$name = is_array($config) ? self::connect($name, $config) : self::load($name, $config);
+                }
+                return $this->$name = return self::connect($name);
             }
-            return $this->$name = return self::connect($name);
-        } elseif (in_array($name, ['email', 'geoip', 'sms', 'queue'])) {
             return $this->$name = $this->load($name);
-        } else {
-            return new ContainerChain($name);
         }
+        return new ContainerChain($name);
     }
     
     public static function get($name, $type = 'model')
@@ -82,3 +90,27 @@ abstract class Container
     }
 }
 Container::init();
+
+class ContainerChain 
+{
+    private $ns;
+    private $type;
+    
+    public function __construct($type)
+    {
+        $this->type = $type;
+    }
+    
+    public function __get($class)
+    {
+        $this->ns[] = $class;
+        return $this;
+    }
+    
+    public function __call($method, $params = [])
+    {
+        if ($this->ns) {
+            return Container::get(implode('.', $this->ns), $type)->$method(...$params);
+        }
+    }
+}

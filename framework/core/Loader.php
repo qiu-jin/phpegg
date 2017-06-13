@@ -12,6 +12,8 @@ class Loader
     ];
     private static $class_alias = [
         'App' => 'framework\App',
+        'View' => 'framework\core\View',
+        'Client' => 'framework\core\http\Client',
         'Request' => 'framework\core\http\Request',
         'Response' => 'framework\core\http\Response',
     ];
@@ -73,9 +75,9 @@ class Loader
 
     private static function autoload($class)
     {
-        $fn = strstr($class, '\\', true);
-        if(isset(self::$class_prefix[$fn])) {
-            self::import(self::$class_prefix[$fn].strstr(strtr($class, '\\', '/'), '/'));
+        $prefix = strstr($class, '\\', true);
+        if(isset(self::$class_prefix[$prefix])) {
+            self::import(self::$class_prefix[$prefix].strstr(strtr($class, '\\', '/'), '/'));
         } elseif(isset(self::$class_map[$class])) {
             self::import(self::$class_map[$class]);
         } elseif (isset(self::$class_alias[$class])) {
