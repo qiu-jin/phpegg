@@ -11,6 +11,7 @@ class Qiniu extends Storage
     protected $seckey;
     protected $region;
     protected $public_read = false;
+    protected static $host = 'https://rs.qbox.me';
     
     public function __construct($config)
     {
@@ -51,7 +52,7 @@ class Qiniu extends Storage
     
     public function stat($from)
     {
-        $stat = $this->send('https://rs.qbox.me', '/stat/'.$this->path($from), null, 'GET');
+        $stat = $this->send(self::$host, '/stat/'.$this->path($from), null, 'GET');
         if ($stat) {
             $stat = jsondecode($stat);
             return [
@@ -65,17 +66,17 @@ class Qiniu extends Storage
 
     public function move($from, $to)
     {
-        return $this->send('https://rs.qbox.me', '/move/'.$this->path($from).'/'.$this->path($to));
+        return $this->send(self::$host, '/move/'.$this->path($from).'/'.$this->path($to));
     }
     
     public function copy($from, $to)
     {
-        return $this->send('https://rs.qbox.me', '/copy/'.$this->path($from).'/'.$this->path($to));
+        return $this->send(self::$host, '/copy/'.$this->path($from).'/'.$this->path($to));
     }
     
     public function delete($from)
     {
-        return $this->send('https://rs.qbox.me', '/delete/'.$this->path($from));
+        return $this->send(self::$host, '/delete/'.$this->path($from));
     }
     
     public function fetch($from, $to)

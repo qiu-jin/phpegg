@@ -1,5 +1,5 @@
 <?php
-namespace framework\driver\db\builder;
+namespace framework\driver\db\query\builder;
 
 class Prepare
 {   

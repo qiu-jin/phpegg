@@ -27,6 +27,13 @@ abstract class Container
     
     public function __get($name)
     {
+        /*
+        if (isset($this->connections[$name])) {
+            
+        } elseif (isset(self::$_connection_names[$name])) {
+            return $this->$name = self::$_connection_names[$name] ? self::connect($name) : self::load($name);
+        }
+        */
         if (isset(self::$_connection_names[$name])) {
             if (self::$_connection_names[$name]) {
                 if (isset($this->connections[$name])) {
@@ -35,7 +42,7 @@ abstract class Container
                 }
                 return $this->$name = return self::connect($name);
             }
-            return $this->$name = $this->load($name);
+            return $this->$name = self::load($name);
         }
         return new ContainerChain($name);
     }

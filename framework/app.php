@@ -18,6 +18,7 @@ abstract class App
     protected $dispatch = [];
     
     abstract public function run(callable $return_handler);
+    
     abstract protected function dispatch();
     
     private function __construct($config)
