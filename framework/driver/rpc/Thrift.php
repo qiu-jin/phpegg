@@ -24,6 +24,12 @@ class Thrift
     {
         try {
             $socket = new TSocket($config['host'], $config['port']);
+            if (isset($config['send_timeout'])) {
+                $socket->setRecvTimeout($config['send_timeout']);
+            }
+            if (isset($config['recv_timeout'])) {
+                $socket->setRecvTimeout($config['recv_timeout']);
+            }
             $this->ransport = new TBufferedTransport($socket, 1024, 1024);
             $this->protocol = new TBinaryProtocol($this->ransport);
             $this->ransport->open();

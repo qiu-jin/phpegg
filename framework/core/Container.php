@@ -6,15 +6,8 @@ abstract class Container
     private static $_init;
     private static $_class_map = [];
     private static $_connection_map = [];
-    private static $_connection_names = [
-        'cache'     => true,
-        'db'        => true,
-        'rpc'       => true,
-        'storage'   => true,
-        'queue'     => false,
-        'email'     => false,
-        'sms'       => false,
-        'geoip'     => false,
+    private static $_default_connections = [
+        'cache', 'db', 'rpc', 'storage', 'search', 'data', 'queue', 'email', 'sms', 'geoip'
     ];
     
     //run this method in last line when load class
@@ -27,28 +20,24 @@ abstract class Container
     
     public function __get($name)
     {
-        /*
         if (isset($this->connections[$name])) {
-            
-        } elseif (isset(self::$_connection_names[$name])) {
-            return $this->$name = self::$_connection_names[$name] ? self::connect($name) : self::load($name);
-        }
-        */
-        if (isset(self::$_connection_names[$name])) {
-            if (self::$_connection_names[$name]) {
-                if (isset($this->connections[$name])) {
-                    $config = $this->connections[$name];
-                    return $this->$name = is_array($config) ? self::connect($name, $config) : self::load($name, $config);
-                }
-                return $this->$name = return self::connect($name);
+            if (in_array(self::$_default_connections[$name])) {
+                return $this->$name = self::handler($name, $this->connections[$name]);
             }
-            return $this->$name = self::load($name);
+            if (isset($this->connections[$name]['type'])) {
+                return $this->$name = self::handler($this->connections[$name]['type'], $this->connections[$name]['config']);
+            }
+        } elseif (isset(self::$_default_connections[$name])) {
+            return $this->$name = self::handler($name);
         }
-        return new ContainerChain($name);
+        throw new \Exception('Illegal attr: '.$name);
     }
     
-    public static function get($name, $type = 'model')
+    public static function get($name, $type = null)
     {
+        if ($type === null && strpos('app\\', __NAMESPACE__)) {
+            $type = strstr(substr(__NAMESPACE__, 4), '\\');
+        }
         if (isset(self::$_class_map[$type][$name])) {
             return self::$_class_map[$type][$name];
         } else {
@@ -56,6 +45,7 @@ abstract class Container
             if ((class_exists($class))) {
                 return self::$_class_map[$type][$name] = new $class();
             }
+            throw new \Exception('Class not exists: '.$class);
         }
     }
     
@@ -95,29 +85,13 @@ abstract class Container
         self::$_class_map = null;
         self::$_connection_map = null;
     }
+    
+    private static function handler($type, $config = null)
+    {
+        if (is_array($config)) {
+            return self::load($type, $config);
+        }
+        return self::$_connection_names[$name] ? self::connect($type, $config) : self::load($type, $config);
+    }
 }
 Container::init();
-
-class ContainerChain 
-{
-    private $ns;
-    private $type;
-    
-    public function __construct($type)
-    {
-        $this->type = $type;
-    }
-    
-    public function __get($class)
-    {
-        $this->ns[] = $class;
-        return $this;
-    }
-    
-    public function __call($method, $params = [])
-    {
-        if ($this->ns) {
-            return Container::get(implode('.', $this->ns), $type)->$method(...$params);
-        }
-    }
-}

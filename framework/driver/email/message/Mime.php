@@ -32,7 +32,7 @@ class Mime
             $mime .= 'Reply-To: '.self::buildAddr($option['replyto'])."\r\n";
         }
         if (isset($option['subject'])) {
-            $mime .= "Subject: ".self::buildUtf8Header($option['subject'])."\r\n";
+            $mime .= "Subject: ".self::encodeHeader($option['subject'])."\r\n";
         }
         $type = empty($option['ishtml']) ? 'text/plain' : 'text/html';
         if (isset($option['attach'])) {
@@ -52,7 +52,7 @@ class Mime
         return empty($addr[1]) ? "<$addr[0]>" : self::buildUtf8Header($addr[1])."<$addr[0]>";
     }
     
-    public static function buildUtf8Header($str)
+    public static function encodeHeader($str)
     {
         return '=?utf-8?B?'.base64_encode($str).'?=';
     }
@@ -63,10 +63,10 @@ class Mime
         foreach ($attachs as $attach) {
             if ($is_buffer) {
                 $content = $attach[0];
-                $filename = isset($attach[1]) ? self::buildUtf8Header($attach[1]) : 'nonename';
+                $filename = isset($attach[1]) ? self::encodeHeader($attach[1]) : 'nonename';
             } else {
                 $content = file_get_contents($attach[0]);
-                $filename = self::buildUtf8Header(isset($attach[1]) ? $attach[1] : basename($attach[0]));
+                $filename = self::encodeHeader(isset($attach[1]) ? $attach[1] : basename($attach[0]));
             }
             if (isset($attach[2])) {
                 $mimetype = $attach[2];
