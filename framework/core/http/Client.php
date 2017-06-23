@@ -65,6 +65,7 @@ class Client
         } else {
             $this->body[$name] = self::curlFile($content, $filename, $mimetype);
         }
+        return $this;
     }
     
     public function buffer($name, $content, $filename = null, $mimetype = null)
@@ -80,6 +81,7 @@ class Client
             $this->body = $body;
         }
         $this->body .= self::multipartFile($this->boundary, $name, $content, $filename, $mimetype);
+        return $this;
     }
     
     public function stream($fp)
@@ -137,11 +139,11 @@ class Client
     public function __get($name)
     {
         if (in_array($name, ['status', 'headers', 'body', 'error'])) {
-            return $this->getResult($name);
+            return $this->result($name);
         } elseif ($name === 'json') {
-            return jsondecode($this->getResult('body'));
+            return jsondecode($this->result('body'));
         } elseif ($name === 'xml') {
-            return Xml::decode($this->getResult('body'));
+            return Xml::decode($this->result('body'));
         }
     }
     
@@ -236,16 +238,16 @@ class Client
         return $file;
     }
     
-    protected static function parseHeaders($header)
+    protected static function parseHeaders($str)
     {
-        $header_arr = [];
-        $arr = explode("\r\n", $header);
+        $headers = [];
+        $arr = explode("\r\n", $str);
         foreach ($arr as $v) {
             $line = explode(":", $v, 2);
             if(count($line) === 2) {
-                $header_arr[trim($line[0])] = trim($line[1]);
+                $headers[trim($line[0])] = trim($line[1]);
             }
         }
-        return $header_arr;
+        return $headers;
     }
 }

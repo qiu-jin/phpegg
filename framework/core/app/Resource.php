@@ -8,7 +8,7 @@ use framework\core\Config;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
-class Rest extends App
+class Resource extends App
 {
     private $ns;
     private $config = [
@@ -85,7 +85,7 @@ class Rest extends App
         $this->response($return);
     }
     
-    public function error($code = null, $message = null)
+    protected function error($code = null, $message = null)
     {
         Response::status($code ? $code : 500);
         Response::json(['error' => compact('code', 'message')]);

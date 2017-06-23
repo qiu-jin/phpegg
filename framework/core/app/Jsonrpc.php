@@ -75,12 +75,12 @@ class Jsonrpc extends App
         $this->response($return);
     }
     
-    public function error($code = null, $message = null)
+    protected function error($code = null, $message = null)
     {
         Response::json(['id' => $this->id, 'jsonrpc' => $this->version, 'error' => compact('code', 'message')]);
     }
     
-    public function response($return = null)
+    protected function response($return = null)
     {
         Response::json(['id' => $this->id, 'jsonrpc' => $this->version, 'result' => $return]);
     }

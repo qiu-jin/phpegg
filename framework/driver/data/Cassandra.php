@@ -2,7 +2,9 @@
 namespace framework\driver\data;
 
 /*
- * http://datastax.github.io/php-driver/
+ * http://datastax.github.io/php-driver
+ *
+ * ScyllaDB
  */
 class Cassandra
 {
@@ -12,6 +14,16 @@ class Cassandra
     }
     
     public function __get($name)
+    {
+
+    }
+    
+    public function exec($cql)
+    {
+
+    }
+    
+    public function query($cql)
     {
 
     }

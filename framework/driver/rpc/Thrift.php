@@ -42,7 +42,7 @@ class Thrift
 
     public function __get($class)
     {
-        return new query\Names($this, $class);
+        return new query\Query($this, $class);
     }
 
     public function __call($method, $params = [])

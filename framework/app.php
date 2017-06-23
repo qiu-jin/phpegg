@@ -7,7 +7,7 @@ use framework\core\Config;
 use framework\core\http\Response;
 
 abstract class App
-{
+{    
     private static $app;
     private static $boot;
     private static $exit;
@@ -44,7 +44,7 @@ abstract class App
             function_exists('fastcgi_finish_request') && fastcgi_finish_request();
             Hook::listen('close');
         });
-        Hook::listen('init');
+        Hook::listen('boot');
     }
     
     public static function start($app = 'standard', array $config = null)
@@ -68,9 +68,6 @@ abstract class App
             $dispatch = self::$app->dispatch();
             if ($dispatch) {
                 self::$app->dispatch = $dispatch;
-                if (isset(self::$app->config['enable_auth'])) {
-                    Auth::passport($dispatch['call']);
-                }
                 Hook::listen('start');
                 return self::$app;
             }
@@ -103,6 +100,11 @@ abstract class App
         }
     }
     
+    public static function instance()
+    {
+        return self::$app;
+    }
+
     public static function setErrorHandler(callable $handler)
     {
         self::$error_handler = $handler;

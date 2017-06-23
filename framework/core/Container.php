@@ -1,6 +1,8 @@
 <?php
 namespace framework\core;
 
+//abstract class
+
 abstract class Container
 {
     private static $_init;
@@ -59,6 +61,11 @@ abstract class Container
         if (isset($config['driver'])) {
             return driver($type, $config['driver'], $config);
         }
+    }
+    
+    public static function driver($name, $config = null)
+    {
+        
     }
     
     public static function connect($type, $name = null)

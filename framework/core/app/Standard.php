@@ -88,7 +88,7 @@ class Standard extends App
         }
     }
     
-    public function error($code = null, $message = null)
+    protected function error($code = null, $message = null)
     {
         Response::status($code ? $code : 500);
         if ($this->config['enable_view']) {
@@ -98,7 +98,7 @@ class Standard extends App
         }
     }
     
-    public function response($return = null, $tpl = null)
+    protected function response($return = null, $tpl = null)
     {
         $tpl ? Response::view($tpl, $return) : Response::json($return);
     }

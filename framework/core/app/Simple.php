@@ -11,9 +11,9 @@ class Simple extends App
     private $query;
     private $route;
     
-    protected function dispatch()
+    protected function dispatch(...$parmas)
     {
-        return true;
+        return $parmas ? $this->defaultDispatch(...$parmas) : true;
     }
     
     public function run(callable $return_handler = null)
@@ -38,7 +38,18 @@ class Simple extends App
         $this->exit();
     }
     
-    public function query($controller, $action)
+    public function route($role, callable $call, $method = null)
+    {
+        $index = count($this->route['call']);
+        $this->route['call'][] = $call;
+        if ($method && in_array($method, ['get', 'post', 'put', 'delete', 'head', 'options', 'patch'], true)) {
+            $this->route['rule'][$role][$method] = $index;
+        } else {
+            $this->route['rule'][$role] = $index;
+        }
+    }
+    
+    protected function defaultDispatch($controller, $action)
     {
         $this->ns = 'app\controller\\';
         if (isset($this->config['sub_controller'])) {
@@ -50,17 +61,6 @@ class Simple extends App
             if (is_callable([$controller, $action])) {
                 $this->query = [$controller, $action];
             }
-        }
-    }
-    
-    public function route($role, callable $call, $method = null)
-    {
-        $index = count($this->route['call']);
-        $this->route['call'][] = $call;
-        if ($method && in_array($method, ['get', 'post', 'put', 'delete', 'head', 'options', 'patch'], true)) {
-            $this->route['rule'][$role][$method] = $index;
-        } else {
-            $this->route['rule'][$role] = $index;
         }
     }
     

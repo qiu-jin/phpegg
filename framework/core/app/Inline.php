@@ -50,7 +50,7 @@ class Inline extends App
         $this->response($return);
     }
 
-    public function error($code = null, $message = null)
+    protected function error($code = null, $message = null)
     {
         Response::status($code ? $code : 500);
         if ($this->config['enable_view']) {
@@ -60,7 +60,7 @@ class Inline extends App
         }
     }
     
-    public function response($return = [])
+    protected function response($return = [])
     {
         $this->config['enable_view'] ? Response::view($this->getTpl(), $return) : Response::json($return);
     }
