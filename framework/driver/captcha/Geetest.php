@@ -20,27 +20,56 @@ class Geetest
     
     public function render($tag = 'div', $attr = [])
     {
-        $client = Client::get(self::$host.'/register.php?'.http_build_query([
-            'gt'    => $this->acckey,
-            'new_captcha' => '1',
-        ]));
-        $html = "<script src='$this->script'></script>\r\n";
-        $html .= "<script>\r\ninitGeetest({gt: $this->acckey, challenge: data.challenge, new_captcha: true}, function (captchaObj) {})";
-        return $html;
+        $str = '';
+        if (empty($attr['id'])) {
+            $attr['id'] = 'geetest-captcha';
+        }
+        foreach ($attr as $k => $v) {
+            $str .= "$k='$v' ";
+        }
+        $init_data = [
+            "gt:'$this->acckey'",
+            "new_captcha:true"
+        ];
+        $challenge = Client::get(self::$host.'/register.php?'.http_build_query(['gt' => $this->acckey, 'new_captcha' => '1']))->body;
+        if (strlen($challenge) == 32) {
+            $init_data[] = "offline:false";
+            $init_data[] = "challenge:'".md5($challenge.$this->seckey)."'";
+        } else {
+            $init_data[] = "offline:true";
+            $init_data[] = "challenge:''";
+        }
+        $script = "<script src='$this->script'></script>\r\n";
+        $script .= "<script>initGeetest({".implode(',', $init_data)."}, function (captchaObj) {captchaObj.appendTo('#{$attr['id']}');captchaObj.bindForm('#{$attr['id']}');})</script>\r\n";
+        return "$script<$tag $str></$tag>";
     }
     
-    public function verify($value = null)
+    public function verify(array $value = null)
     {
-        $form = [
-            'secret' => $this->seckey,
-            'response' => $value ? $value : Request::post('g-recaptcha-response'),
-            'remoteip' => Request::ip()
-        ];
-        $client = Client::post($this->apiurl)->form($form);
-        $data = $client->json;
-        if (isset($data['success']) && $data['success'] === true) {
-            return true;
+        if (!$value) {
+            $value = [
+                'seccode'   => Request::post('geetest_seccode'),
+                'validate'  => Request::post('geetest_validate'),
+                'challenge' => Request::post('geetest_challenge')
+            ];
         }
-        return error(isset($data['error-codes']) ? $data['error-codes'] : $client->error);
+        if (md5($this->seckey.'geetest'.$value['challenge']) === $value['validate']) {
+            $client = Client::get(self::$host.'/validate.php?'.http_build_query([
+                'seccode'   => $value['seccode'],
+                'data'      => $data,
+                'timestamp' => time(),
+                'challenge' => $value['challenge'],
+                'userinfo'  => $userinfo,
+                'captchaid' => $this->acckey,
+                'sdk'       => '',
+                'json_format' => '1'
+            ]));
+            $data = $client->json;
+            return $data;
+            if (isset($data['seccode']) && $data['seccode'] === md5($value['seccode'])) {
+                return true;
+            }
+        }
+        return error(isset($data['error']) ? $data['error'] : $client->error);
     }
 }

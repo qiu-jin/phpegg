@@ -5,12 +5,12 @@ use framework\core\http\Client;
 
 class Jsonrpc
 {
-    protected $server;
+    protected $host;
     protected $throw_exception = false;
     
     public function __construct($config)
     {
-        $this->server = $config['server'];
+        $this->host = $config['host'];
         if (isset($config['throw_exception'])) {
             $this->throw_exception = (bool) $config['throw_exception'];
         }
@@ -35,7 +35,7 @@ class Jsonrpc
             'method'    => implode('.', $ns),
             'id'        => empty($id) ? uniqid() : $id
         ];
-        $client = Client::post($this->server)->json($data);
+        $client = Client::post($this->host)->json($data);
         $data = $client->json;
         if (isset($data['result'])) {
             return $data['result'];

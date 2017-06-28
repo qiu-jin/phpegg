@@ -36,7 +36,12 @@ class Thrift
         } catch(\Exception $e) {
             throw new \Exception($e->getMessage());
         }
-        isset($config['class']) && Loader::add($config['class']);
+        if (isset($config['class'])) {
+            Loader::add($config['class']);
+            if (count($config['class']) > 1) {
+                $this->tmultiplexed = true;
+            }
+        }
         isset($config['prefix']) && $this->prefix = $config['prefix'];
     }
 
@@ -52,7 +57,10 @@ class Thrift
     
     public function __send($ns, $method, $params = [])
     {
-        $class = $ns ? $this->prefix.'\\'.implode('\\', $ns) : $this->prefix;
+        $class = $this->prefix;
+        if ($ns) {
+            $class .= '\\'.implode('\\', $ns);
+        }
         if (!isset($this->rpc[$class])) {
             if ($this->tmultiplexed) {
                 $name = substr(strrchr($class, '\\'), 1);

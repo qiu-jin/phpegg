@@ -1,13 +1,12 @@
 <?php 
 namespace framework;
 
-use framework\core\Auth;
 use framework\core\Hook;
 use framework\core\Config;
 use framework\core\http\Response;
 
 abstract class App
-{    
+{
     private static $app;
     private static $boot;
     private static $exit;
@@ -66,9 +65,9 @@ abstract class App
                 throw new \Exception('Illegal app class :'.$app);
             }
             $dispatch = self::$app->dispatch();
+            Hook::listen('start', $dispatch);
             if ($dispatch) {
                 self::$app->dispatch = $dispatch;
-                Hook::listen('start');
                 return self::$app;
             }
             self::abort(404);

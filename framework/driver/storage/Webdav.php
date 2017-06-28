@@ -74,13 +74,13 @@ class Webdav extends Storage
     public function copy($from, $to)
     {
         $to = $this->url($to);
-        return $this->ckdir($to) ? $this->send('COPY', $this->url($from), ['Destination: '.$to]) : false;
+        return $this->ckdir($to) && $this->send('COPY', $this->url($from), ['Destination: '.$to]);
     }
     
     public function move($from, $to)
     {
         $to = $this->url($to);
-        return $this->ckdir($to) ? $this->send('MOVE', $this->url($from), ['Destination: '.$to]) : false;
+        return $this->ckdir($to) && $this->send('MOVE', $this->url($from), ['Destination: '.$to]);
     }
     
     public function delete($from)

@@ -7,32 +7,33 @@ use framework\core\http\Response;
 
 class Image
 {
-    protected $imageurl;
-    protected $inputname = 'image_captcha';
-    protected $valuestore = 'framework\core\http\Session';
+    protected $src;
+    protected $name = 'image-captcha';
+    protected $store = 'framework\core\http\Session';
 
     public function __construct($config)
     {
-        $this->imageurl = $config['imageurl'];
-        isset($config['inputname']) && $this->inputname = $config['inputname'];
-        isset($config['valuestore']) && $this->valuestore = $config['valuestore'];
+        $this->src = $config['src'];
+        isset($config['name']) && $this->name = $config['name'];
+        isset($config['store']) && $this->store = $config['store'];
     }
 
     public function render($tag = 'input', $attrs = [])
     {
-        $attrs['name'] = $this->inputname;
+        $str = '';
+        $attrs['name'] = $this->name;
         foreach ($attrs as $k => $v) {
             $str = "$k = '$v' ";
         }
-        return "<$tag $str ></$tag><image src='$this->imageurl' />";
+        return "<$tag $str></$tag><image src='$this->src' />";
     }
     
     public function verify($value = null)
     {
         if ($value === null) {
-            $value = Request::post($this->inputname);
+            $value = Request::post($this->name);
         }
-        return $value && $this->valuestore::get($this->inputname) === $value;
+        return $value && $this->store::get($this->name) === $value;
     }
     
     public function output($value = null)
@@ -40,7 +41,7 @@ class Image
         if ($value === null) {
             $value = Str::random(5);
         }
-        $this->valuestore::set($this->inputname, $value);
+        $this->store::set($this->name, $value);
         Response::header('Content-Type', 'image/png');
         Response::send(Image::build($value));
     }

@@ -6,5 +6,5 @@ namespace framework\driver\search;
  */
 class Algolia extends Search;
 {
-
+    
 }

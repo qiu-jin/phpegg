@@ -5,19 +5,14 @@ use framework\core\http\Client;
 
 class Resource
 {
-    protected $config;
-    protected $requset_encode = 'body';
-    protected $response_decode = 'body';
+    protected $config = [
+        'requset_encode' => 'body',
+        'response_decode' => 'body',
+    ];
     
     public function __construct($config)
     {
-        $this->config = $config;
-        if (isset($config['requset_encode']) && in_array($config['requset_encode'], ['json', 'xml'])) {
-            $this->requset_encode = $config['requset_encode'];
-        }
-        if (isset($config['response_decode']) && in_array($config['response_decode'], ['json', 'xml'])) {
-            $this->response_decode = $config['response_decode'];
-        }
+        $this->config = array_merge($this->config, $config);
     }
     
     public function __get($name)
@@ -27,11 +22,11 @@ class Resource
     
     public function __send($uri, $method, $data, $client_methods)
     {
-        $client = new Client(strtoupper($method), $this->config['url'].'/'.$uri);
+        $client = new Client(strtoupper($method), $this->config['host'].'/'.$uri);
         isset($this->config['headers']) && $client->headers($this->config['headers']);
         isset($this->config['curlopt']) && $client->curlopt($this->config['curlopt']);
         if ($data) {
-            $client->{$this->requset_encode}($data);
+            $client->{$this->config['requset_encode']}($data);
         }
         if ($client_methods) {
             foreach ($client_methods as $item) {
@@ -40,17 +35,17 @@ class Resource
         }
         $status = $client->status;
         if ($status >= 200 && $status < 300) {
-            return $client->{$this->response_decode};
+            return $client->{$this->config['response_decode']};
         }
         return $status ? $this->__error($status) : $this->__error(...$client->error);
     }
     
     protected function __error($code, $message = null)
     {
-        if ($this->throw_exception) {
-            throw new \Exception("RPC error $code: $message");
-        } else {
+        if (empty($this->config['throw_exception'])) {
             return error("$code: $message");
+        } else {
+            throw new \Exception("RPC error $code: $message");
         }
     }
 }
