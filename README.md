@@ -33,6 +33,18 @@ framework\App::start('standard')->run();
 ```
 controller的代码的组织方式通常需要遵循应用模式，有时候同一套controller的代码也可以在不同应用模式下使用。
 
+文档补充中
+----
+[Config](doc/CONFIG.md)
+
+[Loader](doc/Loader.md)
+
+[HTTP Client](doc/HTTP_Client.md)
+
+[DB](doc/DB/DB.md)
+
+[DB Query](doc/DB/DB_Query.md)
+
 驱动列表
 ----
 | 缓存 | 描述         
@@ -121,11 +133,3 @@ controller的代码的组织方式通常需要遵循应用模式，有时候同�
 |Oss | 阿里云Oss服务
 |Qiniu | 七牛云存储
 |Webdav | 基于Webdav协议，兼容多种网盘，如Box OneDrive Pcloud 坚果云 
-
-部分文档补充中
-----
-[HTTP Client](doc/HTTP_Client.md)
-
-[DB](doc/DB/DB.md)
-
-[DB Query](doc/DB/DB_Query.md)
