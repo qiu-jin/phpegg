@@ -30,6 +30,7 @@ abstract class App
         if (self::$boot) return;
         self::$boot = true;
         define('FW_DIR', __DIR__.'/');
+        defined('APP_DEBUG')|| define('APP_DEBUG', false);
         defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
         defined('APP_DIR')  || define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
         require(FW_DIR.'common.php');
