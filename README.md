@@ -37,7 +37,7 @@ controller的代码的组织方式通常需要遵循应用模式，有时候同�
 ----
 [Config](doc/CONFIG.md)
 
-[Loader](doc/Loader.md)
+[Loader](doc/LOADER.md)
 
 [HTTP Client](doc/HTTP_Client.md)
 
