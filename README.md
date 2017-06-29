@@ -39,6 +39,12 @@ controller的代码的组织方式通常需要遵循应用模式，有时候同�
 
 [Loader](doc/LOADER.md)
 
+[Hook](doc/HOOK.md)
+
+[Error](doc/ERROR.md)
+
+[Logger](doc/LOGGER.md)
+
 [HTTP Client](doc/HTTP_Client.md)
 
 [DB](doc/DB/DB.md)
