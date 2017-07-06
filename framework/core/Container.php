@@ -51,7 +51,7 @@ abstract class Container
         }
     }
     
-    public static function load($type, $name = null)
+    public static function make($type, $name = null)
     {   
         if ($name) {
             $config = is_array($name) ? $name : Config::get($type.'.'.$name);
@@ -63,12 +63,7 @@ abstract class Container
         }
     }
     
-    public static function driver($name, $config = null)
-    {
-        
-    }
-    
-    public static function connect($type, $name = null)
+    public static function load($type, $name = null)
     {
         if (!isset(self::$_connection_map[$type][$name])) {
             if ($name === null) {

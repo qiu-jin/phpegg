@@ -5,6 +5,7 @@ use framework\App;
 use framework\core\View;
 use framework\core\Router;
 use framework\core\Config;
+use framework\core\Container;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
@@ -16,6 +17,24 @@ class Inline extends App
         'enable_view' => 0,
         'safe_require' => 1,
     ];
+    
+    public function __get($name)
+    {
+        if (!$this->config['safe_require']) {
+            throw new \Exception('Illegal attr: '.$name);
+        }
+        if (isset($this->connections[$name])) {
+            if (in_array(self::$_default_connections[$name])) {
+                return $this->$name = Container::handler($name, $this->connections[$name]);
+            }
+            if (isset($this->connections[$name]['type'])) {
+                return $this->$name = Container::handler($this->connections[$name]['type'], $this->connections[$name]['config']);
+            }
+        } elseif (isset(self::$_default_connections[$name])) {
+            return $this->$name = Container::handler($name);
+        }
+        throw new \Exception('Illegal attr: '.$name);
+    }
     
     protected function dispatch()
     {

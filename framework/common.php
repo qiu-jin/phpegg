@@ -41,34 +41,34 @@ function logger($name = null)
     return Logger::channel($name);
 }
 
-function container($name)
+function get($name)
 {
     return Container::get($name);
 }
 
 function db($name = null)
 {
-    return Container::connect('db', $name);
+    return Container::load('db', $name);
 }
 
 function cache($name = null)
 {
-    return Container::connect('cache', $name);
+    return Container::load('cache', $name);
 }
 
 function storage($name = null)
 {
-    return Container::connect('storage', $name);
+    return Container::load('storage', $name);
 }
 
-function connect($type, $name = null)
-{
-    return Container::connect($type, $name);
-}
-
-function load($type = null, $name = null)
+function load($type, $name = null)
 {
     return Container::load($type, $name);
+}
+
+function make($type = null, $name = null)
+{
+    return Container::make($type, $name);
 }
 
 function dump(...$vars)

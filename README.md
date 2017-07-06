@@ -20,7 +20,7 @@ Composer
 
 不过框架核心并不依赖composer，在不使用composer时也可以正常使用框架
 
-多应用模式
+开始应用
 ----
 框架目前支持Standard Simple Resource Jsonrpc Inline Cli(未完成) 等多种应用模式。
 
@@ -35,27 +35,58 @@ controller的代码的组织方式通常需要遵循应用模式，有时候同�
 
 文档补充中
 ----
-[Config](doc/CONFIG.md)
+- [App](doc/app.md)
+	- [Standard](doc/app_standard.md)
+	- [Inline](doc/app_inline.md)
+	- [Simple](doc/app_simple.md)
+	- [Resource](doc/app_resource.md)
+	- [Jsonrpc](doc/app_jsonrpc.md)
+	- Cli (命令行模式，未完成)
+- Http
+	- [Client](doc/http_client.md)
+	- [Request](doc/http_request.md)
+	- [Response](doc/http_response.md)
+	- [Cookie](doc/http_cookie.md)
+	- [Session](doc/http_session.md)
+	- [Uploaded](doc/http_uploaded.md)
+	- [UserAgent](doc/http_useragent.md)
+- [Config](doc/config.md)
 
-[Loader](doc/LOADER.md)
+- [Loader](doc/loader.md)
 
-[Hook](doc/HOOK.md)
+- [Hook](doc/hook.md)
 
-[Error](doc/ERROR.md)
+- [Error](doc/error.md)
 
-[Logger](doc/LOGGER.md)
+- [Logger](doc/logger.md)
 
-[HTTP Client](doc/HTTP_Client.md)
+- [Router](doc/router.md)
 
-[DB](doc/DB/DB.md)
+- [View](doc/view.md)
+	- [Template](doc/view_template.md)
 
-[DB Query](doc/DB/DB_Query.md)
+- [Validator](doc/validator.md)
+
+- [Auth](doc/auth.md)
+
+- [DB](doc/db.md)
+	- [Query](doc/db_query.md)
+
+- [Cache](doc/cache.md)
+
+- [Storage](doc/storage.md)
+
+- [Email](doc/email.md)
+
+- [SMS](doc/sms.md)
+
+- [RPC](doc/rpc.md)
 
 驱动列表
 ----
 | 缓存 | 描述         
 | ----|----
-|Apcu | 基于[php apcu](http://pecl.php.net/package/APCu)的单机共享内存缓存
+|Apcu | 基于php apcu扩展的单机共享内存缓存
 |Db |   使用关系数据库(通常使用内存表)缓存数据
 |File | 使用文件保存缓存数据
 |Memcached | 使用Memcached服务缓存数据
@@ -67,8 +98,8 @@ controller的代码的组织方式通常需要遵循应用模式，有时候同�
 | 验证码 | 描述         
 | ----|----
 |Image | 图形验证码，未完成
-|Recaptcha | google Recaptcha     
-|Geetest | 极验验证，国内一家公司产品
+|Recaptcha | google recaptcha     
+|Geetest | 极验验证
 
 | 加解密| 描述         
 | ----|----
@@ -122,7 +153,6 @@ controller的代码的组织方式通常需要遵循应用模式，有时候同�
 | ----|----
 |Elastic | 填坑中
 
-
 | 短信 | 描述         
 | ----|----
 |Alidayu | 阿里大于短信服务
@@ -133,9 +163,9 @@ controller的代码的组织方式通常需要遵循应用模式，有时候同�
 | 存储| 描述         
 | ----|----
 |Local | 本地文件处理简单适配封装
-|Ftp | 基于Ftp协议，需要php Ftp扩展
+|Ftp | 基于ftp协议，需要php ftp扩展
 |Sftp | 基于ssh协议，需要php ssh2扩展
 |S3 | 亚马逊s3服务
-|Oss | 阿里云Oss服务
+|Oss | 阿里云oss服务
 |Qiniu | 七牛云存储
 |Webdav | 基于Webdav协议，兼容多种网盘，如Box OneDrive Pcloud 坚果云 
