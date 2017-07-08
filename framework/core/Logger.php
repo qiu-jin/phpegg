@@ -6,7 +6,9 @@ use framework\extend\logger\Formatter;
 class Logger
 {
     use \framework\extend\logger\Writer;
-    
+    /*
+     * 日志等级常量
+     */
     const EMERGENCY = 'emergency';
     const ALERT     = 'alert';
     const CRITICAL  = 'critical';
@@ -16,13 +18,16 @@ class Logger
     const INFO      = 'info';
     const DEBUG     = 'debug';
     
+    // 标示init方法是否已执行，防止重复执行
     private static $init;
     private static $writer;
     private static $configs;
     private static $handlers = [];
     private static $level_handler_name = [];
     
-    //run this method in last line when load class
+    /*
+     * 类加载时调用此初始方法
+     */
     public static function init()
     {
         if (self::$init) return;
@@ -46,6 +51,9 @@ class Logger
         Hook::add('exit', __CLASS__.'::free');
     }
     
+    /*
+     * 写入日志
+     */
     public static function write($level, $message, $context = [])
     {
         if (isset(self::$level_handler_name[$level])) {
@@ -55,6 +63,9 @@ class Logger
         }
     }
  
+    /*
+     * 获取日志频道实例
+     */
     public static function channel($name = null)
     {
         if ($name === null) {
@@ -65,6 +76,9 @@ class Logger
         return null;
     }
     
+    /*
+     * 清理资源
+     */
     public static function free()
     {
         self::$writer = null;
@@ -73,6 +87,9 @@ class Logger
         self::$level_handler_name = null;
     }
     
+    /*
+     * 获取日志处理器实例
+     */
     private static function getHandler($name)
     {
         if (isset(self::$handlers[$name])) {

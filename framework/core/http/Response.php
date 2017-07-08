@@ -10,7 +10,9 @@ class Response
 {
     private static $response;
     
-    //run this method in last line when load class
+    /*
+     * 类加载时调用此初始方法
+     */
     public static function init()
     {
         if (self::$response) return;
@@ -18,11 +20,17 @@ class Response
         Hook::add('exit', __CLASS__.'::flush', null, 1);
     }
     
+    /*
+     * 获取response值
+     */
     public static function get($name, $default = null)
     {
         return isset(self::$response->$name) ? self::$response->$name : $default;
     }
     
+    /*
+     * 检查response值是否存在
+     */
     public static function has($name, $key = null)
     {
         if ($key) {
@@ -31,31 +39,49 @@ class Response
         return isset(self::$response->$name[$key]);
     }
     
+    /*
+     * 设置响应状态码
+     */
     public static function status($code)
     {
         self::$response->status = $code;
     }
     
+    /*
+     * 设置响应单个header头
+     */
     public static function header($key, $value)
     {
         self::$response->headers[$key] = $value;
     }
     
+    /*
+     * 设置响应多个header头
+     */
     public static function headers(array $headers)
     {
         self::$response->headers = array_merge((array) self::$response->headers, $headers);
     }
     
+    /*
+     * 设置响应cookie
+     */
     public static function cookie($name, $value, $expire = 0, $path = '/', $domain = null, $secure = false, $httponly = false)
     {
         Cookie::set($name, $value, $expire, $path, $domain, $secure, $httponly);
     }
     
+    /*
+     * 设置响应body内容，追加写入
+     */
     public static function wirte($body)
     {
         self::$response->body = isset(self::$response->body) ? self::$response->body.$body : $body;
     }
     
+    /*
+     * 设置视图响应
+     */
     public static function view($tpl, $vars = null)
     {
         self::$response->headers['Content-Type'] = 'text/html; charset=UTF-8';
@@ -63,6 +89,9 @@ class Response
         App::exit();
     }
     
+    /*
+     * 设置响应json格式化数据
+     */
     public static function json($data)
     {
         self::$response->headers['Content-Type'] = 'application/json; charset=UTF-8';
@@ -70,6 +99,9 @@ class Response
         App::exit();
     }
     
+    /*
+     * 设置响应重定向
+     */
     public static function redirect($url, $code = 302)
     {
         self::$response->status = ($code === 301) ? 301 : 302;
@@ -78,6 +110,9 @@ class Response
         App::exit();
     }
     
+    /*
+     * 设置响应body内容
+     */
     public static function send($body, $type = null)
     {
         if ($type) {
@@ -87,6 +122,9 @@ class Response
         App::exit();
     }
     
+    /*
+     * 清除响应值
+     */
     public static function clear($name = null)
     {
         if ($name) {
@@ -98,6 +136,9 @@ class Response
         }
     }
     
+    /*
+     * 输出响应
+     */
     public static function flush()
     {
         Hook::listen('response', self::$response);

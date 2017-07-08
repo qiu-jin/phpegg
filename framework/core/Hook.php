@@ -5,7 +5,9 @@ class Hook
 {
     private static $hooks;
     
-    //run this method in last line when load class
+    /*
+     * 类加载时调用此初始方法
+     */
     public static function init()
     {
         if (self::$hooks) return;
@@ -20,6 +22,9 @@ class Hook
         }
     }
     
+    /*
+     * 添加hook设置
+     */
     public static function add($name, $call, $priority = 5)
     {
         if (empty(self::$hooks->$name)) {
@@ -28,6 +33,9 @@ class Hook
         self::$hooks->$name->insert($call, (int) $priority);
     }
     
+    /*
+     * 清除hook设置
+     */
     public static function clear($name)
     {
         if (isset(self::$hooks->$name)) {
@@ -35,6 +43,9 @@ class Hook
         }
     }
     
+    /*
+     * 监听hook
+     */
     public static function listen($name, ...$params)
     {
         if (isset(self::$hooks->$name)) {

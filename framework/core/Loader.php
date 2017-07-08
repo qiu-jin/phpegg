@@ -3,6 +3,7 @@ namespace framework\core;
 
 class Loader
 {
+    // 标示init方法是否已执行，防止重复执行
     private static $init;
     private static $cache = [];
     private static $class_map = [];
@@ -10,6 +11,7 @@ class Loader
         'app' => APP_DIR,
         'framework' => FW_DIR
     ];
+    // 类别名设置
     private static $class_alias = [
         'App' => 'framework\App',
         'View' => 'framework\core\View',
@@ -18,7 +20,9 @@ class Loader
         'Response' => 'framework\core\http\Response',
     ];
     
-    //run this method in last line when load class
+    /*
+     * 类加载时调用此初始方法
+     */
     public static function init()
     {
         if (self::$init) return;
@@ -33,6 +37,9 @@ class Loader
         spl_autoload_register(__CLASS__.'::autoload', true, true);
     }
     
+    /*
+     * 添加loader规则
+     */
     public static function add(array $rules, $type = 'prefix')
     {
         if (count($rules) > 0) {
@@ -55,6 +62,9 @@ class Loader
         }
     }
     
+    /*
+     * 直接加载php文件，忽略.php后缀
+     */
     public static function import($name, $ignore = true, $cache = false)
     {
         if ($name{0} !== '/') {
@@ -73,6 +83,9 @@ class Loader
         }
     }
 
+    /*
+     * spl_autoload_register 自动加载处理器
+     */
     private static function autoload($class)
     {
         $prefix = strstr($class, '\\', true);

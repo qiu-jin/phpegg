@@ -6,6 +6,9 @@ class Router
     private static $filters = [
     ];
 
+    /*
+     * 路由调度
+     */
     public static function dispatch($path, $ruotes, $method = null)
     {
         if (empty($path)) {
@@ -56,6 +59,9 @@ class Router
         return false;
     }
     
+    /*
+     * 路由规则匹配
+     */
     public static function macth($rule, $path)
     {
         $macth = [];

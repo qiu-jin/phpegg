@@ -12,7 +12,9 @@ class View
     private static $config;
     private static $template;
     
-    //run this method in last line when load class
+    /*
+     * 类加载时调用此初始方法
+     */
     public static function init()
     {
         if (self::$init) return;
@@ -25,11 +27,17 @@ class View
         Hook::add('exit', __CLASS__.'::free');
     }
     
+    /*
+     * 设置变量
+     */
     public static function var($name, $value)
     {
         self::$view->vars[$name] = $value;
     }
     
+    /*
+     * 设置函数
+     */
     public static function func($name, callable $value)
     {
         self::$view->func[$name] = $value;
@@ -40,6 +48,9 @@ class View
         Response::view($tpl, $vars);
     }
     
+    /*
+     * 渲染页面
+     */
     public static function render($tpl, $vars = null)
     {
         $phpfile = self::path(trim($tpl));
@@ -60,6 +71,9 @@ class View
         }
     }
     
+    /*
+     * 错误页面，404 500页面等
+     */
     public static function error($code, $message = null)
     {   
         if (isset(self::$config['error'][$code])) {
@@ -73,6 +87,9 @@ class View
         return $code === 404 ? ViewError::render404($message) : ViewError::renderError($message);
     }
     
+    /*
+     * 视图魔术方法
+     */
     public static function __callStatic($name, $params = [])
     {
         if (isset($this->config['methods'][$method])) {

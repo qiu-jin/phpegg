@@ -20,17 +20,26 @@ class Client
         $this->url = $url;
         $this->method = $method;
     }
-        
+
+    /*
+     * 返回GET实例
+     */
     public static function get($url)
     {
         return new self('GET', $url);
     }
     
+    /*
+     * 返回POST实例
+     */
     public static function post($url)
     {
         return new self('POST', $url);
     }
 
+    /*
+     * 设置请求的body内容
+     */
     public function body($body, $type = null)
     {
         $this->body = $body;
@@ -40,6 +49,9 @@ class Client
         return $this;
     }
     
+    /*
+     * 设置请求的body内容为数组被json_encode后的字符串
+     */
     public function json(array $data)
     {
         $this->body = json_encode($data);
@@ -47,6 +59,9 @@ class Client
         return $this;
     }
 
+    /*
+     * 设置表单数据，数据默认为multipart/form-data格式否则为application/x-www-form-urlencoded
+     */
     public function form(array $data, $x_www_form_urlencoded = false)
     {
         if ($x_www_form_urlencoded) {
@@ -58,6 +73,9 @@ class Client
         return $this;
     }
 
+    /*
+     * 本地文件上传请求，只支持post方法，通常在form方法后调用
+     */
     public function file($name, $content, $filename = null, $mimetype = null)
     {
         if (substr($name, -2) === '[]') {
@@ -68,6 +86,9 @@ class Client
         return $this;
     }
     
+    /*
+     * 变量内容上传，与file方法相似
+     */
     public function buffer($name, $content, $filename = null, $mimetype = null)
     {
         if (!$this->boundary) {
@@ -84,6 +105,9 @@ class Client
         return $this;
     }
     
+    /*
+     * 发送一个流，只支持put方法，在put大文件时使用节约内存
+     */
     public function stream($fp)
     {
         $this->curlopt['PUT'] = 1;
@@ -92,36 +116,54 @@ class Client
         return $this;
     }
 
+    /*
+     * 设置单个header
+     */
     public function header($name, $value)
     {
         $this->headers[] = $name.': '.$value;
         return $this;
     }
     
+    /*
+     * 设置多个header
+     */
     public function headers(array $headers)
     {
         $this->headers = array_merge($this->headers, $headers);
         return $this;
     }
     
+    /*
+     * 设置请求超时时间
+     */
     public function timeout($timeout)
     {
         $this->curlopt['TIMEOUT'] = (int) $timeout;
         return $this;
     }
     
+    /*
+     * 设置底层curl参数
+     */
     public function curlopt($name, $value)
     {
         $this->curlopt[strtoupper($name)] = $value;
         return $this;
     }
     
+    /*
+     * 设置是否获取并解析请求响应的headers数据
+     */
     public function returnHeaders($bool = true)
     {
         $this->curlopt['HEADER'] = (bool) $bool;
         return $this;
     }
     
+    /*
+     * 获取请求结果
+     */
     public function result($name = null)
     {
         if (!$this->result) {
@@ -136,6 +178,9 @@ class Client
         return isset($this->result[$name]) ? $this->result[$name] : null;
     }
     
+    /*
+     * 获取请求结果魔术方法
+     */
     public function __get($name)
     {
         if (in_array($name, ['status', 'headers', 'body', 'error'])) {
@@ -147,6 +192,9 @@ class Client
         }
     }
     
+    /*
+     * 将请求的获得的body数据直接写入到本地文件，在body内容过大时可节约内存
+     */
     public function save($path)
     {
         if (!isset($this->result)) {
@@ -162,6 +210,9 @@ class Client
         return false;
     }
     
+    /*
+     * 底层curl方法封装
+     */
     public static function send($method, $url, $body = null, array $headers = null, array $curlopt = null, $return_status = false)
     {
         $ch = curl_init();
@@ -212,6 +263,9 @@ class Client
         return $result;
     }
     
+    /*
+     * 设置curl文件上传
+     */
     protected static function curlFile($filepath, $filename, $mimetype)
     {
         $file = new \CURLFile(realpath($filepath));
@@ -224,6 +278,9 @@ class Client
         return $file;
     }
     
+    /*
+     * 设置multipart协议上传
+     */
     protected static function multipartFile($boundary, $name, $content, $filename, $mimetype)
     {
         $file = '';
@@ -238,6 +295,9 @@ class Client
         return $file;
     }
     
+    /*
+     * 解析headers
+     */
     protected static function parseHeaders($str)
     {
         $headers = [];

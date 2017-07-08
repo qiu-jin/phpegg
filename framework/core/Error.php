@@ -9,10 +9,14 @@ class Error
     const WARNING  = E_USER_WARNING;
     const NOTICE   = E_USER_NOTICE;
     
+    // 标示init方法是否已执行，防止重复执行
     private static $init;
+    // 保存错误信息
     private static $error;
     
-    //run this method in last line when load class
+    /*
+     * 类加载时调用此初始方法
+     */
     public static function init()
     {
         if (self::$init) return;
@@ -23,11 +27,17 @@ class Error
         register_shutdown_function(__CLASS__.'::fatalHandler');
     }
     
+    /*
+     * 获取错误信息
+     */
     public static function get($all = false)
     {
         return $all ? self::$error : end(self::$error);
     }
     
+    /*
+     * 设置错误信息
+     */
     public static function set($message, $code = E_USER_ERROR, $limit = 1)
     {
         $file = null;
@@ -41,6 +51,9 @@ class Error
         self::record($level, $message, $file, $line);
     }
     
+    /*
+     * set_error_handler 错误处理器
+     */
     public static function errorHandler($code, $message, $file = null, $line = null)
     {
         list($level, $prefix) = self::getErrorCodeInfo($code);
@@ -53,6 +66,9 @@ class Error
         }
     }
     
+    /*
+     * set_exception_handler 异常处理器
+     */
     public static function exceptionHandler($e)
     {
         App::exit(3);
@@ -69,6 +85,9 @@ class Error
         self::response();
     }
     
+    /*
+     * register_shutdown_function 致命错误处理器
+     */
     public static function fatalHandler()
     {
         if (!App::exit(0)) {
@@ -84,17 +103,26 @@ class Error
         self::$error = null;
     }
     
+    /*
+     * 记录错误
+     */
     private static function record($level, $message, $file, $line, $trace = null)
     {
         self::$error[] = ['level' => $level, 'message' => $message, 'file' => $file, 'line' => $line, 'trace' => $trace];
         Logger::write($level, $message, ['file' => $file, 'line' => $line]);
     }
     
+    /*
+     * 响应错误给客户端
+     */
     private static function response()
     {
         App::abort(null, APP_DEBUG ? self::$error : null);
     }
     
+    /*
+     * 获取错误分类信息
+     */
     private static function getErrorCodeInfo($code)
     {
         switch ($code) {
