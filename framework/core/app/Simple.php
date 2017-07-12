@@ -8,8 +8,8 @@ use framework\core\http\Response;
 
 class Simple extends App
 {
-    private $query;
     private $route;
+    private $query;
     
     protected function dispatch(...$parmas)
     {
@@ -21,11 +21,9 @@ class Simple extends App
         $this->runing();
         if ($this->query) {
             $return = ($this->query)();
-            unset($this->query);
         } elseif ($this->route) {
             $path = explode('/', trim(Request::path(), '/'));
             $dispatch = $this->routeDispatch($path);
-            unset($this->route);
             if ($dispatch) {
                 $return = $dispatch[0](...$dispatch[1]);
             } else {

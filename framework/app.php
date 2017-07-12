@@ -98,9 +98,9 @@ abstract class App
     }
     
     /*
-     * 正常退出应用
+     * 退出应用
      */
-    public static function exit($status = 1)
+    public static function finish($status = 1)
     {
         if ($status === 0) {
             return (bool) self::$exit;

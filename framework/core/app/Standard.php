@@ -12,15 +12,25 @@ class Standard extends App
 {
     private $ns;
     protected $config = [
+        //路由模式，0默认调度，1路由调度，2混合调度
         'route_mode' => 0,
+        //参数模式，0无参数，1循序参数，2键值参数
         'param_mode' => 0,
+        //是否启用视图，0否，1是
         'enable_view' => 0,
+        //url query参数是否转为控制器参数，0否，1是
         'query_to_params' => 0,
+        //视图模版文件名是否转为下划线风格，0否，1是
         'tpl_to_snake' => 1,
+        //控制器类namespace深度，0为不确定，1 2 3等表示度层数
         'controller_depth' => 0,
+        //控制器名是否转为驼峰风格，0否，1是
         'controller_to_camel' => 1,
     ];
     
+    /*
+     * 标准模式应用控制器调度
+     */
     protected function dispatch()
     {
         $this->ns = 'app\controller\\';
@@ -40,6 +50,9 @@ class Standard extends App
         return false;
     }
 
+    /*
+     * 运行应用
+     */
     public function run(callable $return_handler = null)
     {
         $this->runing();
@@ -88,6 +101,9 @@ class Standard extends App
         }
     }
     
+    /*
+     * 应用错误处理
+     */
     protected function error($code = null, $message = null)
     {
         Response::status($code ? $code : 500);
@@ -98,11 +114,17 @@ class Standard extends App
         }
     }
     
+    /*
+     * 应用响应处理
+     */
     protected function response($return = null, $tpl = null)
     {
         $tpl ? Response::view($tpl, $return) : Response::json($return);
     }
     
+    /*
+     * 获取试图模版
+     */
     protected function getTpl($class, $action)
     {
         $class = strtr($class, $this->ns, '');
@@ -116,6 +138,9 @@ class Standard extends App
         }
     }
     
+    /*
+     * 默认调度
+     */
     protected function defaultDispatch($path) 
     {
         $params = [];
@@ -166,6 +191,9 @@ class Standard extends App
         return false;
     }
     
+    /*
+     * 路由调度
+     */
     protected function routeDispatch($path) 
     {
         $dispatch = Router::dispatch($path, Config::get('router'));
@@ -189,6 +217,9 @@ class Standard extends App
         return false;
     }
     
+    /*
+     * 获取键值参数
+     */
     protected function getKvParams(array $path)
     {
         $params = [];

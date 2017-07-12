@@ -1,8 +1,6 @@
 <?php
 use framework\App;
-use framework\core\Auth;
 use framework\core\Error;
-use framework\core\Model;
 use framework\core\Loader;
 use framework\core\Logger;
 use framework\core\Config;
@@ -89,12 +87,6 @@ function abort($code = null, $message = null)
 function error($message, $limit = 1)
 {
     return (bool) Error::set($message, E_USER_ERROR, $limit+1);
-}
-
-function driver($type, $driver, $config = [])
-{
-    $class = 'framework\driver\\'.$type.'\\'.ucfirst($driver);
-    return new $class($config);
 }
 
 function jsonencode($data)

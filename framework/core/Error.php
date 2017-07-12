@@ -42,7 +42,7 @@ class Error
     {
         $file = null;
         $line = null;
-        $level = self::getErrorCodeInfo($code)[0];
+        $level = self::getErrorLevelInfo($code)[0];
         $traces = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         if (isset($traces[$limit])) {
             extract($traces[$limit]);
@@ -56,11 +56,11 @@ class Error
      */
     public static function errorHandler($code, $message, $file = null, $line = null)
     {
-        list($level, $prefix) = self::getErrorCodeInfo($code);
+        list($level, $prefix) = self::getErrorLevelInfo($code);
         $message = $prefix.': '.$message;
         self::record($level, $message, $file, $line);
         if ($level === Logger::CRITICAL || $level === Logger::ALERT || $level === Logger::ERROR ) {
-            App::exit(2);
+            App::finish(2);
             self::response();
             return false;
         }
@@ -71,7 +71,7 @@ class Error
      */
     public static function exceptionHandler($e)
     {
-        App::exit(3);
+        App::finish(3);
         $level = Logger::ERROR;
         if ($e instanceof Exception) {
             $name = Exception::class.'\\'.$e->getName();
@@ -90,11 +90,11 @@ class Error
      */
     public static function fatalHandler()
     {
-        if (!App::exit(0)) {
+        if (!App::finish(0)) {
     		$last_error = error_get_last();
     		if ($last_error && ($last_error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR))) {
-                App::exit(4);
-                list($level, $prefix) = self::getErrorCodeInfo($last_error['type']);
+                App::finish(4);
+                list($level, $prefix) = self::getErrorLevelInfo($last_error['type']);
                 $message = 'Fatal Error '.$prefix.': '.$last_error['message'];
                 self::record($level, $message, $last_error['file'], $last_error['line']);
                 self::response();
@@ -123,7 +123,7 @@ class Error
     /*
      * 获取错误分类信息
      */
-    private static function getErrorCodeInfo($code)
+    private static function getErrorLevelInfo($code)
     {
         switch ($code) {
             case E_ERROR:

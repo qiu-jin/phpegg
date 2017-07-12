@@ -6,7 +6,9 @@ class Loader
     // 标示init方法是否已执行，防止重复执行
     private static $init;
     private static $cache = [];
+    // 类对应文件
     private static $class_map = [];
+    // 类前缀路径
     private static $class_prefix = [
         'app' => APP_DIR,
         'framework' => FW_DIR
@@ -63,7 +65,7 @@ class Loader
     }
     
     /*
-     * 直接加载php文件，忽略.php后缀
+     * 加载php文件，忽略.php后缀
      */
     public static function import($name, $ignore = true, $cache = false)
     {

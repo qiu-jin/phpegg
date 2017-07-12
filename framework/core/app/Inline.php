@@ -7,11 +7,10 @@ use framework\core\Router;
 use framework\core\Config;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\core\ContainerGetter;
 
 class Inline extends App
 {
-    use ContainerGetter;
+    use \framework\core\Getter;
     
     private $dir;
     protected $config = [

@@ -3,7 +3,9 @@ namespace framework\core;
 
 class Router
 {
+    // 过滤器
     private static $filters = [
+        
     ];
 
     /*
@@ -106,7 +108,10 @@ class Router
         return $macth;
     }
     
-    public static function add_filter($name, $filter)
+    /*
+     * 添加过滤器
+     */
+    public static function addFilter($name, $filter)
     {
         self::$filters[$name] = $filter;
     }

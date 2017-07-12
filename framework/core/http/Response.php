@@ -86,7 +86,7 @@ class Response
     {
         self::$response->headers['Content-Type'] = 'text/html; charset=UTF-8';
         self::$response->body = View::render($tpl, $vars);
-        App::exit();
+        App::finish();
     }
     
     /*
@@ -96,7 +96,7 @@ class Response
     {
         self::$response->headers['Content-Type'] = 'application/json; charset=UTF-8';
         self::$response->body = json_encode($data, JSON_UNESCAPED_UNICODE);
-        App::exit();
+        App::finish();
     }
     
     /*
@@ -107,7 +107,7 @@ class Response
         self::$response->status = ($code === 301) ? 301 : 302;
         self::$response->headers['Location'] = $url;
         if (isset(self::$response->body)) self::$response->body = null;
-        App::exit();
+        App::finish();
     }
     
     /*
@@ -119,7 +119,7 @@ class Response
             self::$response->headers['Content-Type'] = $type;
         }
         self::$response->body = $body;
-        App::exit();
+        App::finish();
     }
     
     /*

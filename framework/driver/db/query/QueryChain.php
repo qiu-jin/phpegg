@@ -68,4 +68,10 @@ abstract class QueryChain
         }
         return $this;
     }
+    
+    public function page($page, $num = 30)
+    {
+        $this->option['limit'] = [($page-1)*$num, $num];
+        return $this;
+    }
 }
