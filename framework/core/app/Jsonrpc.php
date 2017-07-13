@@ -9,8 +9,9 @@ class Jsonrpc extends App
 {
     private $id;
     private $ns;
-    private $version = '2.0';
     protected $config = [];
+    
+    const VERSION = '2.0';
     
     protected function dispatch()
     {
@@ -77,11 +78,11 @@ class Jsonrpc extends App
     
     protected function error($code = null, $message = null)
     {
-        Response::json(['id' => $this->id, 'jsonrpc' => $this->version, 'error' => compact('code', 'message')]);
+        Response::json(['id' => $this->id, 'jsonrpc' => self::VERSION, 'error' => compact('code', 'message')]);
     }
     
     protected function response($return = null)
     {
-        Response::json(['id' => $this->id, 'jsonrpc' => $this->version, 'result' => $return]);
+        Response::json(['id' => $this->id, 'jsonrpc' => self::VERSION, 'result' => $return]);
     }
 }

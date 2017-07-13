@@ -19,6 +19,11 @@ class S3 extends Storage
         $this->acckey = $config['acckey'];
         $this->seckey = $config['seckey'];
         $this->region = $config['region'];
+        if (isset($config['domain'])) {
+            $this->domain = $config['domain'];
+        } else {
+            $this->domain = "https://".self::$host."/$this->bucket";
+        }
     }
     
     public function get($from, $to = null)

@@ -56,7 +56,6 @@ abstract class App
         require(FW_DIR.'core/Loader.php');
         require(FW_DIR.'core/Error.php');
         require(FW_DIR.'core/Hook.php');
-        require(FW_DIR.'core/Container.php');
         register_shutdown_function(function () {
             self::$app = null;
             Hook::listen('exit');
@@ -124,7 +123,7 @@ abstract class App
         } elseif (is_callable([self::$app, 'error'])) {
             self::$app->error($code, $message);
         } else {
-            Response::json(['error' => ['code' => $code, 'message' => $message]]);
+            Response::json(['error' => compact('code', 'message')]);
         }
     }
     

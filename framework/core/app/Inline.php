@@ -56,7 +56,7 @@ class Inline extends App
     {
         Response::status($code ? $code : 500);
         if ($this->config['enable_view']) {
-            Response::send(View::error($code, $message));
+            Response::send(View::error($code, $message), 'text/html; charset=UTF-8');
         } else {
             Response::json(['error' => compact('code', 'message')]);
         }
@@ -64,10 +64,10 @@ class Inline extends App
     
     protected function response($return = [])
     {
-        $this->config['enable_view'] ? Response::view($this->getTpl(), $return) : Response::json($return);
+        $this->config['enable_view'] ? Response::view($this->getTemplate(), $return) : Response::json($return);
     }
     
-    protected function getTpl()
+    protected function getTemplate()
     {
          return '/'.strtr(basename($this->dispatch['file'], '.php'), $this->dir, '');
     }

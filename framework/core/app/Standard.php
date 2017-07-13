@@ -12,19 +12,19 @@ class Standard extends App
 {
     private $ns;
     protected $config = [
-        //路由模式，0默认调度，1路由调度，2混合调度
+        // 路由模式，0默认调度，1路由调度，2混合调度
         'route_mode' => 0,
-        //参数模式，0无参数，1循序参数，2键值参数
+        // 参数模式，0无参数，1循序参数，2键值参数
         'param_mode' => 0,
-        //是否启用视图，0否，1是
+        // 是否启用视图，0否，1是
         'enable_view' => 0,
-        //url query参数是否转为控制器参数，0否，1是
+        // url query参数是否转为控制器参数，0否，1是
         'query_to_params' => 0,
-        //视图模版文件名是否转为下划线风格，0否，1是
-        'tpl_to_snake' => 1,
-        //控制器类namespace深度，0为不确定，1 2 3等表示度层数
+        // 视图模版文件名是否转为下划线风格，0否，1是
+        'template_to_snake' => 1,
+        // 控制器类namespace深度，0为不确定，1 2 3等表示度层数
         'controller_depth' => 0,
-        //控制器名是否转为驼峰风格，0否，1是
+        // 控制器名是否转为驼峰风格，0否，1是
         'controller_to_camel' => 1,
     ];
     
@@ -95,9 +95,10 @@ class Standard extends App
         }
         $return_handler && $return_handler($return);
         if ($this->config['enable_view']) {
-            $this->response($return, $this->getTpl(get_class($controller), $action));
+            $template = $this->getTemplate(get_class($controller), $action);
+            Response::view($template, $return);
         } else {
-            $this->response($return);
+            Response::json($return);
         }
     }
     
@@ -108,27 +109,19 @@ class Standard extends App
     {
         Response::status($code ? $code : 500);
         if ($this->config['enable_view']) {
-            Response::send(View::error($code, $message));
+            Response::send(View::error($code, $message), 'text/html; charset=UTF-8');
         } else {
             Response::json(['error' => compact('code', 'message')]);
         }
     }
     
     /*
-     * 应用响应处理
-     */
-    protected function response($return = null, $tpl = null)
-    {
-        $tpl ? Response::view($tpl, $return) : Response::json($return);
-    }
-    
-    /*
      * 获取试图模版
      */
-    protected function getTpl($class, $action)
+    protected function getTemplate($class, $action)
     {
         $class = strtr($class, $this->ns, '');
-        if (empty($this->config['tpl_to_snake'])) {
+        if (empty($this->config['template_to_snake'])) {
             return strtr('\\', '/', $class).'/'.$action;
         } else {
             $array = explode('\\', $class);

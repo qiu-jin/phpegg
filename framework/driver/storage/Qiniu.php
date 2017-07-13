@@ -6,7 +6,6 @@ use framework\core\http\Client;
 class Qiniu extends Storage
 {
     protected $bucket;
-    protected $domain;
     protected $acckey;
     protected $seckey;
     protected $region;

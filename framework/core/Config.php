@@ -14,8 +14,8 @@ class Config
     public static function init()
     {
         if (self::$configs) return;
-        self::loadEnv();
         self::$configs = new \stdClass();
+        self::loadEnv();
         $path = APP_DIR.self::env('CONFIG_PATH', 'config');
         if (is_dir($path)) {
             self::$path = "$path/";

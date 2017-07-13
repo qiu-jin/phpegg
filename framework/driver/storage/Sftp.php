@@ -16,6 +16,7 @@ class Sftp extends Storage
             $this->link = $link;
             $this->sftp = ssh2_sftp($this->link);
             $this->chroot = isset($config['chroot']) ? $config['chroot'] : '/home/'.$config['username'];
+            isset($config['domain']) && $this->domain = $config['domain'];
         } else {
             throw new \Exception('Sftp connect error');
         }
@@ -24,14 +25,14 @@ class Sftp extends Storage
     public function get($from ,$to = null)
     {
         $from = $this->path($from);
-        return $to ? ssh2_scp_recv($this->link, $from, $to) : file_get_contents($this->url($from));
+        return $to ? ssh2_scp_recv($this->link, $from, $to) : file_get_contents($this->uri($from));
     }
     
     public function put($from, $to, $is_buffer = false)
     {
         $to = $this->path($to);
         if ($this->ckdir($to)) {
-            return $is_buffer ? (bool) file_put_contents($this->url($to), $from) : ssh2_scp_send($this->link, $from, $to);
+            return $is_buffer ? (bool) file_put_contents($this->uri($to), $from) : ssh2_scp_send($this->link, $from, $to);
         }
         return false;
     }
@@ -44,7 +45,7 @@ class Sftp extends Storage
     public function copy($from, $to)
     {
         $to = $this->path($to);
-        return $this->ckdir($to) ? copy($this->url($this->path($from)), $this->url($to)) : false;
+        return $this->ckdir($to) ? copy($this->uri($this->path($from)), $this->uri($to)) : false;
     }
     
     public function move($from, $to)
@@ -58,7 +59,7 @@ class Sftp extends Storage
         return ssh2_sftp_unlink($this->sftp, $this->path($from));
     }
     
-    protected function url($path)
+    protected function uri($path)
     {
         return "ssh2.sftp://".intval($this->sftp).$path;
     }

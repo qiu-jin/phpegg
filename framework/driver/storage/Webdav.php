@@ -30,6 +30,7 @@ class Webdav extends Storage
         if (isset($config['auto_create_dir'])) {
             $this->auto_create_dir = (bool) $config['auto_create_dir'];
         }
+        $this->domain = isset($config['domain']) ? $config['domain'] : $config['host'];
     }
     
     public function get($from, $to = null)
@@ -38,12 +39,12 @@ class Webdav extends Storage
         if ($to) {
             $methods['save'] = $to;
         }
-        return $this->send('GET', $this->url($from), null, $methods, !$this->public_read);
+        return $this->send('GET', $this->uri($from), null, $methods, !$this->public_read);
     }
     
     public function put($from, $to, $is_buffer = false)
     {
-        $to = $this->url($to);
+        $to = $this->uri($to);
         if ($this->ckdir($to)) {
             $methods['timeout'] = 30;
             if ($is_buffer) {
@@ -63,7 +64,7 @@ class Webdav extends Storage
 
     public function stat($from)
     {
-        $stat = $this->send('HEAD', $this->url($from), null, ['returnHeaders' => true], !$this->public_read);
+        $stat = $this->send('HEAD', $this->uri($from), null, ['returnHeaders' => true], !$this->public_read);
         return $stat ? [
             'type'  => $stat['Content-Type'],
             'size'  => (int) $stat['Content-Length'],
@@ -73,19 +74,19 @@ class Webdav extends Storage
     
     public function copy($from, $to)
     {
-        $to = $this->url($to);
-        return $this->ckdir($to) && $this->send('COPY', $this->url($from), ['Destination: '.$to]);
+        $to = $this->uri($to);
+        return $this->ckdir($to) && $this->send('COPY', $this->uri($from), ['Destination: '.$to]);
     }
     
     public function move($from, $to)
     {
-        $to = $this->url($to);
-        return $this->ckdir($to) && $this->send('MOVE', $this->url($from), ['Destination: '.$to]);
+        $to = $this->uri($to);
+        return $this->ckdir($to) && $this->send('MOVE', $this->uri($from), ['Destination: '.$to]);
     }
     
     public function delete($from)
     {
-        return $this->send('DELETE', $this->url($from));
+        return $this->send('DELETE', $this->uri($from));
     }
     
     protected function send($method, $url, $headers = [], $client_methods = [], $auth = true)
@@ -127,7 +128,7 @@ class Webdav extends Storage
         return error($status ? $status : $client->error, 2);
     }
     
-    protected function url($path)
+    protected function uri($path)
     {
         return $this->host.'/'.trim(trim($path), '/');
     }

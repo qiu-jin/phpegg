@@ -8,7 +8,7 @@ class Loader
     private static $cache = [];
     // 类对应文件
     private static $class_map = [];
-    // 类前缀路径
+    // 类前缀对应路径
     private static $class_prefix = [
         'app' => APP_DIR,
         'framework' => FW_DIR

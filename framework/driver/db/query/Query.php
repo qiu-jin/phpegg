@@ -83,14 +83,36 @@ class Query extends QueryChain
     
     public function insertAll($datas)
     {
-        //
+        foreach ($datas as $data)
+        {
+            $this->db->insert($this->table, $data);
+        }
     }
    
-    public function update($data, $limit = 0)
+    public function update($data)
     {
-        return $this->db->update($this->table, $data, $this->option['where'], $limit);
+        return $this->db->update($this->table, $data, $this->option['where'], isset($this->option['limit']) ? $this->option['limit'] : 0);
     }
-   
+    
+    public function updateAuto(array $auto, $data = null)
+    {
+        $set = [];
+        $params = [];
+        if ($data) {
+            list($set, $params) = $this->builder->setData($data);
+        }
+        foreach ($auto as $key => $val) {
+            if (is_int($key)) {
+                $set[$val] = "$val+1";
+            } else {
+                $val = (int) $val;
+                $set[$key] = $val > 0 ? "$key+$val" : "$key$val";
+            }
+        }
+        $sql = "UPDATE $table SET ".$set.' WHERE '.$this->builder->whereClause($this->option['where'], $params);
+        return $this->exec(isset($this->option['limit']) ? "$sql LIMIT ".$this->option['limit'] : $sql, $params);
+    }
+    
     public function delete($limit = 0)
     {
         return $this->db->delete($this->table, $this->option['where'], $limit);
