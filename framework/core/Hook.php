@@ -51,7 +51,9 @@ class Hook
         if (isset(self::$hooks->$name)) {
             while (self::$hooks->$name->valid()) {
                 $call = self::$hooks->$name->extract();
-                $params ? $call(...$params) : $call();
+                //PHP5.6 兼容
+                $params ? call_user_func_array($call, $params) : call_user_func($call);
+                //$params ? $call(...$params) : $call();
             }
             unset(self::$hooks->$name);
         }

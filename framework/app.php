@@ -97,7 +97,7 @@ abstract class App
     }
     
     /*
-     * 退出应用
+     * 退出应用，为兼容PHP5.6使用finish替换exit方法名
      */
     public static function finish($status = 1)
     {

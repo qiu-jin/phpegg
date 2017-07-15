@@ -2,4 +2,4 @@
 
 include '../../../framework/app.php';
 
-framework\App::start('standard', ['sub_controller' => 'standard'])->run('dump');
+framework\App::start('standard')->run('dump');

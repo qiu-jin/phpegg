@@ -47,13 +47,13 @@ class Loader
         if (count($rules) > 0) {
             switch ($type) {
                 case 'prefix':
-                    self::$class_prefix = self::$class_prefix+$rules;
+                    self::$class_prefix = self::$class_prefix + $rules;
                     return;
                 case 'map':
-                    self::$class_map = self::$class_map+$rules;
+                    self::$class_map = self::$class_map + $rules;
                     return;
                 case 'alias':
-                    self::$class_alias = self::$class_alias+$rules;
+                    self::$class_alias = self::$class_alias + $rules;
                     return;
                 case 'files':
                     foreach ($rules as $name) {

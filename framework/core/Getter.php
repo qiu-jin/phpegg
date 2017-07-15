@@ -3,12 +3,12 @@ namespace framework\core;
 
 trait Getter
 {
-    protected $connections;
+    protected $container;
     
     public function __get($name)
     {
-        if (isset($this->connections[$name])) {
-            $config = $this->connections[$name];
+        if (isset($this->container[$name])) {
+            $config = $this->container[$name];
             $type = isset($config['type']) ? $config['type'] : $name;
             return $this->$name = Container::load($type, $config);
         }
@@ -31,17 +31,16 @@ class ModelGetter
 
     public function __construct($prefix, $depth)
     {
-        $this->__depth = $depth - 1;
+        $this->__depth = --$depth;
         $this->__prefix = $prefix;
     }
     
     public function __get($name)
     {
-        $class = $this->__prefix.'.'.$name;
         if ($this->__depth === 0) {
-            return $this->$name = Container::get($class);
+            return $this->$name = Container::get($this->__prefix.'.'.$name);
         }
-        return $this->$name = new self($class, $this->__depth);
+        return $this->$name = new self($this->__prefix.'.'.$name, $this->__depth);
     }
     
     public function __call($method, $param = [])

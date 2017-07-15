@@ -39,11 +39,6 @@ function logger($name = null)
     return Logger::channel($name);
 }
 
-function get($name)
-{
-    return Container::get($name);
-}
-
 function db($name = null)
 {
     return Container::load('db', $name);
@@ -67,6 +62,11 @@ function load($type, $name = null)
 function make($type = null, $name = null)
 {
     return Container::make($type, $name);
+}
+
+function model($name, $config = null)
+{
+    return Container::model($name, $config);
 }
 
 function dump(...$vars)

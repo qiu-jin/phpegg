@@ -17,6 +17,7 @@ class Inline extends App
         'route_mode' => 0,
         'enable_view' => 0,
         'safe_require' => 0,
+        'return_1_to_null' => 1,
     ];
     
     protected function dispatch()
@@ -45,9 +46,9 @@ class Inline extends App
         if ($this->config['safe_require']) {
             $return = __safe_require($this->dispatch['file'], $params);
         } else {
-            $__return = require($this->dispatch['file']);
-            $return = $__return === 1 ? null : $__return;
+            $return = require($this->dispatch['file']);
         }
+        if ($return === 1) $return = null;
         $return_handler && $return_handler($return);
         $this->response($return);
     }
@@ -105,6 +106,5 @@ class Inline extends App
 
 function __safe_require($file, $params)
 {
-    $__return = require($file);
-    return $__return === 1 ? null : $__return;
+    return require($file);
 }

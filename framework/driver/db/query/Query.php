@@ -94,23 +94,27 @@ class Query extends QueryChain
         return $this->db->update($this->table, $data, $this->option['where'], isset($this->option['limit']) ? $this->option['limit'] : 0);
     }
     
-    public function updateAuto(array $auto, $data = null)
+    public function updateAuto($auto, $data = null)
     {
-        $set = [];
+        if (is_string($auto)) {
+            $set = "$auto = $auto+1";
+        } elseif (is_string($auto)) {
+            foreach ($auto as $key => $val) {
+                if (is_int($key)) {
+                    $set[] = "$val = $val+1";
+                } elseif (is_int($val)) {
+                    $set[] = $val > 0 ? "$key = $key+$val" : "$key = $key$val";
+                }
+            }
+            $set = implode(',', $set);
+        }
         $params = [];
         if ($data) {
-            list($set, $params) = $this->builder->setData($data);
+            list($dataset, $params) = $this->db->builder()->setData($data);
+            $set = $set.','.$dataset;
         }
-        foreach ($auto as $key => $val) {
-            if (is_int($key)) {
-                $set[$val] = "$val+1";
-            } else {
-                $val = (int) $val;
-                $set[$key] = $val > 0 ? "$key+$val" : "$key$val";
-            }
-        }
-        $sql = "UPDATE $table SET ".$set.' WHERE '.$this->builder->whereClause($this->option['where'], $params);
-        return $this->exec(isset($this->option['limit']) ? "$sql LIMIT ".$this->option['limit'] : $sql, $params);
+        $sql = "UPDATE $this->table SET ".$set.' WHERE '.$this->db->builder()->whereClause($this->option['where'], $params);
+        return $this->db->exec(isset($this->option['limit']) ? "$sql LIMIT ".$this->option['limit'] : $sql, $params);
     }
     
     public function delete($limit = 0)
