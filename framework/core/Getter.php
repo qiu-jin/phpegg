@@ -31,20 +31,20 @@ class ModelGetter
 
     public function __construct($prefix, $depth)
     {
-        $this->__depth = --$depth;
+        $this->__depth = $depth - 1;
         $this->__prefix = $prefix;
     }
     
     public function __get($name)
     {
         if ($this->__depth === 0) {
-            return $this->$name = Container::get($this->__prefix.'.'.$name);
+            return $this->$name = Container::model($this->__prefix.'.'.$name);
         }
         return $this->$name = new self($this->__prefix.'.'.$name, $this->__depth);
     }
     
     public function __call($method, $param = [])
     {
-        return Container::get($this->__prefix)->$method(...$param);
+        return Container::model($this->__prefix)->$method(...$param);
     }
 }

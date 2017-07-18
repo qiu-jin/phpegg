@@ -48,7 +48,9 @@ class Inline extends App
         } else {
             $return = require($this->dispatch['file']);
         }
-        if ($return === 1) $return = null;
+        if ($return === 1 && $this->config['return_1_to_null']) {
+            $return = null;
+        }
         $return_handler && $return_handler($return);
         $this->response($return);
     }

@@ -66,7 +66,7 @@ class Container
     /*
      * 设置容器类
      */
-    public static function set($name, $class)
+    public static function bind($name, $class)
     {
         self::$provider_type[$name] = $class;
     }
