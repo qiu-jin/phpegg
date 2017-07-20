@@ -60,7 +60,8 @@ abstract class Db
     {
         try {
             $this->begin();
-            return $call($this) ? $this->commit() : $this->rollback();
+            ($return = $call($this)) ? $this->commit() : $this->rollback();
+            return $return;
         } catch (\Exception $e) {
             $this->rollback();
             throw new \Exception($e->getMessage());
@@ -76,7 +77,7 @@ abstract class Db
 
     public function insert($table, $data, $replace = false)
     {
-        $sql = ($replace ? 'REPLACE' : 'INSERT')." INTO $table SET ";
+        $sql = ($replace ? 'REPLACE' : 'INSERT')." INTO `$table` SET ";
         $data = $this->builder->setData($data);
         return $this->exec($sql.$data[0], $data[1]);
     }
@@ -84,7 +85,7 @@ abstract class Db
     public function update($table, $data, $where, $limit = 0)
     {
         list($set, $params) = $this->builder->setData($data);
-        $sql = "UPDATE $table SET ".$set.' WHERE '.$this->builder->whereClause($where, $params);
+        $sql = "UPDATE `$table` SET ".$set.' WHERE '.$this->builder->whereClause($where, $params);
         return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $params);
     }
    

@@ -14,9 +14,9 @@ class Query extends QueryChain
         return new SubQuery($this->db, $this->table, $this->option, $table);
     }
     
-    public function join($table, $type = 'LEFT', $field_prefix = true)
+    public function join($table, $type = 'LEFT', $prefix = true)
     {
-        return new Join($this->db, $this->table, $this->option, $table, $type, $field_prefix);
+        return new Join($this->db, $this->table, $this->option, $table, $type, $prefix);
     }
     
     public function union($table, $all = true)
@@ -98,7 +98,7 @@ class Query extends QueryChain
     {
         if (is_string($auto)) {
             $set = "$auto = $auto+1";
-        } elseif (is_string($auto)) {
+        } elseif (is_array($auto)) {
             foreach ($auto as $key => $val) {
                 if (is_int($key)) {
                     $set[] = "$val = $val+1";
@@ -113,7 +113,7 @@ class Query extends QueryChain
             list($dataset, $params) = $this->db->builder()->setData($data);
             $set = $set.','.$dataset;
         }
-        $sql = "UPDATE $this->table SET ".$set.' WHERE '.$this->db->builder()->whereClause($this->option['where'], $params);
+        $sql = "UPDATE `$this->table` SET ".$set.' WHERE '.$this->db->builder()->whereClause($this->option['where'], $params);
         return $this->db->exec(isset($this->option['limit']) ? "$sql LIMIT ".$this->option['limit'] : $sql, $params);
     }
     

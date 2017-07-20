@@ -27,7 +27,7 @@ class Prepare
 
     public static function selectFrom($table, $fields)
     {
-        return 'SELECT '.implode(',', (array) $fields).' FROM '.$table;
+        return 'SELECT '.implode(',', (array) $fields).' FROM `'.$table.'`';
     }
 
     public static function whereClause($data, &$params, $prefix = '')

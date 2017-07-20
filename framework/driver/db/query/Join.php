@@ -7,30 +7,26 @@ class Join extends QueryChain
     protected $join = [];
     protected $fields = [];
     protected $options = [];
-    protected $field_prefix;
-    protected $master_table;
     protected $join_type = ['INNER', 'LEFT', 'RIGHT'];
 
-	public function __construct($db, $table, $option, $join, $type = 'LEFT', $field_prefix = false)
+	public function __construct($db, $table, $option, $join, $type = 'LEFT', $prefix = true)
     {
         $this->db = $db;
         $this->cur = $join;
         $this->table = $table;
-        $this->field_prefix = $field_prefix;
         $this->join[$join] = array('type' => $type);
-        if (!isset($option['fields'])) {
-            $option['fields'] = null;
-        }
+        $option['prefix'] = false;
+        isset($option['fields']) || $option['fields'] = null;
+        $this->option = ['prefix' => $prefix, 'fields' => null];
         $this->options[$table] = $option;
         $this->builder = $db->builder();
     }
 
-    public function join($join, $type = 'LEFT')
+    public function join($join, $type = 'LEFT', $prefix = true)
     {
-        isset($option['fields']) || $option['fields'] = null;
         $this->options[$this->cur] = $this->option;
         $this->cur = $join;
-        $this->option = [];
+        $this->option = ['prefix' => $prefix, 'fields' => null];
         $this->join[$join] = array('type' => $type);
         return $this;
     }
@@ -43,7 +39,11 @@ class Join extends QueryChain
     
     public function get($id, $pk = 'id')
     {
-        $this->options[$this->table] = ['where' => [[$pk, '=', $id]], 'fields' => $this->options[$this->table]['fields']];
+        $this->options[$this->table] = [
+            'where'  => [[$pk, '=', $id]],
+            'fields' => $this->options[$this->table]['fields'],
+            'prefix' => $this->options[$this->table]['prefix'],
+        ];
         return $this->find(1);
     }
 
@@ -51,9 +51,6 @@ class Join extends QueryChain
     {
         if($limit) {
             $this->options[$this->cur]['limit'] = $limit;
-        }
-        if (!isset($this->option['fields'])) {
-            $this->option['fields'] = null;
         }
         $this->options[$this->cur] = $this->option;
         $data = $this->db->exec(...$this->build());
@@ -72,14 +69,11 @@ class Join extends QueryChain
         $group = [];
         $fields = [];
         $params = [];
-        foreach ($this->options as $table => $options) {
-            foreach ($options as $name => $value) {
+        foreach ($this->options as $table => $option) {
+            foreach ($option as $name => $value) {
                 switch ($name) {
                     case 'fields':
-                        $field = $this->getJoinFields($table, $value);
-                        if ($field) {
-                            $fields = array_merge($fields, $field);
-                        }
+                        $fields = array_merge($fields, $this->setJoinFields($table, $value, $option['prefix']));
                         break;
                     case 'where':
                         $where[] = $this->builder->whereClause($value, $params, $table.'.');
@@ -119,30 +113,24 @@ class Join extends QueryChain
         return [$sql, $params];
     }
     
-    protected function getJoinFields($table, $value)
+    protected function setJoinFields($table, $value, $prefix)
     {
-        if (isset($value)) {
-            if (is_array($value)) {
-                foreach ($value as $field) {
-                    if ($this->field_prefix) {
-                        $fields[] = $table.'.'.$field.' AS '.$table.'_'.$field;
-                    } else {
-                        $fields[] = $table.'.'.$field;
-                    }
-                }
-                return $fields;
+        if ($prefix) {
+            if (!$value) {
+                $value = $this->db->getFields($table);
+            }
+            foreach ($value as $field) {
+                $fields[] = $table.'.'.$field.' AS '.$table.'_'.$field;
             }
         } else {
-            if ($this->field_prefix) {
-                $fields = $this->db->getFields($table);
-                foreach ($fields as $i => $field) {
-                    $fields[$i] = $table.'.'.$field.' AS '.$table.'_'.$field;
+            if ($value) {
+                foreach ($value as $field) {
+                    $fields[] = $table.'.'.$field;
                 }
-                return $fields;
             } else {
-                return [$table.'.*'];
-            }
+                $fields[] = $table.'.*';
+            } 
         }
-        return null;
+        return $fields;
     }
 }

@@ -26,6 +26,7 @@ class With extends QueryChain
         return $this;
     }
     
+    /*
     public function filter($field, $exp, $value)
     {
         if (in_array($exp, ['==', '!=', '>', '<', '>=', '<='], true)) {
@@ -34,17 +35,14 @@ class With extends QueryChain
         }
         throw new \Exception('Invalid filter exp: '.$exp);
     }
+    */
     
     public function get($id, $pk = 'id')
     {
         $data = $this->query->get($id, $pk);
         if ($data) {
             $data = [$data];
-            if ($this->optimize()) {
-                $this->withOptimizeSubData($data);
-            } else {
-                $this->withSubData($data);
-            }
+            $this->withSubData(1, $data);
             return $data[0];
         }
         return $data;
@@ -55,12 +53,15 @@ class With extends QueryChain
         $data = $this->query->find($limit);
         if ($data) {
             if ($limit == 1) {
+                $count = 1;
                 $data = [$data];
-            }
-            if ($this->optimize()) {
-                $this->withOptimizeSubData($data);
             } else {
-                $this->withSubData($data);
+                $count = count($data);
+            }
+            if ($count > 1 && $this->optimize()) {
+                $this->withOptimizeSubData($count, $data);
+            } else {
+                $this->withSubData($count, $data);
             }
             return $limit == 1 ? $data[0] : $data;
         }
@@ -72,38 +73,25 @@ class With extends QueryChain
         if (isset($this->optimize)) {
             return (bool) $this->optimize;
         } else {
-            return !array_diff(array_keys($this->option), ['on', 'fields', 'where']);
+            return !array_diff(array_keys($this->option), ['on', 'fields', 'where', 'order']);
         }
     }
     
-    protected function withSubData(&$data)
+    protected function withSubData($count, &$data)
     {
-        $count = count($data);
         $where = $this->option['where'];
         list($field1, $field2) = $this->getOnFields();
         for ($i = 0; $i < $count;  $i++) {
-            if (isset($this->option['filter'])) {
-                if (isset($data[$i][$this->option['filter'][0]]) && !$this->filterValue($data[$i][$this->option['filter'][0]])) {
-                    continue;
-                }
-            }
-            $this->option['where'] = array_merge([$field2, '=', $data[$i][$field1]], $where);
+            $this->option['where'] = array_merge([[$field2, '=', $data[$i][$field1]]], $where);
             $data[$i][$this->alias] = $this->db->exec(...$this->builder->select($this->with, $this->option));
         }
     }
     
-    protected function withOptimizeSubData(&$data)
+    protected function withOptimizeSubData($count, &$data)
     {
-        $count = count($data);
         list($field1, $field2) = $this->getOnFields();
         $cols = array_unique(array_column($data, $field1));
-        if (isset($this->option['filter'])) {
-            foreach ($cols as $i => $value) {
-                if (!$this->filterValue($value)) {
-                    unset($cols[$i]);
-                }
-            }
-        }
+
         array_unshift($this->option['where'], [$field2, 'IN', $cols]);
         if (isset($this->option['fields'])) {
             $this->option['fields'][] = $field2;
@@ -130,6 +118,7 @@ class With extends QueryChain
         }
     }
     
+    /*
     protected function filterValue($value)
     {
         switch ($this->option['filter'][1]) {
@@ -147,4 +136,5 @@ class With extends QueryChain
                 return $value <= $this->option['filter'][2];
         }
     }
+    */
 }

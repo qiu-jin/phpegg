@@ -1,46 +1,62 @@
 <?php
 namespace framework\driver\db\query;
 
-class Related extends With
+class Related
 {
+    protected $with;
+    protected $alias;
+    protected $query;
+    protected $optimize;
+
+	public function __construct($db, $table, $query, $with, $alias = null)
+    {
+        $this->db = $db;
+        $this->with = $with;
+        $this->table = $table;
+        $this->alias = isset($alias) ? $alias : $with;
+        $this->option['where'] = [];
+        $this->query = $query;
+        $this->builder = $db->builder();
+    }
+    
     public function on($related, $field1 = null, $field2 = null)
     {
         $this->option['on'] = array($related, $field1, $field2);
         return $this;
     }
     
-    protected function withSubData(&$data)
+    public function get($id, $pk = 'id')
     {
-        $count = count($data);
-        $where = $this->option['where'];
-        list($rtable, $field1, $field2) = $this->getOnFields();
-        for ($i = 0; $i < $count;  $i++) {
-            if (isset($data[$i][$field1[0]])) {
-                $rdata = $this->db->exec("SELECT $field2[1] FROM `$rtable` WHERE $field1[1] = ".$this->db->quote($data[$i][$field1[0]]));
-                if ($rdata) {
-                    $subdata = [];
-                    foreach ($rdata as $rd) {
-                        $this->option['where'] = array_merge([$field2[0], '=', $rd[$field2[1]]], $where);
-                        $sdata = $this->db->exec(...$this->builder->select($this->with, $this->option));
-                        if ($sdata) {
-                            $subdata = array_merge($subdata, $sdata);
-                        }
-                    }
-                    $data[$i][$this->alias] = $subdata;
-                }
-            }
+        $data = $this->query->get($id, $pk);
+        if ($data) {
+            $data = [$data];
+            $this->withSubData($data);
+            return $data[0];
         }
+        return $data;
+    }
+
+    public function find($limit = 0)
+    {
+        $data = $this->query->find($limit);
+        if ($data) {
+            if ($limit == 1) {
+                $data = [$data];
+            }
+            $this->withSubData($data);
+            return $limit == 1 ? $data[0] : $data;
+        }
+        return $data;
     }
     
-    protected function withOptimizeSubData(&$data)
+    protected function withSubData(&$data)
     {
-        $count = count($data);
-        list($rtable, $field1, $field2) = $this->getOnFields();
-        $field1_data = array_unique(array_column($data, $field1[0]));
-        if ($field1_data) {
+        list($related, $field1, $field2) = $this->getOnFields();
+        $in_data = array_unique(array_column($data, $field1));
+        if ($in_data) {
             $params = [];
-            $sql = $this->builder->whereItem($params, $field1[1], 'IN', $field1_data);
-            $query = $this->db->query("SELECT $field1[1], $field2[1] FROM $rtable WHERE $sql", $params);
+            $sql = $this->builder->whereItem($params, $field1[1], 'IN', $in_data);
+            $query = $this->db->query("SELECT $field1[1], $field2[1] FROM `$related` WHERE $sql", $params);
             if ($query && $this->db->numRows($query) > 0) {
                 while ($row = $this->db->fetchRow($query)) {
                     $related_data[] = $row[1];
@@ -61,6 +77,7 @@ class Related extends With
                     while ($row = $this->db->fetch($query)) {
                         $subdata[$row[$field2[0]]][] = $row;
                     }
+                    $count = count($data);
                     for ($i = 0; $i < $count;  $i++) {
                         $tmpdata = [];
                         foreach ($field1_field2_related[$data[$i][$field1[0]]] as $tmp) {
