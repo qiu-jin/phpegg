@@ -1,100 +1,104 @@
 <?php
 namespace framework\driver\db\query;
 
-class Related extends With
+class Related extends QueryChain
 {
-    public function on($related, $field1 = null, $field2 = null)
+    protected $with;
+    protected $alias;
+    protected $query;
+    protected $optimize;
+
+	public function __construct($db, $table, $query, $with, $alias = null)
+    {
+        $this->db = $db;
+        $this->with = $with;
+        $this->table = $table;
+        $this->alias = $alias;
+        $this->query = $query;
+        $this->option = [
+            'where' => [],
+            'order' => null,
+            'fields' => null
+        ];
+        $this->builder = $db->builder();
+    }
+    
+    public function on($related, array $field1 = null, array $field2 = null)
     {
         $this->option['on'] = array($related, $field1, $field2);
         return $this;
     }
     
+    public function get($id, $pk = 'id')
+    {
+        $data = $this->query->get($id, $pk);
+        if ($data) {
+            $data = [$data];
+            $this->withSubData($data);
+            return $data[0];
+        }
+        return $data;
+    }
+
+    public function find($limit = 0)
+    {
+        $data = $this->query->find($limit);
+        if ($data) {
+            if ($limit == 1) {
+                $data = [$data];
+            }
+            $this->withSubData($data);
+            return $limit == 1 ? $data[0] : $data;
+        }
+        return $data;
+    }
+    
     protected function withSubData(&$data)
-    {
-        $count = count($data);
-        $where = $this->option['where'];
-        list($rtable, $field1, $field2) = $this->getOnFields();
-        for ($i = 0; $i < $count;  $i++) {
-            if (isset($data[$i][$field1[0]])) {
-                $rdata = $this->db->exec("SELECT $field2[1] FROM `$rtable` WHERE $field1[1] = ".$this->db->quote($data[$i][$field1[0]]));
-                if ($rdata) {
-                    $subdata = [];
-                    foreach ($rdata as $rd) {
-                        $this->option['where'] = array_merge([$field2[0], '=', $rd[$field2[1]]], $where);
-                        $sdata = $this->db->exec(...$this->builder->select($this->with, $this->option));
-                        if ($sdata) {
-                            $subdata = array_merge($subdata, $sdata);
-                        }
-                    }
-                    $data[$i][$this->alias] = $subdata;
-                }
-            }
-        }
-    }
-    
-    protected function withOptimizeSubData(&$data)
-    {
-        $count = count($data);
-        list($rtable, $field1, $field2) = $this->getOnFields();
-        $field1_data = array_unique(array_column($data, $field1[0]));
-        if ($field1_data) {
-            $params = [];
-            $sql = $this->builder->whereItem($params, $field1[1], 'IN', $field1_data);
-            $query = $this->db->query("SELECT $field1[1], $field2[1] FROM $rtable WHERE $sql", $params);
-            if ($query && $this->db->numRows($query) > 0) {
-                while ($row = $this->db->fetchRow($query)) {
-                    $related_data[] = $row[1];
-                    $field1_field2_related[$row[0]][] = $row[1];
-                }
-                array_unshift($this->option['where'], [$field2[0], 'IN', array_unique($related_data)]);
-                
-                $option = ['where' => $this->option['where']];
-                if (isset($this->option['fields'])) {
-                    if (!in_array($field2[0], $this->option['fields'])) {
-                        $this->option['fields'][] = $field2[0];
-                    }
-                    $option['fields'] = $this->option['fields'];
-                }
-                $query = $this->db->query(...$this->builder->select($this->with, $option));
-                if ($query && $this->db->numRows($query) > 0) {
-                    $subdata = [];
-                    while ($row = $this->db->fetch($query)) {
-                        $subdata[$row[$field2[0]]][] = $row;
-                    }
-                    for ($i = 0; $i < $count;  $i++) {
-                        $tmpdata = [];
-                        foreach ($field1_field2_related[$data[$i][$field1[0]]] as $tmp) {
-                            $tmpdata = array_merge($tmpdata, $subdata[$tmp]);
-                        }
-                        $data[$i][$this->alias] = $tmpdata;
-                    }
-                }
-            }
-        }
-    }
-    
-    protected function getOnFields()
     {
         if (isset($this->option['on'])) {
             $on = $this->option['on'];
-            unset($this->option['on']);
-            if (isset($on[1])) {
-                if (!is_array($on[1])) {
-                    $on[1] = [$on[1], $this->table.'_'.$on[1]];
-                }
-            } else {
+            if (!isset($on[1])) {
                 $on[1] = ['id', $this->table.'_id'];
             }
-            if (isset($on[2])) {
-                if (!is_array($on[2])) {
-                    $on[2] = [$on[2], $this->with.'_'.$on[2]];
-                }
-            } else {
+            if (!isset($on[2])) {
                 $on[2] = ['id', $this->with.'_id'];
             }
-            return $on;
+            list($related, $field1, $field2) = $on;
         } else {
-            return [$this->table.'_'.$this->with, ['id', $this->table.'_id'], ['id', $this->with.'_id']];
+            $related = $this->table.'_'.$this->with;
+            $field1  = ['id', $this->table.'_id'];
+            $field2  = ['id', $this->with.'_id'];
+        }
+        $in_data = array_unique(array_column($data, $field1[0]));
+        if ($in_data) {
+            $params = [];
+            $sql = $this->builder->whereItem($params, $field1[1], 'IN', $in_data);
+            $related_data = $this->db->exec("SELECT $field1[1], $field2[1] FROM `$related` WHERE $sql", $params);
+            if ($related_data) {
+                foreach ($related_data as $rd) {
+                    $field2_field1_related[$rd[$field2[1]]][] = $rd[$field1[1]];
+                }
+                $with_data = $this->db->exec(...$this->builder->select($this->with, [
+                    'order' => $this->option['order'],
+                    'fields'=> $this->option['fields'],
+                    'where' => array_merge([[$field2[0], 'IN', array_keys($field2_field1_related)]], $this->option['where'])
+                ]));
+                if ($with_data) {
+                    foreach ($with_data as $wd) {
+                        if (isset($field2_field1_related[$wd[$field2[0]]])) {
+                            foreach ($field2_field1_related[$wd[$field2[0]]] as $item) {
+                                $sub_data[$item][] = $wd;
+                            }
+                        }
+                    }
+                    $count = count($data);
+                    $field_name = $this->alias ? $this->alias : $this->with; 
+                    for ($i = 0; $i < $count;  $i++) {
+                        $index = $data[$i][$field1[0]];
+                        $data[$i][$field_name] = isset($sub_data[$index]) ? $sub_data[$index] : null;
+                    }
+                }
+            }
         }
     }
 }
