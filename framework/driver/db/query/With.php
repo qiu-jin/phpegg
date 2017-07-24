@@ -17,7 +17,6 @@ class With extends QueryChain
         $this->option['where'] = [];
         $this->optimize = $optimize;
         $this->query = $query;
-        $this->builder = $db->builder();
     }
     
     public function on($field1, $field2)
@@ -26,18 +25,7 @@ class With extends QueryChain
         return $this;
     }
     
-    /*
-    public function filter($field, $exp, $value)
-    {
-        if (in_array($exp, ['==', '!=', '>', '<', '>=', '<='], true)) {
-            $this->option['filter'] = [$field, $exp, $value];
-            return $this;
-        }
-        throw new \Exception('Invalid filter exp: '.$exp);
-    }
-    */
-    
-    public function get($id, $pk = 'id')
+    public function get($id = null, $pk = 'id')
     {
         $data = $this->query->get($id, $pk);
         if ($data) {
@@ -52,18 +40,12 @@ class With extends QueryChain
     {
         $data = $this->query->find($limit);
         if ($data) {
-            if ($limit == 1) {
-                $count = 1;
-                $data = [$data];
-            } else {
-                $count = count($data);
-            }
+            $count = count($data);
             if ($count > 1 && $this->optimize()) {
                 $this->withOptimizeSubData($count, $data);
             } else {
                 $this->withSubData($count, $data);
             }
-            return $limit == 1 ? $data[0] : $data;
         }
         return $data;
     }
@@ -83,7 +65,7 @@ class With extends QueryChain
         list($field1, $field2) = $this->getOnFields();
         for ($i = 0; $i < $count;  $i++) {
             $this->option['where'] = array_merge([[$field2, '=', $data[$i][$field1]]], $where);
-            $data[$i][$this->alias] = $this->db->exec(...$this->builder->select($this->with, $this->option));
+            $data[$i][$this->alias] = $this->db->exec(...Builder::select($this->with, $this->option));
         }
     }
     
@@ -97,7 +79,7 @@ class With extends QueryChain
             $this->option['fields'][] = $field2;
         }
         $option = ['fields' => $this->option['fields'] ?? null, 'where' => $this->option['where']];
-        $query = $this->db->query(...$this->builder->select($this->with, $option));
+        $query = $this->db->query(...Builder::->select($this->with, $option));
         if ($query && $this->db->numRows($query) > 0) {
             $subdata = [];
             while ($row = $this->db->fetch($query)) {
@@ -117,24 +99,4 @@ class With extends QueryChain
             return ['id', $this->table.'_id'];
         }
     }
-    
-    /*
-    protected function filterValue($value)
-    {
-        switch ($this->option['filter'][1]) {
-            case '==':
-                return $value == $this->option['filter'][2];
-            case '!=':
-                return $value == $this->option['filter'][2];
-            case '>':
-                return $value > $this->option['filter'][2];
-            case '<':
-                return $value < $this->option['filter'][2];
-            case '>=':
-                return $value >= $this->option['filter'][2];
-            case '<=':
-                return $value <= $this->option['filter'][2];
-        }
-    }
-    */
 }

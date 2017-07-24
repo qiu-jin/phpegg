@@ -21,7 +21,6 @@ class Union extends QueryChain
             $this->fields = '*';
         }
         $this->options[$table] = $option;
-        $this->builder = $db->builder();
     }
     
 	public function union($table)
@@ -40,7 +39,7 @@ class Union extends QueryChain
         $this->options[$this->union] = $this->option;
         foreach ($this->options as $table => $option) {
             $option['fields'] = $this->fields;
-            $select = $this->builder->select($table, $option);
+            $select = Builder::select($table, $option);
             $sql[] = '('.$select[0].')';
             $params = array_merge($params, $select[1]);
         }

@@ -20,7 +20,6 @@ class Related extends QueryChain
             'order' => null,
             'fields' => null
         ];
-        $this->builder = $db->builder();
     }
     
     public function on($related, array $field1 = null, array $field2 = null)
@@ -29,7 +28,7 @@ class Related extends QueryChain
         return $this;
     }
     
-    public function get($id, $pk = 'id')
+    public function get($id = null, $pk = 'id')
     {
         $data = $this->query->get($id, $pk);
         if ($data) {
@@ -43,13 +42,7 @@ class Related extends QueryChain
     public function find($limit = 0)
     {
         $data = $this->query->find($limit);
-        if ($data) {
-            if ($limit == 1) {
-                $data = [$data];
-            }
-            $this->withSubData($data);
-            return $limit == 1 ? $data[0] : $data;
-        }
+        $data && $this->withSubData($data);
         return $data;
     }
     
@@ -72,13 +65,13 @@ class Related extends QueryChain
         $in_data = array_unique(array_column($data, $field1[0]));
         if ($in_data) {
             $params = [];
-            $sql = $this->builder->whereItem($params, $field1[1], 'IN', $in_data);
+            $sql = Builder::whereItem($params, $field1[1], 'IN', $in_data);
             $related_data = $this->db->exec("SELECT $field1[1], $field2[1] FROM `$related` WHERE $sql", $params);
             if ($related_data) {
                 foreach ($related_data as $rd) {
                     $field2_field1_related[$rd[$field2[1]]][] = $rd[$field1[1]];
                 }
-                $with_data = $this->db->exec(...$this->builder->select($this->with, [
+                $with_data = $this->db->exec(...Builder::select($this->with, [
                     'order' => $this->option['order'],
                     'fields'=> $this->option['fields'],
                     'where' => array_merge([[$field2[0], 'IN', array_keys($field2_field1_related)]], $this->option['where'])
@@ -95,7 +88,7 @@ class Related extends QueryChain
                     $field_name = $this->alias ? $this->alias : $this->with; 
                     for ($i = 0; $i < $count;  $i++) {
                         $index = $data[$i][$field1[0]];
-                        $data[$i][$field_name] = isset($sub_data[$index]) ? $sub_data[$index] : null;
+                        $data[$i][$field_name] = isset($sub_data[$index]) ? $sub_data[$index] : [];
                     }
                 }
             }

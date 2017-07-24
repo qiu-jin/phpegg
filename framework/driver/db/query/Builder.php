@@ -1,7 +1,7 @@
 <?php
-namespace framework\driver\db\query\builder;
+namespace framework\driver\db\query;
 
-class Prepare
+class Builder
 {   
     private static $where_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
     private static $where_operator = ['=', '!=', '>', '>=', '<', '<=', 'LIKE', 'IN', 'IS', 'BETWEEN'];
@@ -116,14 +116,14 @@ class Prepare
         }
     }
     
-    public static function implodeParams($sql, $params)
+    public static function buildParams($sql, $params)
     {
         if ($params) {
             if (isset($params[0])) {
                 $str = '';
                 $num = 0;
                 $len = strlen($sql);
-                for ($i = 0; $i < $len; $i++) {
+                for ($i = 1; $i < $len; $i++) {
                     if ($sql{$i} === '?') {
                         $str .= $params[$num];
                         $num++;

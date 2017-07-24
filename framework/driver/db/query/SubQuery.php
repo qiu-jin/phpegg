@@ -13,7 +13,6 @@ class SubQuery extends QueryChain
         $this->sub = $sub;
         $this->table = $table;
         $this->master_option = $option;
-        $this->builder = $db->builder();
     }
     
     public function on($fields1, $fields2, $exp = 'IN')
@@ -22,25 +21,21 @@ class SubQuery extends QueryChain
             $this->option['on'] = [$fields1, $fields2, $exp];
             return $this;
         }
+        throw new \Exception('SQL SubQuery ERROR: '.$exp);
     }
     
     public function find($limit = 0)
     {
-        if($limit) {
+        if ($limit) {
             $this->option['limit'] = $limit;
         }
-        $data = $this->db->exec(...$this->build());
-        if ($limit == 1) {
-            return isset($data[0]) ? $data[0] : $data;
-        } else {
-            return $data;
-        }
+        return $this->db->exec(...$this->build());
     }
     
     protected function build()
     {
         $fields = isset($this->master_option['fields']) ? $this->master_option['fields'] : '*';
-        $sql = $this->builder->selectFrom($this->table, $fields).' WHERE ';
+        $sql = Builder::selectFrom($this->table, $fields).' WHERE ';
         if (isset($this->option['on'])) {
             if (is_array($this->option['on'][0])) {
                 $sql .= '('.implode(',', $this->option['on'][0]).') ';
@@ -53,11 +48,11 @@ class SubQuery extends QueryChain
             $sql .= 'id IN ';
             $this->option['fields'] = [$this->table.'_id'];
         }
-        $sub = $this->builder->select($this->sub, $this->option);
+        $sub = Builder::select($this->sub, $this->option);
         $sql .= '('.$sub[0].') ';
         $params = $sub[1];
         if (isset($this->master_option['where'])) {
-            $sql .= ' AND '.$this->builder->where($this->master_option['where'], $params);
+            $sql .= ' AND '.Builder::where($this->master_option['where'], $params);
         }
         /*
         if (isset($option['group'])) {
@@ -65,10 +60,10 @@ class SubQuery extends QueryChain
         }
         */
         if (isset($this->master_option['order'])) {
-            $sql .= $this->builder->orderClause($this->master_option['order']);
+            $sql .= Builder::orderClause($this->master_option['order']);
         }
         if (isset($this->master_option['limit'])) {
-            $sql .= $this->builder->limitClause($this->master_option['limit']);
+            $sql .= Builder::limitClause($this->master_option['limit']);
         }
         return [$sql, $params];
     }

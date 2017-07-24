@@ -9,11 +9,17 @@ abstract class QueryChain
     
     public function with($table, $alias = null, $optimize = null)
     {
+        if (isset($this->with)) {
+            throw new \Exception('DB Query Error: with only one');
+        }
         return new With($this->db, $this->table, $this, $table, $alias, $optimize);
     }
     
     public function related($table, $alias = null, $optimize = null)
     {
+        if (isset($this->with)) {
+            throw new \Exception('DB Query Error: related only one');
+        }
         return new Related($this->db, $this->table, $this, $table, $alias, $optimize);
     }
     

@@ -19,7 +19,6 @@ class Join extends QueryChain
         isset($option['fields']) || $option['fields'] = null;
         $this->option = ['prefix' => $prefix, 'fields' => null];
         $this->options[$table] = $option;
-        $this->builder = $db->builder();
     }
 
     public function join($join, $type = 'LEFT', $prefix = true)
@@ -37,28 +36,22 @@ class Join extends QueryChain
         return $this;
     }
     
-    public function get($id, $pk = 'id')
+    public function get($id = null, $pk = 'id')
     {
-        $this->options[$this->table] = [
-            'where'  => [[$pk, '=', $id]],
-            'fields' => $this->options[$this->table]['fields'],
-            'prefix' => $this->options[$this->table]['prefix'],
-        ];
-        return $this->find(1);
+        if (isset($id)) {
+            $this->options[$this->table]['where'] = [[$pk, '=', $id]];
+        }
+        $data = $this->find(1);
+        return $data ? $data[0] : $data;
     }
 
     public function find($limit = 0)
     {
-        if($limit) {
+        if ($limit) {
             $this->options[$this->cur]['limit'] = $limit;
         }
         $this->options[$this->cur] = $this->option;
-        $data = $this->db->exec(...$this->build());
-        if ($limit == 1) {
-            return isset($data[0]) ? $data[0] : $data;
-        } else {
-            return $data;
-        }
+        return $this->db->exec(...$this->build());
     }
     
     protected function build()
@@ -76,7 +69,7 @@ class Join extends QueryChain
                         $fields = array_merge($fields, $this->setJoinFields($table, $value, $option['prefix']));
                         break;
                     case 'where':
-                        $where[] = $this->builder->whereClause($value, $params, $table.'.');
+                        $where[] = Builder::whereClause($value, $params, $table.'.');
                         break;
                     case 'group':
                         $group = $value[0];
@@ -92,7 +85,7 @@ class Join extends QueryChain
                 }
             }
         }
-        $sql = $this->builder->selectFrom($this->table, $fields);
+        $sql = Builder::selectFrom($this->table, $fields);
         foreach ($this->join as $table => $join) {
             $sql .= ' '.$join['type'].' JOIN '.$table.' ON ';
             if (isset($join['on'])) {
@@ -105,10 +98,10 @@ class Join extends QueryChain
             $sql .= ' WHERE '.implode(' AND ', $where);
         }
         if ($order) {
-            $sql .= $this->builder->orderClause($order);
+            $sql .= Builder::orderClause($order);
         }
         if ($limit) {
-            $sql .= $this->builder->limitClause($limit);
+            $sql .= Builder::limitClause($limit);
         }
         return [$sql, $params];
     }

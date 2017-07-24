@@ -7,7 +7,6 @@ abstract class Db
 {
     protected $link;
     protected $dbname;
-    protected $builder;
     protected $table_fields;
     
     abstract public function exec($sql);
@@ -40,7 +39,6 @@ abstract class Db
     public function __construct($config)
     {
         $this->link = $this->connect($config);
-        $this->builder = new query\builder\Prepare();
         if (APP_DEBUG) {
             $this->debug = true;
         }
@@ -72,33 +70,28 @@ abstract class Db
     {
         $option['where'] = $where;
         $option['fields'] = (array) $fields;
-        return $this->exec(...$this->builder->select($table, $option));
+        return $this->exec(...query\Builder::select($table, $option));
     }
 
     public function insert($table, $data, $replace = false)
     {
         $sql = ($replace ? 'REPLACE' : 'INSERT')." INTO `$table` SET ";
-        $data = $this->builder->setData($data);
+        $data = query\Builder::setData($data);
         return $this->exec($sql.$data[0], $data[1]);
     }
     
     public function update($table, $data, $where, $limit = 0)
     {
         list($set, $params) = $this->builder->setData($data);
-        $sql = "UPDATE `$table` SET ".$set.' WHERE '.$this->builder->whereClause($where, $params);
+        $sql = "UPDATE `$table` SET ".$set.' WHERE '.query\Builder::whereClause($where, $params);
         return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $params);
     }
    
     public function delete($table, $where, $limit = 0)
     {
         $params = [];
-        $sql = "DELETE FROM `$table` WHERE ".$this->builder->whereClause($where, $params);
+        $sql = "DELETE FROM `$table` WHERE ".query\Builder::whereClause($where, $params);
         return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $params);
-    }
-    
-    public function builder()
-    {
-        return $this->builder;
     }
     
     public function debug()
@@ -108,7 +101,7 @@ abstract class Db
     
     protected function setLog($sql, $params)
     {
-        logger::write(Logger::DEBUG, $this->builder->implodeParams($sql, $params));
+        logger::write(Logger::DEBUG, query\Builder::buildParams($sql, $params));
     }
     
     public function getFields($table)

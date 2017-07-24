@@ -24,29 +24,27 @@ class Query extends QueryChain
         return new Union($this->db, $this->table, $this->option, $table, $all);
     }
     
-    public function get($id, $pk = 'id')
+    public function get($id = null, $pk = 'id')
     {
-        $this->option = ['where' => [[$pk, '=', $id]], 'fields' => isset($this->option['fields']) ? $this->option['fields'] : null];
-        return $this->find(1);
+        if (isset($id)) {
+            $this->option['where'] = [[$pk, '=', $id]];
+        }
+        $data = $this->find(1);
+        return $data ? $data[0] : $data;
     }
 
     public function find($limit = 0)
     {
-        if($limit) {
+        if ($limit) {
             $this->option['limit'] = $limit;
         }
-        $data = $this->db->exec(...$this->db->builder()->select($this->table, $this->option));
-        if ($limit == 1) {
-            return isset($data[0]) ? $data[0] : $data;
-        } else {
-            return $data;
-        }
+        return $this->db->exec(...Builder::select($this->table, $this->option));
     }
     
     public function has()
     {
         $this->option['limit'] = 1;
-        $select = $this->db->builder()->select($this->table, $this->option);
+        $select = Builder::select($this->table, $this->option);
         $query = $this->db->query('SELECT EXISTS('.$select[0].')', $select[1]);
         return $query && !empty($this->db->fetchRow($query)[0]);
     }
@@ -110,10 +108,10 @@ class Query extends QueryChain
         }
         $params = [];
         if ($data) {
-            list($dataset, $params) = $this->db->builder()->setData($data);
+            list($dataset, $params) = Builder::setData($data);
             $set = $set.','.$dataset;
         }
-        $sql = "UPDATE `$this->table` SET ".$set.' WHERE '.$this->db->builder()->whereClause($this->option['where'], $params);
+        $sql = "UPDATE `$this->table` SET ".$set.' WHERE '.Builder::whereClause($this->option['where'], $params);
         return $this->db->exec(isset($this->option['limit']) ? "$sql LIMIT ".$this->option['limit'] : $sql, $params);
     }
     
@@ -125,7 +123,7 @@ class Query extends QueryChain
     protected function aggregate($func, $field)
     {
         $this->option['fields'] = ["$func($field)"];
-        $query = $this->db->query(...$this->db->builder()->select($this->table, $this->option));
+        $query = $this->db->query(...Builder::select($this->table, $this->option));
         if ($query && $this->db->numRows($query) > 0) {
             return $this->db->fetchRow($query)[0];
         }
