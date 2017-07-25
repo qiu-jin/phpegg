@@ -21,7 +21,7 @@ class Error
     {
         if (self::$init) return;
         self::$init = true;
-        error_reporting(APP_DEBUG ? -1 : 0);
+        error_reporting(constant('APP_DEBUG') ? -1 : 0);
         set_error_handler(__CLASS__.'::errorHandler');
         set_exception_handler(__CLASS__.'::exceptionHandler');
         register_shutdown_function(__CLASS__.'::fatalHandler');
@@ -56,13 +56,19 @@ class Error
      */
     public static function errorHandler($code, $message, $file = null, $line = null)
     {
-        list($level, $prefix) = self::getErrorLevelInfo($code);
-        $message = $prefix.': '.$message;
-        self::record($level, $message, $file, $line);
-        if ($level === Logger::CRITICAL || $level === Logger::ALERT || $level === Logger::ERROR ) {
-            App::finish(2);
-            self::response();
-            return false;
+        if (error_reporting() & $code) {
+            if (constant('STRICT_ERROR_MODE')) {
+                throw new \ErrorException($message, $code, $code, $file, $line);
+            } else {
+                list($level, $prefix) = self::getErrorLevelInfo($code);
+                $message = $prefix.': '.$message;
+                self::record($level, $message, $file, $line);
+                if ($level === Logger::CRITICAL || $level === Logger::ALERT || $level === Logger::ERROR ) {
+                    App::finish(2);
+                    self::response();
+                    return false;
+                }
+            }
         }
     }
     

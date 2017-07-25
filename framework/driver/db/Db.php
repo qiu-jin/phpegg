@@ -7,6 +7,7 @@ abstract class Db
 {
     protected $link;
     protected $dbname;
+    protected $sql_debug = false;
     protected $table_fields;
     
     abstract public function exec($sql);
@@ -39,8 +40,8 @@ abstract class Db
     public function __construct($config)
     {
         $this->link = $this->connect($config);
-        if (APP_DEBUG) {
-            $this->debug = true;
+        if (constant('APP_DEBUG')) {
+            $this->sql_debug = true;
         }
     }
     
@@ -94,14 +95,9 @@ abstract class Db
         return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $params);
     }
     
-    public function debug()
+    public function setSqlDebug($bool = true)
     {
-        $this->debug = true;
-    }
-    
-    protected function setLog($sql, $params)
-    {
-        logger::write(Logger::DEBUG, query\Builder::buildParams($sql, $params));
+        $this->sql_debug = (bool) $bool;
     }
     
     public function getFields($table)
@@ -115,5 +111,10 @@ abstract class Db
             }
             return $this->table_fields[$table] = $fields;
         }
+    }
+    
+    protected function SqlDebug($sql, $params)
+    {
+        logger::write(Logger::DEBUG, vsprintf(str_replace("?", "'%s'", $sql), $params));
     }
 }

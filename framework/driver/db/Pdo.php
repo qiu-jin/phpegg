@@ -25,7 +25,7 @@ class Pdo extends Db
     
     public function exec($sql, $params = null)
     {
-        $this->debug && $this->setLog($sql, $params);
+        $this->sql_debug && $this->SqlDebug($sql, $params);
         $cmd = trim(strtoupper(strtok($sql, ' ')), "\t(");
         if ($params) {
             $query = $this->prepareExecute($sql, $params);
@@ -70,7 +70,7 @@ class Pdo extends Db
     
     public function query($sql, $params = null)
     {
-        $this->debug && $this->setLog($sql, $params);
+        $this->sql_debug && $this->SqlDebug($sql, $params);
         if ($params) {
             return $this->prepareExecute($sql, $params);
         } else {

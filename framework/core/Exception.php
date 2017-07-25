@@ -3,25 +3,20 @@ namespace framework\core;
 
 class Exception extends \Exception
 {
-    const DB = 1000;
-    const RPC = 1010;
-    const CACHE = 1020;
-    const QUEUE = 1030;
-    const STORAGE = 1040;
-    
-    protected static $code_name = [
-        self::DB =>  'Db',
-        self::RPC => 'Rpc',
-        self::CACHE => 'Cache',
-        self::QUEUE => 'Queue',
-        self::STORAGE => 'Storage'
-    ];
-    
     protected $data;
     
-    public function __construct($message, $code = null, $data = null)
+    public function __construct($message, $code = null, $file = null, $line = null)
     {
-        
+        $this->message = $message;
+        if (isset($code)) {
+            $this->code = $code;
+        }
+        if (isset($file)) {
+            $this->file = $file;
+        }
+        if (isset($line)) {
+            $this->line = $line;
+        }
     }
     
     public function getData()
