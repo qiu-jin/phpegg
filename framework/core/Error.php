@@ -85,9 +85,7 @@ class Error
             $name = get_class($e);
         }
         $message = 'Uncaught Exception '.$name.': '.$e->getMessage();
-        $file = $e->getFile();
-        $line = $e->getLine();
-        self::record($level, $message, $file, $line);
+        self::record($level, $message, $e->getFile(), $e->getLine());
         self::response();
     }
     

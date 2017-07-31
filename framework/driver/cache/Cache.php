@@ -47,7 +47,7 @@ abstract class Cache
         return $value;
     }
     
-    public function getMultiple($keys, $default = null)
+    public function getMultiple(array $keys, $default = null)
     {
         foreach ($keys as $key) {
             $values[$key] = $this->get($key, $default);
@@ -55,7 +55,7 @@ abstract class Cache
         return $values;
     }
     
-    public function setMultiple($values, $ttl = null)
+    public function setMultiple(array $values, $ttl = null)
     {
         foreach ($values as $key => $value) {
             if (!$this->set($key, $value, $ttl)) {
@@ -65,7 +65,7 @@ abstract class Cache
         return true;
     }
     
-    public function deleteMultiple($keys)
+    public function deleteMultiple(array $keys)
     {
         foreach ($keys as $key) {
             if (!$this->delete($key)) {

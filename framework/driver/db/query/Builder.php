@@ -116,26 +116,14 @@ class Builder
         }
     }
     
-    public static function buildParams($sql, $params)
+    public static function buildParams($sql, array $params)
     {
         if ($params) {
             if (isset($params[0])) {
-                $str = '';
-                $num = 0;
-                $len = strlen($sql);
-                for ($i = 1; $i < $len; $i++) {
-                    if ($sql{$i} === '?') {
-                        $str .= $params[$num];
-                        $num++;
-                    } else {
-                        $str .= $sql{$i};
-                    }
-                }
-                return $str;
+                return vsprintf(str_replace("?", "'%s'", $sql), $params);
             } else {
-                $replace_pairs = array();
                 foreach ($params as $k => $v) {
-                    $replace_pairs[':'.$k] = addslashes($v);
+                    $replace_pairs[':'.$k] = "'$v'";
                 }
                 return strtr($sql, $replace_pairs);
             }
