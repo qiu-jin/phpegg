@@ -28,6 +28,11 @@ class Sftp extends Storage
         return $to ? ssh2_scp_recv($this->link, $from, $to) : file_get_contents($this->uri($from));
     }
     
+    public function has($from)
+    {
+        return file_exists($this->path($this->uri($from)));
+    }
+    
     public function put($from, $to, $is_buffer = false)
     {
         $to = $this->path($to);

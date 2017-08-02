@@ -83,7 +83,7 @@ abstract class Db
     
     public function update($table, $data, $where, $limit = 0)
     {
-        list($set, $params) = $this->builder->setData($data);
+        list($set, $params) = query\Builder::setData($data);
         $sql = "UPDATE `$table` SET ".$set.' WHERE '.query\Builder::whereClause($where, $params);
         return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $params);
     }

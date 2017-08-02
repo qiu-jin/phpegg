@@ -5,7 +5,7 @@ class Resource
 {
     private $ns;
     private $rpc;
-    private $query;
+    private $filter;
     private $client_methods;
     private static $allow_methods = [
         'get', 'put', 'post', 'delete', 'patch', 'option', 'head'
@@ -26,15 +26,15 @@ class Resource
         return $this;
     }
     
-    public function query($name, $value)
+    public function filter($name, $value)
     {
-        $this->query[$name] = $value;
+        $this->filter[$name] = $value;
         return $this;
     }
     
-    public function queries($values)
+    public function filters($values)
     {
-        $this->query = array_merge($this->query, $values);
+        $this->filter = array_merge($this->filter, $values);
         return $this;
     }
     
@@ -49,8 +49,8 @@ class Resource
                 }
                 $uri .= '/'.implode('/', $params);
             }
-            if ($this->query) {
-                $uri .= '?'.http_build_query($this->query);
+            if ($this->filter) {
+                $uri .= '?'.http_build_query($this->filter);
             }
             return $this->rpc->__send($uri, $method, $data, $this->client_methods);
         } elseif(in_array($method, self::$allow_client_methods, true)) {

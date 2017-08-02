@@ -8,11 +8,13 @@ use framework\core\Config;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
-class Resource extends App
+class Rest extends App
 {
     private $ns;
     private $config = [
         'route_mode' => 0,
+        'param_mode' => 0,
+        'get_to_params' => 0,
         'controller_depth' => 0,
     ];
     
@@ -96,14 +98,30 @@ class Resource extends App
     
     protected function defaultDispatch($path, $method) 
     {
-        switch ($method) {
-            case 'GET':
-                
-            case 'PUT':
-            case 'POST':
-            case 'DELETE'
+        $count = count($path);
+        $depth = $this->config['controller_depth'];
+        if ($depth > 0) {
+            if ($count >= $depth) {
+                $class = $this->ns.implode('\\', $count === $depth ? $path : array_slice($path, 0, $depth));
+            }
+        } else {
+            $this->config['param_mode'] = 0;
+            $class = $this->ns.implode('\\', $path);
         }
-
+        if (isset($class) && class_exists($class)) {
+            $controller = new $class();
+            if (is_callable([$controller, $method])) {
+                $params = null;
+                if ($depth && $count > $depth) {
+                    $params = array_slice($path, $depth);
+                    if ($this->config['param_mode'] === 2) {
+                        $params = $this->getKvParams($params);
+                    }
+                }
+                return ['controller' => $controller, 'action' => $action, 'params' => $params];
+            }
+        }
+        return false;
     }
 
     protected function routeDispatch($path, $method)
@@ -128,6 +146,16 @@ class Resource extends App
             }
         }
         return false;
+    }
+
+    protected function getKvParams(array $path)
+    {
+        $params = [];
+        $len = count($path);
+        for ($i =0; $i < $len; $i = $i+2) {
+            $params[$path[$i]] = isset($path[$i+1]) ? $path[$i+1] : null;
+        }
+        return $params;
     }
     
     protected function setPostParams()

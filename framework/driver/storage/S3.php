@@ -35,6 +35,11 @@ class S3 extends Storage
         return $this->send('GET', $from, null, $methods, !$this->public_read);
     }
     
+    public function has($from)
+    {
+        return $this->send('HEAD', $from, null, null, !$this->public_read);
+    }
+    
     public function put($from, $to, $is_buffer = false)
     {
         $client_methods['timeout'] = 30;
@@ -102,12 +107,12 @@ class S3 extends Storage
                 case 'PUT':
                     return true;
                 case 'HEAD':
-                    return $client->headers;
+                    return isset($client_methods['returnHeaders']) ? $client->headers : true;
                 case 'DELETE':
                     return true;
             }
         }
-        if ($status === 404 && $method === 'HEAD') {
+        if ($status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
             return false;
         }
         $data = $client->xml;

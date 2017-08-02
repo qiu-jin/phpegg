@@ -95,7 +95,7 @@ class Response
     public static function json($data)
     {
         self::$response->headers['Content-Type'] = 'application/json; charset=UTF-8';
-        self::$response->body = json_encode($data, JSON_UNESCAPED_UNICODE);
+        self::$response->body = jsonencode($data);
         App::finish();
     }
     

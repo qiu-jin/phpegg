@@ -54,7 +54,7 @@ class Client
      */
     public function json(array $data)
     {
-        $this->body = json_encode($data);
+        $this->body = jsonencode($data);
         $this->headers[] = 'Content-Type: application/json; charset=UTF-8';
         return $this;
     }

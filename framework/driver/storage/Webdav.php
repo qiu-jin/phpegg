@@ -42,6 +42,11 @@ class Webdav extends Storage
         return $this->send('GET', $this->uri($from), null, $methods, !$this->public_read);
     }
     
+    public function has($from)
+    {
+        return $this->send('HEAD', $this->uri($from), null, null, !$this->public_read);
+    }
+    
     public function put($from, $to, $is_buffer = false)
     {
         $to = $this->uri($to);
@@ -111,7 +116,7 @@ class Webdav extends Storage
                 case 'PUT':
                     return true;
                 case 'HEAD':
-                    return $client->headers;
+                    return isset($client_methods['returnHeaders']) ? $client->headers : true;
                 case 'COPY':
                     return true;
                 case 'MOVE':
@@ -122,7 +127,7 @@ class Webdav extends Storage
                     return true;
             }
         }
-        if ($status === 404 && $method === 'HEAD') {
+        if ($status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
             return false;
         }
         return error($status ? $status : $client->error, 2);

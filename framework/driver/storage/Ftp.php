@@ -40,6 +40,11 @@ class Ftp extends Storage
         }
     }
     
+    public function has($from)
+    {
+        return (bool) @ftp_size($this->link, $this->path($from));
+    }
+    
     public function put($from, $to, $is_buffer = false)
     {
         $to = $this->path($to);

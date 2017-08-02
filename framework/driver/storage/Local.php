@@ -20,6 +20,11 @@ class Local extends Storage
         return $to ? copy($this->path($from), $this->path($to)) : file_get_contents($this->path($from));
     }
     
+    public function has($from)
+    {
+        return file_exists($this->path($from));
+    }
+    
     public function put($from, $to, $is_buffer = false)
     {
         $to = $this->path($to);

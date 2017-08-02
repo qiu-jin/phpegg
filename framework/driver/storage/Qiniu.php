@@ -33,6 +33,11 @@ class Qiniu extends Storage
         }
         return $this->send($url, null, $methods, 'GET');
     }
+    
+    public function has($from)
+    {
+        return (bool) $this->send(self::$host, '/stat/'.$this->path($from), null, 'GET');
+    }
 
     public function put($from, $to, $is_buffer = false)
     {
