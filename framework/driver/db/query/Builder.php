@@ -116,7 +116,7 @@ class Builder
         }
     }
     
-    public static function buildParams($sql, array $params)
+    public static function buildParams($sql, array $params = null)
     {
         if ($params) {
             if (isset($params[0])) {

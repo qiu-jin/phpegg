@@ -74,7 +74,7 @@ class Session
 
     public static function free()
     {
-        self::$session = null;
+        //self::$session = null;
     }
 }
 Session::init();

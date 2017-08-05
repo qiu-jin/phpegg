@@ -14,8 +14,8 @@ class Request
     {
         if (self::$request) return;
         self::$request = new \stdClass();
-        self::$request->get = $_GET;
-        self::$request->post = $_POST;
+        self::$request->get =& $_GET;
+        self::$request->post =& $_POST;
         Hook::add('exit', __CLASS__.'::free');
         Hook::listen('request', self::$request);
     }
@@ -161,7 +161,7 @@ class Request
      */
     public static function lang()
     {
-        return strtolower(strtok($_SERVER['HTTP_ACCEPT_LANGUAGE'], ','));
+        return isset(self::$request->lang) ? self::$request->lang : self::$request->lang =  strtolower(strtok($_SERVER['HTTP_ACCEPT_LANGUAGE'], ','));
     }
     
     /*

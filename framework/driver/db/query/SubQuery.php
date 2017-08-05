@@ -24,6 +24,12 @@ class SubQuery extends QueryChain
         throw new \Exception('SQL SubQuery ERROR: '.$exp);
     }
     
+    public function get()
+    {
+        $data = $this->find(1);
+        return $data ? $data[0] : $data;
+    }
+    
     public function find($limit = 0)
     {
         if ($limit) {
