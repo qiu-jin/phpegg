@@ -12,9 +12,9 @@ abstract class QueryChain
         return new With($this->db, $this->table, $this, $table, $alias, $optimize);
     }
     
-    public function related($table, $alias = null, $optimize = null)
+    public function relate($table, $alias = null, $optimize = null)
     {
-        return new Related($this->db, $this->table, $this, $table, $alias, $optimize);
+        return new Relate($this->db, $this->table, $this, $table, $alias, $optimize);
     }
     
     public function select()

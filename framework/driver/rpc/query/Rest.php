@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\rpc\query;
 
-class Resource
+class Rest
 {
     private $ns;
     private $rpc;
@@ -20,6 +20,12 @@ class Resource
         $this->rpc = $rpc;
     }
     
+    public function ns($class)
+    {
+        $this->ns[] = $class;
+        return $this;
+    }
+    
     public function __get($class)
     {
         $this->ns[] = $class;
@@ -32,7 +38,7 @@ class Resource
         return $this;
     }
     
-    public function filters($values)
+    public function filters(array $values)
     {
         $this->filter = array_merge($this->filter, $values);
         return $this;
@@ -43,14 +49,19 @@ class Resource
         if (in_array($method, self::$allow_methods, true)) {
             $uri = implode('/', $this->ns);
             $data = null;
-            if ($params) {
-                if (is_array(end($params))) {
-                    $data = array_pop($params);
+            $count = count($params);
+            if ($count === 1) {
+                if (is_array($params[0])) {
+                    $data = $params[0];
+                } else {
+                    $uri .= '/'.$params[0];
                 }
-                $uri .= '/'.implode('/', $params);
+            } elseif ($count > 1) {
+                $uri .= '/'.$params[0];
+                $data = $params[1];
             }
             if ($this->filter) {
-                $uri .= '?'.http_build_query($this->filter);
+                $uri .= (strpos('?', $uri) ? '&' : '?').http_build_query($this->filter);
             }
             return $this->rpc->__send($uri, $method, $data, $this->client_methods);
         } elseif(in_array($method, self::$allow_client_methods, true)) {

@@ -3,7 +3,7 @@ namespace framework\driver\rpc;
 
 use framework\core\http\Client;
 
-class Resource
+class Rest
 {
     protected $config = [
         'requset_encode' => 'body',
@@ -17,7 +17,7 @@ class Resource
     
     public function __get($name)
     {
-        return new query\Resource($this, $name);
+        return new query\Rest($this, $name);
     }
     
     public function __send($uri, $method, $data, $client_methods)
@@ -25,13 +25,13 @@ class Resource
         $client = new Client(strtoupper($method), $this->config['host'].'/'.$uri);
         isset($this->config['headers']) && $client->headers($this->config['headers']);
         isset($this->config['curlopt']) && $client->curlopt($this->config['curlopt']);
-        if ($data) {
-            $client->{$this->config['requset_encode']}($data);
-        }
         if ($client_methods) {
             foreach ($client_methods as $item) {
                 $client->$item[0](...$item[1]);
             }
+        }
+        if ($data) {
+            $client->{$this->config['requset_encode']}($data);
         }
         $status = $client->status;
         if ($status >= 200 && $status < 300) {

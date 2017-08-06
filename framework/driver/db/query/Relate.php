@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\db\query;
 
-class Related extends QueryChain
+class Relate extends QueryChain
 {
     protected $with;
     protected $alias;

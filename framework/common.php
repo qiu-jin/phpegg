@@ -44,6 +44,11 @@ function db($name = null)
     return Container::load('db', $name);
 }
 
+function rpc($name = null)
+{
+    return Container::load('rpc', $name);
+}
+
 function cache($name = null)
 {
     return Container::load('cache', $name);
@@ -57,6 +62,16 @@ function storage($name = null)
 function load($type, $name = null)
 {
     return Container::load($type, $name);
+}
+
+function sms($name = null)
+{
+    return Container::make('sms', $name);
+}
+
+function email($name = null)
+{
+    return Container::make('email', $name);
 }
 
 function make($type = null, $name = null)

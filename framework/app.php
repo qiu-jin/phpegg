@@ -48,8 +48,8 @@ abstract class App
         if (self::$boot) return;
         self::$boot = true;
         define('FW_DIR', __DIR__.'/');
-        define('APP_START', microtime());
-        define('APP_VERSION', '1.0.0');
+        define('APP_START', microtime(true));
+        define('APP_VERSION', '2.0.0');
         defined('APP_DEBUG')|| define('APP_DEBUG', false);
         defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
         defined('APP_DIR')  || define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
