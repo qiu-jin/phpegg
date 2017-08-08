@@ -20,7 +20,7 @@ trait Getter
         if ($mtype !== null) {
             return $this->$name = new ModelGetter($name, $mtype);
         }
-        throw new \Exception('Attr not exists: '.$name);
+        throw new \Exception('Undefined property: '.__CLASS__.'::$'.$name);
     }
 }
 

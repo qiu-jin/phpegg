@@ -3,25 +3,39 @@ namespace framework\driver\db\query;
 
 class SubQuery extends QueryChain
 {
-    protected $sub;
-    protected $master_option;
-    protected $sub_exp = ['=', '>', '<', '>=', '<=', '<>', 'ANY', 'IN', 'SOME', 'ALL', 'EXISTS'];
+    protected $cur;
+    protected $master;
+    protected $options = [];
+    protected static $sub_exp = ['=', '>', '<', '>=', '<=', '<>', 'ANY', 'IN', 'SOME', 'ALL', 'EXISTS'];
+    protected static $sub_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
     
-	public function __construct($db, $table, $option, $sub)
+	public function __construct($db, $table, $option, $sub, $exp, $logic)
     {
+        $this->checkExpLogic($exp, $logic);
         $this->db = $db;
-        $this->sub = $sub;
+        $this->cur = $sub;
         $this->table = $table;
-        $this->master_option = $option;
+        $this->master = $option;
+        $this->option['exp'] = $exp;
+        $this->option['logic'] = $logic;
     }
-    
-    public function on($fields1, $fields2, $exp = 'IN')
+
+    public function sub($sub, $exp = 'IN', $logic = 'AND')
     {
-        if (in_array($exp, $this->sub_exp, true)) {
-            $this->option['on'] = [$fields1, $fields2, $exp];
-            return $this;
-        }
-        throw new \Exception('SQL SubQuery ERROR: '.$exp);
+        $this->checkExpLogic($exp, $logic);
+        $this->options[$this->cur] = $this->option;
+        $this->cur = $sub;
+        $this->option = [
+            'exp' => $exp,
+            'logic' => $logic
+        ];
+        return $this;
+    }
+
+    public function on($fields1, $fields2 = null)
+    {
+        $this->option['on'] = [$fields1, $fields2];
+        return $this;
     }
     
     public function get()
@@ -33,44 +47,65 @@ class SubQuery extends QueryChain
     public function find($limit = 0)
     {
         if ($limit) {
-            $this->option['limit'] = $limit;
+            $this->master['limit'] = $limit;
         }
+        $this->options[$this->cur] = $this->option;
         return $this->db->exec(...$this->build());
     }
     
     protected function build()
     {
-        $fields = isset($this->master_option['fields']) ? $this->master_option['fields'] : null;
-        $sql = Builder::selectFrom($this->table, $fields).' WHERE ';
-        if (isset($this->option['on'])) {
-            if (is_array($this->option['on'][0])) {
-                $sql .= '('.implode(',', $this->option['on'][0]).') ';
-            } else {
-                $sql .= $this->option['on'][0].' ';
+        $params = [];
+        $sql = Builder::selectFrom($this->table, isset($this->master['fields']) ? $this->master['fields'] : null).' WHERE ';
+        if (isset($this->master['where'])) {
+            $logic = true;
+            $sql .= Builder::whereClause($this->master['where'], $params);
+        }
+        foreach ($this->options as $table => $option) {
+            if (isset($logic)) {
+                $sql .= " {$option['logic']} ";
             }
-            $sql .= $this->option['on'][2].' ';
-            $this->option['fields'] = $this->option['on'][1];
-        } else {
-            $sql .= '`id` IN ';
-            $this->option['fields'] = [$this->table.'_id'];
+            $logic = true;
+            if (isset($option['on'])) {
+                if (is_array($option['on'][0])) {
+                    $sql .= '(`'.implode('`,`', $option['on'][0]).'`) ';
+                } else {
+                    $sql .= "`{$option['on'][0]}` ";
+                }
+                $sql .= $option['exp'].' ';
+                if (isset($option['on'][1])) {
+                    $option['fields'] = (array) $option['on'][1];
+                }
+            } else {
+                $sql .= "`id` {$option['exp']} ";
+                $option['fields'] = [$this->table.'_id'];
+            }
+            $sub = Builder::select($table, $option);
+            $sql .= '('.$sub[0].') ';
+            $params = array_merge($params, $sub[1]);
         }
-        $sub = Builder::select($this->sub, $this->option);
-        $sql .= '('.$sub[0].') ';
-        $params = $sub[1];
-        if (isset($this->master_option['where'])) {
-            $sql .= ' AND '.Builder::where($this->master_option['where'], $params);
+        if (isset($this->master['group'])) {
+            $sql .= Builder::groupClause($this->master['group']);
         }
-        /*
-        if (isset($option['group'])) {
-            $sql .= self::groupHaving($option['group'], isset($option['having']) ? $option['having'] : null, $params);
+        if (isset($this->master['having'])) {
+            $sql .= ' HAVING '.self::whereClause($this->master['having'], $params);
         }
-        */
-        if (isset($this->master_option['order'])) {
-            $sql .= Builder::orderClause($this->master_option['order']);
+        if (isset($this->master['order'])) {
+            $sql .= Builder::orderClause($this->master['order']);
         }
-        if (isset($this->master_option['limit'])) {
-            $sql .= Builder::limitClause($this->master_option['limit']);
+        if (isset($this->master['limit'])) {
+            $sql .= Builder::limitClause($this->master['limit']);
         }
         return [$sql, $params];
+    }
+    
+    protected function checkExpLogic($exp, $logic)
+    {
+        if (!in_array($exp, self::$sub_exp, true)) {
+            throw new \Exception('SubQuery Exp ERROR: '.var_export($exp, true));
+        }
+        if (!in_array($logic, self::$sub_logic, true)) {
+            throw new \Exception('SubQuery Logic ERROR: '.var_export($logic, true));
+        }
     }
 }

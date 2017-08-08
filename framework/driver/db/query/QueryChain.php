@@ -38,13 +38,12 @@ abstract class QueryChain
                 $this->option['where'][] = [$where[0], $where[1], $where[2]];
                 return $this;
         }
-        throw new \Exception('SQL WHERE ERROR: '.jsonecode($where));
+        throw new \Exception('SQL WHERE ERROR: '.var_export($where, true));
     }
     
     public function order($order, $desc = false)
     {
-        $this->option['order'][] = $desc ? $order.' DESC' : $order;
-        //$this->option['order'][] = [$field, $desc];
+        $this->option['order'][] = [$field, $desc];
         return $this;
     }
     
@@ -56,8 +55,20 @@ abstract class QueryChain
     
     public function having(...$having)
     {
-        $this->option['having'] = $having;
-        return $this;
+        switch (count($having)) {
+            case 1:
+                if (is_array($having[0])) {
+                    $this->option['having'][] = $having[0];
+                    return $this;
+                }
+            case 2:
+                $this->option['having'][] = [$having[0], '=', $having[1]];
+                return $this;
+            case 3:
+                $this->option['having'][] = [$having[0], $having[1], $having[2]];
+                return $this;
+        }
+        throw new \Exception('SQL Having ERROR: '.var_export($having, true));
     }
     
     public function limit($limit, $offset = 0)

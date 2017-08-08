@@ -40,15 +40,15 @@ class With extends QueryChain
         if ($data) {
             $count = count($data);
             if ($count > 1 && !array_diff(array_keys($this->option), ['on', 'fields', 'where', 'order'])) {
-                $this->withOptimizeSubData($count, $data);
+                $this->withOptimizeData($count, $data);
             } else {
-                $this->withSubData($count, $data);
+                $this->withData($count, $data);
             }
         }
         return $data;
     }
     
-    protected function withSubData($count, &$data)
+    protected function withData($count, &$data)
     {
         $where = $this->option['where'];
         list($field1, $field2) = $this->getOnFields();
@@ -58,7 +58,7 @@ class With extends QueryChain
         }
     }
     
-    protected function withOptimizeSubData($count, &$data)
+    protected function withOptimizeData($count, &$data)
     {
         list($field1, $field2) = $this->getOnFields();
         $cols = array_unique(array_column($data, $field1));
@@ -72,6 +72,7 @@ class With extends QueryChain
             foreach ($with_data as $wd) {
                 $sub_data[$wd[$field2]][] = $wd;
             }
+            unset($with_data);
             for ($i = 0; $i < $count;  $i++) {
                 $data[$i][$this->alias] = &$sub_data[$data[$i][$field1]];
             }

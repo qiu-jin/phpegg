@@ -115,6 +115,6 @@ abstract class Db
     
     protected function SqlDebug($sql, $params)
     {
-        logger::write(Logger::DEBUG, query\Builder::buildParams($sql, $params));
+        logger::write(Logger::DEBUG, query\Builder::export($sql, $params));
     }
 }

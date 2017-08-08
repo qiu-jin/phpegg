@@ -90,10 +90,10 @@ class View
     /*
      * 视图魔术方法
      */
-    public static function __callStatic($name, $params = [])
+    public static function __callStatic($method, $params = [])
     {
         if (isset($this->config['methods'][$method])) {
-            $vars = $this->config['methods'][$name];
+            $vars = $this->config['methods'][$method];
             $tpl = array_pop($vars);
             if ($vars) {
                 foreach (array_keys($vars) as $i => $v) {
@@ -103,7 +103,7 @@ class View
             }
             Response::view($tpl, $vars);
         }
-        throw new \Exception('Illegal View method: '.$method);
+        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
     }
     
     private static function path($tpl, $dir = null)

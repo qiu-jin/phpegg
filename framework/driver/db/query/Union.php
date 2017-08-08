@@ -35,7 +35,6 @@ class Union extends QueryChain
     {
         $sql = [];
         $params = [];
-        $union = $this->all ? ' UNION ALL ' : ' UNION ';
         $this->options[$this->union] = $this->option;
         foreach ($this->options as $table => $option) {
             $option['fields'] = $this->fields;
@@ -43,6 +42,7 @@ class Union extends QueryChain
             $sql[] = '('.$select[0].')';
             $params = array_merge($params, $select[1]);
         }
+        $union = $this->all ? ' UNION ALL ' : ' UNION ';
         return $this->db->exec(implode($union, $sql), $params);
     }
 }

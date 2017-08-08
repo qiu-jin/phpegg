@@ -71,6 +71,7 @@ class Relate extends QueryChain
                 foreach ($related_data as $rd) {
                     $field2_field1_related[$rd[$field2[1]]][] = $rd[$field1[1]];
                 }
+                unset($related_data);
                 $with_data = $this->db->exec(...Builder::select($this->with, [
                     'order' => $this->option['order'],
                     'fields'=> $this->option['fields'],
@@ -84,6 +85,7 @@ class Relate extends QueryChain
                             }
                         }
                     }
+                    unset($with_data);
                     $count = count($data);
                     $field_name = $this->alias ? $this->alias : $this->with; 
                     for ($i = 0; $i < $count;  $i++) {

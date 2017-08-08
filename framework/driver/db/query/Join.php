@@ -7,10 +7,13 @@ class Join extends QueryChain
     protected $join = [];
     protected $fields = [];
     protected $options = [];
-    protected $join_type = ['INNER', 'LEFT', 'RIGHT'];
+    protected static $join_type = ['INNER', 'LEFT', 'RIGHT'];
 
 	public function __construct($db, $table, $option, $join, $type = 'LEFT', $prefix = true)
     {
+        if (!in_array($type, self::$join_type, true)) {
+            throw new \Exception('Join Type Error: '.var_export($type, true));
+        }
         $this->db = $db;
         $this->cur = $join;
         $this->table = $table;
@@ -23,6 +26,9 @@ class Join extends QueryChain
 
     public function join($join, $type = 'LEFT', $prefix = true)
     {
+        if (!in_array($type, self::$join_type, true)) {
+            throw new \Exception('Join Type Error: '.var_export($type, true));
+        }
         $this->options[$this->cur] = $this->option;
         $this->cur = $join;
         $this->option = ['prefix' => $prefix, 'fields' => null];
@@ -72,11 +78,12 @@ class Join extends QueryChain
                         $where[] = Builder::whereClause($value, $params, $table);
                         break;
                     case 'group':
-                        $group = $value[0];
+                        $group = [$value, $table];
                         break;
                     case 'order':
                         foreach ($value as $v) {
-                            $order[] = $table.'.'.$v;
+                            $v[] = $table;
+                            $order[] = $v;
                         }
                         break;
                     case 'limit':
@@ -97,6 +104,9 @@ class Join extends QueryChain
         if ($where) {
             $sql .= ' WHERE '.implode(' AND ', $where);
         }
+        if ($group) {
+            $sql .= Builder::groupClause(...$group);
+        }
         if ($order) {
             $sql .= Builder::orderClause($order);
         }
@@ -109,16 +119,19 @@ class Join extends QueryChain
     protected function setJoinFields($table, $value, $prefix)
     {
         if ($prefix) {
+            if ($prefix === true) {
+                $prefix = $table;
+            }
             if (!$value) {
                 foreach ($this->db->getFields($table) as $field) {
-                    $fields[] = "`$table`.`$field` AS `{$table}_$field`";
+                    $fields[] = "`$table`.`$field` AS `{$prefix}_$field`";
                 }
             } else {
                 foreach ($value as $field) {
                     if (is_array($field)) {
                         $fields[] = $this->setField($field, $table);
                     } else {
-                        $fields[] = "`$table`.`$field` AS `{$table}_$field`";
+                        $fields[] = "`$table`.`$field` AS `{$prefix}_$field`";
                     }
                 }
             }
@@ -147,6 +160,6 @@ class Join extends QueryChain
             $field1 =  $field[1] === '*' ? '*' : "`$field[1]`";
             return "$field[0](`$table`.$field1) AS `$field[2]`";
         }
-        throw new \Exception('SQL Field ERROR: '.$field);
+        throw new \Exception('Join Field ERROR: '.var_export($field, true));
     }
 }

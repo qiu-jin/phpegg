@@ -16,6 +16,9 @@ class Builder
         if (isset($option['group'])) {
             $sql .= self::groupClause($option['group']);
         }
+        if (isset($option['having'])) {
+            $sql .= ' HAVING '.self::whereClause($option['having'], $params);
+        }
         if (isset($option['order'])) {
             $sql .= self::orderClause($option['order']);
         }
@@ -38,7 +41,7 @@ class Builder
                 } elseif ($count === 3){
                     $select[] = "$field[0](".($field[1] === '*' ? '*' : "`$field[1]`").") AS `$field[2]`";
                 } else {
-                    throw new \Exception('SQL Field ERROR: '.$field);
+                    throw new \Exception('SQL Field ERROR: '.var_export($field, true));
                 }
             } else {
                 $select[] = "`$field`";
@@ -63,7 +66,7 @@ class Builder
                 } elseif (preg_match('/^('.implode('|', self::$where_logic).')\#.+$/', $k, $match)) {
                     $sql = $sql.' '.$match[1].' ';
                 } else {
-                    throw new \Exception('SQL WHERE ERROR: '.$k);
+                    throw new \Exception('SQL WHERE ERROR: '.var_export($k, true));
                 }
             }
             if (count($v) === 3 && in_array($v[1], self::$where_operator, true)) {
@@ -80,19 +83,21 @@ class Builder
         return $sql;
     }
     
-    public static function groupClause($field)
+    public static function groupClause($field, $table = null)
     {
-        return " GROUP BY $field";
+        return " GROUP BY ".($table === null ? '' : "`$table`.")."`$field`";
     }
     
 	public static function orderClause($orders)
     {
-        /*
         foreach ($orders as $order) {
-            $item[] = $order[1] ? "`$order[0]` DESC" : "`$order[0]`";
+            if (isset($order[2])) {
+                $items[] = $order[1] ? "`$order[2]`.`$order[0]` DESC" : "`$order[0]`";
+            } else {
+                $items[] = $order[1] ? "`$order[0]` DESC" : "`$order[0]`";
+            }
         }
-        */
-        return ' ORDER BY '.implode(',', $orders);
+        return ' ORDER BY '.implode(',', $items);
 	}
 
     public static function limitClause($limit)
@@ -141,7 +146,7 @@ class Builder
         }
     }
     
-    public static function buildParams($sql, array $params = null)
+    public static function export($sql, array $params = null)
     {
         if ($params) {
             if (isset($params[0])) {

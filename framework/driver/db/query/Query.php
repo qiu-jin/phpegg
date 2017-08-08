@@ -9,9 +9,9 @@ class Query extends QueryChain
         $this->table = $table;
     }
     
-    public function sub($table)
+    public function sub($table, $exp = 'IN', $logic = 'AND')
     {
-        return new SubQuery($this->db, $this->table, $this->option, $table);
+        return new SubQuery($this->db, $this->table, $this->option, $table, $exp, $logic);
     }
     
     public function join($table, $type = 'LEFT', $prefix = true)
@@ -73,6 +73,14 @@ class Query extends QueryChain
     {
         return $this->aggregate('count', $field);
     }
+    
+    public function aggregate($func, $field)
+    {
+        $alias = $func.'_'.$field;
+        $this->option['fields'] = [[$func, $field, "{$func}_{$field}"]];
+        $data = $this->db->exec(...Builder::select($this->table, $this->option));
+        return $data ? $data[0][$alias] : false;
+    }
 
     public function insert($data, $replace = false)
     {
@@ -81,9 +89,19 @@ class Query extends QueryChain
     
     public function insertAll($datas)
     {
-        foreach ($datas as $data)
-        {
-            $this->db->insert($this->table, $data);
+        try {
+            $this->db->begin();
+            foreach ($datas as $data) {
+                if (!$this->db->insert($this->table, $data)) {
+                    $this->db->rollback();
+                    return false;
+                }
+            }
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->db->rollback();
+            throw new \Exception($e->getMessage());
         }
     }
    
@@ -118,13 +136,5 @@ class Query extends QueryChain
     public function delete($limit = 0)
     {
         return $this->db->delete($this->table, $this->option['where'], $limit);
-    }
-    
-    protected function aggregate($func, $field)
-    {
-        $alias = $func.'_'.$field;
-        $this->option['fields'] = [[$func, $field, "{$func}_{$field}"]];
-        $data = $this->db->exec(...Builder::select($this->table, $this->option));
-        return $data ? $data[0][$alias] : false;
     }
 }
