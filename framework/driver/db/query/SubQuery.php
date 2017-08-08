@@ -40,7 +40,7 @@ class SubQuery extends QueryChain
     
     protected function build()
     {
-        $fields = isset($this->master_option['fields']) ? $this->master_option['fields'] : '*';
+        $fields = isset($this->master_option['fields']) ? $this->master_option['fields'] : null;
         $sql = Builder::selectFrom($this->table, $fields).' WHERE ';
         if (isset($this->option['on'])) {
             if (is_array($this->option['on'][0])) {
@@ -51,7 +51,7 @@ class SubQuery extends QueryChain
             $sql .= $this->option['on'][2].' ';
             $this->option['fields'] = $this->option['on'][1];
         } else {
-            $sql .= 'id IN ';
+            $sql .= '`id` IN ';
             $this->option['fields'] = [$this->table.'_id'];
         }
         $sub = Builder::select($this->sub, $this->option);

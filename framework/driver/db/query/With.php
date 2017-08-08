@@ -6,16 +6,14 @@ class With extends QueryChain
     protected $with;
     protected $alias;
     protected $query;
-    protected $optimize;
-
-	public function __construct($db, $table, $query, $with, $alias = null, $optimize = null)
+    
+	public function __construct($db, $table, $query, $with, $alias = null)
     {
         $this->db = $db;
         $this->with = $with;
         $this->table = $table;
         $this->alias = isset($alias) ? $alias : $with;
         $this->option['where'] = [];
-        $this->optimize = $optimize;
         $this->query = $query;
     }
     
@@ -41,22 +39,13 @@ class With extends QueryChain
         $data = $this->query->find($limit);
         if ($data) {
             $count = count($data);
-            if ($count > 1 && $this->optimize()) {
+            if ($count > 1 && !array_diff(array_keys($this->option), ['on', 'fields', 'where', 'order'])) {
                 $this->withOptimizeSubData($count, $data);
             } else {
                 $this->withSubData($count, $data);
             }
         }
         return $data;
-    }
-    
-    protected function optimize()
-    {
-        if (isset($this->optimize)) {
-            return (bool) $this->optimize;
-        } else {
-            return !array_diff(array_keys($this->option), ['on', 'fields', 'where', 'order']);
-        }
     }
     
     protected function withSubData($count, &$data)
@@ -75,18 +64,16 @@ class With extends QueryChain
         $cols = array_unique(array_column($data, $field1));
 
         array_unshift($this->option['where'], [$field2, 'IN', $cols]);
-        if (isset($this->option['fields'])) {
+        if (isset($this->option['fields']) && !in_array($field2, $this->option['fields'])) {
             $this->option['fields'][] = $field2;
         }
-        $option = ['fields' => $this->option['fields'] ?? null, 'where' => $this->option['where']];
-        $query = $this->db->query(...Builder::select($this->with, $option));
-        if ($query && $this->db->numRows($query) > 0) {
-            $subdata = [];
-            while ($row = $this->db->fetch($query)) {
-                $subdata[$row[$field2]][] = $row;
+        $with_data = $this->db->exec(...Builder::select($this->with, $this->option));
+        if ($with_data) {
+            foreach ($with_data as $wd) {
+                $sub_data[$wd[$field2]][] = $wd;
             }
             for ($i = 0; $i < $count;  $i++) {
-                $data[$i][$this->alias] = &$subdata[$data[$i][$field1]];
+                $data[$i][$this->alias] = &$sub_data[$data[$i][$field1]];
             }
         }
     }

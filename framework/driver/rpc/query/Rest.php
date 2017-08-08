@@ -46,7 +46,7 @@ class Rest
     
     public function __call($method, $params = [])
     {
-        if (in_array($method, self::$allow_methods, true)) {
+        if (in_array($method, self::$allow_methods)) {
             $uri = implode('/', $this->ns);
             $data = null;
             $count = count($params);
@@ -64,7 +64,7 @@ class Rest
                 $uri .= (strpos('?', $uri) ? '&' : '?').http_build_query($this->filter);
             }
             return $this->rpc->__send($uri, $method, $data, $this->client_methods);
-        } elseif(in_array($method, self::$allow_client_methods, true)) {
+        } elseif(in_array($method, self::$allow_client_methods)) {
             $this->client_methods[] = [$method, $params];
             return $this;
         }

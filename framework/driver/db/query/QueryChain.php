@@ -17,9 +17,9 @@ abstract class QueryChain
         return new Relate($this->db, $this->table, $this, $table, $alias, $optimize);
     }
     
-    public function select()
+    public function select(...$fields)
     {
-        $this->option['fields'] = func_get_args();
+        $this->option['fields'] = $fields;
         return $this;
     }
     
@@ -44,12 +44,13 @@ abstract class QueryChain
     public function order($order, $desc = false)
     {
         $this->option['order'][] = $desc ? $order.' DESC' : $order;
+        //$this->option['order'][] = [$field, $desc];
         return $this;
     }
     
-    public function group($field, $aggregate = null)
+    public function group($field)
     {
-        $this->option['group'] = [$field, $aggregate];
+        $this->option['group'] = $field;
         return $this;
     }
     

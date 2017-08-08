@@ -67,28 +67,28 @@ abstract class Db
         }
     }
 
-    public function select($table, $fields = '*', $where = [], $option = [])
+    public function select($table, array $fields = null, array $where = [], array $option = [])
     {
         $option['where'] = $where;
-        $option['fields'] = (array) $fields;
+        $option['fields'] = $fields;
         return $this->exec(...query\Builder::select($table, $option));
     }
 
-    public function insert($table, $data, $replace = false)
+    public function insert($table, array $data, $replace = false)
     {
         $sql = ($replace ? 'REPLACE' : 'INSERT')." INTO `$table` SET ";
         $data = query\Builder::setData($data);
         return $this->exec($sql.$data[0], $data[1]);
     }
     
-    public function update($table, $data, $where, $limit = 0)
+    public function update($table, array $data, array $where, $limit = 0)
     {
         list($set, $params) = query\Builder::setData($data);
         $sql = "UPDATE `$table` SET ".$set.' WHERE '.query\Builder::whereClause($where, $params);
         return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $params);
     }
    
-    public function delete($table, $where, $limit = 0)
+    public function delete($table, array $where, $limit = 0)
     {
         $params = [];
         $sql = "DELETE FROM `$table` WHERE ".query\Builder::whereClause($where, $params);

@@ -69,7 +69,7 @@ class Join extends QueryChain
                         $fields = array_merge($fields, $this->setJoinFields($table, $value, $option['prefix']));
                         break;
                     case 'where':
-                        $where[] = Builder::whereClause($value, $params, $table.'.');
+                        $where[] = Builder::whereClause($value, $params, $table);
                         break;
                     case 'group':
                         $group = $value[0];
@@ -85,13 +85,13 @@ class Join extends QueryChain
                 }
             }
         }
-        $sql = Builder::selectFrom($this->table, $fields);
+        $sql = 'SELECT '.implode(',', $fields).' FROM `'.$this->table.'`';
         foreach ($this->join as $table => $join) {
-            $sql .= ' '.$join['type'].' JOIN '.$table.' ON ';
+            $sql .= " {$join['type']} JOIN `$table` ON";
             if (isset($join['on'])) {
-                $sql .= $this->table.'.'.$join['on'][0].' = '.$table.'.'.$join['on'][1];
+                $sql .= "`$this->table`.`{$join['on'][0]}` = `$table`.`{$join['on'][1]}`";
             } else {
-                $sql .= $this->table.'.id = '.$table.'.'.$this->table.'_id';
+                $sql .= "`$this->table`.`id` = `$table`.`{$this->table}_id`";
             }
         }
         if ($where) {
@@ -110,20 +110,43 @@ class Join extends QueryChain
     {
         if ($prefix) {
             if (!$value) {
-                $value = $this->db->getFields($table);
-            }
-            foreach ($value as $field) {
-                $fields[] = $table.'.'.$field.' AS '.$table.'_'.$field;
+                foreach ($this->db->getFields($table) as $field) {
+                    $fields[] = "`$table`.`$field` AS `{$table}_$field`";
+                }
+            } else {
+                foreach ($value as $field) {
+                    if (is_array($field)) {
+                        $fields[] = $this->setField($field, $table);
+                    } else {
+                        $fields[] = "`$table`.`$field` AS `{$table}_$field`";
+                    }
+                }
             }
         } else {
             if ($value) {
                 foreach ($value as $field) {
-                    $fields[] = $table.'.'.$field;
+                    if (is_array($field)) {
+                        $fields[] = $this->setField($field, $table);
+                    } else {
+                        $fields[] = "`$table`.`$field`";
+                    }
                 }
             } else {
-                $fields[] = $table.'.*';
+                $fields[] = "`$table`.*";
             } 
         }
         return $fields;
+    }
+    
+    protected function setField(array $field, $table)
+    {
+        $count = count($field);
+        if ($count === 2) {
+            return "`$table`.`$field[0]` AS `$field[1]`";
+        } elseif ($count === 3){
+            $field1 =  $field[1] === '*' ? '*' : "`$field[1]`";
+            return "$field[0](`$table`.$field1) AS `$field[2]`";
+        }
+        throw new \Exception('SQL Field ERROR: '.$field);
     }
 }

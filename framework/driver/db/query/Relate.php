@@ -66,7 +66,7 @@ class Relate extends QueryChain
         if ($in_data) {
             $params = [];
             $sql = Builder::whereItem($params, $field1[1], 'IN', $in_data);
-            $related_data = $this->db->exec("SELECT $field1[1], $field2[1] FROM `$related` WHERE $sql", $params);
+            $related_data = $this->db->exec("SELECT `$field1[1]`, `$field2[1]` FROM `$related` WHERE $sql", $params);
             if ($related_data) {
                 foreach ($related_data as $rd) {
                     $field2_field1_related[$rd[$field2[1]]][] = $rd[$field1[1]];

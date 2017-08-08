@@ -122,11 +122,9 @@ class Query extends QueryChain
     
     protected function aggregate($func, $field)
     {
-        $this->option['fields'] = ["$func($field)"];
-        $query = $this->db->query(...Builder::select($this->table, $this->option));
-        if ($query && $this->db->numRows($query) > 0) {
-            return $this->db->fetchRow($query)[0];
-        }
-        return false;
+        $alias = $func.'_'.$field;
+        $this->option['fields'] = [[$func, $field, "{$func}_{$field}"]];
+        $data = $this->db->exec(...Builder::select($this->table, $this->option));
+        return $data ? $data[0][$alias] : false;
     }
 }

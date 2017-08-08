@@ -9,12 +9,12 @@ class Builder
     public static function select($table, array $option)
     {
         $params = [];
-        $sql = self::selectFrom($table, isset($option['fields']) ? $option['fields'] : '*');
+        $sql = self::selectFrom($table, isset($option['fields']) ? $option['fields'] : null);
         if (isset($option['where'])) {
             $sql .= ' WHERE '.self::whereClause($option['where'], $params);
         }
         if (isset($option['group'])) {
-            $sql .= self::groupHaving($option['group'], isset($option['having']) ? $option['having'] : null, $params);
+            $sql .= self::groupClause($option['group']);
         }
         if (isset($option['order'])) {
             $sql .= self::orderClause($option['order']);
@@ -25,12 +25,29 @@ class Builder
         return [$sql, $params];
     }
 
-    public static function selectFrom($table, $fields)
+    public static function selectFrom($table, array $fields = null)
     {
-        return 'SELECT '.implode(',', (array) $fields).' FROM `'.$table.'`';
+        if (!$fields) {
+            return "SELECT * FROM `$table`";
+        }
+        foreach ($fields as $field) {
+            if (is_array($field)) {
+                $count = count($field);
+                if ($count === 2) {
+                    $select[] = "`$field[0]` AS `$field[1]`";
+                } elseif ($count === 3){
+                    $select[] = "$field[0](".($field[1] === '*' ? '*' : "`$field[1]`").") AS `$field[2]`";
+                } else {
+                    throw new \Exception('SQL Field ERROR: '.$field);
+                }
+            } else {
+                $select[] = "`$field`";
+            }
+        }
+        return 'SELECT '.implode(',', (array) $select).' FROM `'.$table.'`';
     }
 
-    public static function whereClause($data, &$params, $prefix = '')
+    public static function whereClause($data, &$params, $prefix = null)
     {
         $i = 0;
         $sql = '';
@@ -50,7 +67,10 @@ class Builder
                 }
             }
             if (count($v) === 3 && in_array($v[1], self::$where_operator, true)) {
-                $sql .= $prefix.self::whereItem($params, ...$v);
+                if ($prefix !== null) {
+                    $sql .= "`$prefix`.";
+                }
+                $sql .= self::whereItem($params, ...$v);
             } else {
                 $where = self::whereClause($v, $params, $prefix);
                 $sql .=  $sql.'('.$where[0].')';
@@ -60,13 +80,18 @@ class Builder
         return $sql;
     }
     
-    public static function groupHaving($group, $having)
+    public static function groupClause($field)
     {
-
+        return " GROUP BY $field";
     }
     
 	public static function orderClause($orders)
     {
+        /*
+        foreach ($orders as $order) {
+            $item[] = $order[1] ? "`$order[0]` DESC" : "`$order[0]`";
+        }
+        */
         return ' ORDER BY '.implode(',', $orders);
 	}
 
@@ -84,7 +109,7 @@ class Builder
         $item = [];
         $params = [];
 		foreach ($data as $k => $v) {
-            $item[] = "$k=?";
+            $item[] = "`$k`=?";
             $params[] = $v;
 		}
         return [implode(" $glue ", $item), $params];
@@ -96,23 +121,23 @@ class Builder
             case 'IN':
                 if(is_array($value)) {
                     $params = array_merge($params, $value);
-                    return $field." IN (".implode(",", array_fill(0, count($value), '?')).")";
+                    return "`$field` IN (".implode(",", array_fill(0, count($value), '?')).")";
                 }
                 break;
             case 'BETWEEN':
                 if (count($value) === 2) {
                     $params = array_merge($params, $value);
-                    return $field.' BETWEEN ?  AND ?';
+                    return "`$field` BETWEEN ?  AND ?";
                 }
                 break;
             case 'IS':
                 if ($value === NULL) {
-                    return $field.' IS NULL';
+                    return "`$field` IS NULL";
                 }
                 break;
             default :
                 $params[] = $value;
-                return $field.' '.$exp.' ?';
+                return "`$field` $exp ?";
         }
     }
     
