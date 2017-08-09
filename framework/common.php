@@ -66,17 +66,17 @@ function load($type, $name = null)
 
 function sms($name = null)
 {
-    return Container::make('sms', $name);
+    return Container::load('sms', $name);
 }
 
 function email($name = null)
 {
-    return Container::make('email', $name);
+    return Container::load('email', $name);
 }
 
-function make($type = null, $name = null)
+function make($name, $class, $config = null)
 {
-    return Container::make($type, $name);
+    return Container::make($name, $class, $config);
 }
 
 function model($name, $config = null)

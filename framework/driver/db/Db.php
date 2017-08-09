@@ -81,18 +81,30 @@ abstract class Db
         return $this->exec($sql.$data[0], $data[1]);
     }
     
-    public function update($table, array $data, array $where, $limit = 0)
+    public function update($table, array $data, $where = null, $limit = 0)
     {
         list($set, $params) = query\Builder::setData($data);
-        $sql = "UPDATE `$table` SET ".$set.' WHERE '.query\Builder::whereClause($where, $params);
-        return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $params);
+        $sql =  "UPDATE `$table` SET $set";
+        if ($where) {
+            $sql .= ' WHERE '.query\Builder::whereClause($where, $params);
+        }
+        if ($limit > 0) {
+            $sql .= " LIMIT $limit";
+        }
+        return $this->exec($sqll, $params);
     }
    
-    public function delete($table, array $where, $limit = 0)
+    public function delete($table, $where = null, $limit = 0)
     {
         $params = [];
-        $sql = "DELETE FROM `$table` WHERE ".query\Builder::whereClause($where, $params);
-        return $this->exec($limit > 0 ? "$sql LIMIT $limit" : $sql, $params);
+        $sql = "DELETE FROM `$table`";
+        if ($where) {
+            $sql .= ' WHERE '.query\Builder::whereClause($where, $params);
+        }
+        if ($limit > 0) {
+            $sql .= " LIMIT $limit";
+        }
+        return $this->exec($sql, $params);
     }
     
     public function setSqlDebug($bool = true)

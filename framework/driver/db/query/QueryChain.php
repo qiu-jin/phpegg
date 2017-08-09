@@ -5,7 +5,10 @@ abstract class QueryChain
 {
     protected $db;
     protected $table;
-    protected $option = [];
+    protected $option = [
+        'where' => null,
+        'fields' => null
+    ];
     
     public function with($table, $alias = null, $optimize = null)
     {
@@ -25,23 +28,22 @@ abstract class QueryChain
     
     public function where(...$where)
     {
-        switch (count($where)) {
-            case 1:
-                if (is_array($where[0])) {
-                    $this->option['where'][] = $where[0];
-                    return $this;
-                }
-            case 2:
-                $this->option['where'][] = [$where[0], '=', $where[1]];
-                return $this;
-            case 3:
-                $this->option['where'][] = [$where[0], $where[1], $where[2]];
-                return $this;
+        $data = $this->setWhere($where);
+        if (is_array($where[0])) {
+            $this->option['where'] = array_merge((array) $this->option['where'], $data);
+        } else {
+            $this->option['where'][] = $data; 
         }
-        throw new \Exception('SQL WHERE ERROR: '.var_export($where, true));
+        return $this;
     }
     
-    public function order($order, $desc = false)
+    public function  whereOr(...$where)
+    {
+        $this->option['where'][] = ['OR' => $this->setWhere($where)];
+        return $this;
+    }
+    
+    public function order($field, $desc = false)
     {
         $this->option['order'][] = [$field, $desc];
         return $this;
@@ -55,20 +57,13 @@ abstract class QueryChain
     
     public function having(...$having)
     {
-        switch (count($having)) {
-            case 1:
-                if (is_array($having[0])) {
-                    $this->option['having'][] = $having[0];
-                    return $this;
-                }
-            case 2:
-                $this->option['having'][] = [$having[0], '=', $having[1]];
-                return $this;
-            case 3:
-                $this->option['having'][] = [$having[0], $having[1], $having[2]];
-                return $this;
+        $data = $this->setWhere($having);
+        if (is_array($having[0])) {
+            $this->option['having'] = array_merge((array) $this->option['having'], $data);
+        } else {
+            $this->option['having'][] = $data; 
         }
-        throw new \Exception('SQL Having ERROR: '.var_export($having, true));
+        return $this;
     }
     
     public function limit($limit, $offset = 0)
@@ -85,5 +80,19 @@ abstract class QueryChain
     {
         $this->option['limit'] = [($page-1)*$num, $num];
         return $this;
+    }
+    
+    protected function setWhere($where) 
+    {
+        switch (count($where)) {
+            case 1:
+                if (is_array($where[0])) return $where[0];
+                break;
+            case 2:
+                return [$where[0], '=', $where[1]];
+            case 3:
+                return [$where[0], $where[1], $where[2]];
+        }
+        throw new \Exception('SQL $name ERROR: '.var_export($where, true));
     }
 }

@@ -36,7 +36,7 @@ class Relate extends QueryChain
             $this->withSubData($data);
             return $data[0];
         }
-        return $data;
+        return null;
     }
 
     public function find($limit = 0)

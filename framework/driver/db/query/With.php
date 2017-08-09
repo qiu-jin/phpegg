@@ -31,7 +31,7 @@ class With extends QueryChain
             $this->withSubData(1, $data);
             return $data[0];
         }
-        return $data;
+        return null;
     }
 
     public function find($limit = 0)
