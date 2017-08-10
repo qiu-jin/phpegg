@@ -39,7 +39,7 @@ abstract class QueryChain
     
     public function  whereOr(...$where)
     {
-        $this->option['where'][] = ['OR' => $this->setWhere($where)];
+        $this->option['where']['OR#'.count($this->option['where'])] = $this->setWhere($where);
         return $this;
     }
     
@@ -59,7 +59,11 @@ abstract class QueryChain
     {
         $data = $this->setWhere($having);
         if (is_array($having[0])) {
-            $this->option['having'] = array_merge((array) $this->option['having'], $data);
+            if (isset($this->option['having'])) {
+                $this->option['having'] = array_merge($this->option['having'], $data);
+            } else {
+                $this->option['having'] = $data;
+            }
         } else {
             $this->option['having'][] = $data; 
         }

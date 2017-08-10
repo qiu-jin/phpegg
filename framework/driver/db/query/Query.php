@@ -104,6 +104,11 @@ class Query extends QueryChain
             throw new \Exception($e->getMessage());
         }
     }
+    
+    public function set($key, $value, $pk = 'id')
+    {
+        return $this->db->update($this->table, $value, [[$pk, '=', $key]], 1);
+    }
    
     public function update($data)
     {
@@ -133,8 +138,11 @@ class Query extends QueryChain
         return $this->db->exec(isset($this->option['limit']) ? "$sql LIMIT ".$this->option['limit'] : $sql, $params);
     }
     
-    public function delete($limit = 0)
+    public function delete($id = null, $pk = 'id')
     {
-        return $this->db->delete($this->table, $this->option['where'], $limit);
+        if (isset($id)) {
+            $this->option['where'] = [[$pk, '=', $id]];
+        }
+        return $this->db->delete($this->table, $this->option['where'], isset($this->option['limit']) ? $this->option['limit'] : 0);
     }
 }

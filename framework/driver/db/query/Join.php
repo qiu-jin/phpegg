@@ -66,19 +66,27 @@ class Join extends QueryChain
         $order = [];
         $where = [];
         $group = [];
+        $having = [];
         $fields = [];
         $params = [];
         foreach ($this->options as $table => $option) {
             foreach ($option as $name => $value) {
                 switch ($name) {
                     case 'fields':
-                        $fields = array_merge($fields, $this->setJoinFields($table, $value, $option['prefix']));
+                        if ($value !== [false]) {
+                            $fields = array_merge($fields, $this->setJoinFields($table, $value, $option['prefix']));
+                        }
                         break;
                     case 'where':
-                        $where[] = Builder::whereClause($value, $params, $table);
+                        if ($value) {
+                            $where[] = Builder::whereClause($value, $params, $table);
+                        }
                         break;
                     case 'group':
                         $group = [$value, $table];
+                        break;
+                    case 'having':
+                        $having[] = Builder::whereClause($value, $params, $table);
                         break;
                     case 'order':
                         foreach ($value as $v) {
@@ -106,6 +114,9 @@ class Join extends QueryChain
         }
         if ($group) {
             $sql .= Builder::groupClause(...$group);
+        }
+        if ($having) {
+            $sql .= ' HAVING '.implode(' AND ', $having);
         }
         if ($order) {
             $sql .= Builder::orderClause($order);

@@ -91,7 +91,7 @@ abstract class Db
         if ($limit > 0) {
             $sql .= " LIMIT $limit";
         }
-        return $this->exec($sqll, $params);
+        return $this->exec($sql, $params);
     }
    
     public function delete($table, $where = null, $limit = 0)

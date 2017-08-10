@@ -60,7 +60,7 @@ class Builder
                     $sql = $sql.' AND ';
                 }
             } else {
-                $k = strtoupper($k);
+                $k = strtoupper(strtok($k, '#'));
                 if (in_array($k, self::$where_logic, true)) {
                     $sql = $sql.' '.$k.' ';
                 } elseif (preg_match('/^('.implode('|', self::$where_logic).')\#.+$/', $k, $match)) {

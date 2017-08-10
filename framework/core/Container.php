@@ -4,28 +4,32 @@ namespace framework\core;
 class Container
 {
     private static $init;
-    private static $container;
-    //key表示支持的模型名，value表示模型类的namespace层数，为0时不限制
-    private static $model_provider = [
-        'model'     => 1,
-        'logic'     => 1,
-        'service'   => 1
+    protected static $container;
+    protected static $providers = [
+        //key表示支持的驱动类型名，value表示驱动类实例是否默认缓存
+        'driver' => [
+            'db'        => true,
+            'rpc'       => true,
+            'cache'     => true,
+            'storage'   => true,
+            'search'    => true,
+            'data'      => true,
+            'queue'     => false,
+            'email'     => false,
+            'sms'       => false,
+            'geoip'     => false
+        ],
+        //key表示支持的模型名，value表示模型类的namespace层数，为0时不限制
+        'model'  => [
+            'model'     => 1,
+            'logic'     => 1,
+            'service'   => 1
+        ],
+        //key表示容器名，value表示容器类名
+        'class'  => [],
+        'closure'=> [],
+        'alias'  => [],
     ];
-    //key表示支持的驱动类型名，value表示驱动类实例是否默认缓存
-    private static $driver_provider = [
-        'db'        => true,
-        'rpc'       => true,
-        'cache'     => true,
-        'storage'   => true,
-        'search'    => true,
-        'data'      => true,
-        'queue'     => false,
-        'email'     => false,
-        'sms'       => false,
-        'geoip'     => false
-    ];
-    //key表示容器名，value表示容器类名
-    private static $class_provider = [];
 
     /*
      * 类加载时调用此初始方法
@@ -34,11 +38,14 @@ class Container
     {
         if (self::$init) return;
         self::$init = true;
-        $config = Config::get('app.container');
+        $config = Config::get('container');
         if ($config) {
-            isset($config['model_provider'])  && self::$model_provider  += $config['model_provider'];
-            isset($config['class_provider'])  && self::$class_provider  += $config['class_provider'];
-            isset($config['driver_provider']) && self::$driver_provider += $config['driver_provider'];
+            foreach (array_keys(self::$providers) as $type) {
+                $key = $type."_provider";
+                if (isset($config[$key])) {
+                    self::$providers[$type] += $config[$key];
+                }
+            }
         }
         Hook::add('exit', __CLASS__.'::free');
     }
@@ -52,20 +59,15 @@ class Container
             return self::$container[$name];
         }
         $prefix = strtok($name, '.');
-        if (isset(self::$driver_provider[$prefix])) {
-            return self::load($prefix, strtok('.'));
-        } elseif (isset(self::$model_provider[$prefix])) {
-            if ($prefix !== $name) {
-                return self::model($name);
+        foreach (self::$providers as $type => $provider) {
+            if (isset($provider[$prefix])) {
+                return self::$container[$name] = self::{'get'.ucfirst($type)}($name);
             }
-            return self::$container[$name] = new ModelGetter($name, self::$model_provider[$prefix]);
-        } elseif (isset(self::$class_provider[$name])) {
-            return self::$container[$name] = new self::$class_provider[$name];
         }
     }
     
     /*
-     * 获取容器实例
+     * 
      */
     public static function has($name)
     {
@@ -73,64 +75,66 @@ class Container
     }
     
     /*
-     * 设置容器类
+     * 
+     */
+    public static function set($name, object $object)
+    {
+        self::$container[$name] = $object;
+    }
+    
+    /*
+     * 设置器类
      */
     public static function bind($name, $class)
     {
-        self::$class_provider[$name] = $class;
+        self::$providers['class'][$name] = $class;
     }
     
     /*
-     * 获取驱动实例，不缓存实例
+     * 
      */
-    public static function make($name, $class, $config = null)
+    public static function make($name, $class, ...$config)
     {   
-        return self::$container[$name] = $config ? new $class($config) : new $class();
+        return self::$container[$name] = new $class(...$config);
+    }
+    
+    protected static function setAlias($alias, $name)
+    {
+        self::$providers['alias'][$alias] = $name;
+    }
+
+    protected static function setClosure($name, callable $closure)
+    {
+        self::$providers['closure'][$name] = $closure;
     }
     
     /*
-     * 获取驱动实例，缓存实例
+     * 
      */
-    public static function load($type, $name = null)
+    public static function driver($type, $name = null)
     {
-        $index = $name ? "$type.$name" : $type;
-        if (isset(self::$container[$index])) {
-            return self::$container[$index];
-        }
         if ($name) {
-            $config = Config::get($index);
+            $config = is_array($name) ? $name : Config::get("$type.$name");
         } else {
-            $null_name = true;
-            list($name, $config) = Config::firstPair($type);
+            list($index, $config) = Config::firstPair($type);
         }
         if (isset($config['driver'])) {
-            self::$container[$index] =  self::driver($type, $config['driver'], $config);
-            if (isset($null_name)) {
-                self::$container["$type.$name"] = self::$container[$index];
+            $class = 'framework\driver\\'.$type.'\\'.ucfirst($config['driver']);
+
+            if (isset($index)) {
+                return self::$container["$type.$index"] = new $class($config);
             }
-            return self::$container[$index];
+            return new $class($config);
         }
     }
     
     /*
      * 获取模型类实例
      */
-    public static function model($name, $config = null)
+    public static function model($name)
     {
-        if (isset(self::$container[$name])) {
-            return self::$container[$name];
-        }
         $class = 'app\\'.strtr($name, '.', '\\');
-        if ((class_exists($class))) {
-            return self::$container[$name] = $config ? new $class($config) : new $class();
-        }
-        throw new \Exception('Class not exists: '.$class);
-    }
-    
-    public static function driver($type, $driver, $config = [])
-    {
-        $class = 'framework\driver\\'.$type.'\\'.ucfirst($driver);
-        return new $class($config);
+        return new $class();
     }
 
     /*
@@ -140,8 +144,63 @@ class Container
     {
         self::$container = null;
     }
+    
+    protected static function getDriver($name)
+    {
+        return self::driver(...explode('.', $name));
+    }
+    
+    protected static function getModel($name)
+    {
+        if (strpos('.', $name)) {
+            return self::model($name);
+        }
+        //7.0后可使用匿名类
+        /*
+        return new class($name, self::$providers['model'][$name]) {
+            protected $__depth;
+            protected $__prefix;
+
+            public function __construct($prefix, $depth)
+            {
+                $this->__depth = $depth - 1;
+                $this->__prefix = $prefix;
+            }
+    
+            public function __get($name)
+            {
+                if ($this->__depth === 0) {
+                    return $this->$name = Container::model($this->__prefix.'.'.$name);
+                }
+                return $this->$name = new self($this->__prefix.'.'.$name, $this->__depth);
+            }
+    
+            public function __call($method, $param = [])
+            {
+                return Container::model($this->__prefix)->$method(...$param);
+            }
+        };
+        */
+        return new ModelGetter($name, self::$providers['model'][$name]);
+    }
+
+    protected static function getClass($name)
+    {
+        return new self::$providers['class'][$name];
+    }
+
+    protected static function getClosure($name)
+    {
+        return self::$providers['closure'][$name]();
+    }
+    
+    protected static function getAlias($name)
+    {
+        return self::get(self::$providers['alias'][$name]);
+    }
 }
 Container::init();
+
 
 class ModelGetter
 {
