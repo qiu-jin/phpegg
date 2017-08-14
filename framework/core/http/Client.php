@@ -266,7 +266,7 @@ class Client
         }
         $result = curl_exec($ch);
         if ($curlinfo) {
-            foreach ($curlinfo as $name) {
+            foreach (array_unique($curlinfo) as $name) {
                 $return[$name] = curl_getinfo($ch, constant('CURLINFO_'.strtoupper($name)));
             }
         }
@@ -285,7 +285,7 @@ class Client
             }
             $return['body'] = $result;
             if ($debug) {
-                self::writeDebug($return);
+                self::writeDebug($body, $return);
             }
             return $return;
         }
@@ -340,17 +340,23 @@ class Client
         return $headers;
     }
     
-    protected static function writeDebug($return)
+    protected static function writeDebug($body, $return)
     {
-        Logger::write(Logger::DEBUG, [
-            'Request' => [
-                'headers' => self::parseHeaders($return['header_out']),
-            ],
-            'Response' => [
+        $header_out = explode("\r\n", $return['header_out'], 2);
+        $log['Request'] = [
+            'query'     => $header_out[0],
+            'headers'   => self::parseHeaders($header_out[1]),
+            'body'      => $body
+        ];
+        if (isset($return['error'])) {
+            $log['Response']['error'] = $return['error'];
+        } else {
+            $log['Response'] = [
                 'status'    => $return['status'],
                 'headers'   => $return['headers'],
                 'body'      => $return['body']
-            ]
-        ]);
+            ];
+        }
+        Logger::write(Logger::DEBUG, $log);
     }
 }
