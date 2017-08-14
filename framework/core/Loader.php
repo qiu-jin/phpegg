@@ -18,6 +18,7 @@ class Loader
         'App' => 'framework\App',
         'Auth' => 'framework\core\Auth',
         'View' => 'framework\core\View',
+        'Getter' => 'framework\core\Getter',
         'Client' => 'framework\core\http\Client',
         'Request' => 'framework\core\http\Request',
         'Response' => 'framework\core\http\Response',

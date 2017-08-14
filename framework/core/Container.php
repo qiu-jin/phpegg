@@ -55,6 +55,44 @@ class Container
      */
     public static function get($name)
     {
+        return isset(self::$container[$name]) ? self::$container[$name] : null;
+    }
+    
+    /*
+     * 
+     */
+    public static function has($name)
+    {
+        return isset(self::$container[$name]);
+    }
+
+    /*
+     * 设置器类
+     */
+    public static function bind($name, $value)
+    {
+        switch (gettype($name)) {
+            case 'array':
+                self::$providers['class'][$name] = $value;
+                break;
+            case 'string':
+                self::$providers['alias'][$name] = $value;
+                break;
+            case 'object':
+                if (is_callable($value)) {
+                    self::$providers['closure'][$name] = $value;
+                } else {
+                    self::$container[$name] = $value;
+                }
+                break;
+        }
+    }
+    
+    /*
+     * 
+     */
+    public static function make($name)
+    {
         if (isset(self::$container[$name])) {
             return self::$container[$name];
         }
@@ -66,52 +104,32 @@ class Container
         }
     }
     
-    /*
-     * 
-     */
-    public static function has($name)
+    public static function exists($name)
     {
-        return isset(self::$container[$name]);
+        if (isset(self::$container[$name])) {
+            return true;
+        }
+        $prefix = strtok($name, '.');
+        foreach (self::$providers as $type => $provider) {
+            if (isset($provider[$prefix])) return true;
+        }
+        return false;
     }
     
-    /*
-     * 
-     */
-    public static function set($name, object $object)
-    {
-        self::$container[$name] = $object;
-    }
-    
-    /*
-     * 设置器类
-     */
-    public static function bind($name, $class)
-    {
-        self::$providers['class'][$name] = $class;
-    }
-    
-    /*
-     * 
-     */
-    public static function make($name, $class, ...$config)
-    {   
-        return self::$container[$name] = new $class(...$config);
-    }
-    
-    protected static function setAlias($alias, $name)
-    {
-        self::$providers['alias'][$alias] = $name;
-    }
-
-    protected static function setClosure($name, callable $closure)
-    {
-        self::$providers['closure'][$name] = $closure;
-    }
-    
-    /*
-     * 
-     */
     public static function driver($type, $name = null)
+    {
+        return self::$container[$name ? "$type.$name" : $type] = self::makeDriver($type, $name);
+    }
+    
+    public static function model($name)
+    {
+        return self::$container[$name] = self::makeModel($name);
+    }
+    
+    /*
+     * 
+     */
+    public static function makeDriver($type, $name = null)
     {
         if ($name) {
             $config = is_array($name) ? $name : Config::get("$type.$name");
@@ -120,7 +138,6 @@ class Container
         }
         if (isset($config['driver'])) {
             $class = 'framework\driver\\'.$type.'\\'.ucfirst($config['driver']);
-
             if (isset($index)) {
                 return self::$container["$type.$index"] = new $class($config);
             }
@@ -131,7 +148,7 @@ class Container
     /*
      * 获取模型类实例
      */
-    public static function model($name)
+    public static function makeModel($name)
     {
         $class = 'app\\'.strtr($name, '.', '\\');
         return new $class();
@@ -147,46 +164,22 @@ class Container
     
     protected static function getDriver($name)
     {
-        return self::driver(...explode('.', $name));
+        return self::makeDriver(...explode('.', $name));
     }
     
     protected static function getModel($name)
     {
         if (strpos('.', $name)) {
-            return self::model($name);
+            return self::makeModel($name);
         }
         //7.0后可使用匿名类
-        /*
-        return new class($name, self::$providers['model'][$name]) {
-            protected $__depth;
-            protected $__prefix;
-
-            public function __construct($prefix, $depth)
-            {
-                $this->__depth = $depth - 1;
-                $this->__prefix = $prefix;
-            }
-    
-            public function __get($name)
-            {
-                if ($this->__depth === 0) {
-                    return $this->$name = Container::model($this->__prefix.'.'.$name);
-                }
-                return $this->$name = new self($this->__prefix.'.'.$name, $this->__depth);
-            }
-    
-            public function __call($method, $param = [])
-            {
-                return Container::model($this->__prefix)->$method(...$param);
-            }
-        };
-        */
         return new ModelGetter($name, self::$providers['model'][$name]);
     }
 
     protected static function getClass($name)
     {
-        return new self::$providers['class'][$name];
+        $value = self::$providers['class'][$name];
+        return new $value[0](...array_slice($value, 1));
     }
 
     protected static function getClosure($name)

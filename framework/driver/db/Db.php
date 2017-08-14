@@ -6,8 +6,8 @@ use framework\core\Logger;
 abstract class Db
 {
     protected $link;
+    protected $debug;
     protected $dbname;
-    protected $sql_debug = false;
     protected $table_fields;
     
     abstract public function exec($sql);
@@ -40,9 +40,7 @@ abstract class Db
     public function __construct($config)
     {
         $this->link = $this->connect($config);
-        if (constant('APP_DEBUG')) {
-            $this->sql_debug = true;
-        }
+        $this->debug = APP_DEBUG;
     }
     
     public function __get($name)
@@ -107,9 +105,9 @@ abstract class Db
         return $this->exec($sql, $params);
     }
     
-    public function setSqlDebug($bool = true)
+    public function debug($bool = true)
     {
-        $this->sql_debug = (bool) $bool;
+        $this->debug = (bool) $bool;
     }
     
     public function getFields($table)
@@ -125,7 +123,7 @@ abstract class Db
         }
     }
     
-    protected function SqlDebug($sql, $params)
+    protected function writeDebug($sql, $params)
     {
         logger::write(Logger::DEBUG, query\Builder::export($sql, $params));
     }

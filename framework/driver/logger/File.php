@@ -3,7 +3,7 @@ namespace framework\driver\logger;
 
 class File extends Logger
 {   
-    private $logfile;
+    protected $logfile;
     
     public function __construct($config)
     {
@@ -23,6 +23,6 @@ class File extends Logger
             $log = '['.$level.'] '.$message;
             if ($context) $log .= PHP_EOL.var_export($context, true);
         }
-        error_log((string) $log."\r\n", 3, $this->logfile);
+        error_log($log.PHP_EOL, 3, $this->logfile);
     }
 }

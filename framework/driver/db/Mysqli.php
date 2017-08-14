@@ -39,7 +39,7 @@ class Mysqli extends Db
     
     public function exec($sql, array $params = null, $is_assoc = false)
     {
-        $this->sql_debug && $this->SqlDebug($sql, $params, $is_assoc);
+        $this->debug && $this->writeDebug($sql, $params, $is_assoc);
         $cmd = trim(strtoupper(strtok($sql, ' ')),"\t(");
         if ($params) {
             $query = $this->prepareExecute($sql, $params, $is_assoc);
@@ -78,7 +78,7 @@ class Mysqli extends Db
     
     public function query($sql, array $params = null, $is_assoc = false)
     {
-        $this->sql_debug && $this->SqlDebug($sql, $params, $is_assoc);
+        $this->debug && $this->writeDebug($sql, $params, $is_assoc);
         if ($params) {
             return $this->prepareExecute($sql, $params, $is_assoc)->get_result();
         } else {

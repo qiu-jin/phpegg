@@ -40,49 +40,49 @@ function logger($name = null)
     return Logger::channel($name);
 }
 
+function make($name)
+{
+    return Container::make($name);
+}
+
 function db($name = null)
 {
-    return Container::load('db', $name);
+    return Container::driver('db', $name);
 }
 
 function rpc($name = null)
 {
-    return Container::load('rpc', $name);
+    return Container::driver('rpc', $name);
 }
 
 function cache($name = null)
 {
-    return Container::load('cache', $name);
+    return Container::driver('cache', $name);
 }
 
 function storage($name = null)
 {
-    return Container::load('storage', $name);
-}
-
-function load($type, $name = null)
-{
-    return Container::load($type, $name);
+    return Container::driver('storage', $name);
 }
 
 function sms($name = null)
 {
-    return Container::load('sms', $name);
+    return Container::driver('sms', $name);
 }
 
 function email($name = null)
 {
-    return Container::load('email', $name);
+    return Container::driver('email', $name);
 }
 
-function make($name, $class, $config = null)
+function driver($name = null)
 {
-    return Container::make($name, $class, $config);
+    return Container::driver('email', $name);
 }
 
-function model($name, $config = null)
+function model($name)
 {
-    return Container::model($name, $config);
+    return Container::model($name);
 }
 
 function dump(...$vars)

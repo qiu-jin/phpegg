@@ -11,7 +11,7 @@ class Rest
         'get', 'put', 'post', 'delete', 'patch', 'option', 'head'
     ];
     private static $allow_client_methods = [
-        'body', 'json', 'form', 'file', 'buffer', 'stream', 'header', 'headers', 'timeout', 'curlopt'
+        'body', 'json', 'form', 'file', 'buffer', 'stream', 'header', 'headers', 'timeout', 'curlopt', 'curlinfo', 'debug'
     ];
     
     public function __construct($rpc, $class)
@@ -68,6 +68,6 @@ class Rest
             $this->client_methods[] = [$method, $params];
             return $this;
         }
-        throw new \Exception("no method: $method");
+        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
     }
 }

@@ -5,7 +5,7 @@ use framework\core\Hook;
 
 class Console extends Logger
 {
-    private $loglevel = [
+    protected static $loglevel = [
         'emergency'  => 'error',
         'alert'      => 'error',
         'critical'   => 'error',
@@ -15,7 +15,7 @@ class Console extends Logger
         'info'       => 'info',
         'debug'      => 'debug'
     ];  
-    private $header_limit_size = 4000;
+    protected $header_limit_size = 4000;
     
     public function __construct($config)
     {
@@ -45,7 +45,7 @@ class Console extends Logger
                 if (isset($log[2]['file']) && isset($log[2]['line'])) {
                     $trace = $log[2]['file'].' : '.$log[2]['line'];
                 }
-                $level = isset($this->loglevel[$log[0]]) ? $this->loglevel[$log[0]] : '';
+                $level = isset(self::$loglevel[$log[0]]) ? self::$loglevel[$log[0]] : '';
                 $rows[] = [null, $log[1], $trace, $level];
             }
             $data = [
@@ -53,20 +53,20 @@ class Console extends Logger
                 'columns' => ['label', 'log', 'backtrace', 'type'],
                 'rows'    => $rows
             ];
-            $data = $this->encode($data);
-            if (strlen($data) > $this->header_limit_size) {
+            $output = $this->encode($data);
+            if (strlen($output) > $this->header_limit_size) {
                 $data['rows'] = [[
                      'header_limit_size: '.$this->header_limit_size.'', '', 'warn'  
                 ]];
-                $data = $this->encode($data);
+                $output = $this->encode($data);
             }
-            header('X-ChromeLogger-Data: '.$data);
+            header('X-ChromeLogger-Data: '.$output);
         }
         $this->logs = [];
         
     }
     
-    private function encode ($data)
+    protected function encode ($data)
     {
         return base64_encode(json_encode($data));//utf8_encode()
     }

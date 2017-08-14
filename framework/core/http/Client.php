@@ -2,23 +2,28 @@
 namespace framework\core\http;
 
 use framework\util\Xml;
+use framework\core\Logger;
+
+define('CURLINFO_STATUS', CURLINFO_HTTP_CODE);
 
 //Curl
 class Client
 {
     private $url;
     private $body;
+    private $debug;
     private $result;
     private $method;
     private $headers = [];
     private $boundary;
-    private $return_headers = false;
-    private $curlopt = ['TIMEOUT' => 30];
+    private $curlopt = [CURLOPT_TIMEOUT => 30];
+    private $curlinfo = ['status'];
     
     public function __construct($method, $url)
     {
         $this->url = $url;
         $this->method = $method;
+        $this->debug = APP_DEBUG;
     }
 
     /*
@@ -110,9 +115,9 @@ class Client
      */
     public function stream($fp)
     {
-        $this->curlopt['PUT'] = 1;
-        $this->curlopt['INFILE'] = $fp;
-        $this->curlopt['INFILESIZE'] = fstat($fp)['size'];
+        $this->curlopt[CURLOPT_PUT] = 1;
+        $this->curlopt[CURLOPT_INFILE] = $fp;
+        $this->curlopt[CURLOPT_INFILESIZE] = fstat($fp)['size'];
         return $this;
     }
 
@@ -139,7 +144,7 @@ class Client
      */
     public function timeout($timeout)
     {
-        $this->curlopt['TIMEOUT'] = (int) $timeout;
+        $this->curlopt[CURLOPT_TIMEOUT] = (int) $timeout;
         return $this;
     }
     
@@ -148,7 +153,25 @@ class Client
      */
     public function curlopt($name, $value)
     {
-        $this->curlopt[strtoupper($name)] = $value;
+        $this->curlopt[$name] = $value;
+        return $this;
+    }
+    
+    /*
+     * 设置底层curl参数
+     */
+    public function curlinfo($name)
+    {
+        $this->curlinfo[] = $name;
+        return $this;
+    }
+    
+    /*
+     * 
+     */
+    public function debug(bool $bool)
+    {
+        $this->debug = $bool;
         return $this;
     }
     
@@ -157,7 +180,7 @@ class Client
      */
     public function returnHeaders($bool = true)
     {
-        $this->curlopt['HEADER'] = (bool) $bool;
+        $this->curlopt[CURLOPT_HEADER] = (bool) $bool;
         return $this;
     }
     
@@ -170,7 +193,12 @@ class Client
             if ($this->boundary) {
                 $this->body .= "--$this->boundary--\r\n";
             }
-            $this->result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, true);
+            if ($this->debug) {
+                $this->curlopt[CURLOPT_HEADER] = true;
+                $this->curlopt[CURLINFO_HEADER_OUT] = true;
+                $this->curlinfo[] = 'header_out';
+            }
+            $this->result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, $this->curlinfo, $this->debug);
         }
         if ($name === null) {
             return $this->result;
@@ -183,12 +211,13 @@ class Client
      */
     public function __get($name)
     {
-        if (in_array($name, ['status', 'headers', 'body', 'error'])) {
-            return $this->result($name);
-        } elseif ($name === 'json') {
-            return jsondecode($this->result('body'));
-        } elseif ($name === 'xml') {
-            return Xml::decode($this->result('body'));
+        switch ($name) {
+            case 'json':
+                return jsondecode($this->result('body'));
+            case 'xml':
+                return Xml::decode($this->result('body'));
+            default:
+                return $this->result($name);
         }
     }
     
@@ -200,7 +229,7 @@ class Client
         if (!isset($this->result)) {
             $fp = fopen($path, 'w+');
             if ($fp) {
-                $this->curlopt['FILE'] = $fp;
+                $this->curlopt[CURLOPT_FILE] = $fp;
                 $this->result = $this->result();
                 fclose($fp);
                 return $this->result['status'] === 200 && $this->result['body'] === true;
@@ -213,7 +242,7 @@ class Client
     /*
      * 底层curl方法封装
      */
-    public static function send($method, $url, $body = null, array $headers = null, array $curlopt = null, $return_status = false)
+    public static function send($method, $url, $body = null,  array $headers = null, array $curlopt = null, array $curlinfo = null, $debug = false)
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -233,18 +262,15 @@ class Client
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         }
         if ($curlopt){
-            foreach ($curlopt as $optk => $optv) {
-                $const = constant('CURLOPT_'.strtoupper($optk));
-                if ($const) {
-                    curl_setopt($ch, $const, $optv);
-                }
-            }
+            curl_setopt_array($ch, $curlopt);
         }
         $result = curl_exec($ch);
-        if ($return_status) {
-            $return['status'] = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if ($curlinfo) {
+            foreach ($curlinfo as $name) {
+                $return[$name] = curl_getinfo($ch, constant('CURLINFO_'.strtoupper($name)));
+            }
         }
-        if (!empty($curlopt['HEADER'])) {
+        if (!empty($curlopt[CURLOPT_HEADER])) {
             if ($result) {
                 $pairs = explode("\r\n\r\n", $result, 2);
                 $result = isset($pairs[1]) ? $pairs[1] : null;
@@ -258,6 +284,9 @@ class Client
                 $return['error'] = curl_errno($ch).': '.curl_error($ch);
             }
             $return['body'] = $result;
+            if ($debug) {
+                self::writeDebug($return);
+            }
             return $return;
         }
         return $result;
@@ -309,5 +338,19 @@ class Client
             }
         }
         return $headers;
+    }
+    
+    protected static function writeDebug($return)
+    {
+        Logger::write(Logger::DEBUG, [
+            'Request' => [
+                'headers' => self::parseHeaders($return['header_out']),
+            ],
+            'Response' => [
+                'status'    => $return['status'],
+                'headers'   => $return['headers'],
+                'body'      => $return['body']
+            ]
+        ]);
     }
 }

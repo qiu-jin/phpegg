@@ -23,11 +23,15 @@ class Rest
     public function __send($uri, $method, $data, $client_methods)
     {
         $client = new Client(strtoupper($method), $this->config['host'].'/'.$uri);
-        isset($this->config['headers']) && $client->headers($this->config['headers']);
-        isset($this->config['curlopt']) && $client->curlopt($this->config['curlopt']);
+        if (isset($this->config['headers'])) {
+            $client->headers($this->config['headers']);
+        }
+        if (isset($this->config['curlopt'])) {
+            $client->headers($this->curlopt['curlopt']);
+        }
         if ($client_methods) {
             foreach ($client_methods as $item) {
-                $client->$item[0](...$item[1]);
+                $client->{$item[0]}(...$item[1]);
             }
         }
         if ($data) {

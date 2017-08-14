@@ -28,7 +28,7 @@ class With extends QueryChain
         $data = $this->query->get($id, $pk);
         if ($data) {
             $data = [$data];
-            $this->withSubData(1, $data);
+            $this->withData(1, $data);
             return $data[0];
         }
         return null;
