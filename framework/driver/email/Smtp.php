@@ -5,6 +5,7 @@ use framework\driver\email\message\Mime;
 
 class Smtp extends Email
 {
+    protected $log;
     protected $link;
     protected $host;
     protected $port;
@@ -82,6 +83,11 @@ class Smtp extends Email
     {
         fputs($this->link, "$cmd\r\n");
         return $this->read();
+    }
+    
+    public function log()
+    {
+        return $this->log;
     }
     
     public function __destruct()

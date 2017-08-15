@@ -165,6 +165,15 @@ class Client
         $this->curlinfo[] = $name;
         return $this;
     }
+
+    /*
+     * 设置是否获取并解析请求响应的headers数据
+     */
+    public function returnHeaders($bool = true)
+    {
+        $this->curlopt[CURLOPT_HEADER] = (bool) $bool;
+        return $this;
+    }
     
     /*
      * 
@@ -172,15 +181,6 @@ class Client
     public function debug(bool $bool)
     {
         $this->debug = $bool;
-        return $this;
-    }
-    
-    /*
-     * 设置是否获取并解析请求响应的headers数据
-     */
-    public function returnHeaders($bool = true)
-    {
-        $this->curlopt[CURLOPT_HEADER] = (bool) $bool;
         return $this;
     }
     

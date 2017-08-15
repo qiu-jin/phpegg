@@ -5,6 +5,7 @@ use framework\core\Logger;
 
 abstract class Db
 {
+    protected $sql;
     protected $link;
     protected $debug;
     protected $dbname;
@@ -123,8 +124,15 @@ abstract class Db
         }
     }
     
+    public function sql($all = true)
+    {
+        return $all ? $this->sql : end($this->sql);
+    }
+    
     protected function writeDebug($sql, $params)
     {
-        logger::write(Logger::DEBUG, query\Builder::export($sql, $params));
+        $sql = query\Builder::export($sql, $params);
+        logger::write(Logger::DEBUG, $sql);
+        $this->sql[] = $sql;
     }
 }
