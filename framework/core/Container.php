@@ -17,7 +17,8 @@ class Container
             'queue'     => false,
             'email'     => false,
             'sms'       => false,
-            'geoip'     => false
+            'geoip'     => false,
+            'crypt'     => false,
         ],
         //key表示支持的模型名，value表示模型类的namespace层数，为0时不限制
         'model'  => [

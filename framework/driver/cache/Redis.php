@@ -41,9 +41,9 @@ class Redis extends Cache
     public function set($key, $value, $ttl = null)
     {
         if ($ttl) {
-            return $this->link->set($key, $this->serialize($value)); 
-        } else {
             return $this->link->setex($key, $ttl, $this->serialize($value));
+        } else {
+            return $this->link->set($key, $this->serialize($value)); 
         }
     }
 
