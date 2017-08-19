@@ -3,8 +3,6 @@ namespace framework\driver\cache;
 
 class Memcached extends Cache
 {
-    protected $link;
-    
     protected function init($config)
     {
         $link = new \Memcached;
@@ -39,7 +37,7 @@ class Memcached extends Cache
     
     public function set($key, $value, $ttl = null)
     {
-        return $this->link->set($key, $this->serialize($value), $ttl ? $ttl+time() : 0); 
+        return $this->link->set($key, $this->serialize($value), $ttl ? $ttl + time() : 0); 
     }
 
     public function delete($key)

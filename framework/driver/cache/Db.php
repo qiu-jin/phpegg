@@ -2,51 +2,68 @@
 namespace framework\driver\cache;
 
 /*
-    key 
-    value
-    expired
-*/
+ * 
+ *     key char(128) NOT NULL PRIMARY KEY
+ *     value BLOB
+ *     expiration int(11)
+ * 
+ */
+
 class Db extends Cache
 {
-    private $db;
-    private $table;
+    protected $table;
 
     protected function init($config)
     {
-        $this->db = db($config['db']);
+        $this->link = db($config['db']);
         $this->table = $config['table'];
     }
     
     public function get($key, $default = null)
     {
-        $value = $this->db->exec("SELECT value FROM $this->table WHERE key = ? AND expired > ?", [$key, time()]);
-        return $value ? $this->unserialize($value) : $default;
+        $cache = $this->link->exec("SELECT `value`, `expiration` FROM `$this->table` WHERE `key` = ?", [$key]);
+        if ($cache) {
+            if ($cache[0]['expiration'] > time()) {
+                return $this->unserialize($cache[0]['value']);
+            }
+            $this->link->exec("DELETE FROM `$this->table` WHERE `key` = ?", [$key]);
+        }
+        return $default;
     }
     
     public function set($key, $value, $ttl = null)
     {
-        $expired = $ttl ? time()+$ttl : time()+311040000;
-        return $this->db->exec("REPLACE INTO $this->table SET key = ?, value = ?, expired = ?", [$key, $this->serialize($value), $expired]);
+        return $this->link->exec("REPLACE INTO `$this->table` SET key = ?, value = ?, expiration = ?", [
+            $key,
+            $this->serialize($value),
+            $ttl ? time() + $ttl : time() + 311040000
+        ]);
     }
 
     public function has($key)
     {
-        $query = $this->db->query("SELECT EXISTS(SELECT * FROM $this->table WHERE key = ? AND expired > ?)", [$key, time()]);
-        return $query && !empty($this->db->fetchRow($query)[0]);
+        $cache = $this->link->exec("SELECT `expiration` FROM `$this->table` WHERE `key` = ?", [$key]);
+        if ($cache) {
+            if ($cache[0]['expiration'] > time()) {
+                return true;
+            }
+            $this->link->exec("DELETE FROM `$this->table` WHERE `key` = ?", [$key]);
+        }
+        return false;
     }
     
     public function delete($key)
     {
-        return $this->db->exec("DELETE FROM $this->table WHERE key = ?", [$key]);
+        return $this->link->exec("DELETE FROM `$this->table` WHERE `key` = ?", [$key]);
     }
     
     public function clear()
     {
-        $this->db->query("RUNCATE $this->table");
+        return $this->link->query("RUNCATE `$this->table`");
     }
     
     public function gc()
     {
-        $this->db->exec("DELETE FROM $this->table WHERE expired < ", [time()]);
+        $this->link->exec("DELETE FROM `$this->table` WHERE `expiration` < ", [time()]);
     }
 }

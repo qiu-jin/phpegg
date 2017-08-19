@@ -4,8 +4,9 @@ namespace framework\driver\cache;
 class Opcache extends Cache
 {
     protected $dir;
-    protected $ext = '.php';
+    protected $ext = '.cache.php';
     protected $gc_maxlife = 86400;
+    protected $filter_value = true;
 
     protected function init($config)
     {
@@ -17,6 +18,9 @@ class Opcache extends Cache
             if (isset($config['gc_maxlife'])) {
                 $this->gc_maxlife = (int) $config['gc_maxlife'];
             }
+            if (isset($config['filter_value'])) {
+                $this->filter_value = (bool) $config['filter_value'];
+            }
         } else {
             throw new \Exception('Cache dir is not writable');
         }
@@ -26,27 +30,27 @@ class Opcache extends Cache
     {
         $file = $this->filename($key);
         if (is_file($file)) {
-            $cache = __require($file);
-            if (!empty($ttl) && $ttl < time()) {
-                unlink($file);
-                opcache_invalidate($file);
-            } else {
+            $cache = require($file);
+            if ($expiration === 0 || $expiration > time()) {
                 return $cache;
             }
+            $this->removeCache($file);
         }
         return $default;
     }
     
     public function set($key, $value, $ttl = null)
     {
+        if ($this->filter_value) {
+            $this->filterValue($value);
+        }
         $file = $this->filename($key);
         $fp = fopen($file, 'w');
         if ($fp) {
             if (flock($fp, LOCK_EX)) {
-                $ttl = $ttl ? $ttl+time() : 0;
-                $str = "<?php".PHP_EOL;
-                $str .= "\$ttl = $ttl;".PHP_EOL;
-                $str .= 'return '.var_export($value, true).";".PHP_EOL; 
+                $expiration = $ttl ? $ttl+time() : 0;
+                $str = "<?php \$expiration = $expiration;".PHP_EOL;
+                $str .= 'return '.var_export($value, true).";"; 
                 fwrite($fp, $str);
                 flock($fp, LOCK_UN);
                 fclose($fp);
@@ -61,49 +65,77 @@ class Opcache extends Cache
 
     public function has($key)
     {
-        return (bool) $this->get($key);
+        $file = $this->filename($key);
+        if (is_file($file)) {
+            __require($file);
+            if ($expiration === 0 || $expiration < time()) {
+                return true;
+            }
+            $this->removeCache($file);
+        }
+        return false;
     }
     
     public function delete($key)
     {
         $file = $this->filename($key);
-        if (is_file($file)) {
-            unlink($file);
-            opcache_invalidate($file);
-        }
+        return is_file($file) ? $this->removeCache($file) : false;
     }
     
     public function clear()
     {
-        $dp = opendir($this->dir);
-        if ($dp) {
-            while (($file = readdir($dp)) !== false) {
-                if (is_file($this->dir.$file)) {
-                    unlink($this->dir.$file);
+        if ($ch = opendir($this->dir)) {
+            while (($f = readdir($ch)) !== false) {
+                $file = $this->dir.$f;
+                if (is_file($file)) {
+                    $this->removeCache($file);
                 }
-                opcache_invalidate($this->dir.$file);
             }
-            closedir($dp);
+            closedir($ch);
+            return true;
         }
+        return false;
     }
     
     public function gc()
     {
-        $time = time()-$this->gc_maxlife;
-        $dp = opendir($this->dir);
-        if ($dp) {
-            while (($file = readdir($dp)) !== false) {
-                if (is_file($this->dir.$file) && $time > filemtime($this->dir.$file)) {
-                    opcache_invalidate($this->dir.$file);
-                    unlink($this->dir.$file);
+        $maxtime = time()+$this->gc_maxlife;
+        $ch = opendir($this->dir);
+        if ($ch) {
+            while (($f = readdir($ch)) !== false) {
+                $file = $this->dir.$f;
+                if (is_file($file) && $maxtime < filemtime($file)) {
+                    $this->removeCache($file);
                 }
             }
-            closedir($dp);
+            closedir($ch);
         }
     }
 
     protected function filename($key)
     {
         return $this->dir.md5($key).$this->ext;
+    }
+    
+    protected function removeCache($file)
+    {
+        opcache_invalidate($file, true);
+        return unlink($file);
+    }
+    
+    protected function filterValue(&$value)
+    {
+        if (is_array($value)) {
+            foreach ($value as $val) {
+                $this->filterValue($val);
+            }
+        } elseif (is_object($value)) {
+            $value = json_decode(json_encode($value), true);
+            foreach ($value as $val) {
+                $this->filterValue($val);
+            }
+        } elseif (is_resource($value)) {
+            throw new \Exception('Invalid cache value');
+        }
     }
 }

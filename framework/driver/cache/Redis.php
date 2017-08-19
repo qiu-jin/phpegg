@@ -2,29 +2,18 @@
 namespace framework\driver\cache;
 
 class Redis extends Cache
-{
-    protected $link;
-    
+{   
     protected function init($config)
     {
-        try {
-            $link = new \Redis();
-            if ($link->connect($config['host'], isset($config['port']) ? $config['port'] : 6379)) {
-                if (isset($config['database'])) {
-                    $link->select($config['database']);
-                }
-                $this->link = $link;
-            } else {
-                throw new \Exception('Redis connect error');
+        $link = new \Redis();
+        if ($link->connect($config['host'], isset($config['port']) ? $config['port'] : 6379)) {
+            if (isset($config['database'])) {
+                $link->select($config['database']);
             }
-        } catch (\Exception $e) {
-            throw new \Exception($e->message());
+            $this->link = $link;
+        } else {
+            throw new \Exception('Redis connect error');
         }
-    }
-    
-    public function link()
-    {
-        return $this->link;
     }
     
     public function get($key, $default = null)

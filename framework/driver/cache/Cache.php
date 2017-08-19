@@ -5,6 +5,7 @@ use Framework\Core\Hook;
 
 abstract class Cache
 {
+    protected $link;
     protected $serialize = 'serialize';
     protected $unserialize = 'unserialize';
     
@@ -24,7 +25,14 @@ abstract class Cache
         if (isset($config['serialize'])) {
             list($this->serialize, $this->unserialize) = $config['serialize'];
         }
-        isset($config['gc_random']) && $this->randomGC($config['gc_random']);
+        if (isset($config['gc_random'])) {
+            $this->randomGC($config['gc_random']);
+        }
+    }
+    
+    public function link()
+    {
+        return $this->link;
     }
     
     public function pop($key)

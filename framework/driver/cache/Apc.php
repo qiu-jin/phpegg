@@ -1,16 +1,16 @@
 <?php
 namespace framework\driver\cache;
 
-use Framework\Core\Hook;
-
-class Apcu extends Cache
+class Apc extends Cache
 {
     protected $prefix;
+    protected $global_clear = false;
     
     protected function init($config)
     {
-        if (isset($config['prefix'])) {
-            $this->prefix = $config['prefix'].'_';
+        $this->prefix = $config['prefix'].'_';
+        if (isset($config['global_clear'])) {
+            $this->global_clear = $config['global_clear'];
         }
     }
     
@@ -27,7 +27,7 @@ class Apcu extends Cache
     
     public function set($key, $value, $ttl = null)
     {
-        return apcu_store($this->prefix.$key, $this->serialize($value), $ttl ? $ttl+time() : 0);
+        return apcu_store($this->prefix.$key, $this->serialize($value), $ttl ? $ttl + time() : 0);
     }
     
     public function delete($key)
@@ -37,14 +37,12 @@ class Apcu extends Cache
     
     public function clear()
     {
-        /*
-        $prefix = $this->prefix;
-        Hook::add('close', function () use ($prefix) {
-            foreach (new \APCUIterator('/^'.$prefix.'/') as $counter) {
-                apcu_delete($counter['key']);
-            }
-        });
-        apcu_clear_cache();
-        */
+        if ($this->global_clear) {
+            return apcu_clear_cache();
+        }
+        foreach (new \APCUIterator("/^{$this->prefix}/", APC_ITER_KEY) as $counter) {
+            apcu_delete($counter['key']);
+        }
+        return true;
     }
 }

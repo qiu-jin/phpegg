@@ -12,6 +12,9 @@ class File extends Cache
     {
         if (isset($config['dir']) && is_dir($config['dir']) && is_writable($config['dir'])) {
             $this->dir = $config['dir'];
+            if (substr($this->dir, -1) !== '/') {
+                $this->dir .= '/';
+            }
             if (isset($config['gc_maxlife'])) {
                 $this->gc_maxlife = (int) $config['gc_maxlife'];
             }
@@ -24,11 +27,10 @@ class File extends Cache
     {
         $file = $this->filename($key);
         if (is_file($file)) {
-            $time = time();
             $fp = fopen($file, 'r');
             if ($fp) {
-                $ttl = trim(fgets($fp));
-                if($ttl === '0' || $ttl > $time){
+                $expiration = (int) trim(fgets($fp));
+                if($expiration === '0' || $expiration < time()){
                     $data = '';
                     while (!feof($fp)) {
                       $data .= fread($fp, 1024);
@@ -49,8 +51,8 @@ class File extends Cache
         $fp = fopen($this->filename($key), 'w');
         if ($fp) {
             if (flock($fp, LOCK_EX)) {
-                $ttl = $ttl ? $ttl+time() : 0;
-                fwrite($fp, "$ttl\r\n");
+                $expiration = $ttl ? $ttl+time() : 0;
+                fwrite($fp, "$expiration".PHP_EOL);
                 fwrite($fp, $this->serialize($value));
                 fflush($fp);
                 flock($fp, LOCK_UN);
@@ -65,38 +67,53 @@ class File extends Cache
 
     public function has($key)
     {
-        return (bool) $this->get($key);
+        $file = $this->filename($key);
+        if (is_file($file)) {
+            $fp = fopen($file, 'r');
+            if ($fp) {
+                $expiration = (int) trim(fgets($fp));
+                if($expiration === '0' || $expiration < time()){
+                    fclose($fp);
+                    return true;
+                } else {
+                    fclose($fp);
+                    unlink($file);
+                }
+            }
+        }
+        return false;
     }
     
     public function delete($key)
     {
         $file = $this->filename($key);
-        if (is_file($file)) {
-            unlink($file);
-        }
+        return is_file($file) && unlink($file);
     }
     
     public function clear()
     {
-        $dp = opendir($this->dir);
-        if ($dp) {
-            while (($file = readdir($dp)) !== false) {
+        $ch = opendir($this->dir);
+        if ($ch) {
+            while (($file = readdir($ch)) !== false) {
                 if (is_file($this->dir.$file)) {
                     unlink($this->dir.$file);
                 }
             }
-            closedir($dp);
+            closedir($ch);
+            return true;
         }
+        return false;
     }
     
     public function gc()
     {
-        $time = time()-$this->gc_maxlife;
-        $dp = opendir($this->dir);
-        if ($dp) {
-            while (($file = readdir($dp)) !== false) {
-                if (is_file($this->dir.$file) && $time > filemtime($this->dir.$file)) {
-                    unlink($this->dir.$file);
+        $maxtime = time()-$this->gc_maxlife;
+        $ch = opendir($this->dir);
+        if ($ch) {
+            while (($f = readdir($ch)) !== false) {
+                $file = $this->dir.$f;
+                if (is_file($file) && $maxtime > filemtime($file)) {
+                    unlink($file);
                 }
             }
             closedir($dp);
