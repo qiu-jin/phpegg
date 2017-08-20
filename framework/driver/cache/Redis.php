@@ -2,7 +2,7 @@
 namespace framework\driver\cache;
 
 class Redis extends Cache
-{   
+{
     protected function init($config)
     {
         $link = new \Redis();
@@ -39,6 +39,16 @@ class Redis extends Cache
     public function delete($key)
     {
         return $this->link->del($key);
+    }
+    
+    public function increment($key, $value = 1)
+    {
+        return $value > 1 ? $this->link->incrBy($key, $value) : $this->link->incr($key);
+    }
+    
+    public function decrement($key, $value = 1)
+    {
+        return $value > 1 ? $this->link->decrBy($key, $value) : $this->link->decr($key);
     }
     
     public function clear()

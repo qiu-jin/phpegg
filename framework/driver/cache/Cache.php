@@ -6,8 +6,8 @@ use Framework\Core\Hook;
 abstract class Cache
 {
     protected $link;
-    protected $serialize = 'serialize';
-    protected $unserialize = 'unserialize';
+    protected $serialize;
+    protected $unserialize;
     
     abstract public function get($key, $default);
     

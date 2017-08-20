@@ -2,11 +2,9 @@
 namespace framework\driver\cache;
 
 /*
- * 
- *     key char(128) NOT NULL PRIMARY KEY
- *     value BLOB
- *     expiration int(11)
- * 
+ * key char(128) NOT NULL PRIMARY KEY
+ * value BLOB
+ * expiration int(11)
  */
 
 class Db extends Cache
@@ -33,7 +31,7 @@ class Db extends Cache
     
     public function set($key, $value, $ttl = null)
     {
-        return $this->link->exec("REPLACE INTO `$this->table` SET key = ?, value = ?, expiration = ?", [
+        return $this->link->exec("REPLACE INTO `$this->table` SET `key` = ?, `value` = ?, `expiration` = ?", [
             $key,
             $this->serialize($value),
             $ttl ? time() + $ttl : time() + 311040000
@@ -54,12 +52,27 @@ class Db extends Cache
     
     public function delete($key)
     {
-        return $this->link->exec("DELETE FROM `$this->table` WHERE `key` = ?", [$key]);
+        return (bool) $this->link->exec("DELETE FROM `$this->table` WHERE `key` = ?", [$key]);
+    }
+    
+    public function getMultiple(array $keys, $default = null)
+    {
+
+    }
+    
+    public function setMultiple(array $values, $ttl = null)
+    {
+
+    }
+    
+    public function deleteMultiple(array $keys)
+    {
+
     }
     
     public function clear()
     {
-        return $this->link->query("RUNCATE `$this->table`");
+        return (bool) $this->link->query("TRUNCATE `$this->table`");
     }
     
     public function gc()

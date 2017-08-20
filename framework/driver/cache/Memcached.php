@@ -37,12 +37,46 @@ class Memcached extends Cache
     
     public function set($key, $value, $ttl = null)
     {
-        return $this->link->set($key, $this->serialize($value), $ttl ? $ttl + time() : 0); 
+        return $this->link->set($key, $this->serialize($value), $ttl ? $ttl : 0);
     }
 
     public function delete($key)
     {
         return $this->link->delete($key);
+    }
+    
+    public function getMultiple(array $keys, $default = null)
+    {
+        $data = $this->link->getMulti($keys);
+        foreach ($keys as $key) {
+            if (!isset($data[$key])) {
+                $data[$key] = $default;
+            }
+        }
+        return $data;
+    }
+    
+    public function setMultiple(array $values, $ttl = null)
+    {
+        array_walk($values, function($value) {
+            $value = $this->serialize($value);
+        });
+        return $this->link->setMulti($values, $ttl ? $ttl : 0);
+    }
+    
+    public function deleteMultiple(array $keys)
+    {
+        return $this->link->deleteMulti($keys);
+    }
+    
+    public function increment($key, $value = 1)
+    {
+        return $this->link->increment($key, $value);
+    }
+    
+    public function decrement($key, $value = 1)
+    {
+        return $this->link->decrement($key, $value);
     }
     
     public function clear()

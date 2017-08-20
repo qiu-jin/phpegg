@@ -35,6 +35,16 @@ class Apc extends Cache
         return apcu_delete($this->prefix.$key);
     }
     
+    public function increment($key, $value = 1)
+    {
+        return apcu_inc($key, $value);
+    }
+    
+    public function decrement($key, $value = 1)
+    {
+        return apcu_dec($key, $value);
+    }
+    
     public function clear()
     {
         if ($this->global_clear) {
