@@ -8,7 +8,7 @@ class Mime
         $mime = '';
         $addrs = []; 
         $mime = "MIME-Version: 1.0\r\n";
-        $mime .= "Date: ".date("D, j M Y G:i:s O");
+        $mime .= "Date: ".date("D, j M Y G:i:s O")."\r\n";
         if (isset($option['from'])) {
             $mime .= 'From: '.self::buildAddr($option['from'])."\r\n";
         }
@@ -49,7 +49,7 @@ class Mime
     
     public static function buildAddr($addr)
     {
-        return empty($addr[1]) ? "<$addr[0]>" : self::buildUtf8Header($addr[1])."<$addr[0]>";
+        return empty($addr[1]) ? "<$addr[0]>" : self::encodeHeader($addr[1])."<$addr[0]>";
     }
     
     public static function encodeHeader($str)

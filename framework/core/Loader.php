@@ -5,7 +5,6 @@ class Loader
 {
     // 标示init方法是否已执行，防止重复执行
     private static $init;
-    private static $cache = [];
     // 类对应文件
     private static $class_map = [];
     // 类前缀对应路径
@@ -31,12 +30,16 @@ class Loader
     {
         if (self::$init) return;
         self::$init = true;
-        self::import(Config::env('VENDOR_DIR', 'vendor').'/autoload');
         $config = Config::get('loader');
         if ($config) {
             foreach ($config as $type => $rules) {
                 self::add($rules, $type);
             }
+        }
+        //加载 composer autoload
+        $vendor = Config::env('VENDOR_DIR');
+        if ($vendor) {
+            self::import($vendor.'autoload');  
         }
         spl_autoload_register(__CLASS__.'::autoload', true, true);
     }
@@ -69,22 +72,9 @@ class Loader
     /*
      * 加载php文件，忽略.php后缀
      */
-    public static function import($name, $ignore = true, $cache = false)
+    private static function import($name)
     {
-        if ($name{0} !== '/') {
-            $name = ROOT_DIR.$name;
-        }
-        if ($cache) {
-            $realname = realpath($name);
-            if (isset(self::$cache[$realname])) {
-                return;
-            }
-            self::$cache[$realname] = true;
-        }
-        $file = $name.'.php';
-        if (!$ignore || is_file($file)) {
-            __require($file);
-        }
+        __include("$name.php");
     }
 
     /*

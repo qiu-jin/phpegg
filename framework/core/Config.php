@@ -3,24 +3,26 @@ namespace framework\core;
 
 class Config
 {
-    //配置文件路径
-    private static $path;
+    private static $init;
+    //配置文件目录
+    private static $dir;
+    //缓存文件检查
+    private static $checked = [];
     //配置值缓存
-    private static $configs;
+    private static $configs = [];
     
     /*
      * 类加载时调用此初始方法
      */
     public static function init()
     {
-        if (self::$configs) return;
-        self::$configs = new \stdClass();
-        self::loadEnv();
-        $path = APP_DIR.self::env('CONFIG_PATH', 'config');
-        if (is_dir($path)) {
-            self::$path = "$path/";
-        } elseif(is_file("$path.php")) {
-            self::load("$path.php");
+        if (self::$init) return;
+        self::$init = true;
+        __include(APP_DIR.'env.php');
+        if ($dir = self::env('CONFIG_DIR')) {
+            self::$dir = $dir;
+        } elseif ($file = self::env('CONFIG_FILE')) {
+            self::loadSingleFile("$file.php");
         }
     }
     
@@ -29,8 +31,8 @@ class Config
      */
     public static function env($name, $default = null)
     {
-        $value = getenv($name);
-        return $value === false ? $default : $value;
+        $const = 'APP\ENV\\'.$name;
+        return defined($const) ? constant($const) : $default;
     }
     
     /*
@@ -38,22 +40,17 @@ class Config
      */
     public static function get($name, $default = null)
     {
-        if (strpos($name, '.')) {
-            $namepath = explode('.', $name);
-            $name = array_shift($namepath);
-            self::import($name);
-            $value = self::$configs->$name;
-            foreach ($namepath as $path) {
-                if (isset($value[$path])) {
-                    $value = $value[$path];
+        $prefix = strtok($name, '.');
+        if (self::check($prefix)) {
+            $value = self::$configs[$prefix];
+            while ($tok = strtok('.')) {
+                if (isset($value[$tok])) {
+                    $value = $value[$tok];
                 } else {
                     return $default;
                 }
             }
             return $value;
-        } else {
-            self::import($name);
-            return self::$configs->$name;
         }
         return $default;
     }
@@ -63,23 +60,19 @@ class Config
      */
     public static function has($name)
     {
-        if (strpos($name, '.')) {
-            $namepath = explode('.', $name);
-            $name = array_shift($namepath);
-            self::import($name);
-            $value = self::$configs->$name;
-            foreach ($namepath as $path) {
-                if (isset($value[$path])) {
-                    $value = $value[$path];
+        $prefix = strtok($name, '.');
+        if (self::check($prefix)) {
+            $value = self::$configs[$prefix];
+            while ($tok = strtok('.')) {
+                if (isset($value[$tok])) {
+                    $value = $value[$tok];
                 } else {
                     return false;
                 }
             }
             return true;
-        } else {
-            self::import($name);
-            return bool(self::$configs->$name);
         }
+        return false;
     }
     
     /*
@@ -88,19 +81,20 @@ class Config
     public static function set($name, $value)
     {
         if (strpos($name, '.')) {
-            $namepath = explode('.', $name);
-            $name = array_shift($namepath);
-            self::import($name);
-            $val =& self::$configs->$name;
-            foreach ($namepath as $path) {
-                if (!isset($val[$path])) {
-                    $val[$path] = [];
-                }
-                $val =& $val[$path];
+            $prefix = strtok($name, '.');
+            if (!self::check($prefix)) {
+                self::$configs[$prefix] = [];
             }
-            $value = $val;
+            $val =& self::$configs[$prefix];
+            while ($tok = strtok('.')) {
+                if (!isset($val[$tok])) {
+                    $val[$tok] = [];
+                }
+                $val =& $val[$tok];
+            }
+            $val = $value;
         } else {
-            self::$configs->$name = $value;
+            self::$configs[$name] = $value;
         }
     }
     
@@ -109,8 +103,7 @@ class Config
      */
     public static function first($name)
     {
-        self::import($name);
-        return reset(self::$configs->$name);
+        return self::check($name) ? reset(self::$configs[$name]) : false;
     }
     
     /*
@@ -118,8 +111,7 @@ class Config
      */
     public static function random($name)
     {
-        self::import($name);
-        return self::$configs->$name[array_rand($configs->$name)];
+        return self::check($name) ? self::$configs[$name][array_rand(self::$configs[$name])] : false;
     }
     
     /*
@@ -127,57 +119,45 @@ class Config
      */
     public static function firstPair($name)
     {
-        self::import($name);
-        $value = reset(self::$configs->$name);
-        return [key(self::$configs->$name), $value];
+        return self::check($name) ? [key(self::$configs[$name]), reset(self::$configs[$name])] : false;
     }
     
     /*
-     * 导入配置
+     * 检查配置是否导入
      */
-    private static function load($path)
+    private static function check($name)
     {
-        $configs = __require($path);
-        if ($configs && is_array($configs)) {
-            foreach ($configs as $name => $value) {
-                self::$configs->$name = $value;
-            }
+        if (isset(self::$configs[$name])) {
+            return true;
         }
-    }
-    
-    /*
-     * 从文件中导入配置
-     */
-    private static function import($name)
-    {
-        if (!isset(self::$configs->$name)) {
-            if (isset(self::$path)) {
-                $file = self::$path.$name.'.php';
-                if (is_file($file)) {
-                    $config = __require($file);
-                    if (is_array($config)) {
-                        self::$configs->$name = $config;
-                        return;
-                    }
-                }
-            }
-            self::$configs->$name = [];
+        if (isset(self::$checked[$name])) {
+            return false;
         }
+        self::$checked[$name] = true;
+        return self::$dir && self::loadFile($name);
     }
     
     /*
-     * 导入环境配置
+     * 从目录中导入文件
      */
-    private static function loadEnv()
+    private static function loadFile($name)
     {
-        $file = APP_DIR.'.env';
-        if (is_file($file)) {
-            $env = parse_ini_file($file);
-            if ($env) {
-                foreach ($env as $k => $v) {
-                    putenv("$k=$v");
-                }
-            }
+        $config = __include(self::$dir.$name.'.php');
+        if (is_array($config)) {
+            self::$configs[$name] = $config;
+            return true;
+        }
+        return false;
+    }
+    
+    /*
+     * 导入单文件配置
+     */
+    private static function loadSingleFile($path)
+    {
+        $configs = __include($path);
+        if (is_array($configs)) {
+            self::$configs = $configs;
         }
     }
 }

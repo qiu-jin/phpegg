@@ -45,7 +45,7 @@ class Standard extends App
                 return $this->routeDispatch($path);
             case 2:
                 $dispatch = $this->defaultDispatch($path);
-                return $dispatch ? $dispatch : $this->routeDispatch($path);
+                return $dispatch ?: $this->routeDispatch($path);
         }
         return false;
     }
@@ -74,8 +74,8 @@ class Standard extends App
             case 2:
                 $parameters = [];
                 if ($method->getnumberofparameters() > 0) {
-                    if ($this->config['get_to_params']) {
-                        $params = $params+$_GET;
+                    if ($this->config['query_to_params']) {
+                        $params = array_merge($params, $_GET);
                     }
                     foreach ($method->getParameters() as $param) {
                         if (isset($params[$param->name])) {
@@ -107,7 +107,7 @@ class Standard extends App
      */
     protected function error($code = null, $message = null)
     {
-        Response::status($code ? $code : 500);
+        Response::status($code ?: 500);
         if ($this->config['enable_view']) {
             Response::send(View::error($code, $message), 'text/html; charset=UTF-8');
         } else {

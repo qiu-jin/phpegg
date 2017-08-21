@@ -88,10 +88,9 @@ abstract class App
             } else {
                 throw new \Exception('Illegal app class :'.$app);
             }
-            $dispatch = self::$app->dispatch();
-            Hook::listen('start', $dispatch);
-            if ($dispatch) {
-                self::$app->dispatch = $dispatch;
+            self::$app->dispatch = self::$app->dispatch();
+            Hook::listen('start', self::$app->dispatch);
+            if (self::$app->dispatch) {
                 return self::$app;
             }
             self::abort(404);
@@ -136,7 +135,13 @@ abstract class App
     {
         return self::$app;
     }
-
+    
+    
+    public static function getDispatch()
+    {
+        return self::$app->dispatch;
+    }
+    
     /*
      * 设置应用错误处理器，由abort方法调用
      */

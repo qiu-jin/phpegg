@@ -103,7 +103,7 @@ abstract class Email
         if (!empty($this->option['delay'])) {
             Hook::add('close', [$this, 'handle']);
         } elseif (!empty($this->option['queue'])) {
-            
+            //todo
         } else {
             return $this->handle();
         }

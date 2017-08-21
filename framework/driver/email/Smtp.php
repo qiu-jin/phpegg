@@ -1,14 +1,15 @@
 <?php
 namespace framework\driver\email;
 
+use framework\core\Logger;
 use framework\driver\email\message\Mime;
 
 class Smtp extends Email
 {
-    protected $log;
     protected $link;
     protected $host;
     protected $port;
+    protected $debug = APP_DEBUG;
     protected $username;
     protected $password;
     
@@ -22,29 +23,28 @@ class Smtp extends Email
     
     protected function handle()
     {
-        $this->log = [];
         if ($this->connect()) {
             try {
                 list($addrs, $mime) = Mime::build($this->option);
             } catch (\Exception $e) {
                 return error($e->getMessage()); 
             }
-            $this->log['FROM'] = $this->command('MAIL FROM: <'.$this->option['from'][0].'>');
-            if (substr($this->log['FROM'], 0, 3) != '250') {
-                return error($this->log['FROM']);
+            $data = $this->command('MAIL FROM: <'.$this->option['from'][0].'>');
+            if (substr($data, 0, 3) != '250') {
+                return error($data);
             }
             foreach ($addrs as $addr) {
-                $this->log['RCPT'] = $this->command("RCPT TO: <$addr>");
-                if (substr($this->log['RCPT'], 0, 3) != '250') {
-                    return error($this->log['RCPT']);
+                $data = $this->command("RCPT TO: <$addr>");
+                if (substr($data, 0, 3) != '250') {
+                    return error($data);
                 }
             }
-            $this->log['DATA'] = $this->command('DATA');
-            $this->log['SEND'] = $this->command($mime."\r\n.");
-            if (substr($this->log['SEND'], 0, 3) != '250') {
-                return error($this->log['SEND']);
+            $this->command('DATA');
+            $data = $this->command($mime."\r\n.");
+            if (substr($data, 0, 3) != '250') {
+                return error($data);
             }
-            $this->log['QUIT'] = $this->command('QUIT');
+            $this->command('QUIT');
             return true;
         }
         return false;
@@ -57,13 +57,13 @@ class Smtp extends Email
             if (!is_resource($this->link)) {
                 return error('connect error '.$errno.': '.$error);
             }
-            $this->log['OPEN'] = $this->read();
-            $this->log['EHLO'] = $this->command('EHLO '.$this->host);
-            $this->log['AUTH'] = $this->command('AUTH LOGIN');
-            $this->log['USER'] = $this->command(base64_encode($this->username));
-            $this->log['PSWD'] = $this->command(base64_encode($this->password));
-            if (substr($this->log['PSWD'], 0, 3) != '235') {
-                return error($this->log['PSWD']);
+            $this->read();
+            $this->command('EHLO '.$this->host);
+            $this->command('AUTH LOGIN');
+            $this->command(base64_encode($this->username));
+            $data = $this->command(base64_encode($this->password));
+            if (substr($data, 0, 3) != '235') {
+                return error($data);
             }
         }
         return true;
@@ -72,9 +72,13 @@ class Smtp extends Email
     protected function read()
     {
         $res = '';
-        while ($str = fgets($this->link, 4096)) {
+        while ($str = fgets($this->link, 1024)) {
             $res .= $str;
             if (substr($str, 3, 1) == " ") break;
+        }
+        $res = trim($res);
+        if ($this->debug) {
+            logger::write(Logger::DEBUG, $res);
         }
         return $res;
     }
@@ -85,9 +89,10 @@ class Smtp extends Email
         return $this->read();
     }
     
-    public function log()
+    public function debug(bool $bool)
     {
-        return $this->log;
+        $this->debug = $bool;
+        return $this;
     }
     
     public function __destruct()

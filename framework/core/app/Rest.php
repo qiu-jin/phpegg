@@ -34,7 +34,7 @@ class Rest extends App
                     return $this->routeDispatch($path, $method);
                 case 2:
                     $dispatch = $this->defaultDispatch($path, $method);
-                    return $dispatch ? $dispatch : $this->routeDispatch($path, $method);
+                    return $dispatch ?: $this->routeDispatch($path, $method);
             }
         }
         return false;
@@ -87,7 +87,7 @@ class Rest extends App
     
     protected function error($code = null, $message = null)
     {
-        Response::status($code ? $code : 500);
+        Response::status($code ?: 500);
         Response::json(['error' => compact('code', 'message')]);
     }
     

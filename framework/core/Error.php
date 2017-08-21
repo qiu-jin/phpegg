@@ -21,7 +21,7 @@ class Error
     {
         if (self::$init) return;
         self::$init = true;
-        error_reporting(constant('APP_DEBUG') ? -1 : 0);
+        error_reporting(-1);
         set_error_handler(__CLASS__.'::errorHandler');
         set_exception_handler(__CLASS__.'::exceptionHandler');
         register_shutdown_function(__CLASS__.'::fatalHandler');

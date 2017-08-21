@@ -11,7 +11,7 @@ class Client
 {
     private $url;
     private $body;
-    private $debug;
+    private $debug = APP_DEBUG;
     private $result;
     private $method;
     private $headers = [];
@@ -23,7 +23,6 @@ class Client
     {
         $this->url = $url;
         $this->method = $method;
-        $this->debug = APP_DEBUG;
     }
 
     /*
@@ -272,9 +271,13 @@ class Client
         }
         if (!empty($curlopt[CURLOPT_HEADER])) {
             if ($result) {
-                $pairs = explode("\r\n\r\n", $result, 2);
-                $result = isset($pairs[1]) ? $pairs[1] : null;
-                $return['headers'] = isset($pairs[0]) ? self::parseHeaders($pairs[0]) : null;
+                //忽略 HTTP/1.1 100 continue
+                if (substr($result, 9, 3) === '100') {
+                    list($tmp, $header, $result) = explode("\r\n\r\n", $result, 3);
+                } else {
+                    list($header, $result) = explode("\r\n\r\n", $result, 2);
+                }
+                $return['headers'] = self::parseHeaders($header);
             } else {
                 $return['headers'] = null;
             }
@@ -346,7 +349,7 @@ class Client
         $log['Request'] = [
             'query'     => $header_out[0],
             'headers'   => self::parseHeaders($header_out[1]),
-            'body'      => $body
+            'body'      => is_string($body) && strlen($body) > 1024 ? '.....' : ($body)
         ];
         if (isset($return['error'])) {
             $log['Response']['error'] = $return['error'];
@@ -354,7 +357,7 @@ class Client
             $log['Response'] = [
                 'status'    => $return['status'],
                 'headers'   => $return['headers'],
-                'body'      => $return['body']
+                'body'      => strlen($return['body']) > 1024 ? '.....' : ($return['body'])
             ];
         }
         Logger::write(Logger::DEBUG, $log);

@@ -9,18 +9,17 @@ use framework\core\http\Response;
 class Simple extends App
 {
     private $route;
-    private $query;
     
     protected function dispatch(...$parmas)
     {
-        return $parmas ? $this->defaultDispatch(...$parmas) : true;
+        return $parmas ? $this->dispatch = $this->defaultDispatch(...$parmas) : true;
     }
     
     public function run(callable $return_handler = null)
     {
         $this->runing();
-        if ($this->query) {
-            $return = ($this->query)();
+        if ($this->dispatch) {
+            $return = ($this->dispatch)();
         } elseif ($this->route) {
             $path = explode('/', trim(Request::path(), '/'));
             $dispatch = $this->routeDispatch($path);
@@ -33,7 +32,7 @@ class Simple extends App
             $this->abort(404);
         }
         $return_handler && $return_handler($return);
-        $this->exit();
+        $this->finish();
     }
     
     public function route($role, callable $call, $method = null)
@@ -57,9 +56,10 @@ class Simple extends App
         if (class_exists($class, $action) && $action{0} !== '_') {
             $controller = new $class;
             if (is_callable([$controller, $action])) {
-                $this->query = [$controller, $action];
+                return [$controller, $action];
             }
         }
+        return false;
     }
     
     protected function routeDispatch($path)

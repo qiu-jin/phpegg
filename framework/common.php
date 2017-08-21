@@ -10,21 +10,6 @@ use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\extend\view\Debug;
 
-function input($name, ...$params)
-{
-    return Request::$name(...$params);
-}
-
-function output($name, ...$params)
-{
-    return $params ? Response::$name(...$params) : Response::send($name); 
-}
-
-function view($tpl, array $vars = null)
-{
-    return Response::view($tpl, $vars);
-}
-
 function env($name, $default = null)
 {
     return Config::env($name, $default);
@@ -85,14 +70,24 @@ function model($name)
     return Container::model($name);
 }
 
-function dump(...$vars)
+function input($name, ...$params)
 {
-    Response::send(Debug::dump(...$vars));
+    return Request::$name(...$params);
 }
 
-function debug(...$vars)
+function output($name, ...$params)
 {
-    Response::send(Debug::render(...$vars));
+    return $params ? Response::$name(...$params) : Response::send($name); 
+}
+
+function view($tpl, array $vars = null)
+{
+    return Response::view($tpl, $vars);
+}
+
+function dd(...$vars)
+{
+    Response::send(Debug::dump(...$vars));
 }
 
 function abort($code = null, $message = null)
@@ -105,11 +100,6 @@ function error($message, $limit = 1)
     return (bool) Error::set($message, E_USER_ERROR, $limit+1);
 }
 
-function defer(callable $call)
-{
-    Hook::add('close', $call);
-}
-
 function jsonencode($data)
 {
     return json_encode($data, JSON_UNESCAPED_UNICODE);
@@ -118,6 +108,11 @@ function jsonencode($data)
 function jsondecode($data)
 {
     return json_decode($data, true);
+}
+
+function __include($file)
+{
+    return include $file;
 }
 
 function __require($file)

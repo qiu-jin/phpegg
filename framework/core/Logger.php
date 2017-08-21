@@ -69,7 +69,7 @@ class Logger
     public static function channel($name = null)
     {
         if ($name === null) {
-            return self::$writer ? self::$writer : self::$writer = new self();
+            return self::$writer ?: self::$writer = new self();
         } elseif (isset(self::$configs[$name])) {
             return self::getHandler($name);
         }

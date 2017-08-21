@@ -17,7 +17,7 @@ class Inline extends App
         'route_mode' => 0,
         'enable_view' => 0,
         'safe_require' => 0,
-        'return_1_to_null' => 1,
+        'return_1_to_null' => 0,
     ];
     
     protected function dispatch()
@@ -34,7 +34,7 @@ class Inline extends App
                 return $this->routeDispatch($path);
             case 2:
                 $dispatch = $this->defaultDispatch($path);
-                return $dispatch ? $dispatch : $this->routeDispatch($path);
+                return $dispatch ?: $this->routeDispatch($path);
         }
         return false;
     }
@@ -57,7 +57,7 @@ class Inline extends App
 
     protected function error($code = null, $message = null)
     {
-        Response::status($code ? $code : 500);
+        Response::status($code ?: 500);
         if ($this->config['enable_view']) {
             Response::send(View::error($code, $message), 'text/html; charset=UTF-8');
         } else {

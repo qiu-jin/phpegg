@@ -7,7 +7,7 @@ abstract class Db
 {
     protected $sql;
     protected $link;
-    protected $debug;
+    protected $debug = APP_DEBUG;
     protected $dbname;
     protected $table_fields;
     
@@ -41,7 +41,6 @@ abstract class Db
     public function __construct($config)
     {
         $this->link = $this->connect($config);
-        $this->debug = APP_DEBUG;
     }
     
     public function __get($name)
@@ -58,7 +57,7 @@ abstract class Db
     {
         try {
             $this->begin();
-            ($return = $call($this)) ? $this->commit() : $this->rollback();
+            ($return = $call()) ? $this->commit() : $this->rollback();
             return $return;
         } catch (\Exception $e) {
             $this->rollback();
