@@ -33,8 +33,7 @@ class Rest extends App
                 case 1:
                     return $this->routeDispatch($path, $method);
                 case 2:
-                    $dispatch = $this->defaultDispatch($path, $method);
-                    return $dispatch ?: $this->routeDispatch($path, $method);
+                    return $this->defaultDispatch($path, $method) ?: $this->routeDispatch($path, $method);
             }
         }
         return false;

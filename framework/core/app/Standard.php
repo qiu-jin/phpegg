@@ -44,8 +44,7 @@ class Standard extends App
             case 1:
                 return $this->routeDispatch($path);
             case 2:
-                $dispatch = $this->defaultDispatch($path);
-                return $dispatch ?: $this->routeDispatch($path);
+                return $this->defaultDispatch($path) ?: $this->routeDispatch($path);
         }
         return false;
     }

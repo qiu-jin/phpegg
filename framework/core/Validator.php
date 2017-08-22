@@ -3,22 +3,50 @@ namespace framework\core;
 
 class Validator
 {
-    public static function make($data, $rules, $message = null)
+    public static function validate($data, $rules, &$message = null)
     {
-        foreach ($rules as $rule)
+        foreach ($rules as $name => $rule)
         {
-            
+            $items = explode('|', $rule);
+            foreach ($items as $item) {
+                $method = explode(':', $rule);
+                if (!self::{array_shift($method)}($data[$name], ...$method)) {
+                    $message = $name;
+                    return false;
+                }
+            }
         }
+        return true;
     }
     
     public static function id($var)
     {
-        return filter_var($var, FILTER_VALIDATE_INT) && $var > 0;
+        return is_numeric($var) && is_int($var+0) && $var > 0;
+    }
+    
+    public static function ip($var)
+    {
+        return filter_var($var, FILTER_VALIDATE_IP);
+    }
+    
+    public static function url($var)
+    {
+        return filter_var($var, FILTER_VALIDATE_URL);
+    }
+    
+    public static function hash($var)
+    {
+        return ;
     }
     
     public static function email($var)
     {
         return filter_var($var, FILTER_VALIDATE_EMAIL);
+    }
+    
+    public static function mobile($var)
+    {
+        return preg_match('/^1[34578]\d{9}$/', $var);
     }
     
     public static function min($var, $min)

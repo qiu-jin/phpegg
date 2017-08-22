@@ -33,8 +33,7 @@ class Inline extends App
             case 1:
                 return $this->routeDispatch($path);
             case 2:
-                $dispatch = $this->defaultDispatch($path);
-                return $dispatch ?: $this->routeDispatch($path);
+                return $this->defaultDispatch($path) ?: $this->routeDispatch($path);
         }
         return false;
     }
@@ -44,7 +43,7 @@ class Inline extends App
         $this->runing();
         $params = isset($this->dispatch['params']) ? $this->dispatch['params'] : null;
         if ($this->config['safe_require']) {
-            $return = __safe_require($this->dispatch['file'], $params);
+            $return = __require_with_params($this->dispatch['file'], $params);
         } else {
             $return = require($this->dispatch['file']);
         }
@@ -106,7 +105,7 @@ class Inline extends App
     }
 }
 
-function __safe_require($file, $params)
+function __require_with_params($file, $params)
 {
     return require($file);
 }

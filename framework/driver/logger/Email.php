@@ -2,12 +2,19 @@
 namespace framework\driver\logger;
 
 use framework\core\Hook;
+use framework\core\http\Request;
 use framework\extend\view\Error;
 
 class Email extends Logger
 {
     protected $to;
-    protected $driver = [];
+    protected $driver = [
+        'email' => null,
+        'cache' => [
+            'driver'=> 'opcache',
+            'dir'   => APP_DIR.'storage/cache/',
+        ]
+    ];
     protected $interval = 3600;
     
     public function __construct($config)
@@ -19,7 +26,7 @@ class Email extends Logger
                 $this->driver['cache'] = $config['cache'];
             }
             if (isset($config['interval'])) {
-                $this->interval = $config['interval'];
+                $this->interval = (int) $config['interval'];
             }
             Hook::add('close', [$this, 'send']);
         } else {
@@ -35,30 +42,20 @@ class Email extends Logger
     public function send()
     {
         if ($this->logs) {
-            $cache = $this->gethandler('cache');
+            $cache = cache($this->driver['cache']);
             if ($cache) {
-                $key = md5(json_encode(end($this->logs)));
+                $content = Error::renderError($this->logs);
+                $key = md5($content);
                 if (!$cache->has($key)) {
-                    $cache->set($key, time(), $this->interval);
-                    $title = APP_NAME.' Error report ['.date('Y-m-d H:i:s').']';
-                    $content = Error::page($this->logs);
-                    $email = $this->gethandler('email');
+                    $cache->set($key, 1, $this->interval);
+                    $title = Request::host().' Error report ['.date('Y-m-d H:i:s').']';
+                    $email = email($this->driver['email']);
                     if ($email) {
-                        $email->send($to, $title, $content);
+                        $email->send($this->to, $title, $content);
                     }
                 }
             }
             $this->logs = null;
         }
-    }
-    
-    protected function gethandler($type)
-    {
-        if (isset($this->driver[$type]) {
-            return load($type, isset($this->driver[$type]);
-        } elseif ($type === 'cache') {
-            return driver('cache', 'SingleFile', ['file' => APP_DIR.'storage/cache/logger_email.cache']);
-        }
-        return null;
     }
 }

@@ -1,8 +1,6 @@
 <?php
 namespace framework\driver\sms;
 
-use framework\core\Config;
-
 abstract class Sms
 {
     protected $acckey;

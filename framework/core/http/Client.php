@@ -349,7 +349,7 @@ class Client
         $log['Request'] = [
             'query'     => $header_out[0],
             'headers'   => self::parseHeaders($header_out[1]),
-            'body'      => is_string($body) && strlen($body) > 1024 ? '.....' : ($body)
+            'body'      => is_string($body) && strlen($body) > 1024 ? substr($body, 0, 1024).'......' : $body
         ];
         if (isset($return['error'])) {
             $log['Response']['error'] = $return['error'];
@@ -357,7 +357,7 @@ class Client
             $log['Response'] = [
                 'status'    => $return['status'],
                 'headers'   => $return['headers'],
-                'body'      => strlen($return['body']) > 1024 ? '.....' : ($return['body'])
+                'body'      => strlen($return['body']) > 1024 ? substr($return['body'], 0, 1024).'......' : $return['body']
             ];
         }
         Logger::write(Logger::DEBUG, $log);
