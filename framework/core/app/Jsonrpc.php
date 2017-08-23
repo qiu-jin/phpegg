@@ -7,8 +7,8 @@ use framework\core\http\Response;
 
 class Jsonrpc extends App
 {
-    private $id;
-    private $ns;
+    protected $id;
+    protected $ns;
     protected $config = [];
     
     const VERSION = '2.0';

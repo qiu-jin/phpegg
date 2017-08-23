@@ -13,6 +13,7 @@ use framework\core\http\Request;
 
 class WebConsole extends Logger
 {
+    const VERSION = '4.0.0';
     protected static $loglevel = [
         'emergency'  => 'error',
         'alert'      => 'error',
@@ -32,9 +33,6 @@ class WebConsole extends Logger
     
     public function __construct($config)
     {
-        if (isset($config['header_limit_size'])) {
-            $this->header_limit_size = $config['header_limit_size'];
-        }
         if (isset($config['allow_ips'])) {
             if (!in_array(Request::ip(), $config['allow_ips'], true)) {
                 return $this->send = false;
@@ -44,6 +42,9 @@ class WebConsole extends Logger
             if ($config['check_header_accept'] !== $_SERVER['HTTP_ACCEPT_LOGGER_DATA']) {
                 return $this->send = false;
             }
+        }
+        if (isset($config['header_limit_size'])) {
+            $this->header_limit_size = $config['header_limit_size'];
         }
         Hook::add('exit', [$this, 'send']);
     }
@@ -74,7 +75,7 @@ class WebConsole extends Logger
     }
     
     public function send()
-    {
+    {        
         if ($this->logs && !headers_sent()) {
             $rows = [];
             foreach ($this->logs as $log) {
@@ -86,7 +87,7 @@ class WebConsole extends Logger
                 $rows[] = [null, $log[1], $trace, $level];
             }
             $data = [
-                'version' => '4.0.0',
+                'version' => self::VERSION,
                 'columns' => ['label', 'log', 'backtrace', 'type'],
                 'rows'    => $rows
             ];

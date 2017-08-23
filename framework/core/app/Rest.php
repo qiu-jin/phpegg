@@ -10,11 +10,11 @@ use framework\core\http\Response;
 
 class Rest extends App
 {
-    private $ns;
-    private $config = [
+    protected $ns;
+    protected $config = [
         'route_mode' => 0,
         'param_mode' => 0,
-        'get_to_params' => 0,
+        'query_to_params' => 0,
         'controller_depth' => 0,
     ];
     
@@ -61,8 +61,8 @@ class Rest extends App
             case 2:
                 $parameters = [];
                 if ($method->getnumberofparameters() > 0) {
-                    if ($this->config['get_to_params']) {
-                        $params = $params+$_GET;
+                    if ($this->config['query_to_params']) {
+                        $params = array_merge($_GET, $params);
                     }
                     foreach ($method->getParameters() as $param) {
                         if (isset($params[$param->name])) {

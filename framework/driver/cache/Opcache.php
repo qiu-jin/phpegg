@@ -29,7 +29,7 @@ class Opcache extends Cache
     public function get($key, $default = null)
     {
         $file = $this->filename($key);
-        if (is_file($file)) {
+        if (is_php_file($file)) {
             $cache = require($file);
             if ($expiration === 0 || $expiration > time()) {
                 return $cache;
@@ -66,8 +66,8 @@ class Opcache extends Cache
     public function has($key)
     {
         $file = $this->filename($key);
-        if (is_file($file)) {
-            __require($file);
+        if (is_php_file($file)) {
+            require($file);
             if ($expiration === 0 || $expiration < time()) {
                 return true;
             }
@@ -79,7 +79,7 @@ class Opcache extends Cache
     public function delete($key)
     {
         $file = $this->filename($key);
-        return is_file($file) ? $this->removeCache($file) : false;
+        return is_php_file($file) && $this->removeCache($file);
     }
     
     public function clear()
@@ -87,7 +87,7 @@ class Opcache extends Cache
         if ($ch = opendir($this->dir)) {
             while (($f = readdir($ch)) !== false) {
                 $file = $this->dir.$f;
-                if (is_file($file)) {
+                if (is_php_file($file)) {
                     $this->removeCache($file);
                 }
             }
@@ -104,7 +104,7 @@ class Opcache extends Cache
         if ($ch) {
             while (($f = readdir($ch)) !== false) {
                 $file = $this->dir.$f;
-                if (is_file($file) && $maxtime < filemtime($file)) {
+                if (is_php_file($file) && $maxtime < filemtime($file)) {
                     $this->removeCache($file);
                 }
             }
@@ -135,7 +135,8 @@ class Opcache extends Cache
                 $this->filterValue($val);
             }
         } elseif (is_resource($value)) {
-            throw new \Exception('Invalid cache value');
+            $value = null;
+            //throw new \Exception('Invalid cache value');
         }
     }
 }

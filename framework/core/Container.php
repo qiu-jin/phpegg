@@ -173,7 +173,32 @@ class Container
         if (strpos('.', $name)) {
             return self::makeModel($name);
         }
-        //7.0后可使用匿名类
+        //7.0后使用匿名类
+        /*
+        return class($name, self::$providers['model'][$name]) {
+            protected $__depth;
+            protected $__prefix;
+
+            public function __construct($prefix, $depth)
+            {
+                $this->__depth = $depth - 1;
+                $this->__prefix = $prefix;
+            }
+    
+            public function __get($name)
+            {
+                if ($this->__depth === 0) {
+                    return $this->$name = Container::model($this->__prefix.'.'.$name);
+                }
+                return $this->$name = new self($this->__prefix.'.'.$name, $this->__depth);
+            }
+    
+            public function __call($method, $param = [])
+            {
+                return Container::model($this->__prefix)->$method(...$param);
+            }
+        };
+        */
         return new ModelGetter($name, self::$providers['model'][$name]);
     }
 

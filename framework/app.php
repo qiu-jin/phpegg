@@ -123,9 +123,8 @@ abstract class App
             self::$error_handler($code, $message);
         } elseif (is_callable([self::$app, 'error'])) {
             self::$app->error($code, $message);
-        } else {
-            Response::json(['error' => compact('code', 'message')]);
         }
+        self::finish();
     }
     
     /*

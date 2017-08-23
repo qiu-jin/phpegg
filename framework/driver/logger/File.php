@@ -17,12 +17,18 @@ class File extends Logger
     public function write($level, $message, $context)
     {
         if (!$this->send) return;
-        if (isset($this->formatter)) {
-            $log = $this->formatter->make($level, $message, $context);
-        } else {
-            $log = '['.$level.'] '.$message;
-            if ($context) $log .= PHP_EOL.var_export($context, true);
+        try {
+            if (isset($this->formatter)) {
+                $log = $this->formatter->make($level, $message, $context);
+            } else {
+                $log = '['.$level.'] '.$message;
+                if ($context) $log .= PHP_EOL.var_export($context, true);
+            }
+            error_log($log.PHP_EOL, 3, $this->logfile);
+        } catch (\Throwable $e) {
+            //忽略异常
+        } catch (\Exception $e) {
+            //兼容php5.6
         }
-        error_log($log.PHP_EOL, 3, $this->logfile);
     }
 }

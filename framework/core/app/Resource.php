@@ -1,154 +1,32 @@
 <?php
 namespace framework\core\app;
 
-use framework\App;
-use framework\util\Xml;
-use framework\core\Router;
-use framework\core\Config;
-use framework\core\http\Request;
-use framework\core\http\Response;
-
-class Resource extends App
+class Resource extends Rest
 {
-    private $ns;
-    private $config = [
+    protected $config = [
         'route_mode' => 0,
+        'param_mode' => 0,
+        'enable_view' => 0,
+        'query_to_params' => 0,
         'controller_depth' => 0,
+        'template_to_snake' => 1,
+        'controller_to_camel' => 1,
     ];
     
-    protected function dispatch()
-    {
-        $this->ns = 'app\controller\\';
-        if (isset($this->config['sub_controller'])) {
-            $this->ns .= $this->config['sub_controller'].'\\';
-        }
-        $method = strtolower(Request::method());
-        if (in_array($method, ['get','post', 'put', 'delete', 'options', 'head', 'patch'], true)) {
-            $path = explode('/', trim(Request::path(), '/'));
-            switch ($this->config['route_mode']) {
-                case 0:
-                    return $this->defaultDispatch($path, $method);
-                case 1:
-                    return $this->routeDispatch($path, $method);
-                case 2:
-                    $dispatch = $this->defaultDispatch($path, $method);
-                    return $dispatch ? $dispatch : $this->routeDispatch($path, $method);
-            }
-        }
-        return false;
-    }
-
-    public function run(callable $return_handler = null)
-    {
-        $this->runing();
-        $this->setPostParams();
-        $action = $this->dispatch['action'];
-        $params = $this->dispatch['params'];
-        $controller = $this->dispatch['controller'];
-        if ($this->config['param_mode'] === 2) {
-            if (isset($this->dispatch['method'])) {
-                $method = $this->dispatch['method'];
-            } else {
-                $method =  new \ReflectionMethod($controller, $action);
-            }
-        }
-        $this->dispatch = null;
-        switch ($this->config['param_mode']) {
-            case 1:
-                $return = $controller->$action(...$params);
-                break;
-            case 2:
-                $parameters = [];
-                if ($method->getnumberofparameters() > 0) {
-                    if ($this->config['get_to_params']) {
-                        $params = $params+$_GET;
-                    }
-                    foreach ($method->getParameters() as $param) {
-                        if (isset($params[$param->name])) {
-                            $parameters[] = $params[$param->name];
-                        } elseif($param->isDefaultValueAvailable()) {
-                            $parameters[] = $param->getdefaultvalue();
-                        } else {
-                            $this->abort(404);
-                        }
-                    }
-                }
-                $result = $method->invokeArgs($controller, $parameters);
-                break;
-            default:
-                $return = $controller->$action();
-                break; 
-        }
-        $return_handler && $return_handler($return);
-        $this->response($return);
-    }
-    
-    protected function error($code = null, $message = null)
-    {
-        Response::status($code ? $code : 500);
-        Response::json(['error' => compact('code', 'message')]);
-    }
-    
-    protected function response($return)
-    {
-        Response::json(['result' => $return]);
-    }
-    
-    protected function defaultDispatch($path, $method) 
-    {
-        switch ($method) {
-            case 'GET':
-                
-            case 'PUT':
-            case 'POST':
-            case 'DELETE'
-        }
-
-    }
-
-    protected function routeDispatch($path, $method)
-    {
-        $dispatch = Router::dispatch($path, Config::get('router'), $method);
-        if ($dispatch) {
-            $action = array_pop($dispatch[0]);
-            $class = $this->ns.implode('\\', $dispatch[0]);
-            if (class_exists($class)) {
-                $controller = new $class();
-                $refmethod = new \ReflectionMethod($controller, $action);
-                if (!$refmethod->isPublic()) {
-                    if ($refmethod->isProtected()) {
-                        $refmethod->setAccessible(true);
-                    } else {
-                        return false;
-                    }
-                }
-                $this->method = $refmethod;
-                $this->config['param_mode'] = 2;
-                return ['controller'=> $controller, 'action' => $action, 'params' => $dispatch[1]];
-            }
-        }
-        return false;
-    }
-    
-    protected function setPostParams()
-    {
-        $type = Request::header('Content-Type');
-        if ($type) {
-            switch (trim(strtok(strtolower($type), ';'))) {
-                case 'application/json':
-                    Request::set('post', jsondecode(Request::body()));
-                    break;
-                case 'application/xml';
-                    Request::set('post', Xml::decode(Request::body()));
-                    break;
-                case 'multipart/form-data'; 
-                    break;
-                case 'application/x-www-form-urlencoded'; 
-                    break;
-                default:
-                    Request::set('post', Request::body());
-                    break;
-            }
-        }
-    }
+    protected $config = [
+        // 路由模式，0默认调度，1路由调度，2混合调度
+        'route_mode' => 0,
+        // 参数模式，0无参数，1循序参数，2键值参数
+        'param_mode' => 0,
+        // 是否启用视图，0否，1是
+        'enable_view' => 0,
+        // url query参数是否转为控制器参数，0否，1是
+        'query_to_params' => 0,
+        // 视图模版文件名是否转为下划线风格，0否，1是
+        'template_to_snake' => 1,
+        // 控制器类namespace深度，0为不确定，1 2 3等表示度层数
+        'controller_depth' => 0,
+        // 控制器名是否转为驼峰风格，0否，1是
+        'controller_to_camel' => 1,
+    ];
 }

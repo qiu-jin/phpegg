@@ -15,13 +15,15 @@ class Email extends Logger
             'dir'   => APP_DIR.'storage/cache/',
         ]
     ];
-    protected $interval = 3600;
+    protected $interval = 900;
     
     public function __construct($config)
     {
-        if (isset($config['to']) && isset($config['email'])) {
+        if (isset($config['to'])) {
             $this->to = $config['to'];
-            $this->driver['email'] = $config['email'];
+            if (isset($config['email'])) {
+                $this->driver['email'] = $config['email'];
+            }
             if (isset($config['cache'])) {
                 $this->driver['cache'] = $config['cache'];
             }
@@ -42,18 +44,24 @@ class Email extends Logger
     public function send()
     {
         if ($this->logs) {
-            $cache = cache($this->driver['cache']);
-            if ($cache) {
-                $content = Error::renderError($this->logs);
-                $key = md5($content);
-                if (!$cache->has($key)) {
-                    $cache->set($key, 1, $this->interval);
-                    $title = Request::host().' Error report ['.date('Y-m-d H:i:s').']';
-                    $email = email($this->driver['email']);
-                    if ($email) {
-                        $email->send($this->to, $title, $content);
+            try {
+                $cache = cache($this->driver['cache']);
+                if ($cache) {
+                    $key = md5(jsonencode(end($this->logs)));
+                    if (!$cache->has($key)) {
+                        $cache->set($key, 1, $this->interval);
+                        $email = email($this->driver['email']);
+                        if ($email) {
+                            $title = Request::host().' Error report ['.date('Y-m-d H:i:s').']';
+                            $content = Error::renderError($this->logs);
+                            $email->send($this->to, $title, $content);
+                        }
                     }
                 }
+            } catch (\Throwable $e) {
+                //忽略异常
+            } catch (\Exception $e) {
+                //兼容php5.6
             }
             $this->logs = null;
         }

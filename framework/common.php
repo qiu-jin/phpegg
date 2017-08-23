@@ -60,9 +60,9 @@ function email($name = null)
     return Container::driver('email', $name);
 }
 
-function driver($name = null)
+function driver($type, $name = null)
 {
-    return Container::driver('email', $name);
+    return Container::driver($type, $name);
 }
 
 function model($name)
@@ -108,6 +108,11 @@ function jsonencode($data)
 function jsondecode($data)
 {
     return json_decode($data, true);
+}
+
+function is_php_file($file)
+{
+    return (function_exists('opcache_is_script_cached') && opcache_is_script_cached($file)) || is_file($file);
 }
 
 function __include($file)

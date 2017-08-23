@@ -121,7 +121,7 @@ class Error
      */
     private static function response()
     {
-        App::abort(null, APP_DEBUG ? self::$error : null);
+        App::abort(500, APP_DEBUG ? self::$error : null);
     }
     
     /*

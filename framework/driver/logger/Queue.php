@@ -9,9 +9,13 @@ class Queue extends Logger
     {
         if (isset($config['queue']) && isset($config['job'])) {
             try {
-                $this->producer = load('queue', $config['queue'])->producer($config['job']);
-            } finally {
-                $this->send = false;
+                $this->producer = make('queue', $config['queue'])->producer($config['job']);
+            } catch (\Throwable $e) {
+                return $this->send = false;
+                //忽略异常
+            } catch (\Exception $e) {
+                return $this->send = false;
+                //兼容php5.6
             }
         } else {
             $this->send = false;

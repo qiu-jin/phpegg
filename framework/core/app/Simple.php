@@ -8,7 +8,7 @@ use framework\core\http\Response;
 
 class Simple extends App
 {
-    private $route;
+    protected $route;
     
     protected function dispatch(...$parmas)
     {

@@ -16,6 +16,8 @@ class Request
         self::$request = new \stdClass();
         self::$request->get =& $_GET;
         self::$request->post =& $_POST;
+        self::$request->server =& $_SERVER;
+        self::$request->params =& $_REQUEST;
         Hook::add('exit', __CLASS__.'::free');
         Hook::listen('request', self::$request);
     }
@@ -74,6 +76,17 @@ class Request
     }
     
     /*
+     * 获取COOKIE值
+     */
+    public static function params($name = null, $default = null)
+    {
+        if ($name === null) {
+            return self::$request->params;
+        }
+        return isset(self::$request->params[$name]) ? self::$request->params[$name] : $default;
+    }
+    
+    /*
      * 获取SESSION值
      */
     public static function session($name = null, $default = null)
@@ -118,9 +131,9 @@ class Request
     public static function server($name = null, $default = null)
     {
         if ($name === null) {
-            return $_SERVER;
+            return self::$request->server;
         }
-        return isset($_SERVER[$name]) ? $_SERVER[$name] : $default;
+        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
     }
     
     /*
@@ -129,7 +142,7 @@ class Request
     public static function header($name, $default = null)
     {
         $name = 'HTTP_'.strtoupper(strtr('-', '_', $name));
-        return isset($_SERVER[$name]) ? $_SERVER[$name] : $default;
+        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
     }
     
     /*
@@ -199,13 +212,7 @@ class Request
         if (isset(self::$request->path)) {
             return self::$request->path;
         }
-        if (isset($_GET['PATH_INFO'])) {
-            return self::$request->path = trim($_GET['PATH_INFO'], '/');
-        } elseif(isset($_SERVER['PATH_INFO'])) {
-            return self::$request->path = trim($_SERVER['PATH_INFO'], '/');
-        } else {
-            return self::$request->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        }
+        return self::$request->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     }
     
     /*
@@ -213,15 +220,15 @@ class Request
      */
     public static function body()
     {
-        return isset(self::$request->body) ? self::$request->body : self::$request->body = file_get_contents('php://input');
+        return file_get_contents('php://input');
     }
     
     /*
      * 获取请求UserAgent实例
      */
-    public static function agent()
+    public static function agent($str = null)
     {
-        return isset(self::$request->agent) ? self::$request->agent : self::$request->agent = new UserAgent($_SERVER['HTTP_USER_AGENT']);
+        return new UserAgent($str ?: $_SERVER['HTTP_USER_AGENT']);
     }
     
     /*

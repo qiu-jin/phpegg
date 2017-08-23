@@ -74,7 +74,10 @@ class Loader
      */
     private static function import($name)
     {
-        __include("$name.php");
+        $file = "$name.php";
+        if (is_php_file($file)) {
+            __include($file);
+        }
     }
 
     /*

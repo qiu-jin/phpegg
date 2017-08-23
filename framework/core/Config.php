@@ -18,7 +18,7 @@ class Config
     {
         if (self::$init) return;
         self::$init = true;
-        __include(APP_DIR.'env.php');
+        self::loadEnvFile();
         if ($dir = self::env('CONFIG_DIR')) {
             self::$dir = $dir;
         } elseif ($file = self::env('CONFIG_FILE')) {
@@ -148,6 +148,17 @@ class Config
             return true;
         }
         return false;
+    }
+    
+    /*
+     * 导入环境配置文件
+     */
+    private static function loadEnvFile()
+    {
+        $file = defined('APP_ENV_FILE') ? APP_ENV_FILE : APP_DIR.'env.php';
+        if (is_php_file($file)) {
+            __include($file);
+        }
     }
     
     /*

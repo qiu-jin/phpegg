@@ -51,6 +51,8 @@ class Memcached extends Cache
         foreach ($keys as $key) {
             if (!isset($data[$key])) {
                 $data[$key] = $default;
+            } else {
+                $data[$key] = $this->unserialize($data[$key]);
             }
         }
         return $data;
