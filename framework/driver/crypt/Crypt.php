@@ -13,8 +13,8 @@ abstract class Crypt
     public function __construct($config)
     {
         $this->init($config);
-        if (isset($config['serialize'])) {
-            list($this->serialize, $this->unserialize) = $config['serialize'];
+        if (isset($config['serializer'])) {
+            list($this->serialize, $this->unserialize) = $config['serializer'];
         }
     }
     

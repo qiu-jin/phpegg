@@ -24,8 +24,8 @@ class Cookie
                     self::$crypt_except = $config['crypt_except'];
                 }
             }
-            if (isset($config['serialize'])) {
-                list(self::$serialize, self::$unserialize) = $config['serialize'];
+            if (isset($config['serializer'])) {
+                list(self::$serialize, self::$unserialize) = $config['serializer'];
             }
         }
     }

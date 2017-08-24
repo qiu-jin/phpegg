@@ -1,7 +1,7 @@
 <?php
 namespace framework\util;
 
-class Datetime
+class Date
 {
     
 }

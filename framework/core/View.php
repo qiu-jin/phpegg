@@ -77,7 +77,7 @@ class View
     public static function error($code, $message = null)
     {   
         if (isset(self::$config['error'][$code])) {
-            $phpfile = self::path(self::$config['error'][$code]);
+            $phpfile = self::file(self::$config['error'][$code]);
             if ($phpfile) {
                 ob_start();
                 include $phpfile;
@@ -106,7 +106,7 @@ class View
         throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
     }
     
-    private static function path($tpl, $dir = null)
+    private static function file($tpl, $dir = null)
     {
         $path = $tpl{0} === '/' ? self::$config['dir'].$tpl : $dir.'/'.$tpl;
         $phpfile = $path.'.php';
