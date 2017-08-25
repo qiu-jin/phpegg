@@ -16,6 +16,8 @@ class Grpc
     protected $bind_params = true;
     protected $bind_params_name = [];
     
+    const ALLOW_CLIENT_METHODS = null;
+    
     public function __construct($config)
     {
         $this->host = $config['host'];

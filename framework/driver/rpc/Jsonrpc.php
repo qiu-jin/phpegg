@@ -5,15 +5,11 @@ use framework\core\http\Client;
 
 class Jsonrpc
 {
-    protected $host;
-    protected $throw_exception = false;
+    const ALLOW_CLIENT_METHODS = ['header', 'timeout', 'debug'];
     
     public function __construct($config)
     {
-        $this->host = $config['host'];
-        if (isset($config['throw_exception'])) {
-            $this->throw_exception = (bool) $config['throw_exception'];
-        }
+        $this->config = array_merge($this->config, $config);
     }
 
     public function __get($class)
@@ -26,13 +22,12 @@ class Jsonrpc
         return $this->__send(null, $method, $params);
     }
     
-    public function __send($ns, $method, $params = null, $id = null)
+    public function __send($ns, $method, $params, $client_methods = null)
     {
-        $ns[] = $method;
         $data = [
             'jsonrpc'   => '2.0',
             'params'    => $params,
-            'method'    => implode('.', $ns),
+            'method'    => implode('.', $ns).'.'.$method,
             'id'        => empty($id) ? uniqid() : $id
         ];
         $client = Client::post($this->host)->json($data);
@@ -41,24 +36,15 @@ class Jsonrpc
             return $data['result'];
         }
         if (isset($data['error'])) {
-            $this->__error($data['error']['code'], $data['error']['message']);
+            error($data['error']['code'].' '.$data['error']['message']);
         } else {
             $clierr = $client->error;
             if ($clierr) {
-                $this->__error('-32000', "Internet error $clierr[0]: $clierr[1]");
+                error("-32000 Internet error $clierr[0]: $clierr[1]");
             } else {
-                $this->__error('-32603', 'nvalid JSON-RPC response');
+                error('-32603 nvalid JSON-RPC response');
             }
         }
         return false;
-    }
-    
-    protected function __error($code, $message)
-    {
-        if ($this->throw_exception) {
-            throw new \Exception("Jsonrpc error $code: $message");
-        } else {
-            return error("$code: $message");
-        }
     }
 }

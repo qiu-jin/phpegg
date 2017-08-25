@@ -8,8 +8,10 @@ abstract class Db
     protected $sql;
     protected $link;
     protected $debug = APP_DEBUG;
+    protected $cache;
+    protected $fields;
     protected $dbname;
-    protected $table_fields;
+    protected $cache_config;
     
     abstract public function exec($sql);
     
@@ -41,6 +43,9 @@ abstract class Db
     public function __construct($config)
     {
         $this->link = $this->connect($config);
+        if (isset($config['cache'])) {
+            $this->cache_config = $config['cache'];
+        }
     }
     
     public function __get($name)
@@ -110,22 +115,35 @@ abstract class Db
         $this->debug = (bool) $bool;
     }
     
+    public function getSql($all = true)
+    {
+        return $all ? $this->sql : end($this->sql);
+    }
+    
     public function getFields($table)
     {
-        if (isset($this->table_fields[$table])) {
-            return $this->table_fields[$table];
+        if (isset($this->fields[$table])) {
+            return $this->fields[$table];
         } else {
+            if (isset($this->cache_config)) {
+                if (!isset($this->cache)) {
+                    $this->cache = cache($this->cache_config);
+                }
+                $key = "_db_$this->dbname$table";
+                $fields = $this->cache->get($key);
+                if ($fields) {
+                    return $fields;
+                }
+            }
             $query = $this->query("desc $table");
             while ($row = $this->fetch($query)) {
                 $fields[] = $row['Field'];
             }
+            if (isset($this->cache)) {
+                $this->cache->set($key, $fields);
+            }
             return $this->table_fields[$table] = $fields;
         }
-    }
-    
-    public function sql($all = true)
-    {
-        return $all ? $this->sql : end($this->sql);
     }
     
     protected function writeDebug($sql, $params)

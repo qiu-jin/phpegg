@@ -42,13 +42,20 @@ class Error
     {
         $file = null;
         $line = null;
+        $type = null;
+        $class = null;
+        $function = null;
         $level = self::getErrorLevelInfo($code)[0];
         $traces = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         if (isset($traces[$limit])) {
             extract($traces[$limit]);
             $message = "$class$type$function() $message";
         }
-        self::record($level, $message, $file, $line);
+        if (Config::env('STRICT_ERROR_MODE')) {
+            throw new \ErrorException($message, $code, $code, $file, $line);
+        } else {
+            self::record($level, $message, $file, $line);
+        }
     }
     
     /*
@@ -57,7 +64,7 @@ class Error
     public static function errorHandler($code, $message, $file = null, $line = null)
     {
         if (error_reporting() & $code) {
-            if (constant('STRICT_ERROR_MODE')) {
+            if (Config::env('STRICT_ERROR_MODE')) {
                 throw new \ErrorException($message, $code, $code, $file, $line);
             } else {
                 list($level, $prefix) = self::getErrorLevelInfo($code);
