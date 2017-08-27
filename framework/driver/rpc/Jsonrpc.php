@@ -5,6 +5,9 @@ use framework\core\http\Client;
 
 class Jsonrpc
 {
+    protected $config = [
+        'client_method_alias' => null
+    ];
     const ALLOW_CLIENT_METHODS = ['header', 'timeout', 'debug'];
     
     public function __construct($config)
@@ -14,7 +17,7 @@ class Jsonrpc
 
     public function __get($class)
     {
-        return new query\Query($this, $class);
+        return new query\Query($this, $class, $this->config['client_method_alias']);
     }
 
     public function __call($method, $params = [])
@@ -24,14 +27,26 @@ class Jsonrpc
     
     public function __send($ns, $method, $params, $client_methods = null)
     {
-        $data = [
+        $client = Client::post($this->host);
+        if (isset($this->config['headers'])) {
+            $client->headers($this->config['headers']);
+        }
+        if (isset($this->config['curlopt'])) {
+            $client->curlopt($this->config['curlopt']);
+        }
+        if ($client_methods) {
+            foreach ($client_methods as $name=> $values) {
+                foreach ($values as $value) {
+                    $client->{$name}(...$value);
+                }
+            }
+        }
+        $data = $client->json([
             'jsonrpc'   => '2.0',
             'params'    => $params,
-            'method'    => implode('.', $ns).'.'.$method,
+            'method'    => $ns ? implode('.', $ns).'.'.$method : $method,
             'id'        => empty($id) ? uniqid() : $id
-        ];
-        $client = Client::post($this->host)->json($data);
-        $data = $client->json;
+        ])->json;
         if (isset($data['result'])) {
             return $data['result'];
         }

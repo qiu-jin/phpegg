@@ -7,6 +7,11 @@ class Rest extends Http
         'get', 'put', 'post', 'delete', 'patch', 'options', 'head'
     ];
     
+    public function __get($name)
+    {
+        return new query\Rest($this, $name);
+    }
+    
     public function __send($ns, $method, $params, $client_methods)
     {
         if (!in_array($method, self::$methods, true)) {

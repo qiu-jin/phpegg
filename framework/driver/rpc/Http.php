@@ -83,7 +83,7 @@ class Http
         $filters = [];
         foreach ($vaules as $filter) {
             $count = count($filter);
-            if ($filters > 1) {
+            if ($filters === 2) {
                 $filters[$filter[0]] = $filter[1];
             } elseif ($count === 1 && is_array($filter)) {
                 $filters += $filter;
