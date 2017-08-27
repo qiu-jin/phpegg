@@ -1,9 +1,14 @@
 <?php
 namespace framework\driver\captcha;
 
-use framework\util\Str;
 use framework\core\http\Request;
 use framework\core\http\Response;
+
+use Gregwar\Captcha\CaptchaBuilder;
+/*
+ * composer require gregwar/captcha
+ * https://github.com/Gregwar/Captcha
+ */
 
 class Image
 {
@@ -38,11 +43,9 @@ class Image
     
     public function output($value = null)
     {
-        if ($value === null) {
-            $value = Str::random(5);
-        }
-        $this->store::set($this->name, $value);
-        Response::header('Content-Type', 'image/png');
-        Response::send(Image::build($value));
+        $builder = new CaptchaBuilder;
+        $builder->build();
+        $this->store::set($this->name, $builder->getPhrase());
+        Response::send($builder->output(), 'Content-type: image/jpeg');
     }
 }

@@ -39,8 +39,8 @@ class Thrift
         $this->transport->open();
         Loader::add($config['services']);
         isset($config['prefix']) && $this->prefix = $config['prefix'];
+        isset($config['bind_params']) && $this->bind_params = $config['bind_params'];
         isset($config['tmultiplexed']) && $this->tmultiplexed = $config['tmultiplexed'];
-        isset($config['enable_bind_params']) && $this->enable_bind_params = $config['enable_bind_params'];
     }
 
     public function __get($class)

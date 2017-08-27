@@ -24,7 +24,7 @@ class Grpc
         $this->port = $config['port'];
         Loader::add($config['services']);
         isset($config['prefix']) && $this->prefix = $config['prefix'];
-        isset($config['enable_bind_params']) && $this->enable_bind_params = $config['enable_bind_params'];
+        isset($config['bind_params']) && $this->bind_params = $config['bind_params'];
     }
     
     public function __get($class)

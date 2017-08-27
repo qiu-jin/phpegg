@@ -5,6 +5,7 @@ use framework\App;
 use framework\core\View;
 use framework\core\Router;
 use framework\core\Config;
+use framework\core\Getter;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
@@ -44,20 +45,19 @@ class Inline extends App
         $params = isset($this->dispatch['params']) ? $this->dispatch['params'] : null;
         if ($this->config['enable_getter']) {
             //7.0后使用匿名类
-            /*
             $return = (new class()
             {
-                use \framework\core\Getter;
-    
-                public function __require($file, $params)
+                use Getter;
+                public function __invoke($file, $params)
                 {
                     return require($file);
                 }
-            })->__require($file, $params);
-            */
-            $return = (new __require_with_params)->__require($file, $params);
+            })($file, $params);
+            /*$return = (new __require_with_params)->__require($file, $params);*/
         } else {
-            $return = __require_with_params($file, $params);
+            $return = (static function($file, $params) {
+                return require($file);
+            })($file, $params);
         }
         if ($return === 1 && $this->config['return_1_to_null']) {
             $return = null;
@@ -125,9 +125,4 @@ class __require_with_params
     {
         return require($file);
     }
-}
-
-function __require_with_params($file, $params)
-{
-    return require($file);
 }

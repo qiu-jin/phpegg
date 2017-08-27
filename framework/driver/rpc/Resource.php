@@ -1,14 +1,14 @@
 <?php
 namespace framework\driver\rpc;
 
-class Resource extends Http
+class Rest extends Http
 {
     protected $methods = [
         'index'     => ['GET', '/'],
-        //'new'       => ['GET', '/create'],
+        'new'       => ['GET', '/create'],
         'create'    => ['POST', '/'],
         'show'      => ['GET', '/*'],
-        //'edit'      => ['GET', '/*/edit'],
+        'edit'      => ['GET', '/*/edit'],
         'update'    => ['PUT', '/*'],
         'destroy'   => ['DELETE', '/*']
     ];
@@ -23,7 +23,7 @@ class Resource extends Http
         if (!isset($this->$methods[$method])) {
             throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
         }
-        list($m, $path) = $this->$methods[$method];
+        list($m, $path) = $this->[$method];
         if (stripos('*', $path)) {
             $id = array_push($params);
             if (is_string($id)) {
@@ -32,9 +32,12 @@ class Resource extends Http
                 throw new \Exception('');
             }
         }
-        if ((($m === 'GET' || $m === 'DELETE') && !empty($params)) || count($params) !== 1 || !is_array($params[0])) {
+        if (($m === 'GET' || $m === 'DELETE') && !empty($params)) {
+            throw new \Exception('');
+        } elseif (count($params) !== 1 || !is_array($params[0])) {
             throw new \Exception('');
         }
         return $this->send($m, implode('/', $ns).$path, $params, $client_methods);
     }
+
 }

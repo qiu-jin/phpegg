@@ -35,7 +35,20 @@ class Http
     protected function send($method, $path, $params, $client_methods)
     {
         if (isset($this->config['url_style'])) {
-            $path = $this->{$this->config['url_style']}($path);
+            switch ($this->config['url_style']) {
+                case 'snake_spinal':
+                    $path = strtr('_', '-', $path);
+                    break;
+                case 'camel_spinal':
+                    $path = Str::toSnake($path, '-');
+                    break;
+                case 'snake_to_camel':
+                    $path = Str::toCamel($path);
+                    break;
+                case 'camel_to_snake':
+                    $path = Str::toSnake($path);
+                    break;
+            }
         }
         $url = $this->config['host'].'/'.$path.$this->config['ext'];
         $data = null;
@@ -83,32 +96,12 @@ class Http
         $filters = [];
         foreach ($vaules as $filter) {
             $count = count($filter);
-            if ($filters === 2) {
+            if ($count === 2) {
                 $filters[$filter[0]] = $filter[1];
             } elseif ($count === 1 && is_array($filter)) {
                 $filters += $filter;
             }
         }
         return $filters;
-    }
-        
-    protected function snakeCamel($str)
-    {
-        return Str::toCamel($str);
-    }
-    
-    protected function camelSnake($str)
-    {
-        return Str::toSnake($str);
-    }
-    
-    protected function spinalSnake($str)
-    {
-        return strtr('_', '-', $str);
-    }
-    
-    protected function spinalCamel($str)
-    {
-        return Str::toCamel($str, '-');
     }
 }
