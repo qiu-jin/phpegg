@@ -42,6 +42,11 @@ abstract class Storage
         return false;
     }
     
+    public function setTimeout($timeout)
+    {
+        return $this->timeout = $timeout;
+    }
+    
     protected function path($path)
     {
         $path = trim($path);

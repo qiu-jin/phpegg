@@ -14,6 +14,7 @@ use framework\core\http\Client;
  * Dropbox:
  * GoogleDrive: 
  */
+
 class Webdav extends Storage
 {
     protected $host;
@@ -35,7 +36,7 @@ class Webdav extends Storage
     
     public function get($from, $to = null)
     {
-        $methods['timeout'] = 60;
+        $methods['timeout'] = $this->timeout;
         if ($to) {
             $methods['save'] = $to;
         }
@@ -51,7 +52,7 @@ class Webdav extends Storage
     {
         $to = $this->uri($to);
         if ($this->ckdir($to)) {
-            $methods['timeout'] = 60;
+            $methods['timeout'] = $this->timeout;
             if ($is_buffer) {
                 $methods['body'] = $from;
                 return $this->send('PUT', $to, null, $methods);

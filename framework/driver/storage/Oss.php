@@ -27,7 +27,7 @@ class Oss extends Storage
     
     public function get($from, $to = null)
     {
-        $methods['timeout'] = 60;
+        $methods['timeout'] = $this->timeout;
         if ($to) {
             $methods['save'] = $to;
         }
@@ -41,7 +41,7 @@ class Oss extends Storage
     
     public function put($from, $to, $is_buffer = false)
     {
-        $methods['timeout'] = 60;
+        $methods['timeout'] = $this->timeout;
         $headers['Content-Type'] = File::mime($from, $is_buffer);
         if ($is_buffer) {
             $methods['body'] = $from;
