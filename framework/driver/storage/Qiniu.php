@@ -23,7 +23,7 @@ class Qiniu extends Storage
 
     public function get($from, $to = null)
     {
-        $methods['timeout'] = 30;
+        $methods['timeout'] = 60;
         if ($to) {
             $methods['save'] = $to;
         }
@@ -44,7 +44,7 @@ class Qiniu extends Storage
         $to = parent::path($to);
         $str = $this->base64Encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
         $token = $this->sign($str).':'.$str;
-        $methods['timeout'] = 30;
+        $methods['timeout'] = 60;
         $methods['form'] = [['token' => $token, 'key' => $to]];
         if ($is_buffer) {
             $methods['buffer'] = ['file', $from];

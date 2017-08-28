@@ -35,7 +35,7 @@ class Webdav extends Storage
     
     public function get($from, $to = null)
     {
-        $methods['timeout'] = 30;
+        $methods['timeout'] = 60;
         if ($to) {
             $methods['save'] = $to;
         }
@@ -51,7 +51,7 @@ class Webdav extends Storage
     {
         $to = $this->uri($to);
         if ($this->ckdir($to)) {
-            $methods['timeout'] = 30;
+            $methods['timeout'] = 60;
             if ($is_buffer) {
                 $methods['body'] = $from;
                 return $this->send('PUT', $to, null, $methods);

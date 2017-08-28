@@ -22,6 +22,11 @@ class Image
         isset($config['name']) && $this->name = $config['name'];
         isset($config['store']) && $this->store = $config['store'];
     }
+    
+    public function src()
+    {
+        return $this->src;
+    }
 
     public function render($tag = 'input', $attrs = [])
     {

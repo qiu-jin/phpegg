@@ -20,7 +20,7 @@ class Standard extends App
         'enable_view' => 0,
         // url query参数是否转为控制器参数，0否，1是
         'query_to_params' => 0,
-        // 缺省调度 home/index
+        // 缺省调度
         'index_dispatch' => null,
         // 控制器类namespace深度，0为不确定
         'controller_depth' => 1,
@@ -72,7 +72,6 @@ class Standard extends App
                 $method =  new \ReflectionMethod($controller, $action);
             }
         }
-        $this->dispatch = null;
         switch ($this->config['param_mode']) {
             case 1:
                 $return = $controller->$action(...$params);

@@ -3,12 +3,12 @@ namespace framework\core;
 
 trait Getter
 {
-    protected $bind;
+    protected $providers;
     
     public function __get($name)
     {
-        if (isset($this->bind[$name])) {
-            $value = $this->bind[$name];
+        if (isset($this->providers[$name])) {
+            $value = $this->providers[$name];
             if (is_string($value)) {
                 return $this->$name = Container::make($value);
             } elseif (is_array($value)) {

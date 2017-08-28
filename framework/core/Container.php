@@ -3,7 +3,7 @@ namespace framework\core;
 
 class Container
 {
-    private static $init;
+    protected static $init;
     protected static $container;
     protected static $providers = [
         //key表示支持的驱动类型名，value表示驱动类实例是否默认缓存
@@ -119,6 +119,9 @@ class Container
     
     public static function driver($type, $name = null)
     {
+        if (is_array($name)) {
+            return self::makeDriver($type, $name);
+        }
         return self::$container[$name ? "$type.$name" : $type] = self::makeDriver($type, $name);
     }
     
@@ -175,16 +178,15 @@ class Container
         }
         //7.0后使用匿名类
         /*
-        return class($name, self::$providers['model'][$name]) {
+        return class($name, self::$providers['model'][$name])
+        {
             protected $__depth;
             protected $__prefix;
-
             public function __construct($prefix, $depth)
             {
                 $this->__depth = $depth - 1;
                 $this->__prefix = $prefix;
             }
-    
             public function __get($name)
             {
                 if ($this->__depth === 0) {
@@ -192,7 +194,6 @@ class Container
                 }
                 return $this->$name = new self($this->__prefix.'.'.$name, $this->__depth);
             }
-    
             public function __call($method, $param = [])
             {
                 return Container::model($this->__prefix)->$method(...$param);

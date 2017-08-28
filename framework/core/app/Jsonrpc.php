@@ -9,13 +9,16 @@ class Jsonrpc extends App
 {
     protected $id;
     protected $ns;
-    protected $config = [];
-    
+    protected $config = [
+        'param_mode' => 0,
+        'serialize' => 'jsonencode',
+        'unserialize' => 'jsondecode'
+    ];
     const VERSION = '2.0';
     
     protected function dispatch()
     {
-        $data = jsondecode(Request::body());
+        $data = ($this->config['serialize'])(Request::body());
         if (!$data) {
             $this->abort('-32700', 'Parse error');
         }
@@ -53,7 +56,6 @@ class Jsonrpc extends App
         $action = $this->dispatch['action'];
         $params = $this->dispatch['params'];
         $controller = $this->dispatch['controller'];
-        $this->dispatch = null;
         if (empty($this->config['param_mode'])) {
             $return = $controller->$action(...$params);
         } else {
@@ -66,7 +68,7 @@ class Jsonrpc extends App
                     } elseif($param->isDefaultValueAvailable()) {
                         $parameters[] = $param->getdefaultvalue();
                     } else {
-                        $this->error('-32602', 'Invalid params');
+                        $this->abort('-32602', 'Invalid params');
                     }
                 }
             }
@@ -78,11 +80,11 @@ class Jsonrpc extends App
     
     protected function error($code = null, $message = null)
     {
-        Response::json(['id' => $this->id, 'jsonrpc' => self::VERSION, 'error' => compact('code', 'message')]);
+        Response::send(($this->config['unserialize'])(['id' => $this->id, 'jsonrpc' => self::VERSION, 'error' => compact('code', 'message')]));
     }
     
     protected function response($return = null)
     {
-        Response::json(['id' => $this->id, 'jsonrpc' => self::VERSION, 'result' => $return]);
+        Response::send(($this->config['unserialize'])(['id' => $this->id, 'jsonrpc' => self::VERSION, 'result' => $return]));
     }
 }

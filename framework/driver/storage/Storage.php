@@ -6,6 +6,7 @@ use framework\core\http\Client;
 abstract class Storage
 {
     protected $domain;
+    protected $timeout = 60;
     
     abstract public function get($from);
     

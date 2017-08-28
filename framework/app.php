@@ -3,7 +3,6 @@ namespace framework;
 
 use framework\core\Hook;
 use framework\core\Config;
-use framework\core\http\Response;
 
 abstract class App
 {
