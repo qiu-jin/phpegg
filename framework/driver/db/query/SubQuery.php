@@ -50,16 +50,54 @@ class SubQuery extends QueryChain
             $this->master['limit'] = $limit;
         }
         $this->options[$this->cur] = $this->option;
-        return $this->db->exec(...$this->build());
+        return $this->db->exec(...$this->buildSelect());
     }
     
-    protected function build()
+    public function update($data)
+    {
+        list($set, $params) = Builder::setData($data);
+        $sql = "UPDATE `$this->table` SET $set WHERE ".self::buildSubQuery($params);
+        if (isset($this->master['limit'])) {
+            $sql .= Builder::limitClause($this->master['limit']);
+        }
+        return $this->exec($sql, $params);
+    }
+    
+    public function delete()
+    {
+        $params = [];
+        $sql = "DELETE FROM `$table`".self::buildSubQuery($params);
+        if (isset($this->master['limit'])) {
+            $sql .= Builder::limitClause($this->master['limit']);
+        }
+        return $this->exec($sql, $params);
+    }
+    
+    protected function buildSelect()
     {
         $params = [];
         $sql = Builder::selectFrom($this->table, isset($this->master['fields']) ? $this->master['fields'] : null).' WHERE ';
+        $sql .= self::buildSubQuery($params);
+        if (isset($this->master['group'])) {
+            $sql .= Builder::groupClause($this->master['group']);
+        }
+        if (isset($this->master['having'])) {
+            $sql .= ' HAVING '.Builder::whereClause($this->master['having'], $params);
+        }
+        if (isset($this->master['order'])) {
+            $sql .= Builder::orderClause($this->master['order']);
+        }
+        if (isset($this->master['limit'])) {
+            $sql .= Builder::limitClause($this->master['limit']);
+        }
+        return [$sql, $params];
+    }
+    
+    protected function buildSubQuery(&$params)
+    {
         if (isset($this->master['where'])) {
+            $sql = Builder::whereClause($this->master['where'], $params);
             $logic = true;
-            $sql .= Builder::whereClause($this->master['where'], $params);
         }
         foreach ($this->options as $table => $option) {
             if (isset($logic)) {
@@ -84,19 +122,7 @@ class SubQuery extends QueryChain
             $sql .= '('.$sub[0].') ';
             $params = array_merge($params, $sub[1]);
         }
-        if (isset($this->master['group'])) {
-            $sql .= Builder::groupClause($this->master['group']);
-        }
-        if (isset($this->master['having'])) {
-            $sql .= ' HAVING '.self::whereClause($this->master['having'], $params);
-        }
-        if (isset($this->master['order'])) {
-            $sql .= Builder::orderClause($this->master['order']);
-        }
-        if (isset($this->master['limit'])) {
-            $sql .= Builder::limitClause($this->master['limit']);
-        }
-        return [$sql, $params];
+        return $sql;
     }
     
     protected function checkExpLogic($exp, $logic)

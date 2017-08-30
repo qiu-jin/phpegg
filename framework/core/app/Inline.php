@@ -45,7 +45,7 @@ class Inline extends App
         $params = isset($this->dispatch['params']) ? $this->dispatch['params'] : null;
         if ($this->config['enable_getter']) {
             //7.0后使用匿名类
-            /*
+            
             $return = (new class()
             {
                 use Getter;
@@ -54,8 +54,8 @@ class Inline extends App
                     return require($file);
                 }
             })($file, $params);
-            */
-            $return = (new __require_with_params)->__require($file, $params);
+           
+            /*$return = (new __require_with_params)->__require($file, $params); */
         } else {
             $return = (static function($file, $params) {
                 return require($file);

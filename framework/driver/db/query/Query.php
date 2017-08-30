@@ -110,8 +110,11 @@ class Query extends QueryChain
         return $this->db->update($this->table, $value, [[$pk, '=', $key]], 1);
     }
    
-    public function update($data)
+    public function update($data, $id = null, $pk = 'id')
     {
+        if (isset($id)) {
+            $this->option['where'] = [[$pk, '=', $id]];
+        }
         return $this->db->update($this->table, $data, $this->option['where'], isset($this->option['limit']) ? $this->option['limit'] : 0);
     }
     

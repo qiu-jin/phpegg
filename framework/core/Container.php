@@ -66,13 +66,21 @@ class Container
     {
         return isset(self::$container[$name]);
     }
+    
+    /*
+     * 设置容器实例
+     */
+    public static function set($name, object $value)
+    {
+        self::$container[$name] = $value;
+    }
 
     /*
-     * 设置器类
+     * 绑定容器
      */
     public static function bind($name, $value)
     {
-        switch (gettype($name)) {
+        switch (gettype($value)) {
             case 'array':
                 self::$providers['class'][$name] = $value;
                 break;
@@ -82,8 +90,6 @@ class Container
             case 'object':
                 if (is_callable($value)) {
                     self::$providers['closure'][$name] = $value;
-                } else {
-                    self::$container[$name] = $value;
                 }
                 break;
         }
@@ -173,34 +179,43 @@ class Container
     
     protected static function getModel($name)
     {
-        if (strpos('.', $name)) {
+        $depth = self::$providers['model'][$name];
+        if ($depth > 0 && $depth === substr_count($name, '.')) {
             return self::makeModel($name);
         }
         //7.0后使用匿名类
-        /*
-        return class($name, self::$providers['model'][$name])
+        return new class($name, $depth)
         {
+            protected $__prev;
             protected $__depth;
             protected $__prefix;
-            public function __construct($prefix, $depth)
+            public function __construct($prefix, $depth, $prev = null)
             {
+                $this->__prev = $prev;
                 $this->__depth = $depth - 1;
                 $this->__prefix = $prefix;
             }
             public function __get($name)
             {
+                $this->__prev = null;
                 if ($this->__depth === 0) {
                     return $this->$name = Container::model($this->__prefix.'.'.$name);
                 }
-                return $this->$name = new self($this->__prefix.'.'.$name, $this->__depth);
+                return $this->$name = new self($this->__prefix.'.'.$name, $this->__depth, $this);
             }
             public function __call($method, $param = [])
             {
-                return Container::model($this->__prefix)->$method(...$param);
+                if ($this->__depth > 0) {
+                    $model = Container::model($this->__prefix);
+                    $this->__prev->{substr(strstr($this->__prefix, '.'), 1)} = $model;
+                    $this->__prev = null;
+                    return $model->$method(...$param);
+                }
+                throw new \Exception("Call to undefined method $method()");
             }
         };
-        */
-        return new ModelGetter($name, self::$providers['model'][$name]);
+        /*
+        return new ModelGetter($name, self::$providers['model'][$name]);*/
     }
 
     protected static function getClass($name)
@@ -224,25 +239,31 @@ Container::init();
 
 class ModelGetter
 {
+    protected $__prev;
     protected $__depth;
     protected $__prefix;
-
-    public function __construct($prefix, $depth)
+    public function __construct($prefix, $depth, $prev = null)
     {
+        $this->__prev = $prev;
         $this->__depth = $depth - 1;
         $this->__prefix = $prefix;
     }
-    
     public function __get($name)
     {
+        $this->__prev = null;
         if ($this->__depth === 0) {
             return $this->$name = Container::model($this->__prefix.'.'.$name);
         }
-        return $this->$name = new self($this->__prefix.'.'.$name, $this->__depth);
+        return $this->$name = new self($this->__prefix.'.'.$name, $this->__depth, $this);
     }
-    
     public function __call($method, $param = [])
     {
-        return Container::model($this->__prefix)->$method(...$param);
+        if ($this->__depth > 0) {
+            $model = Container::model($this->__prefix);
+            $this->__prev->{substr(strstr($this->__prefix, '.'), 1)} = $model;
+            $this->__prev = null;
+            return $model->$method(...$param);
+        }
+        throw new \Exception("Call to undefined method $method()");
     }
 }

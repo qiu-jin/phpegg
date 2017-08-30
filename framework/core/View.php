@@ -71,6 +71,58 @@ class View
         }
     }
     
+    public static function file($tpl, $dir = null)
+    {
+        $path = $tpl{0} === '/' ? self::$config['dir'].$tpl : $dir.'/'.$tpl;
+        $phpfile = $path.'.php';        
+        if (!isset(self::$config['template'])) {
+            return $phpfile;
+        }
+        $tplfile = self::getTemplateFile($path);
+        if (is_file($phpfile)) {
+            if (is_file($tplfile)) {
+                if (filemtime($phpfile) >= filemtime($tplfile)) {
+                    return $phpfile;
+                } else {
+                    return self::complie($tplfile, $phpfile);
+                }
+            }
+        } elseif (is_file($tplfile)) {
+            return self::complie($tplfile, $phpfile);
+        }
+        throw new \Exception("Not find template file: $tplfile");
+    }
+
+    public static function layout($tpl, $file)
+    {
+        if (!isset(self::$config['template'])) {
+            return;
+        }
+        $path = $tpl{0} === '/' ? $tpl : dirname($file).'/'.$tpl;
+        $phpfile = $path.'.php';
+        $tplfile = self::getTemplateFile($path);
+        if (file_exists($tplfile) && (!file_exists($file) || filemtime($tplfile) > filemtime($file))) {
+            $php_content = file_get_contents($file);
+            $complie_content = "<?php View::layout('$tpl', __FILE__); ?>".PHP_EOL;
+            $complie_content .= self::getTemplateHandler()->complie(file_get_contents($tplfile), $php_content);
+            if (file_put_contents($file, $complie_content)) {
+                if (!empty(self::$config['template']['layout'])) {
+                    $dir = dirname($file).'/.layout/';
+                    if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
+                        return false;
+                    }
+                    file_put_contents($dir.basename($file), $content);
+                }
+                if (extension_loaded('opcache')) {
+                    opcache_compile_file($file);
+                }
+                include $file;
+                return true;
+            } 
+        }
+        return false;
+    }
+    
     /*
      * 错误页面，404 500页面等
      */
@@ -106,76 +158,28 @@ class View
         throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
     }
     
-    private static function file($tpl, $dir = null)
+    private static function complie($tplfile, $phpfile)
     {
-        $path = $tpl{0} === '/' ? self::$config['dir'].$tpl : $dir.'/'.$tpl;
-        $phpfile = $path.'.php';
-        if (isset(self::$config['template'])) {
-            if (empty(self::$config['template']['dir'])) {
-                $tplfile = $path.'.htm';
-            } else {
-                $dir = dirname($phpfile);
-                if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
-                    return false;
-                }
-                $tplfile = str_replace(self::$config['template']['dir'], self::$config['dir'], $path).'.htm';
-            }
-            if (file_exists($phpfile)) {
-                if (file_exists($tplfile)) {
-                    if (filemtime($phpfile) > filemtime($tplfile)) {
-                        return $phpfile;
-                    } else {
-                        if (file_put_contents($phpfile, self::template()->complie(file_get_contents($tplfile)))) {
-                            return $phpfile;
-                        }
-                    }
-                }
-            } elseif (file_exists($tplfile)) {
-                if (file_put_contents($phpfile, self::template()->complie(file_get_contents($tplfile)))) {
-                    return $phpfile;
-                }
-            }
-        } elseif (file_exists($phpfile)) {
-            return $phpfile;
+        $dir = dirname($phpfile);
+        if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
+            throw new \Exception("Not create view dir: $dir");
         }
-        return false;
-    }
-
-    private static function layout($tpl, $file)
-    {
-        if (empty(self::$config['template'])) {
-            return;
+        if (!file_put_contents($phpfile, self::getTemplateHandler()->complie(file_get_contents($tplfile)))) {
+            throw new \Exception("View file write failure: $phpfile");
         }
-        $path = $tpl{0} === '/' ? $tpl : dirname($file).'/'.$tpl;
-        if (isset(self::$config['template']['dir'])) {
-            $tplfile = str_replace(self::$config['dir'], self::$config['template']['dir'], $path).'.htm';
-        } else {
-            $tplfile = $path.'.htm';
-        }
-        $phpfile = $path.'.php';
-        if (file_exists($tplfile) && (!file_exists($file) || filemtime($tplfile) > filemtime($file))) {
-            $php_content = file_get_contents($file);
-            $complie_content = "<?php View::layout('$tpl', __FILE__); ?>".PHP_EOL;
-            $complie_content .= self::template()->complie(file_get_contents($tplfile), $php_content);
-            if (file_put_contents($file, $complie_content)) {
-                if (!empty(self::$config['template']['layout'])) {
-                    $dir = dirname($file).'/.layout/';
-                    if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
-                        return false;
-                    }
-                    file_put_contents($dir.basename($file), $content);
-                }
-                if (extension_loaded('opcache')) {
-                    opcache_compile_file($file);
-                }
-                include $file;
-                return true;
-            } 
-        }
-        return false;
+        return $phpfile;
     }
     
-    private static function template()
+    private static function getTemplateFile($path)
+    {
+        if (empty(self::$config['template']['dir'])) {
+            return $path.'.htm';
+        } else {
+            return str_replace(self::$config['template']['dir'], self::$config['dir'], $path, 1).'.htm';
+        }
+    }
+    
+    private static function getTemplateHandler()
     {
         if (isset(self::$template)) {
             return self::$template;
