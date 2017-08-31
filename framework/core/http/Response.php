@@ -1,10 +1,9 @@
 <?php
 namespace framework\core\http;
 
-use \framework\App;
-use \framework\core\Hook;
-use \framework\core\View;
-use \framework\core\Error;
+use framework\App;
+use framework\core\Hook;
+use framework\core\View;
 
 class Response
 {
@@ -156,7 +155,7 @@ class Response
                 }
             }
         } else {
-            Error::set('Response headers sent fail');
+            throw new \Exception('Response headers sent failure');
         }
         if (isset(self::$response->body)) {
             echo self::$response->body;

@@ -66,8 +66,6 @@ abstract class App
         require(FW_DIR.'core/Error.php');
         require(FW_DIR.'core/Hook.php');
         register_shutdown_function(function () {
-            var_dump(self::$exit);exit;
-            
             self::$app = null;
             Hook::listen('exit');
             function_exists('fastcgi_finish_request') && fastcgi_finish_request();

@@ -104,6 +104,8 @@ class Error
                 $message = 'Fatal Error '.$prefix.': '.$last_error['message'];
                 self::record($level, $message, $last_error['file'], $last_error['line']);
                 self::response();
+    		} else {
+    		    // Logger::write(Logger::WARNING, 'Illegal exit');
     		}
         }
         self::$error = null;
