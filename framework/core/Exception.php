@@ -4,19 +4,15 @@ namespace framework\core;
 class Exception extends \Exception
 {
     protected $data;
+    protected $class;
+    protected $method;
     
-    public function __construct($message, $code = null, $file = null, $line = null)
+    public function __construct($message, $class = null, $method = null, $data = null)
     {
-        $this->message = $message;
-        if (isset($code)) {
-            $this->code = $code;
-        }
-        if (isset($file)) {
-            $this->file = $file;
-        }
-        if (isset($line)) {
-            $this->line = $line;
-        }
+        $this->data     = $data;
+        $this->class    = $class;
+        $this->method   = $method;
+        $this->message  = $message;
     }
     
     public function getData()
@@ -29,19 +25,23 @@ class Exception extends \Exception
         $this->data = $data;
     }
     
-    public function getName($code = null)
+    public function getClass()
     {
-        if (!$code) {
-            $code = $this->getCode();
-        }
-        if ($code && isset(self::$code_name[$code])) {
-            return self::$code_name[$code];
-        }
-        return null;
+        return $this->class;
     }
     
-    public static function setName($code, $name)
+    public function setClass($class)
     {
-        self::$code_name[$code] = $name;
+        $this->class = $class;
+    }
+    
+    public function getMethod()
+    {
+        return $this->method;
+    }
+    
+    public function seMethod($method)
+    {
+        $this->method = $method;
     }
 }

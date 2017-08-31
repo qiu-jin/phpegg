@@ -66,21 +66,22 @@ class Inline extends App
         }
         $return_handler && $return_handler($return);
         $this->response($return);
+        $this->finish(1);
     }
 
     protected function error($code = null, $message = null)
     {
         Response::status($code ?: 500);
         if ($this->config['enable_view']) {
-            Response::send(View::error($code, $message), 'text/html; charset=UTF-8');
+            Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
         } else {
-            Response::json(['error' => compact('code', 'message')]);
+            Response::json(['error' => compact('code', 'message')], false);
         }
     }
     
     protected function response($return = [])
     {
-        $this->config['enable_view'] ? Response::view($this->getTemplate(), $return) : Response::json($return);
+        $this->config['enable_view'] ? Response::view($this->getTemplate(), $return, false) : Response::json($return, false);
     }
     
     protected function getTemplate()

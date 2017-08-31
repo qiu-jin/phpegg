@@ -76,15 +76,16 @@ class Jsonrpc extends App
         }
         $return_handler && $return_handler($return);
         $this->response($return);
+        $this->finish(1);
     }
     
     protected function error($code = null, $message = null)
     {
-        Response::send(($this->config['unserialize'])(['id' => $this->id, 'jsonrpc' => self::VERSION, 'error' => compact('code', 'message')]));
+        Response::send(($this->config['unserialize'])(['id' => $this->id, 'jsonrpc' => self::VERSION, 'error' => compact('code', 'message')]), false);
     }
     
     protected function response($return = null)
     {
-        Response::send(($this->config['unserialize'])(['id' => $this->id, 'jsonrpc' => self::VERSION, 'result' => $return]));
+        Response::send(($this->config['unserialize'])(['id' => $this->id, 'jsonrpc' => self::VERSION, 'result' => $return]), false);
     }
 }

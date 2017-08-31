@@ -60,7 +60,11 @@ class Response
      */
     public static function headers(array $headers)
     {
-        self::$response->headers = array_merge((array) self::$response->headers, $headers);
+        if (isset(self::$response->headers)) {
+            self::$response->headers = array_merge(self::$response->headers, $headers);
+        } else {
+            self::$response->headers = $headers;
+        }
     }
     
     /*
@@ -82,44 +86,44 @@ class Response
     /*
      * 设置视图响应
      */
-    public static function view($tpl, $vars = null)
+    public static function view($tpl, $vars = null, $exit = true)
     {
         self::$response->headers['Content-Type'] = 'text/html; charset=UTF-8';
         self::$response->body = View::render($tpl, $vars);
-        App::finish();
+        if ($exit) App::finish();
     }
     
     /*
      * 设置响应json格式化数据
      */
-    public static function json($data)
+    public static function json($data, $exit = true)
     {
         self::$response->headers['Content-Type'] = 'application/json; charset=UTF-8';
         self::$response->body = jsonencode($data);
-        App::finish();
+        if ($exit) App::finish();
     }
     
     /*
      * 设置响应重定向
      */
-    public static function redirect($url, $code = 302)
+    public static function redirect($url, $code = 302, $exit = true)
     {
         self::$response->status = ($code === 301) ? 301 : 302;
         self::$response->headers['Location'] = $url;
         if (isset(self::$response->body)) self::$response->body = null;
-        App::finish();
+        if ($exit) App::finish();
     }
     
     /*
      * 设置响应body内容
      */
-    public static function send($body, $type = null)
+    public static function send($body, $type = null, $exit = true)
     {
         if ($type) {
             self::$response->headers['Content-Type'] = $type;
         }
         self::$response->body = $body;
-        App::finish();
+        if ($exit) App::finish();
     }
     
     /*

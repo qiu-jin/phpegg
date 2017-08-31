@@ -100,15 +100,15 @@ class Opcache extends Cache
     public function gc()
     {
         $maxtime = time()+$this->gc_maxlife;
-        $ch = opendir($this->dir);
-        if ($ch) {
-            while (($f = readdir($ch)) !== false) {
+        $fp = opendir($this->dir);
+        if ($fp) {
+            while (($f = readdir($fp)) !== false) {
                 $file = $this->dir.$f;
                 if (is_php_file($file) && $maxtime < filemtime($file)) {
                     $this->removeCache($file);
                 }
             }
-            closedir($ch);
+            closedir($fp);
         }
     }
 

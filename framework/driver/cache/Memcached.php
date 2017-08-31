@@ -37,7 +37,7 @@ class Memcached extends Cache
     
     public function set($key, $value, $ttl = null)
     {
-        return $this->link->set($key, $this->serialize($value), $ttl ? $ttl : 0);
+        return $this->link->set($key, $this->serialize($value), $ttl ? (int) $ttl : 0);
     }
 
     public function delete($key)

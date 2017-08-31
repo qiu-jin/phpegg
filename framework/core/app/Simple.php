@@ -4,7 +4,6 @@ namespace framework\core\app;
 use framework\App;
 use framework\core\Router;
 use framework\core\http\Request;
-use framework\core\http\Response;
 
 class Simple extends App
 {
@@ -32,7 +31,7 @@ class Simple extends App
             $this->abort(404);
         }
         $return_handler && $return_handler($return);
-        $this->finish();
+        $this->finish(1);
     }
     
     public function route($role, callable $call, $method = null)

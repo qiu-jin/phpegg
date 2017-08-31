@@ -101,10 +101,11 @@ class Standard extends App
         $return_handler && $return_handler($return);
         if ($this->config['enable_view']) {
             $template = $this->getTemplate(get_class($controller), $action);
-            Response::view($template, $return);
+            Response::view($template, $return, false);
         } else {
-            Response::json($return);
+            Response::json($return, false);
         }
+        $this->finish(1);
     }
     
     /*
@@ -114,9 +115,9 @@ class Standard extends App
     {
         Response::status($code ?: 500);
         if ($this->config['enable_view']) {
-            Response::send(View::error($code, $message), 'text/html; charset=UTF-8');
+            Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
         } else {
-            Response::json(['error' => compact('code', 'message')]);
+            Response::json(['error' => compact('code', 'message')], false);
         }
     }
     

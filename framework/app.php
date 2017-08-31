@@ -3,6 +3,7 @@ namespace framework;
 
 use framework\core\Hook;
 use framework\core\Config;
+use framework\core\Exception;
 
 abstract class App
 {
@@ -10,7 +11,14 @@ abstract class App
     private static $app;
     // 标示boot方法是否已执行，防止重复执行
     private static $boot;
-    // 标示退出状态
+    /* 标示退出状态
+     * 0 未标示
+     * 1 请求自然完成并退出
+     * 2 用户强制退出，使用exit
+     * 3 错误退出，Error::errorHandler调用
+     * 4 异常退出，Error::exceptionHandler调用
+     * 5 致命错误退出，Error::fatalHandler调用
+     */
     private static $exit;
     // 标示run方法知否在执行，防止重复执行
     private static $runing;
@@ -58,6 +66,8 @@ abstract class App
         require(FW_DIR.'core/Error.php');
         require(FW_DIR.'core/Hook.php');
         register_shutdown_function(function () {
+            var_dump(self::$exit);exit;
+            
             self::$app = null;
             Hook::listen('exit');
             function_exists('fastcgi_finish_request') && fastcgi_finish_request();
@@ -99,13 +109,13 @@ abstract class App
     /*
      * 退出应用，为兼容PHP5.6使用finish替换exit方法名
      */
-    public static function finish($status = 1)
+    public static function finish($status = 2)
     {
         if ($status === 0) {
             return (bool) self::$exit;
-        } elseif ($status === 1) {
+        } elseif ($status === 2) {
             if (!self::$exit) {
-                self::$exit = 1;
+                self::$exit = 2;
                 exit;
             }
         } else {

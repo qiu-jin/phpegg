@@ -82,17 +82,18 @@ class Rest extends App
         }
         $return_handler && $return_handler($return);
         $this->response($return);
+        $this->finish(1);
     }
     
     protected function error($code = null, $message = null)
     {
         Response::status($code ?: 500);
-        Response::json(['error' => compact('code', 'message')]);
+        Response::json(['error' => compact('code', 'message')], false);
     }
     
     protected function response($return)
     {
-        Response::json(['result' => $return]);
+        Response::json(['result' => $return], false);
     }
     
     protected function defaultDispatch($path, $method) 

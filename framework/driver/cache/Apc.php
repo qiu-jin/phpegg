@@ -27,7 +27,7 @@ class Apc extends Cache
     
     public function set($key, $value, $ttl = null)
     {
-        return apcu_store($this->prefix.$key, $this->serialize($value), $ttl ? $ttl + time() : 0);
+        return apcu_store($this->prefix.$key, $this->serialize($value), $ttl ? (int) $ttl : 0);
     }
     
     public function delete($key)
@@ -37,12 +37,12 @@ class Apc extends Cache
     
     public function increment($key, $value = 1)
     {
-        return apcu_inc($key, $value);
+        return apcu_inc($this->prefix.$key, $value);
     }
     
     public function decrement($key, $value = 1)
     {
-        return apcu_dec($key, $value);
+        return apcu_dec($this->prefix.$key, $value);
     }
     
     public function clear()
