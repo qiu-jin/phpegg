@@ -34,7 +34,7 @@ class Yuntongxun extends Sms
             if (isset($data['statusCode']) && $data['statusCode'] === '000000') {
                 return true;
             }
-            return error(isset($data['statusMsg']) ? $data['statusCode'].': '.$data['statusMsg'] : $client->error);
+            return error($data['statusMsg'] ?? $client->error);
         }
         return error('Template not exists');
     }

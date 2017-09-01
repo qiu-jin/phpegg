@@ -142,10 +142,13 @@ class Config
      */
     private static function loadFile($name)
     {
-        $config = __include(self::$dir.$name.'.php');
-        if (is_array($config)) {
-            self::$configs[$name] = $config;
-            return true;
+        $file = self::$dir.$name.'.php';
+        if (is_php_file($file)) {
+            $config = __include($file);
+            if (is_array($config)) {
+                self::$configs[$name] = $config;
+                return true;
+            }
         }
         return false;
     }

@@ -6,7 +6,7 @@ class Redis extends Cache
     protected function init($config)
     {
         $link = new \Redis();
-        if ($link->connect($config['host'], isset($config['port']) ? $config['port'] : 6379)) {
+        if ($link->connect($config['host'], $config['port'] ?? 6379)) {
             if (isset($config['database'])) {
                 $link->select($config['database']);
             }

@@ -13,7 +13,7 @@ class Memcached extends Cache
             $link->setOption(\Memcached::OPT_CONNECT_TIMEOUT, $config['timeout']);
         }
         $hosts = explode(',', $config['hosts']);
-        $port = isset($config['port']) ? $config['port'] : 11211;
+        $port  = $config['port'] ?? 11211;
         foreach ($hosts as $i => $host) {
             $link->addServer($host, $port, 1);
         }

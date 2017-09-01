@@ -116,7 +116,7 @@ class S3 extends Storage
             return false;
         }
         $data = $client->xml;
-        return error(isset($data['Message']) ? $data['Message'] : $client->error, 2);
+        return error($data['Message'] ?? $client->error, 2);
     }
     
     protected function setHeaders($method, $path, $headers)

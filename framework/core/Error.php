@@ -71,7 +71,7 @@ class Error
                 $message = $prefix.': '.$message;
                 self::record($level, $message, $file, $line);
                 if ($level === Logger::CRITICAL || $level === Logger::ALERT || $level === Logger::ERROR ) {
-                    App::finish(3);
+                    App::exit(3);
                     self::response();
                     return false;
                 }
@@ -84,7 +84,7 @@ class Error
      */
     public static function exceptionHandler($e)
     {
-        App::finish(4);
+        App::exit(4);
         $level = Logger::ERROR;
         $message = 'Uncaught Exception '.get_class($e).': '.$e->getMessage();
         self::record($level, $message, $e->getFile(), $e->getLine());
@@ -96,10 +96,10 @@ class Error
      */
     public static function fatalHandler()
     {
-        if (!App::finish(0)) {
+        if (!App::exit(0)) {
     		$last_error = error_get_last();
     		if ($last_error && ($last_error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR))) {
-                App::finish(5);
+                App::exit(5);
                 list($level, $prefix) = self::getErrorLevelInfo($last_error['type']);
                 $message = 'Fatal Error '.$prefix.': '.$last_error['message'];
                 self::record($level, $message, $last_error['file'], $last_error['line']);

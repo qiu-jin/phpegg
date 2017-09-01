@@ -6,7 +6,7 @@ class Pdo extends Db
     protected function connect($config)
     {
 		try {
-			$dsn = isset($config['dbtype']) ? $config['dbtype'] : 'mysql';
+			$dsn = $config['dbtype'] ?? 'mysql';
             $dsn .= ':host='.$config['host'].';dbname='.$config['dbname'];
             if (isset($config['port'])) {
                 $dsn .= ';port='.$config['port'];

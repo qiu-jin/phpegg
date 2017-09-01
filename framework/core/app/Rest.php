@@ -82,7 +82,7 @@ class Rest extends App
         }
         $return_handler && $return_handler($return);
         $this->response($return);
-        $this->finish(1);
+        $this->exit(1);
     }
     
     protected function error($code = null, $message = null)
@@ -153,7 +153,7 @@ class Rest extends App
         $params = [];
         $len = count($path);
         for ($i =0; $i < $len; $i = $i+2) {
-            $params[$path[$i]] = isset($path[$i+1]) ? $path[$i+1] : null;
+            $params[$path[$i]] = $path[$i+1] ?? null;
         }
         return $params;
     }

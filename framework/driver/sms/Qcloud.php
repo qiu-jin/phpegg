@@ -29,7 +29,7 @@ class Qcloud extends Sms
             if (isset($data['result']) && $data['result'] === 0) {
                 return true;
             }
-            return error(isset($data['errmsg']) ? $data['errmsg'] : $client->error);
+            return error($data['errmsg'] ?? $client->error);
         }
         return error('Template not exists');
     }

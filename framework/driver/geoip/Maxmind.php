@@ -52,7 +52,7 @@ class Maxmind extends Geoip
                 return $return;
             }
         }
-        return error(isset($result['error']) ? $result['error'] : $client->error);
+        return error($result['error'] ?? $client->error);
     }
     
     protected function dbHandle($ip, $raw = false)

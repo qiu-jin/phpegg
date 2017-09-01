@@ -31,7 +31,7 @@ class Webdav extends Storage
         if (isset($config['auto_create_dir'])) {
             $this->auto_create_dir = (bool) $config['auto_create_dir'];
         }
-        $this->domain = isset($config['domain']) ? $config['domain'] : $config['host'];
+        $this->domain = $config['domain'] ?? $config['host'];
     }
     
     public function get($from, $to = null)
@@ -131,7 +131,7 @@ class Webdav extends Storage
         if ($status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
             return false;
         }
-        return error($status ? $status : $client->error, 2);
+        return error($status ?? $client->error, 2);
     }
     
     protected function uri($path)

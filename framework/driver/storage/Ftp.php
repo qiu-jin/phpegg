@@ -9,7 +9,7 @@ class Ftp extends Storage
     
     public function __construct($config)
     {
-        $port = isset($config['port']) ? $config['port'] : '21';
+        $port = $config['port'] ?? 21;
         if (empty($config['ssl'])) {
             $link = ftp_connect($config['host'], $port);
         } else {

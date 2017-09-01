@@ -83,7 +83,7 @@ class WebConsole extends Logger
                 if (isset($log[2]['file']) && isset($log[2]['line'])) {
                     $trace = $log[2]['file'].' : '.$log[2]['line'];
                 }
-                $level = isset(self::$loglevel[$log[0]]) ? self::$loglevel[$log[0]] : '';
+                $level = self::$loglevel[$log[0]] ?? '';
                 $rows[] = [null, $log[1], $trace, $level];
             }
             $data = [

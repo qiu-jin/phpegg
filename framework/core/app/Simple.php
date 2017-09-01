@@ -31,7 +31,7 @@ class Simple extends App
             $this->abort(404);
         }
         $return_handler && $return_handler($return);
-        $this->finish(1);
+        $this->exit(1);
     }
     
     public function route($role, callable $call, $method = null)

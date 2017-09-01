@@ -17,7 +17,7 @@ class Standard extends App
         // 参数模式，0无参数，1循序参数，2键值参数
         'param_mode' => 0,
         // 是否启用视图，0否，1是
-        'enable_view' => 0,
+        'enable_view' => 1,
         // url query参数是否转为控制器参数，0否，1是
         'query_to_params' => 0,
         // 缺省调度
@@ -105,7 +105,7 @@ class Standard extends App
         } else {
             Response::json($return, false);
         }
-        $this->finish(1);
+        $this->exit(1);
     }
     
     /*
@@ -126,7 +126,7 @@ class Standard extends App
      */
     protected function getTemplate($class, $action)
     {
-        $class = strtr($class, $this->ns, '');
+        $class = str_replace($this->ns, '', $class);
         if (empty($this->config['template_to_snake'])) {
             return strtr('\\', '/', $class).'/'.$action;
         } else {
@@ -227,7 +227,7 @@ class Standard extends App
         $params = [];
         $len = count($path);
         for ($i =0; $i < $len; $i = $i+2) {
-            $params[$path[$i]] = isset($path[$i+1]) ? $path[$i+1] : null;
+            $params[$path[$i]] = $path[$i+1] ?? null;
         }
         return $params;
     }

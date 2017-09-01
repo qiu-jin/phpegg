@@ -14,7 +14,7 @@ class Openssl extends Crypt
         } else {
             throw new \Exception('Crypt no key');
         }
-        $this->iv = $config['iv'] ?: openssl_digest($config['key'], 'MD5', true);
+        $this->iv = isset($config['iv']) ? $config['iv'] : openssl_digest($config['key'], 'MD5', true);
         if (isset($config['method'])) {
             $this->method = $config['method'];
         }

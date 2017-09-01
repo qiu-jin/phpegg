@@ -7,10 +7,17 @@ class Cookie
 {
     private static $init;
     private static $crypt;
-    private static $crypt_except;
     private static $serialize;
     private static $unserialize;
     private static $cookie = [];
+    private static $option = [
+        'expire'    => 0,
+        'path'      => '/',
+        'domain'    => '',
+        'secure'    => false,
+        'httponly'  => false
+    ];
+    private static $crypt_except = ['PHPSESSID'];
     
     public static function init()
     {
@@ -18,8 +25,11 @@ class Cookie
         self::$init = true;
         $config = Config::get('cookie');
         if ($config) {
+            if (isset($config['option'])) {
+                self::$option = array_merge(self::$option, $config['option']);
+            }
             if (isset($config['crypt'])) {
-                self::$crypt = load('crypt', $config['crypt']);
+                self::$crypt = driver('crypt', $config['crypt']);
                 if (isset($config['crypt_except'])) {
                     self::$crypt_except = $config['crypt_except'];
                 }
@@ -44,10 +54,10 @@ class Cookie
         return $default;
     }
     
-    public static function set($name, $value, $expire = 0, $path = '/', $domain = null, $secure = false, $httponly = false)
+    public static function set($name, $value, ...$option)
     {
         self::$cookie[$name] = $value;
-        self::setCookie($name, $value, $expire, $path, $domain, $secure, $httponly);
+        self::setCookie($name, $value, ...$option);
     }
     
     public static function temp($name, $value)
@@ -108,8 +118,11 @@ class Cookie
         return $value;
     }
     
-    protected static function setCookie($name, $value, $expire = 0, $path = '/', $domain = null, $secure = false, $httponly = false)
+    protected static function setCookie($name, $value, $expire = null, $path = null, $domain = null, $secure = null, $httponly = null)
     {
+        foreach (self::$option as $k => $v) {
+            if (!isset($$k)) $$k = $v;
+        }
         if ($value === null) { 
             $expire = time()-3600;
         } else {

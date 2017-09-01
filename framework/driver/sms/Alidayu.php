@@ -33,7 +33,7 @@ class Alidayu extends Sms
             if (isset($data['alibaba_aliqin_fc_sms_num_send_response']['result'])) {
                 return true;
             }
-            return error(isset($data['error_response']) ? $data['error_response']['sub_msg'] : $client->error);
+            return error($data['error_response']['sub_msg'] ?? $client->error);
         }
         return error('Template not exists');
     }

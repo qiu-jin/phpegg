@@ -16,7 +16,7 @@ class Smtp extends Email
     protected function init($config)
     {
         $this->host = $config['host'];
-        $this->port = isset($config['port']) ? $config['port'] : 25;
+        $this->port = $config['port'] ?? 25;
         $this->username = $config['username'];
         $this->password = $config['password'];
     }

@@ -12,7 +12,7 @@ class With extends QueryChain
         $this->db = $db;
         $this->with = $with;
         $this->table = $table;
-        $this->alias = isset($alias) ? $alias : $with;
+        $this->alias = $alias ?? $with;
         $this->option['where'] = [];
         $this->query = $query;
     }

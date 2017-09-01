@@ -30,17 +30,17 @@ class Uploaded
     
     public function name()
     {
-        return isset($this->file['name']) ? $this->file['name'] : false;
+        return $this->file['name'] ?? false;
     }
     
     public function size()
     {
-        return isset($this->file['size']) ? $this->file['size'] : false;
+        return $this->file['size'] ?? false;
     }
     
     public function type()
     {
-        return isset($this->file['type']) ? $this->file['type'] : false;
+        return $this->file['type'] ?? false;
     }
     
     public function mime()

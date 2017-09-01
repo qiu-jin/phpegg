@@ -22,7 +22,7 @@ class Jsonrpc extends App
         if (!$data) {
             $this->abort('-32700', 'Parse error');
         }
-        $this->id = isset($data['id']) ? $data['id'] : null;
+        $this->id = $data['id'] ?? null;
         if (isset($data['method'])) {
             $method = explode('.', $method);
             if (count($method) > 1) {
@@ -39,7 +39,7 @@ class Jsonrpc extends App
                             return [
                                 'controller'    => $controller,
                                 'action'        => $action,
-                                'params'        => isset($data['params']) ? $data['params'] : []
+                                'params'        => $data['params'] ?? []
                             ];
                         }
                     }
@@ -76,7 +76,7 @@ class Jsonrpc extends App
         }
         $return_handler && $return_handler($return);
         $this->response($return);
-        $this->finish(1);
+        $this->exit(1);
     }
     
     protected function error($code = null, $message = null)

@@ -5,7 +5,7 @@ class Mysqli extends Db
 {   
     protected function connect($config)
     {
-        $port = isset($config['port']) ? $config['port'] : '3306';
+        $port = $config['port'] ?? '3306';
         $link = new \mysqli($config['host'], $config['username'], $config['password'], $config['dbname'], $port);
         if ($link->connect_error) {
             throw new \Exception("MySQL Server Connect Error $link->connect_errno: $link->connect_error");

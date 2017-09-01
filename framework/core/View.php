@@ -53,13 +53,13 @@ class View
      */
     public static function render($tpl, $vars = null)
     {
-        $phpfile = self::path(trim($tpl));
+        $phpfile = self::file(trim($tpl));
         if ($phpfile) {
             if (isset(self::$view->vars)) {
                 extract(self::$view->vars, EXTR_SKIP);
                 self::$view->vars = null;
             }
-            if ($vars) {
+            if (is_array($vars)) {
                 extract($vars, EXTR_SKIP);
                 unset($vars);
             }
@@ -73,7 +73,7 @@ class View
     
     public static function file($tpl, $dir = null)
     {
-        $path = $tpl{0} === '/' ? self::$config['dir'].$tpl : $dir.'/'.$tpl;
+        $path = $tpl[0] !== '/' ? self::$config['dir'].$tpl : $dir.'/'.$tpl;
         $phpfile = $path.'.php';        
         if (!isset(self::$config['template'])) {
             return $phpfile;
@@ -144,8 +144,8 @@ class View
      */
     public static function __callStatic($method, $params = [])
     {
-        if (isset($this->config['methods'][$method])) {
-            $vars = $this->config['methods'][$method];
+        if (isset(self::$config['methods'][$method])) {
+            $vars = self::$config['methods'][$method];
             $tpl = array_pop($vars);
             if ($vars) {
                 foreach (array_keys($vars) as $i => $v) {
@@ -181,10 +181,7 @@ class View
     
     private static function getTemplateHandler()
     {
-        if (isset(self::$template)) {
-            return self::$template;
-        }
-        return self::$template = new Template(self::$config['template']);
+        return self::$template ?? self::$template = new Template(self::$config['template']);
     }
     
     public static function free()

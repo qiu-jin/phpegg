@@ -90,7 +90,7 @@ class Relate extends QueryChain
                     $field_name = $this->alias ? $this->alias : $this->with; 
                     for ($i = 0; $i < $count;  $i++) {
                         $index = $data[$i][$field1[0]];
-                        $data[$i][$field_name] = isset($sub_data[$index]) ? $sub_data[$index] : [];
+                        $data[$i][$field_name] = $sub_data[$index] ?? [];
                     }
                 }
             }

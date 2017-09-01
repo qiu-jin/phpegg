@@ -202,7 +202,7 @@ class Client
         if ($name === null) {
             return $this->result;
         }
-        return isset($this->result[$name]) ? $this->result[$name] : null;
+        return $this->result[$name] ?? null;
     }
     
     /*

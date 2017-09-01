@@ -8,7 +8,6 @@ class Session
     private static $init;
     private static $session;
     
-    //run this method in last line when load class
     public static function init()
     {
         if (self::$init) return;
@@ -42,10 +41,7 @@ class Session
     
     public static function get($name = null, $default = null)
     {
-        if ($name === null) {
-            return $_SESSION;
-        }
-        return isset($_SESSION[$name]) ? $_SESSION[$name] : $default;
+        return $name === null ? $_SESSION : $_SESSION[$name] ?? $default;
     }
     
     public static function set($name, $value)

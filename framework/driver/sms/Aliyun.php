@@ -30,7 +30,7 @@ class Aliyun extends Sms
                 return true;
             }
             $data = $client->json;
-            return error(isset($data['Message']) ? $data['Message'] : $client->error);
+            return error($data['Message'] ?? $client->error);
         }
         return error('Template not exists');
     }

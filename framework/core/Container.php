@@ -56,7 +56,7 @@ class Container
      */
     public static function get($name)
     {
-        return isset(self::$container[$name]) ? self::$container[$name] : null;
+        return self::$container[$name] ?? null;
     }
     
     /*
@@ -183,7 +183,6 @@ class Container
         if ($depth > 0 && $depth === substr_count($name, '.')) {
             return self::makeModel($name);
         }
-        //7.0后使用匿名类
         return new class($name, $depth)
         {
             protected $__prev;
@@ -214,8 +213,6 @@ class Container
                 throw new \Exception("Call to undefined method $method()");
             }
         };
-        /*
-        return new ModelGetter($name, self::$providers['model'][$name]);*/
     }
 
     protected static function getClass($name)
@@ -235,35 +232,3 @@ class Container
     }
 }
 Container::init();
-
-
-class ModelGetter
-{
-    protected $__prev;
-    protected $__depth;
-    protected $__prefix;
-    public function __construct($prefix, $depth, $prev = null)
-    {
-        $this->__prev = $prev;
-        $this->__depth = $depth - 1;
-        $this->__prefix = $prefix;
-    }
-    public function __get($name)
-    {
-        $this->__prev = null;
-        if ($this->__depth === 0) {
-            return $this->$name = Container::model($this->__prefix.'.'.$name);
-        }
-        return $this->$name = new self($this->__prefix.'.'.$name, $this->__depth, $this);
-    }
-    public function __call($method, $param = [])
-    {
-        if ($this->__depth > 0) {
-            $model = Container::model($this->__prefix);
-            $this->__prev->{substr(strstr($this->__prefix, '.'), 1)} = $model;
-            $this->__prev = null;
-            return $model->$method(...$param);
-        }
-        throw new \Exception("Call to undefined method $method()");
-    }
-}

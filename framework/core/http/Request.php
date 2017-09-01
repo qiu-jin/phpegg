@@ -39,10 +39,7 @@ class Request
      */
     public static function has($name, $key = null)
     {
-        if ($key == null) {
-            return isset(self::$request->$name);
-        }
-        return isset(self::$request->$name[$key]);
+        return $key === null ? isset(self::$request->$name) : isset(self::$request->$name[$key]);
     }
 
     /*
@@ -50,10 +47,7 @@ class Request
      */
     public static function get($name = null, $default = null)
     {
-        if ($name === null) {
-            return self::$request->get;
-        }
-        return isset(self::$request->get[$name]) ? self::$request->get[$name] : $default;
+        return $name === null ? self::$request->get : self::$request->get[$name] ?? $default;
     }
     
     /*
@@ -61,10 +55,7 @@ class Request
      */
     public static function post($name = null, $default = null)
     {
-        if ($name === null) {
-            return self::$request->post;
-        }
-        return isset(self::$request->post[$name]) ? self::$request->post[$name] : $default;
+        return $name === null ? self::$request->post : self::$request->post[$name] ?? $default;
     }
     
     /*
@@ -80,10 +71,7 @@ class Request
      */
     public static function params($name = null, $default = null)
     {
-        if ($name === null) {
-            return self::$request->params;
-        }
-        return isset(self::$request->params[$name]) ? self::$request->params[$name] : $default;
+       return $name === null ? self::$request->params : self::$request->params[$name] ?? $default;
     }
     
     /*
@@ -99,10 +87,7 @@ class Request
      */
     public static function files($name = null, $default = null)
     {
-        if ($name === null) {
-            return $_FILES;
-        }
-        return isset($_FILES[$name]) ? $_FILES[$name] : $default;
+        return $name === null ? $_FILES : $_FILES[$name] ?? $default;
     }
     
     /*
@@ -130,10 +115,7 @@ class Request
      */
     public static function server($name = null, $default = null)
     {
-        if ($name === null) {
-            return self::$request->server;
-        }
-        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
+        return $name === null ? self::$request->server : self::$request->server[$name] ?? $default;
     }
     
     /*
@@ -142,7 +124,7 @@ class Request
     public static function header($name, $default = null)
     {
         $name = 'HTTP_'.strtoupper(strtr('-', '_', $name));
-        return isset(self::$request->server[$name]) ? self::$request->server[$name] : $default;
+        return self::$request->server[$name] ?? $default;
     }
     
     /*
@@ -150,7 +132,7 @@ class Request
      */
     public static function url()
     {
-        return isset(self::$request->url) ? self::$request->url : self::$request->url = $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+        return self::$request->url ?? self::$request->url = $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
     }
     
     /*
@@ -158,7 +140,7 @@ class Request
      */
     public static function host()
     {
-        return isset(self::$request->host) ? self::$request->host : self::$request->host = $_SERVER['HTTP_HOST'];
+        return self::$request->host ?? self::$request->host = $_SERVER['HTTP_HOST'];
     }
     
     /*
@@ -166,7 +148,7 @@ class Request
      */
     public static function method()
     {
-        return isset(self::$request->method) ? self::$request->method : self::$request->method = $_SERVER['REQUEST_METHOD'];
+        return self::$request->method ?? self::$request->method = $_SERVER['REQUEST_METHOD'];
     }
     
     /*
@@ -174,7 +156,7 @@ class Request
      */
     public static function lang()
     {
-        return isset(self::$request->lang) ? self::$request->lang : self::$request->lang =  strtolower(strtok($_SERVER['HTTP_ACCEPT_LANGUAGE'], ','));
+        return self::$request->lang ?? self::$request->lang =  strtolower(strtok($_SERVER['HTTP_ACCEPT_LANGUAGE'], ','));
     }
     
     /*
@@ -197,10 +179,7 @@ class Request
             }
             return self::$request->ip[1] = $ip;
         } else {
-            if (isset(self::$request->ip[0])) {
-                return self::$request->ip[0];
-            }
-            return self::$request->ip[0] = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : false;
+            return self::$request->ip[0] ?? self::$request->ip[0] = $_SERVER['REMOTE_ADDR'] ?? false;
         }
     }
     
@@ -209,10 +188,7 @@ class Request
      */
     public static function path()
     {
-        if (isset(self::$request->path)) {
-            return self::$request->path;
-        }
-        return self::$request->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        return self::$request->path ?? self::$request->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     }
     
     /*
@@ -258,16 +234,12 @@ class Request
     /*
      * 是否为Https请求
      */
-    public static function isHttps()
+    public static function isHttps($proxy = false)
     {
-    	if (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') {
-    		return true;
-    	} elseif (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
-    		return true;
-    	} elseif (!empty($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) !== 'off') {
-    		return true;
-    	}
-    	return false;
+        if (isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) === 'on') {
+            return true;
+        }
+        return $proxy && isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https';
     }
     
     /*

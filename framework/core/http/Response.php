@@ -24,7 +24,7 @@ class Response
      */
     public static function get($name, $default = null)
     {
-        return isset(self::$response->$name) ? self::$response->$name : $default;
+        return self::$response->$name ?? $default;
     }
     
     /*
@@ -32,10 +32,7 @@ class Response
      */
     public static function has($name, $key = null)
     {
-        if ($key) {
-            return isset(self::$response->$name);
-        }
-        return isset(self::$response->$name[$key]);
+        return $key === null ? isset(self::$response->$name) : isset(self::$response->$name[$key]);
     }
     
     /*
@@ -89,7 +86,7 @@ class Response
     {
         self::$response->headers['Content-Type'] = 'text/html; charset=UTF-8';
         self::$response->body = View::render($tpl, $vars);
-        if ($exit) App::finish();
+        if ($exit) App::exit();
     }
     
     /*
@@ -99,18 +96,18 @@ class Response
     {
         self::$response->headers['Content-Type'] = 'application/json; charset=UTF-8';
         self::$response->body = jsonencode($data);
-        if ($exit) App::finish();
+        if ($exit) App::exit();
     }
     
     /*
      * 设置响应重定向
      */
-    public static function redirect($url, $code = 302, $exit = true)
+    public static function redirect($url, $permanently = false, $exit = true)
     {
-        self::$response->status = ($code === 301) ? 301 : 302;
+        self::$response->status = $permanently ? 301 : 302;
         self::$response->headers['Location'] = $url;
         if (isset(self::$response->body)) self::$response->body = null;
-        if ($exit) App::finish();
+        if ($exit) App::exit();
     }
     
     /*
@@ -122,7 +119,7 @@ class Response
             self::$response->headers['Content-Type'] = $type;
         }
         self::$response->body = $body;
-        if ($exit) App::finish();
+        if ($exit) App::exit();
     }
     
     /*

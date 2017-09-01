@@ -76,7 +76,7 @@ class SubQuery extends QueryChain
     protected function buildSelect()
     {
         $params = [];
-        $sql = Builder::selectFrom($this->table, isset($this->master['fields']) ? $this->master['fields'] : null).' WHERE ';
+        $sql = Builder::selectFrom($this->table, $this->master['fields'] ?? null).' WHERE ';
         $sql .= self::buildSubQuery($params);
         if (isset($this->master['group'])) {
             $sql .= Builder::groupClause($this->master['group']);

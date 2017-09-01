@@ -77,24 +77,19 @@ abstract class App
     /*
      * 启动应用，应用调度成功返回一个应用实例，否则调用abort终止应用
      */
-    public static function start($app = 'standard', array $config = null)
+    public static function start($app = 'Standard', array $config = null)
     {
         if (!self::$app) {
             self::boot();
             if (static::class !== __CLASS__) {
                 throw new \Exception('Illegal start call');
             }
-            if (strpos($app, '\\') === false) {
-                $app = 'framework\core\app\\'.ucfirst($app);
+            if (in_array($app, ['Standard', 'Inline', 'Rest', 'Jsonrpc', 'Simple'], true)) {
+                $app = 'framework\core\app\\'.$app;
+            } elseif (!is_subclass_of($app, __CLASS__)) {
+                throw new \Exception('Illegal app class: '.$app);
             }
-            if (is_subclass_of($app, __CLASS__)) {
-                if ($config === null) {
-                    $config = Config::get('app');
-                }
-                self::$app = new $app($config);
-            } else {
-                throw new \Exception('Illegal app class :'.$app);
-            }
+            self::$app = new $app($config ?? Config::get('app'));
             self::$app->dispatch = self::$app->dispatch();
             Hook::listen('start', self::$app->dispatch);
             if (self::$app->dispatch) {
@@ -105,9 +100,9 @@ abstract class App
     }
     
     /*
-     * 退出应用，为兼容PHP5.6使用finish替换exit方法名
+     * 退出应用
      */
-    public static function finish($status = 2)
+    public static function exit($status = 2)
     {
         if ($status === 0) {
             return (bool) self::$exit;
@@ -131,7 +126,7 @@ abstract class App
         } elseif (is_callable([self::$app, 'error'])) {
             self::$app->error($code, $message);
         }
-        self::finish();
+        self::exit();
     }
     
     /*
