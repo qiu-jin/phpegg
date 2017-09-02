@@ -39,9 +39,8 @@ class Rest extends App
         return false;
     }
 
-    public function run(callable $return_handler = null)
+    protected function handle()
     {
-        $this->runing();
         $this->setPostParams();
         $action = $this->dispatch['action'];
         $params = $this->dispatch['params'];
@@ -56,8 +55,7 @@ class Rest extends App
         $this->dispatch = null;
         switch ($this->config['param_mode']) {
             case 1:
-                $return = $controller->$action(...$params);
-                break;
+                return $controller->$action(...$params);
             case 2:
                 $parameters = [];
                 if ($method->getnumberofparameters() > 0) {
@@ -74,15 +72,10 @@ class Rest extends App
                         }
                     }
                 }
-                $result = $method->invokeArgs($controller, $parameters);
-                break;
+                return $method->invokeArgs($controller, $parameters);
             default:
-                $return = $controller->$action();
-                break; 
+                return $controller->$action();
         }
-        $return_handler && $return_handler($return);
-        $this->response($return);
-        $this->exit(1);
     }
     
     protected function error($code = null, $message = null)

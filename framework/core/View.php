@@ -73,7 +73,7 @@ class View
     
     public static function file($tpl, $dir = null)
     {
-        $path = $tpl[0] !== '/' ? self::$config['dir'].$tpl : $dir.'/'.$tpl;
+        $path = $tpl[0] === '/' ? self::$config['dir'].$tpl : $dir.'/'.$tpl;
         $phpfile = $path.'.php';        
         if (!isset(self::$config['template'])) {
             return $phpfile;

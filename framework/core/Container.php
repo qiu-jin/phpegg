@@ -19,6 +19,7 @@ class Container
             'sms'       => false,
             'geoip'     => false,
             'crypt'     => false,
+            'captcha'   => false,
         ],
         //key表示支持的模型名，value表示模型类的namespace层数，为0时不限制
         'model'  => [

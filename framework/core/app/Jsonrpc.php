@@ -50,14 +50,13 @@ class Jsonrpc extends App
         $this->abort('-32600', 'Invalid Request');
     }
 
-    public function run(callable $return_handler = null)
+    protected function handle()
     {
-        $this->runing();
         $action = $this->dispatch['action'];
         $params = $this->dispatch['params'];
         $controller = $this->dispatch['controller'];
         if (empty($this->config['param_mode'])) {
-            $return = $controller->$action(...$params);
+            return $controller->$action(...$params);
         } else {
             $parameters = [];
             $method = new \ReflectionMethod($controller, $action);
@@ -72,11 +71,8 @@ class Jsonrpc extends App
                     }
                 }
             }
-            $return = $method->invokeArgs($controller, $parameters);
+            return $method->invokeArgs($controller, $parameters);
         }
-        $return_handler && $return_handler($return);
-        $this->response($return);
-        $this->exit(1);
     }
     
     protected function error($code = null, $message = null)

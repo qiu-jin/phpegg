@@ -17,7 +17,7 @@ class Standard extends App
         // 参数模式，0无参数，1循序参数，2键值参数
         'param_mode' => 0,
         // 是否启用视图，0否，1是
-        'enable_view' => 1,
+        'enable_view' => 0,
         // url query参数是否转为控制器参数，0否，1是
         'query_to_params' => 0,
         // 缺省调度
@@ -59,9 +59,8 @@ class Standard extends App
     /*
      * 运行应用
      */
-    public function run(callable $return_handler = null)
+    protected function handle()
     {
-        $this->runing();
         $action = $this->dispatch['action'];
         $params = $this->dispatch['params'];
         $controller = $this->dispatch['controller'];
@@ -74,8 +73,7 @@ class Standard extends App
         }
         switch ($this->config['param_mode']) {
             case 1:
-                $return = $controller->$action(...$params);
-                break;
+                return $controller->$action(...$params);
             case 2:
                 $parameters = [];
                 if ($method->getnumberofparameters() > 0) {
@@ -92,20 +90,10 @@ class Standard extends App
                         }
                     }
                 }
-                $return = $method->invokeArgs($controller, $parameters);
-                break;
+                return $method->invokeArgs($controller, $parameters);
             default:
-                $return = $controller->$action();
-                break; 
+                return $controller->$action();
         }
-        $return_handler && $return_handler($return);
-        if ($this->config['enable_view']) {
-            $template = $this->getTemplate(get_class($controller), $action);
-            Response::view($template, $return, false);
-        } else {
-            Response::json($return, false);
-        }
-        $this->exit(1);
     }
     
     /*
@@ -121,6 +109,16 @@ class Standard extends App
         }
     }
     
+    protected function response($return = [])
+    {
+        if ($this->config['enable_view']) {
+            $template = $this->getTemplate(get_class($this->dispatch['controller']), $this->dispatch['action']);
+            Response::view($template, $return, false);
+        } else {
+            Response::json($return, false);
+        }
+    }
+    
     /*
      * 获取试图模版
      */
@@ -128,12 +126,12 @@ class Standard extends App
     {
         $class = str_replace($this->ns, '', $class);
         if (empty($this->config['template_to_snake'])) {
-            return strtr('\\', '/', $class).'/'.$action;
+            return '/'.strtr('\\', '/', $class).'/'.$action;
         } else {
             $array = explode('\\', $class);
             $array[] = Str::toSnake(array_pop($array));
             $array[] = Str::toSnake($action);
-            return implode('/', $array);
+            return '/'.implode('/', $array);
         }
     }
     

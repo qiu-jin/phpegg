@@ -9,31 +9,6 @@ class Simple extends App
 {
     protected $route;
     
-    protected function dispatch(...$parmas)
-    {
-        return $parmas ? $this->dispatch = $this->defaultDispatch(...$parmas) : true;
-    }
-    
-    public function run(callable $return_handler = null)
-    {
-        $this->runing();
-        if ($this->dispatch) {
-            $return = ($this->dispatch)();
-        } elseif ($this->route) {
-            $path = explode('/', trim(Request::path(), '/'));
-            $dispatch = $this->routeDispatch($path);
-            if ($dispatch) {
-                $return = $dispatch[0](...$dispatch[1]);
-            } else {
-                $this->abort(404);
-            }
-        } else {
-            $this->abort(404);
-        }
-        $return_handler && $return_handler($return);
-        $this->exit(1);
-    }
-    
     public function route($role, callable $call, $method = null)
     {
         $index = count($this->route['call']);
@@ -44,6 +19,29 @@ class Simple extends App
             $this->route['rule'][$role] = $index;
         }
     }
+    
+    protected function dispatch(...$parmas)
+    {
+        return $parmas ? $this->dispatch = $this->defaultDispatch(...$parmas) : true;
+    }
+    
+    protected function handle()
+    {
+        if ($this->dispatch) {
+            return ($this->dispatch)();
+        } elseif ($this->route) {
+            $path = explode('/', trim(Request::path(), '/'));
+            $dispatch = $this->routeDispatch($path);
+            if ($dispatch) {
+                return $dispatch[0](...$dispatch[1]);
+            }
+        }
+        $this->abort(404);
+    }
+    
+    protected function error() {}
+    
+    protected function response() {}
     
     protected function defaultDispatch($controller, $action)
     {

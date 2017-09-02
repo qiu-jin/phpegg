@@ -30,14 +30,24 @@ abstract class App
     protected $dispatch = [];
     
     /*
-     * 运行应用
-     */
-    abstract public function run(callable $return_handler);
-    
-    /*
      * 应用调度方法，调度成功返回数组，失败返回false
      */
     abstract protected function dispatch();
+    
+    /*
+     * 处理应用
+     */
+    abstract protected function handle();
+    
+    /*
+     * 错误处理
+     */
+    abstract protected function error();
+    
+    /*
+     * 响应处理
+     */
+    abstract protected function response();
     
     /*
      * 构造函数，合并配置项
@@ -45,6 +55,21 @@ abstract class App
     private function __construct($config)
     {
         $this->config = array_merge($this->config, $config);
+    }
+    
+    /*
+     * 运行应用
+     */
+    public function run(callable $return_handler = null)
+    {
+        if (self::$runing) {
+            throw new \Exception('App is runing');
+        }
+        self::$runing = true;
+        $return = $this->handle();
+        $return_handler && $return_handler($return);
+        $this->response($return);
+        self::$exit = 1;
     }
     
     /*
@@ -105,7 +130,7 @@ abstract class App
     public static function exit($status = 2)
     {
         if ($status === 0) {
-            return (bool) self::$exit;
+            return self::$exit;
         } elseif ($status === 2) {
             if (!self::$exit) {
                 self::$exit = 2;
@@ -137,7 +162,9 @@ abstract class App
         return self::$app;
     }
     
-    
+    /*
+     * 获取调度信息
+     */
     public static function getDispatch()
     {
         return self::$app->dispatch;
@@ -149,16 +176,5 @@ abstract class App
     public static function setErrorHandler(callable $handler)
     {
         self::$error_handler = $handler;
-    }
-    
-    /*
-     * 设置或检查run方法是否已经调用
-     */
-    protected function runing()
-    {
-        if (self::$runing) {
-            throw new \Exception('App is runing');
-        }
-        self::$runing = true;
     }
 }

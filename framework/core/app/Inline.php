@@ -38,31 +38,25 @@ class Inline extends App
         return false;
     }
     
-    public function run(callable $return_handler = null)
+    protected function handle()
     {
-        $this->runing();
         $file = $this->dispatch['file'];
         $params = $this->dispatch['params'] ?? null;
         if ($this->config['enable_getter']) {
             $return = (new class()
             {
                 use Getter;
-                public function __invoke($file, $params)
+                public function __invoke($__file, $params)
                 {
-                    return require($file);
+                    return require($__file);
                 }
             })($file, $params);
         } else {
-            $return = (static function($file, $params) {
-                return require($file);
+            $return = (static function($__file, $params) {
+                return require($__file);
             })($file, $params);
         }
-        if ($return === 1 && $this->config['return_1_to_null']) {
-            $return = null;
-        }
-        $return_handler && $return_handler($return);
-        $this->response($return);
-        $this->exit(1);
+        return $return === 1 && $this->config['return_1_to_null'] ? null : $return;
     }
 
     protected function error($code = null, $message = null)
