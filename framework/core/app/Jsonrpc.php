@@ -12,7 +12,8 @@ class Jsonrpc extends App
     protected $config = [
         'param_mode' => 0,
         'serialize' => 'jsonencode',
-        'unserialize' => 'jsondecode'
+        'unserialize' => 'jsondecode',
+        'controller_prefix' => 'controller',
     ];
     const VERSION = '2.0';
     
@@ -28,10 +29,7 @@ class Jsonrpc extends App
             if (count($method) > 1) {
                 $action = array_pop($method);
                 if ($action{0} !== '_' ) {
-                    $this->ns = 'app\controller\\';
-                    if (isset($this->config['sub_controller'])) {
-                        $this->ns .= $this->config['sub_controller'].'\\';
-                    }
+                    $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
                     $class = $this->ns.implode('\\', $method);
                     if (class_exists($class)) {
                         $controller = new $class();

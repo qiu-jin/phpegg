@@ -9,6 +9,11 @@ class Simple extends App
 {
     protected $route;
     
+    public function bind(...$parmas)
+    {
+        $this->dispatch = $this->defaultDispatch(...$parmas)
+    }
+    
     public function route($role, callable $call, $method = null)
     {
         $index = count($this->route['call']);
@@ -20,9 +25,9 @@ class Simple extends App
         }
     }
     
-    protected function dispatch(...$parmas)
+    protected function dispatch()
     {
-        return $parmas ? $this->dispatch = $this->defaultDispatch(...$parmas) : true;
+        return true;
     }
     
     protected function handle()
@@ -45,10 +50,7 @@ class Simple extends App
     
     protected function defaultDispatch($controller, $action)
     {
-        $this->ns = 'app\controller\\';
-        if (isset($this->config['sub_controller'])) {
-            $this->ns .= $this->config['sub_controller'].'\\';
-        }
+        $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
         $class = $this->ns.$controller;
         if (class_exists($class, $action) && $action{0} !== '_') {
             $controller = new $class;

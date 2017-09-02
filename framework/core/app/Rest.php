@@ -16,14 +16,12 @@ class Rest extends App
         'param_mode' => 0,
         'query_to_params' => 0,
         'controller_depth' => 0,
+        'controller_prefix' => 'controller',
     ];
     
     protected function dispatch()
     {
-        $this->ns = 'app\controller\\';
-        if (isset($this->config['sub_controller'])) {
-            $this->ns .= $this->config['sub_controller'].'\\';
-        }
+        $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
         $method = strtolower(Request::method());
         if (in_array($method, ['get','post', 'put', 'delete', 'options', 'head', 'patch'], true)) {
             $path = explode('/', trim(Request::path(), '/'));

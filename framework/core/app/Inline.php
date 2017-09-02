@@ -18,14 +18,12 @@ class Inline extends App
         'enable_getter' => 1,
         'return_1_to_null' => 0,
         'index_dispatch' => 'index',
+        'controller_prefix' => 'controller',
     ];
     
     protected function dispatch()
     {
-        $this->dir = APP_DIR.'controller/';
-        if (isset($this->config['sub_controller'])) {
-            $this->dir .= $this->config['sub_controller'].'/';
-        }
+        $this->dir = APP_DIR.'/'.$this->config['controller_prefix'].'/';
         $path = trim(Request::path(), '/');
         switch ($this->config['route_mode']) {
             case 0:

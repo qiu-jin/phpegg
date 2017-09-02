@@ -18,17 +18,19 @@ class Standard extends App
         'param_mode' => 0,
         // 是否启用视图，0否，1是
         'enable_view' => 0,
-        // url query参数是否转为控制器参数，0否，1是
+        // Url query参数是否转为控制器参数，0否，1是
         'query_to_params' => 0,
         // 缺省调度
         'index_dispatch' => null,
         // 控制器类namespace深度，0为不确定
         'controller_depth' => 1,
+        // 控制器前缀
+        'controller_prefix' => 'controller',
         // 视图模版文件名是否转为下划线风格，0否，1是
         'template_to_snake' => 1,
         // 控制器名是否转为驼峰风格，0否，1是
         'controller_to_camel' => 1,
-        // 控制器默认方法
+        // 控制器缺省方法
         'controller_default_action' => 'index'
     ];
     
@@ -37,10 +39,7 @@ class Standard extends App
      */
     protected function dispatch()
     {
-        $this->ns = 'app\controller\\';
-        if (isset($this->config['sub_controller'])) {
-            $this->ns .= $this->config['sub_controller'].'\\';
-        }
+        $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
         $path = trim(Request::path(), '/');
         if ($path) {
             $path = explode('/', $path);
@@ -111,26 +110,21 @@ class Standard extends App
     
     protected function response($return = [])
     {
-        if ($this->config['enable_view']) {
-            $template = $this->getTemplate(get_class($this->dispatch['controller']), $this->dispatch['action']);
-            Response::view($template, $return, false);
-        } else {
-            Response::json($return, false);
-        }
+        $this->config['enable_view'] ? Response::view($this->getTemplate(), $return, false) : Response::json($return, false);
     }
     
     /*
      * 获取试图模版
      */
-    protected function getTemplate($class, $action)
+    protected function getTemplate()
     {
-        $class = str_replace($this->ns, '', $class);
+        $class = str_replace($this->ns, '', get_class($this->dispatch['controller']));
         if (empty($this->config['template_to_snake'])) {
-            return '/'.strtr('\\', '/', $class).'/'.$action;
+            return '/'.strtr('\\', '/', $class).'/'.$this->dispatch['action'];
         } else {
             $array = explode('\\', $class);
             $array[] = Str::toSnake(array_pop($array));
-            $array[] = Str::toSnake($action);
+            $array[] = Str::toSnake($this->dispatch['action']);
             return '/'.implode('/', $array);
         }
     }

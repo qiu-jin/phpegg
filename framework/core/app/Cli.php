@@ -8,22 +8,23 @@ class Cli extends App
     private $pid;
     private $option;
     
-    public function dispatch()
+    protected function dispatch()
     {
         if (PHP_SAPI === 'cli' || defined('STDIN')) {
             define('IS_CLI', true);
             $this->pid = getmypid();
             $this->option = getopt('m:c:a:');
+            return true;
         }
         return false;
     }
     
-    public function run()
+    protected function handle()
     {
         
     }
     
-    public function error($code = null, $message = null)
+    protected function error($code = null, $message = null)
     {
         file_put_contents('php://stderr', json_encode([$code, $message]));
     }

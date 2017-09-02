@@ -25,7 +25,10 @@ abstract class App
     // 设置错误处理器
     private static $error_handler;
     // 应用配置项
-    protected $config = [];
+    protected $config = [
+        // 控制器前缀
+        'controller_prefix' => 'controller',
+    ];
     // 应用调度结果
     protected $dispatch = [];
     
@@ -67,7 +70,9 @@ abstract class App
         }
         self::$runing = true;
         $return = $this->handle();
-        $return_handler && $return_handler($return);
+        if ($return_handler) {
+            $return_handler($return);
+        }
         $this->response($return);
         self::$exit = 1;
     }
@@ -93,7 +98,9 @@ abstract class App
         register_shutdown_function(function () {
             self::$app = null;
             Hook::listen('exit');
-            function_exists('fastcgi_finish_request') && fastcgi_finish_request();
+            if (function_exists('fastcgi_finish_request')) {
+                fastcgi_finish_request();
+            }
             Hook::listen('close');
         });
         Hook::listen('boot');
@@ -148,7 +155,7 @@ abstract class App
     {
         if (isset(self::$error_handler)) {
             self::$error_handler($code, $message);
-        } elseif (is_callable([self::$app, 'error'])) {
+        } elseif (isset(self::$app)) {
             self::$app->error($code, $message);
         }
         self::exit();
