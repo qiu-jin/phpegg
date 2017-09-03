@@ -1,11 +1,12 @@
 <?php
 namespace framework\core;
 
+use framework\extend\logger\Writer;
 use framework\extend\logger\Formatter;
 
 class Logger
 {
-    use \framework\extend\logger\Writer;
+    use Writer;
     /*
      * 日志等级常量
      */
@@ -69,7 +70,7 @@ class Logger
     public static function channel($name = null)
     {
         if ($name === null) {
-            return self::$writer ?: self::$writer = new self();
+            return self::$writer ?? self::$writer = new self();
         } elseif (isset(self::$configs[$name])) {
             return self::getHandler($name);
         }
@@ -77,7 +78,7 @@ class Logger
     }
     
     /*
-     * 清理资源
+     * 释放资源
      */
     public static function free()
     {

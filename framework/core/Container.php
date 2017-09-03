@@ -184,8 +184,7 @@ class Container
         if ($depth > 0 && $depth === substr_count($name, '.')) {
             return self::makeModel($name);
         }
-        return new class($name, $depth)
-        {
+        return new class($name, $depth) {
             protected $__prev;
             protected $__depth;
             protected $__prefix;

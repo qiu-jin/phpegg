@@ -41,8 +41,7 @@ class Inline extends App
         $file = $this->dispatch['file'];
         $params = $this->dispatch['params'] ?? null;
         if ($this->config['enable_getter']) {
-            $return = (new class()
-            {
+            $return = (new class() {
                 use Getter;
                 public function __invoke($__file, $params)
                 {

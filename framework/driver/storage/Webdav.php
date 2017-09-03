@@ -11,8 +11,6 @@ use framework\core\http\Client;
  * OneDrive:https://d.docs.live.net
  * Pcloud:  https://webdav.pcloud.com
  * 坚果云:   https://dav.jianguoyun.com/dav
- * Dropbox:
- * GoogleDrive: 
  */
 
 class Webdav extends Storage

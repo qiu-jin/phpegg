@@ -6,42 +6,40 @@ use framework\core\Router;
 use framework\core\http\Request;
 
 class Simple extends App
-{
-    protected $route;
-    
+{   
     public function bind(...$parmas)
     {
-        $this->dispatch = $this->defaultDispatch(...$parmas)
+        $this->dispatch['bind'] = $this->defaultDispatch(...$parmas);
     }
     
     public function route($role, callable $call, $method = null)
     {
-        $index = count($this->route['call']);
-        $this->route['call'][] = $call;
+        $index = count($this->dispatch['route']['call']);
+        $this->dispatch['route']['call'][] = $call;
         if ($method && in_array($method, ['get', 'post', 'put', 'delete', 'head', 'options', 'patch'], true)) {
-            $this->route['rule'][$role][$method] = $index;
+            $this->dispatch['route']['rule'][$role][$method] = $index;
         } else {
-            $this->route['rule'][$role] = $index;
+            $this->dispatch['route']['rule'][$role] = $index;
         }
     }
     
     protected function dispatch()
     {
-        return true;
+        return ['bind' => null, 'route' => null];
     }
     
     protected function handle()
     {
-        if ($this->dispatch) {
-            return ($this->dispatch)();
-        } elseif ($this->route) {
+        if (isset($this->dispatch['bind'])) {
+            return ($this->dispatch['bind'])();
+        } elseif (isset($this->dispatch['route'])) {
             $path = explode('/', trim(Request::path(), '/'));
             $dispatch = $this->routeDispatch($path);
             if ($dispatch) {
                 return $dispatch[0](...$dispatch[1]);
             }
         }
-        $this->abort(404);
+        return false;
     }
     
     protected function error() {}
@@ -65,11 +63,11 @@ class Simple extends App
     {
         $params = [];
         if (empty($path)) {
-            if (isset($this->route['rule']['/'])) {
-                $index = $this->route['rule']['/'];
+            if (isset($this->dispatch['route']['rule']['/'])) {
+                $index = $this->dispatch['route']['rule']['/'];
             }
         } else {
-            foreach ($this->route['rule'] as $rule => $i) {
+            foreach ($this->dispatch['route']['rule'] as $rule => $i) {
                 $rule = explode('/', trim($rule, '/'));
                 $macth = Router::macth($rule, $path);
                 if ($macth !== false) {
@@ -83,10 +81,10 @@ class Simple extends App
             if (is_array($index)) {
                 $method = Request::method();
                 if (isset($index[$method])) {
-                    return [$this->route['call'][$index[$method]], $params];
+                    return [$this->dispatch['route']['call'][$index[$method]], $params];
                 }
             } else {
-                return [$this->route['call'][$index], $params];
+                return [$this->dispatch['route']['call'][$index], $params];
             }
         }
         return false;
