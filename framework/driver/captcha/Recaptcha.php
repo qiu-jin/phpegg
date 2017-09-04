@@ -41,6 +41,6 @@ class Recaptcha
         if (isset($data['success']) && $data['success'] === true) {
             return true;
         }
-        return error(isset($data['error-codes']) ? $data['error-codes'] : $client->error);
+        return error($data['error-codes'] ?? $client->error);
     }
 }

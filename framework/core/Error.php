@@ -86,7 +86,8 @@ class Error
     {
         App::exit(4);
         $level = Logger::ERROR;
-        $message = 'Uncaught Exception '.get_class($e).': '.$e->getMessage();
+        $name  = $e instanceof Exception ? ($e->getClass() ?? 'Exception') : get_class($e);
+        $message = 'Uncaught '.$name.': '.$e->getMessage();
         self::record($level, $message, $e->getFile(), $e->getLine());
         self::response();
     }

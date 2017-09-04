@@ -1,18 +1,33 @@
 <?php
-namespace framework\driver\nosql\query;
+namespace framework\driver\data\query;
 
 class Hbase
 {
-    private $db;
-    private $table;
-    private $option;
+    protected $rpc;
+    protected $table;
+    protected static $method_params_type = [
+        'get'       => 'hbase\TGet',
+        'exists'    => 'hbase\TGet',
+        'put'       => 'hbase\TPut',
+        'delete'    => 'hbase\TDelete',
+    ];
     
-    public function __construct($db, $table)
+    public function __construct($rpc, $table)
     {
-        $this->db = $db;
+        $this->rpc = $rpc;
         $this->table = $table;
     }
     
+    public function __call($name, array $params = [])
+    {
+        if (isset(self::$method_params_type[$name])) {
+            $params[] = (new self::$method_params_type[$name])(array_pop($params));
+        }
+        array_unshift($params, $this->table);
+        return $this->rpc->__send(null, $name, $params);
+    }
+    
+    /*
     public function get($key, $option = [])
     {
         $option['row'] = $key;
@@ -155,7 +170,8 @@ class Hbase
     
     protected function call($method, $params = null)
     {
-        return $this->db->__send(null, $method, $params);
+        return $this->rpc->__send(null, $method, $params);
     }
+    */
 }
 

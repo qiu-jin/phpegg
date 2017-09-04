@@ -13,9 +13,6 @@ class Queue extends Logger
             } catch (\Throwable $e) {
                 return $this->send = false;
                 //忽略异常
-            } catch (\Exception $e) {
-                return $this->send = false;
-                //兼容php5.6
             }
         } else {
             $this->send = false;

@@ -3,6 +3,7 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\util\Str;
+use framework\core\View;
 use framework\core\Router;
 use framework\core\Config;
 use framework\core\http\Request;

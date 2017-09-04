@@ -71,6 +71,9 @@ class View
         }
     }
     
+    /*
+     * 返回视图文件路径
+     */
     public static function file($tpl, $dir = null)
     {
         $path = $tpl[0] === '/' ? self::$config['dir'].$tpl : $dir.'/'.$tpl;
@@ -172,10 +175,11 @@ class View
     
     private static function getTemplateFile($path)
     {
+        $ext = self::$config['template']['ext'] ?? '.htm';
         if (empty(self::$config['template']['dir'])) {
-            return $path.'.htm';
+            return $path.$ext;
         } else {
-            return str_replace(self::$config['template']['dir'], self::$config['dir'], $path, 1).'.htm';
+            return self::$config['template']['dir'].substr($path, strlen(self::$config['dir'])+1).$ext;
         }
     }
     

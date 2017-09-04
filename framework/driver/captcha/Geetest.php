@@ -70,6 +70,6 @@ class Geetest
                 return true;
             }
         }
-        return error(isset($data['error']) ? $data['error'] : $client->error);
+        return error($data['error'] ?? $client->error);
     }
 }

@@ -27,8 +27,6 @@ class File extends Logger
             error_log($log.PHP_EOL, 3, $this->logfile);
         } catch (\Throwable $e) {
             //忽略异常
-        } catch (\Exception $e) {
-            //兼容php5.6
         }
     }
 }

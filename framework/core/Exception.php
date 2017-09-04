@@ -15,16 +15,6 @@ class Exception extends \Exception
         $this->message  = $message;
     }
     
-    public function getData()
-    {
-        return $this->data;
-    }
-    
-    public function setData($data)
-    {
-        $this->data = $data;
-    }
-    
     public function getClass()
     {
         return $this->class;
@@ -43,5 +33,15 @@ class Exception extends \Exception
     public function seMethod($method)
     {
         $this->method = $method;
+    }
+    
+    public function getData()
+    {
+        return $this->data;
+    }
+    
+    public function setData($data)
+    {
+        $this->data = $data;
     }
 }

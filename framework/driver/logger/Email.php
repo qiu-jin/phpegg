@@ -60,8 +60,6 @@ class Email extends Logger
                 }
             } catch (\Throwable $e) {
                 //忽略异常
-            } catch (\Exception $e) {
-                //兼容php5.6
             }
             $this->logs = null;
         }

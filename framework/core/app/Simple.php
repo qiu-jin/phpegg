@@ -30,9 +30,9 @@ class Simple extends App
     
     protected function handle()
     {
-        if (isset($this->dispatch['bind'])) {
+        if (!empty($this->dispatch['bind'])) {
             return ($this->dispatch['bind'])();
-        } elseif (isset($this->dispatch['route'])) {
+        } elseif (!empty($this->dispatch['route'])) {
             $path = explode('/', trim(Request::path(), '/'));
             $dispatch = $this->routeDispatch($path);
             if ($dispatch) {

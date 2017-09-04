@@ -27,10 +27,15 @@ class Container
             'logic'     => 1,
             'service'   => 1
         ],
-        //key表示容器名，value表示容器类名
-        'class'  => [],
-        'closure'=> [],
-        'alias'  => [],
+        'class'  => [
+            
+        ],
+        'closure'=> [
+            
+        ],
+        'alias'  => [
+            
+        ],
     ];
 
     /*
@@ -43,9 +48,8 @@ class Container
         $config = Config::get('container');
         if ($config) {
             foreach (array_keys(self::$providers) as $type) {
-                $key = $type."_provider";
-                if (isset($config[$key])) {
-                    self::$providers[$type] += $config[$key];
+                if (isset($config[$type])) {
+                    self::$providers[$type] = array_merge(self::$providers[$type], $config[$type]);
                 }
             }
         }
@@ -97,7 +101,7 @@ class Container
     }
     
     /*
-     * 
+     * 生成实例
      */
     public static function make($name)
     {
@@ -138,7 +142,7 @@ class Container
     }
     
     /*
-     * 
+     * 生成驱动实例
      */
     public static function makeDriver($type, $name = null)
     {

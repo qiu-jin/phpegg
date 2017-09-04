@@ -1,134 +1,48 @@
 <?php
-namespace framework\driver\nosql;
+namespace framework\driver\data\query;
+
+use MongoDB\Driver\Query;
+use MongoDB\Driver\BulkWrite;
 
 class Mongo
 {
-    private $db;
-    private $link;
-    private $table;
-    private $collection;
-    private $collections = array();
+    protected $ns;
+    protected $manager;
     
-    public function __construct($config)
+    public function __construct($manager, $ns)
     {
-        try { 
-            $this->link = new \mongoClient( $this->config['server'],$this->config);
-            $this->db = $this->link->selectDb($this->config['dbname']);
-        } catch(\MongoConnectionException $e) {
-            throw new \Exception($e->getmessage());
-        }
+        $this->ns = $ns;
+        $this->manager = $manager;
     }
     
-    public function table($table)
+    public function get($id)
     {
-        try {
-            if (!$this->collection && $table !== $this->table) {
-                if (!isset($this->collections[$table])) {
-                    $this->collections[$table] = $this->db->selectCollection($table);
-                }
-                $this->table = $table;
-                $this->collection = $this->collections[$table];
-            }
-        } catch(\MongoCursorException $e) {
-            throw new \Exception($e->getMessage());
-        }
+        return $this->manager->executeQuery($this->ns, new Query(['_id' => $id]))->toArray();
     }
     
-    public function find($where, $fields = null, $limit = 1)
+    public function find($filter = [], $options = []) //'_id' => 0
     {
-        try {
-            
-        }
-        $this->$collection->select();
+        return $this->manager->executeQuery($this->ns, new Query($filter, $options))->toArray();
+    }
+
+    public function insert($data)
+    {
+        $bulk = new BulkWrite;
+        $bulk->insert($data);
+        return $this->manager->executeBulkWrite($this->ns, $bulk)->getInsertedCount();
     }
     
-    public function select($where, $fields = null, $limit = 1)
+    public function update($data, $filter = [], $options = [])
     {
-        try {
-            
-        }
-        $this->$collection->select();
+        $bulk = new BulkWrite;
+        $bulk->update($data, $filter, $options);
+        return $this->manager->executeBulkWrite($this->ns, $bulk)->getModifiedCount();
     }
     
-    public function insert($data, $replace = false)
+    public function delete($filter = [], $options = [])
     {
-        try {
-            return $replace ? $this->collection->save($data) : $this->collection->insert($data);
-        } catch(\MongoCursorException $e) {
-            throw new \Exception($e->getMessage());
-        }
-    }
-    
-    public function insert_all($datas)
-    {
-        try {
-            return $this->collection->batchInsert($datas);
-        } catch(\MongoCursorException $e) {
-            throw new \Exception($e->getMessage());
-        }
-    }
-    
-    public function update($where, $data)
-    {
-        try {
-            return $this->collection->update($data);
-        } catch(\MongoCursorException $e) {
-            throw new \Exception($e->getMessage());
-        }
-    }
-    
-    public function delete($where)
-    {
-        try {
-            return $this->collection->remove($datas);
-        } catch(\MongoCursorException $e) {
-            throw new \Exception($e->getMessage());
-        }
-    }
-    
-    public function exists()
-    {
-        
-    }
-    
-    public function count()
-    {
-        
-    }
-    
-    public function group()
-    {
-        
-    }
-    
-    public function command()
-    {
-        
-    }
-    
-    public function execute()
-    {
-        
-    }
-    
-    private function fields($fields)
-    {
-        
-    }
-    
-    private function where($where)
-    {
-        
-    }
-    
-    public function error()
-    {
-        return $this->link->lastError();
-    }
-    
-    public function __construct()
-    {
-        $this->link && $this->link->close();
+        $bulk = new BulkWrite;
+        $bulk->delete($filter, $options);
+        return $this->manager->executeBulkWrite($this->ns, $bulk)->getModifiedCount();
     }
 }
-
