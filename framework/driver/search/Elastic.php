@@ -3,26 +3,39 @@ namespace framework\driver\search;
 
 use framework\core\http\Client;
 
-class Elastic extends Search;
+class Elastic
 {
     protected $host;
     protected $port;
-    protected $type = 'default';
+    protected $indexes;
+    protected $default_type = 'all';
     
     public function __construct($config)
     {
         $this->host = $config['host'];
-        $this->port = isset($config['port']) ? $config['port'] : 9200;
+        $this->port = $config['port'] ?? 9200;
+        if (isset($config['default_type'])) {
+            $this->default_type = $default_type;
+        }
     }
     
-    public function send($method, $query, $body, $index, $type)
+    public function ns($ns)
     {
-        $url = "$this->host:$this->port/$index/$type/$query";
-        $result = Client::send($method, $this->host.':'.$this->port.$path, json_encode($body));
+        return new query\Elastic("$this->host:$this->port/$ns");
     }
     
-    protected function build($query)
+    public function __get($name)
     {
-        
+        return new query\Elastic("$this->host:$this->port/$name/$this->default_type");
+    }
+    
+    public function bulkRaw($query)
+    {
+        return Client::post("$this->host:$this->port")->json($query)->json;
+    }
+    
+    public function getMultiRaw($query)
+    {
+        return Client::get("$this->host:$this->port/_mget")->json($query)->json;
     }
 }

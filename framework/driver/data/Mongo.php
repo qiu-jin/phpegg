@@ -5,7 +5,7 @@ use MongoDB\Driver\Manager;
 
 class Mongo
 {
-    protected $link;
+    protected $dbname;
     protected $manager;
     protected $databases = [];
     
