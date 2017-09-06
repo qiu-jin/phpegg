@@ -1,6 +1,8 @@
 <?php
 namespace framework\driver\geoip;
 
+use framework\core\Container;
+
 abstract class Geoip
 {
     protected $cache;
@@ -10,7 +12,7 @@ abstract class Geoip
     {
         $this->init($config);
         if (isset($config['cache'])) {
-            $this->cache = load('cache', $config['cache']);
+            $this->cache = Container::driver('cache', $config['cache']);
         }
     }
     

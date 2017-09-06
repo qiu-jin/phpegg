@@ -28,13 +28,13 @@ class Container
             'service'   => 1
         ],
         'class'  => [
-            
+            //
         ],
         'closure'=> [
-            
+            //
         ],
         'alias'  => [
-            
+            //
         ],
     ];
 
@@ -90,8 +90,11 @@ class Container
                 self::$providers['class'][$name] = $value;
                 break;
             case 'string':
-                self::$providers['alias'][$name] = $value;
-                break;
+                if (strcasecmp($name, $value) !== 0) {
+                    self::$providers['alias'][$name] = $value;
+                    break;
+                }
+                throw new Exception("Alias same name");
             case 'object':
                 if (is_callable($value)) {
                     self::$providers['closure'][$name] = $value;
@@ -214,7 +217,7 @@ class Container
                     $this->__prev = null;
                     return $model->$method(...$param);
                 }
-                throw new \Exception("Call to undefined method $method()");
+                throw new Exception("Call to undefined method $method()");
             }
         };
     }

@@ -1,8 +1,6 @@
 <?php
 use framework\App;
-use framework\core\Hook;
 use framework\core\Error;
-use framework\core\Loader;
 use framework\core\Logger;
 use framework\core\Config;
 use framework\core\Container;

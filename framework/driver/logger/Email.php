@@ -2,6 +2,7 @@
 namespace framework\driver\logger;
 
 use framework\core\Hook;
+use framework\core\Container;
 use framework\core\http\Request;
 use framework\extend\view\Error;
 
@@ -45,12 +46,12 @@ class Email extends Logger
     {
         if ($this->logs) {
             try {
-                $cache = cache($this->driver['cache']);
+                $cache = Container::driver('cache', $this->driver['cache']);
                 if ($cache) {
                     $key = md5(jsonencode(end($this->logs)));
                     if (!$cache->has($key)) {
                         $cache->set($key, 1, $this->interval);
-                        $email = email($this->driver['email']);
+                        $email = Container::driver('email', $this->driver['email']);
                         if ($email) {
                             $title = Request::host().' Error report ['.date('Y-m-d H:i:s').']';
                             $content = Error::renderError($this->logs);

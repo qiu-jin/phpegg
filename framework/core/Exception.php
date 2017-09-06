@@ -5,13 +5,11 @@ class Exception extends \Exception
 {
     protected $data;
     protected $class;
-    protected $method;
     
-    public function __construct($message, $class = null, $method = null, $data = null)
+    public function __construct($message, $class = null, $data = null)
     {
         $this->data     = $data;
         $this->class    = $class;
-        $this->method   = $method;
         $this->message  = $message;
     }
     
@@ -23,16 +21,6 @@ class Exception extends \Exception
     public function setClass($class)
     {
         $this->class = $class;
-    }
-    
-    public function getMethod()
-    {
-        return $this->method;
-    }
-    
-    public function seMethod($method)
-    {
-        $this->method = $method;
     }
     
     public function getData()

@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\storage;
 
+use framework\core\Container;
 use framework\core\http\Client;
 
 abstract class Storage
@@ -35,7 +36,7 @@ abstract class Storage
             if ($scheme === 'http' || $scheme === 'https') {
                 $data = Client::send('GET', $from);
             } else {
-                $data = storage($scheme)->get($uri);
+                $data = Container::driver('storage', $scheme)->get($uri);
             }
             return $data ? $this->put($data, $to, true) : false;
         }

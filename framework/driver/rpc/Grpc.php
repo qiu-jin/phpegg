@@ -16,7 +16,7 @@ class Grpc
     protected $bind_params = true;
     protected $bind_params_name = [];
     
-    const ALLOW_CLIENT_METHODS = null;
+    const ALLOW_CLIENT_METHODS = [];
     
     public function __construct($config)
     {

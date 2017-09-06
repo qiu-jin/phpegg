@@ -23,7 +23,7 @@ class Thrift
     protected $bind_params = true;
     protected $bind_params_name = [];
     
-    const ALLOW_CLIENT_METHODS = null;
+    const ALLOW_CLIENT_METHODS = [];
     
     public function __construct($config)
     {
@@ -38,6 +38,7 @@ class Thrift
         $this->protocol  = new TBinaryProtocol($this->transport);
         $this->transport->open();
         Loader::add($config['services']);
+        isset($config['types']) && Loader::add($config['types'], 'files');
         isset($config['prefix']) && $this->prefix = $config['prefix'];
         isset($config['bind_params']) && $this->bind_params = $config['bind_params'];
         isset($config['tmultiplexed']) && $this->tmultiplexed = $config['tmultiplexed'];

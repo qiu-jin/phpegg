@@ -21,12 +21,21 @@ abstract class Auth
     
     public static function init()
     {
-        
+        $config = Config::get('auth');
+        if (is_subclass_of($config['class'], __CLASS__)) {
+            self::$auth = (new $config['class']($config));
+        } else {
+            throw new Exception('Illegal auth class');
+        }
+        Hook::add('exit', __CLASS__.'::free');
     }
     
-    public static function passport($call = null)
+    public static function run()
     {
-        return self::$auth->check() || self::$auth->faildo();
+        if (!self::$auth->check()) {
+            self::$auth->faildo();
+            App::exit();
+        }
     }
     
     public static function free()

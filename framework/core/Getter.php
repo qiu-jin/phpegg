@@ -20,6 +20,6 @@ trait Getter
         } elseif ($object = Container::make($name)) {
             return $this->$name = $object;
         }
-        throw new \Exception('Undefined property: '.__CLASS__.'::$'.$name);
+        throw new \exception\GetterException('Undefined property: '.__CLASS__.'::$'.$name, 'GetterException');
     }
 }

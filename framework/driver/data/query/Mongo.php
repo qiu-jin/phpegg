@@ -17,32 +17,57 @@ class Mongo
     
     public function get($id)
     {
-        return $this->manager->executeQuery($this->ns, new Query(['_id' => $id]))->toArray();
+        return $this->getRaw($id)->toArray();
     }
     
-    public function find($filter = [], $options = []) //'_id' => 0
+    public function find($filter = [], $options = [])
     {
-        return $this->manager->executeQuery($this->ns, new Query($filter, $options))->toArray();
+        return $this->findRaw($filter, $options)->toArray();
     }
 
     public function insert($data)
     {
-        $bulk = new BulkWrite;
-        $bulk->insert($data);
-        return $this->manager->executeBulkWrite($this->ns, $bulk)->getInsertedCount();
+        return $this->insertRaw($data)->getInsertedCount();
     }
     
     public function update($data, $filter = [], $options = [])
     {
-        $bulk = new BulkWrite;
-        $bulk->update($data, $filter, $options);
-        return $this->manager->executeBulkWrite($this->ns, $bulk)->getModifiedCount();
+        return $this->updateRaw($data, $filter, $options)->getModifiedCount();
     }
     
     public function delete($filter = [], $options = [])
     {
+        return $this->deleteRaw($filter, $options)->getModifiedCount();
+    }
+    
+    public function getRaw($id)
+    {
+        return $this->manager->executeQuery($this->ns, new Query(['_id' => $id]));
+    }
+    
+    public function findRaw($filter = [], $options = [])
+    {
+        return $this->manager->executeQuery($this->ns, new Query($filter, $options));
+    }
+
+    public function insertRaw($data)
+    {
+        $bulk = new BulkWrite;
+        $bulk->insert($data);
+        return $this->manager->executeBulkWrite($this->ns, $bulk);
+    }
+    
+    public function updateRaw($data, $filter = [], $options = [])
+    {
+        $bulk = new BulkWrite;
+        $bulk->update($data, $filter, $options);
+        return $this->manager->executeBulkWrite($this->ns, $bulk);
+    }
+    
+    public function deleteRaw($filter = [], $options = [])
+    {
         $bulk = new BulkWrite;
         $bulk->delete($filter, $options);
-        return $this->manager->executeBulkWrite($this->ns, $bulk)->getModifiedCount();
+        return $this->manager->executeBulkWrite($this->ns, $bulk);
     }
 }

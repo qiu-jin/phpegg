@@ -66,7 +66,7 @@ abstract class App
     public function run(callable $return_handler = null)
     {
         if (self::$runing) {
-            throw new \Exception('App is runing');
+            throw new Exception('App is runing');
         }
         self::$runing = true;
         $return = $this->handle();
@@ -114,12 +114,12 @@ abstract class App
         if (!self::$app) {
             self::boot();
             if (static::class !== __CLASS__) {
-                throw new \Exception('Illegal start call');
+                throw new Exception('Illegal start call');
             }
-            if (in_array($app, ['Standard', 'Inline', 'Rest', 'Jsonrpc', 'Simple'], true)) {
+            if (in_array($app, ['Standard', 'Inline', 'Micro', 'Rest', 'Jsonrpc'], true)) {
                 $app = 'framework\core\app\\'.$app;
             } elseif (!is_subclass_of($app, __CLASS__)) {
-                throw new \Exception('Illegal app class: '.$app);
+                throw new Exception('Illegal app class: '.$app);
             }
             self::$app = new $app($config ?? Config::get('app'));
             self::$app->dispatch = self::$app->dispatch();

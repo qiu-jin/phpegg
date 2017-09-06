@@ -5,11 +5,11 @@ use framework\App;
 use framework\core\Router;
 use framework\core\http\Request;
 
-class Simple extends App
-{   
-    public function bind(...$parmas)
+class Micro extends App
+{
+    public function bind($controller, $action)
     {
-        $this->dispatch['bind'] = $this->defaultDispatch(...$parmas);
+        $this->dispatch['bind'] = $this->defaultDispatch($controller, $action);
     }
     
     public function route($role, callable $call, $method = null)
@@ -39,7 +39,7 @@ class Simple extends App
                 return $dispatch[0](...$dispatch[1]);
             }
         }
-        return false;
+       $this->abort(404);
     }
     
     protected function error() {}

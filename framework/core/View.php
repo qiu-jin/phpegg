@@ -93,7 +93,7 @@ class View
         } elseif (is_file($tplfile)) {
             return self::complie($tplfile, $phpfile);
         }
-        throw new \Exception("Not find template file: $tplfile");
+        throw new Exception("Not find template file: $tplfile");
     }
 
     public static function layout($tpl, $file)
@@ -158,17 +158,17 @@ class View
             }
             Response::view($tpl, $vars);
         }
-        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
+        throw new Exception('Call to undefined method '.__CLASS__.'::'.$method);
     }
     
     private static function complie($tplfile, $phpfile)
     {
         $dir = dirname($phpfile);
         if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
-            throw new \Exception("Not create view dir: $dir");
+            throw new Exception("Not create view dir: $dir");
         }
         if (!file_put_contents($phpfile, self::getTemplateHandler()->complie(file_get_contents($tplfile)))) {
-            throw new \Exception("View file write failure: $phpfile");
+            throw new Exception("View file write failure: $phpfile");
         }
         return $phpfile;
     }

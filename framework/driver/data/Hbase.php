@@ -11,16 +11,18 @@ class Hbase extends Thrift
 {
     public function __construct($config)
     {
-        parent::__construct([
-            'host'      => $config['host'],
-            'port'      => $config['port'],
-            'prefix'    => 'hbase\THBaseService',
-            'service'   => ['hbase' => $config['class']],
-        ]);
+        $config['prefix'] = 'Hbase\THBaseService';
+        $config['bind_params'] = false;
+        parent::__construct($config);
     }
     
     public function __get($name)
     {
         return new query\Hbase($this, $name);
+    }
+    
+    public function __call($name)
+    {
+        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$name);
     }
 }

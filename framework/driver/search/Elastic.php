@@ -8,7 +8,7 @@ class Elastic
     protected $host;
     protected $port;
     protected $indexes;
-    protected $default_type = 'all';
+    protected $default_type = 'doc';
     
     public function __construct($config)
     {

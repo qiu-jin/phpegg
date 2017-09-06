@@ -21,10 +21,34 @@ class Hbase
     public function __call($name, array $params = [])
     {
         if (isset(self::$method_params_type[$name])) {
-            $params[] = (new self::$method_params_type[$name])(array_pop($params));
+            $params[] = (new self::$method_params_type[$name](array_pop($params)));
         }
         array_unshift($params, $this->table);
         return $this->rpc->__send(null, $name, $params);
+    }
+    
+    public function get($key, $option = [])
+    {
+        $option['row'] = $key;
+        return $this->call('get', [$this->table, new \hbase\TGet($option)]);
+    }
+    
+    public function has($key, $option = [])
+    {
+
+    }
+    
+    public function put($key, $value, $option = [])
+    {
+        $option['row'] = $key;
+        $option['columnValues'] = $value;
+        return $this->call('put', [$this->table, new \hbase\TPut($option)]);
+    }
+    
+    public function delete($key, $option = [])
+    {
+        $option['row'] = $key;
+        return $this->call('deleteSingle', [$this->table, new \hbase\TDelete($option)]);
     }
     
     /*

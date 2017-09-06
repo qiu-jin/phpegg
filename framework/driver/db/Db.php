@@ -2,6 +2,7 @@
 namespace framework\driver\db;
 
 use framework\core\Logger;
+use framework\core\Container;
 
 abstract class Db
 {
@@ -127,7 +128,7 @@ abstract class Db
         } else {
             if (isset($this->cache_config)) {
                 if (!isset($this->cache)) {
-                    $this->cache = cache($this->cache_config);
+                    $this->cache = Container::driver('cache', $this->cache_config);
                 }
                 $key = "_db_$this->dbname$table";
                 $fields = $this->cache->get($key);
