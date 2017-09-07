@@ -1,26 +1,24 @@
 <?php
 namespace framework\driver\db;
 
-class Pdo extends Db
+abstract class Pdo extends Db
 {
+    protected $commands;
+    
+    abstract protected function dsn($config);
+    
+    abstract protected function getFields($table);
+    
     protected function connect($config)
     {
-		try {
-			$dsn = $config['dbtype'] ?? 'mysql';
-            $dsn .= ':host='.$config['host'].';dbname='.$config['dbname'];
-            if (isset($config['port'])) {
-                $dsn .= ';port='.$config['port'];
+        $link = new \PDO($this->dsn($config), $config['username'], $config['password'], $config['options'] ?? null);
+        if (isset($this->commands)) {
+            foreach ($this->commands as $command) {
+                $link->exec($command);
             }
-            if (isset($config['charset'])) {
-                $dsn .= ';charset='.$config['charset'];
-            }
-			$link = new \PDO($dsn, $config['username'], $config['password']);
-			$link->exec('SET SQL_MODE=ANSI_QUOTES');
-            $this->dbname = $config['dbname'];
-            return $link;
-		} catch (\PDOException $e) {
-			throw new \Exception($e->getMessage());
-		}
+            $this->commands = null;
+        }
+        return $link;
     }
     
     public function exec($sql, $params = null)

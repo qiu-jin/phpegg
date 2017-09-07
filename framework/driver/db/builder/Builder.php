@@ -1,10 +1,11 @@
 <?php
-namespace framework\driver\db\query;
+namespace framework\driver\db\builder;
 
 class Builder
 {   
-    private static $where_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
-    private static $where_operator = ['=', '!=', '>', '>=', '<', '<=', 'LIKE', 'IN', 'IS', 'BETWEEN'];
+    protected static $where_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
+    protected static $where_operator = ['=', '!=', '>', '>=', '<', '<=', 'LIKE', 'IN', 'IS', 'BETWEEN'];
+    protected static $order_rand = 'RAND()';
 
     public static function select($table, array $option)
     {
@@ -91,10 +92,11 @@ class Builder
 	public static function orderClause($orders)
     {
         foreach ($orders as $order) {
-            if (isset($order[2])) {
-                $items[] = $order[1] ? "`$order[2]`.`$order[0]` DESC" : "`$order[0]`";
+            if ($order[0] === false) {
+                $items[] = self::$order_rand;
             } else {
-                $items[] = $order[1] ? "`$order[0]` DESC" : "`$order[0]`";
+                $field = isset($order[2]) ? "`$order[2]`.`$order[0]`" : "`$order[0]`";
+                $items[] = $order[1] ? "$field DESC" : $field;
             }
         }
         return ' ORDER BY '.implode(',', $items);
@@ -103,7 +105,7 @@ class Builder
     public static function limitClause($limit)
     {
         if (is_array($limit)) {
-            return " LIMIT ".$limit[0].", ".$limit[1];
+            return " LIMIT ".$limit[0].",".$limit[1];
         } else {
             return " LIMIT ".$limit;
         }

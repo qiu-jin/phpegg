@@ -40,6 +40,11 @@ class Mongo
         return $this->deleteRaw($filter, $options)->getModifiedCount();
     }
     
+    public function drop()
+    {
+        
+    }
+    
     public function getRaw($id)
     {
         return $this->manager->executeQuery($this->ns, new Query(['_id' => $id]));

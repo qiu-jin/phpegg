@@ -38,13 +38,13 @@ class Query extends QueryChain
         if ($limit) {
             $this->option['limit'] = $limit;
         }
-        return $this->db->exec(...Builder::select($this->table, $this->option));
+        return $this->db->exec(...($this->db::BUILDER)::select($this->table, $this->option));
     }
     
     public function has()
     {
         $this->option['limit'] = 1;
-        $select = Builder::select($this->table, $this->option);
+        $select = ($this->db::BUILDER)::select($this->table, $this->option);
         $query = $this->db->query('SELECT EXISTS('.$select[0].')', $select[1]);
         return $query && !empty($this->db->fetchRow($query)[0]);
     }
@@ -78,7 +78,7 @@ class Query extends QueryChain
     {
         $alias = $func.'_'.$field;
         $this->option['fields'] = [[$func, $field, "{$func}_{$field}"]];
-        $data = $this->db->exec(...Builder::select($this->table, $this->option));
+        $data = $this->db->exec(...($this->db::BUILDER)::select($this->table, $this->option));
         return $data ? $data[0][$alias] : false;
     }
 
@@ -134,10 +134,10 @@ class Query extends QueryChain
         }
         $params = [];
         if ($data) {
-            list($dataset, $params) = Builder::setData($data);
+            list($dataset, $params) = ($this->db::BUILDER)::setData($data);
             $set = $set.','.$dataset;
         }
-        $sql = "UPDATE `$this->table` SET ".$set.' WHERE '.Builder::whereClause($this->option['where'], $params);
+        $sql = "UPDATE `$this->table` SET ".$set.' WHERE '.($this->db::BUILDER)::whereClause($this->option['where'], $params);
         return $this->db->exec(isset($this->option['limit']) ? "$sql LIMIT ".$this->option['limit'] : $sql, $params);
     }
     

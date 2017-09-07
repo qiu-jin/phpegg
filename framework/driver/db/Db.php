@@ -6,13 +6,14 @@ use framework\core\Container;
 
 abstract class Db
 {
-    protected $sql;
     protected $link;
-    protected $debug = APP_DEBUG;
+    protected $debug;
     protected $cache;
     protected $fields;
     protected $dbname;
     protected $cache_config;
+    
+    const BUILDER = 'framework\driver\db\builder\Builder';
     
     abstract public function exec($sql);
     
@@ -47,6 +48,8 @@ abstract class Db
         if (isset($config['cache'])) {
             $this->cache_config = $config['cache'];
         }
+        $this->dbname = $config['dbname'];
+        $this->debug = !empty($config['debug']) || APP_DEBUG;
     }
     
     public function __get($name)
@@ -111,17 +114,7 @@ abstract class Db
         return $this->exec($sql, $params);
     }
     
-    public function debug($bool = true)
-    {
-        $this->debug = (bool) $bool;
-    }
-    
-    public function getSql($all = true)
-    {
-        return $all ? $this->sql : end($this->sql);
-    }
-    
-    public function getFields($table)
+    public function fields($table)
     {
         if (isset($this->fields[$table])) {
             return $this->fields[$table];
@@ -136,15 +129,22 @@ abstract class Db
                     return $fields;
                 }
             }
-            $query = $this->query("desc $table");
-            while ($row = $this->fetch($query)) {
-                $fields[] = $row['Field'];
-            }
+            $fields = $this->getFields($table);
             if (isset($this->cache)) {
                 $this->cache->set($key, $fields);
             }
             return $this->table_fields[$table] = $fields;
         }
+    }
+    
+    public function debug($bool = true)
+    {
+        $this->debug = (bool) $bool;
+    }
+    
+    public function getSql($all = true)
+    {
+        return $all ? $this->sql : end($this->sql);
     }
     
     protected function writeDebug($sql, $params)

@@ -21,6 +21,7 @@ abstract class Auth
     
     public static function init()
     {
+        if (self::$auth) return;
         $config = Config::get('auth');
         if (is_subclass_of($config['class'], __CLASS__)) {
             self::$auth = (new $config['class']($config));

@@ -13,6 +13,11 @@ class Exception extends \Exception
         $this->message  = $message;
     }
     
+    public static function __callStatic($name, $params)
+    {
+        return new self(...$params);
+    }
+    
     public function getClass()
     {
         return $this->class;

@@ -13,7 +13,7 @@ class Mongo
     {
         $this->manager = new Manager('mongodb://'.$config['host'].':'.($config['port'] ?? 27017));
         if (isset($config['dbname'])) {
-            $this->dbname = $dbname;
+            $this->dbname = $config['dbname'];
         }
     }
     
@@ -44,7 +44,7 @@ class Mongo
     
     public function collection($name)
     {
-        return new query\Mongo($this, "$this->dbname.$name");
+        return new query\Mongo($this->manager, "$this->dbname.$name");
     }
 }
 

@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\db;
 
-class Cluster extends Pdo
+class Cluster extends Mysqli
 {
     protected $work_link;
     protected $read_link;

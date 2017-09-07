@@ -54,7 +54,7 @@ class With extends QueryChain
         list($field1, $field2) = $this->getOnFields();
         for ($i = 0; $i < $count;  $i++) {
             $this->option['where'] = array_merge([[$field2, '=', $data[$i][$field1]]], $where);
-            $data[$i][$this->alias] = $this->db->exec(...Builder::select($this->with, $this->option));
+            $data[$i][$this->alias] = $this->db->exec(...($this->db::BUILDER)::select($this->with, $this->option));
         }
     }
     
@@ -67,7 +67,7 @@ class With extends QueryChain
         if (isset($this->option['fields']) && !in_array($field2, $this->option['fields'])) {
             $this->option['fields'][] = $field2;
         }
-        $with_data = $this->db->exec(...Builder::select($this->with, $this->option));
+        $with_data = $this->db->exec(...($this->db::BUILDER)::select($this->with, $this->option));
         if ($with_data) {
             foreach ($with_data as $wd) {
                 $sub_data[$wd[$field2]][] = $wd;

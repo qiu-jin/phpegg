@@ -2,7 +2,7 @@
 namespace framework\driver\db;
 
 class Mysqli extends Db
-{   
+{
     protected function connect($config)
     {
         $port = $config['port'] ?? '3306';
@@ -14,7 +14,6 @@ class Mysqli extends Db
             $link->set_charset($config['charset']);
         }
         $link->query("SET sql_mode=''");
-        $this->dbname = $config['dbname'];
         return $link;
     }
     
@@ -187,6 +186,14 @@ class Mysqli extends Db
     public function error($query = null)
     {   
         return $query ? array($query->errno, $query->error) : array($this->link->errno, $this->link->error);
+    }
+    
+    protected function getFields($table)
+    {
+        $query = $this->query("desc $table");
+        while ($row = $this->fetch($query)) {
+            $fields[] = $row['Field'];
+        }
     }
 
     public function __destruct()

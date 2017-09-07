@@ -9,7 +9,7 @@ class Micro extends App
 {
     public function bind($controller, $action)
     {
-        $this->dispatch['bind'] = $this->defaultDispatch($controller, $action);
+        return $this->dispatch['bind'] = $this->defaultDispatch($controller, $action);
     }
     
     public function route($role, callable $call, $method = null)
@@ -64,7 +64,7 @@ class Micro extends App
         $params = [];
         if (empty($path)) {
             if (isset($this->dispatch['route']['rule']['/'])) {
-                $index = $this->dispatch['route']['rule']['/'];
+                $index = $this->dispatch['route']['call']['/'];
             }
         } else {
             foreach ($this->dispatch['route']['rule'] as $rule => $i) {

@@ -79,14 +79,14 @@ class Join extends QueryChain
                         break;
                     case 'where':
                         if ($value) {
-                            $where[] = Builder::whereClause($value, $params, $table);
+                            $where[] = ($this->db::BUILDER)::whereClause($value, $params, $table);
                         }
                         break;
                     case 'group':
                         $group = [$value, $table];
                         break;
                     case 'having':
-                        $having[] = Builder::whereClause($value, $params, $table);
+                        $having[] = ($this->db::BUILDER)::whereClause($value, $params, $table);
                         break;
                     case 'order':
                         foreach ($value as $v) {
@@ -113,16 +113,16 @@ class Join extends QueryChain
             $sql .= ' WHERE '.implode(' AND ', $where);
         }
         if ($group) {
-            $sql .= Builder::groupClause(...$group);
+            $sql .= ($this->db::BUILDER)::groupClause(...$group);
         }
         if ($having) {
             $sql .= ' HAVING '.implode(' AND ', $having);
         }
         if ($order) {
-            $sql .= Builder::orderClause($order);
+            $sql .= ($this->db::BUILDER)::orderClause($order);
         }
         if ($limit) {
-            $sql .= Builder::limitClause($limit);
+            $sql .= ($this->db::BUILDER)::limitClause($limit);
         }
         return [$sql, $params];
     }

@@ -3,11 +3,9 @@ namespace framework\core;
 
 trait Getter
 {
-    protected $providers;
-    
     public function __get($name)
     {
-        if (isset($this->providers[$name])) {
+        if (isset($this->providers) && isset($this->providers[$name])) {
             $value = $this->providers[$name];
             if (is_string($value)) {
                 return $this->$name = Container::make($value);

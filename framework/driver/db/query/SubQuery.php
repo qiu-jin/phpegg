@@ -55,10 +55,10 @@ class SubQuery extends QueryChain
     
     public function update($data)
     {
-        list($set, $params) = Builder::setData($data);
+        list($set, $params) = ($this->db::BUILDER)::setData($data);
         $sql = "UPDATE `$this->table` SET $set WHERE ".self::buildSubQuery($params);
         if (isset($this->master['limit'])) {
-            $sql .= Builder::limitClause($this->master['limit']);
+            $sql .= ($this->db::BUILDER)::limitClause($this->master['limit']);
         }
         return $this->exec($sql, $params);
     }
@@ -68,7 +68,7 @@ class SubQuery extends QueryChain
         $params = [];
         $sql = "DELETE FROM `$table`".self::buildSubQuery($params);
         if (isset($this->master['limit'])) {
-            $sql .= Builder::limitClause($this->master['limit']);
+            $sql .= ($this->db::BUILDER)::limitClause($this->master['limit']);
         }
         return $this->exec($sql, $params);
     }
@@ -76,19 +76,19 @@ class SubQuery extends QueryChain
     protected function buildSelect()
     {
         $params = [];
-        $sql = Builder::selectFrom($this->table, $this->master['fields'] ?? null).' WHERE ';
+        $sql = ($this->db::BUILDER)::selectFrom($this->table, $this->master['fields'] ?? null).' WHERE ';
         $sql .= self::buildSubQuery($params);
         if (isset($this->master['group'])) {
-            $sql .= Builder::groupClause($this->master['group']);
+            $sql .= ($this->db::BUILDER)::groupClause($this->master['group']);
         }
         if (isset($this->master['having'])) {
-            $sql .= ' HAVING '.Builder::whereClause($this->master['having'], $params);
+            $sql .= ' HAVING '.($this->db::BUILDER)::whereClause($this->master['having'], $params);
         }
         if (isset($this->master['order'])) {
-            $sql .= Builder::orderClause($this->master['order']);
+            $sql .= ($this->db::BUILDER)::orderClause($this->master['order']);
         }
         if (isset($this->master['limit'])) {
-            $sql .= Builder::limitClause($this->master['limit']);
+            $sql .= ($this->db::BUILDER)::limitClause($this->master['limit']);
         }
         return [$sql, $params];
     }
@@ -96,7 +96,7 @@ class SubQuery extends QueryChain
     protected function buildSubQuery(&$params)
     {
         if (isset($this->master['where'])) {
-            $sql = Builder::whereClause($this->master['where'], $params);
+            $sql = ($this->db::BUILDER)::whereClause($this->master['where'], $params);
             $logic = true;
         }
         foreach ($this->options as $table => $option) {
@@ -118,7 +118,7 @@ class SubQuery extends QueryChain
                 $sql .= "`id` {$option['exp']} ";
                 $option['fields'] = [$this->table.'_id'];
             }
-            $sub = Builder::select($table, $option);
+            $sub = ($this->db::BUILDER)::select($table, $option);
             $sql .= '('.$sub[0].') ';
             $params = array_merge($params, $sub[1]);
         }

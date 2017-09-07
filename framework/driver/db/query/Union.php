@@ -38,7 +38,7 @@ class Union extends QueryChain
         $this->options[$this->union] = $this->option;
         foreach ($this->options as $table => $option) {
             $option['fields'] = $this->fields;
-            $select = Builder::select($table, $option);
+            $select = ($this->db::BUILDER)::select($table, $option);
             $sql[] = '('.$select[0].')';
             $params = array_merge($params, $select[1]);
         }
