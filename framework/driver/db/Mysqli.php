@@ -5,8 +5,13 @@ class Mysqli extends Db
 {
     protected function connect($config)
     {
-        $port = $config['port'] ?? '3306';
-        $link = new \mysqli($config['host'], $config['username'], $config['password'], $config['dbname'], $port);
+        $link = new \mysqli($config['host'], 
+                            $config['username'], 
+                            $config['password'], 
+                            $config['dbname'], 
+                            $config['port'] ?? '3306', 
+                            $config['socket'] ?? null
+                        );
         if ($link->connect_error) {
             throw new \Exception("MySQL Server Connect Error $link->connect_errno: $link->connect_error");
         }
@@ -25,7 +30,7 @@ class Mysqli extends Db
         try {
             $call($this);
         } catch (\Exception $e) {
-            
+            //
         }
         $this->dbname = $raw_dbname;
         $this->link->select_db($raw_dbname);
@@ -43,16 +48,16 @@ class Mysqli extends Db
         if ($params) {
             $query = $this->prepareExecute($sql, $params, $is_assoc);
             switch ($cmd) {
+                case 'SELECT':
+                    return $query->get_result()->fetch_all(MYSQLI_ASSOC);
                 case 'INSERT':
                     return $query->insert_id;
                 case 'UPDATE':
                     return $query->affected_rows;
                 case 'DELETE':
                     return $query->affected_rows;
-                case 'SELECT':
-                    return $query->get_result()->fetch_all(MYSQLI_ASSOC);
                 default:
-                    return true;
+                    return $query->get_result()->fetch_all(MYSQLI_ASSOC);
             }
         } else {
             $query = $this->link->query($sql);
@@ -60,16 +65,16 @@ class Mysqli extends Db
                 throw new \Exception('SQL ERROR: ['.$this->link->errno.']'.$this->link->error);
             }
             switch ($cmd) {
+                case 'SELECT':
+                    return $query->fetch_all(MYSQLI_ASSOC);
                 case 'INSERT':
                     return $this->link->insert_id;
                 case 'UPDATE':
                     return $this->link->affected_rows;
                 case 'DELETE':
                     return $this->link->affected_rows;
-                case 'SELECT':
-                    return $query->fetch_all(MYSQLI_ASSOC);
                 default:
-                    return true;
+                    return $query->fetch_all(MYSQLI_ASSOC);
             }
         }
         return false;
@@ -190,10 +195,7 @@ class Mysqli extends Db
     
     protected function getFields($table)
     {
-        $query = $this->query("desc $table");
-        while ($row = $this->fetch($query)) {
-            $fields[] = $row['Field'];
-        }
+        return array_column($this->exec("desc `$table`"), 'Field');
     }
 
     public function __destruct()

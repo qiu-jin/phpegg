@@ -3,7 +3,7 @@ namespace framework\driver\db\builder;
 
 class Sqlite extends Builder
 {
-    protected static $order_rand = 'RANDOM()';
+    const ORDER_RANDOM = 'RANDOM()';
     
     public static function limitClause($limit)
     {

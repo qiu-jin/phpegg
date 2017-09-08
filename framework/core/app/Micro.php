@@ -9,7 +9,8 @@ class Micro extends App
 {
     public function bind($controller, $action)
     {
-        return $this->dispatch['bind'] = $this->defaultDispatch($controller, $action);
+        $this->dispatch['bind'] = $this->defaultDispatch($controller, $action);
+        return (bool) $this->dispatch['bind'];
     }
     
     public function route($role, callable $call, $method = null)

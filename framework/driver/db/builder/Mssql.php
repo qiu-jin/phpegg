@@ -3,6 +3,9 @@ namespace framework\driver\db\builder;
 
 class Mssql extends Builder
 {
+    const KEYWORD_ESCAPE_LEFT = '[';
+    const KEYWORD_ESCAPE_RIGHT = ']';
+    
     public static function limitClause($limit)
     {
         if (is_array($limit)) {

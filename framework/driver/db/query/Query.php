@@ -3,9 +3,8 @@ namespace framework\driver\db\query;
 
 class Query extends QueryChain
 {
-	public function __construct($db, $table)
+	protected function init($table)
     {
-        $this->db = $db;
         $this->table = $table;
     }
     
@@ -38,13 +37,13 @@ class Query extends QueryChain
         if ($limit) {
             $this->option['limit'] = $limit;
         }
-        return $this->db->exec(...($this->db::BUILDER)::select($this->table, $this->option));
+        return $this->db->exec(...$this->builder::select($this->table, $this->option));
     }
     
     public function has()
     {
         $this->option['limit'] = 1;
-        $select = ($this->db::BUILDER)::select($this->table, $this->option);
+        $select = $this->builder::select($this->table, $this->option);
         $query = $this->db->query('SELECT EXISTS('.$select[0].')', $select[1]);
         return $query && !empty($this->db->fetchRow($query)[0]);
     }
@@ -78,15 +77,21 @@ class Query extends QueryChain
     {
         $alias = $func.'_'.$field;
         $this->option['fields'] = [[$func, $field, "{$func}_{$field}"]];
-        $data = $this->db->exec(...($this->db::BUILDER)::select($this->table, $this->option));
+        $data = $this->db->exec(...$this->builder::select($this->table, $this->option));
         return $data ? $data[0][$alias] : false;
     }
-
-    public function insert($data, $replace = false)
+    
+    public function insert(array $data)
     {
-        return $this->db->insert($this->table, $data, $replace);
+        return $this->db->exec(...$this->builder::insert($this->table, $data));
     }
     
+    public function replace(array $data)
+    {
+        $result = $this->builder::setData($data);
+        return $this->db->exec("REPLACE INTO ".$this->builder::keywordEscape($this->table)." SET $result[0]", $result[1]);
+    }
+
     public function insertAll($datas)
     {
         try {
@@ -104,18 +109,13 @@ class Query extends QueryChain
             throw new \Exception($e->getMessage());
         }
     }
-    
-    public function set($key, $value, $pk = 'id')
-    {
-        return $this->db->update($this->table, $value, [[$pk, '=', $key]], 1);
-    }
    
     public function update($data, $id = null, $pk = 'id')
     {
         if (isset($id)) {
             $this->option['where'] = [[$pk, '=', $id]];
         }
-        return $this->db->update($this->table, $data, $this->option['where'], isset($this->option['limit']) ? $this->option['limit'] : 0);
+        return $this->exec(...$this->builder::update($this->table, $data, $this->option));
     }
     
     public function updateAuto($auto, $data = null)
@@ -134,10 +134,10 @@ class Query extends QueryChain
         }
         $params = [];
         if ($data) {
-            list($dataset, $params) = ($this->db::BUILDER)::setData($data);
+            list($dataset, $params) = $this->builder::setData($data);
             $set = $set.','.$dataset;
         }
-        $sql = "UPDATE `$this->table` SET ".$set.' WHERE '.($this->db::BUILDER)::whereClause($this->option['where'], $params);
+        $sql = "UPDATE ".$this->builder::keywordEscape($this->table)." SET ".$set.' WHERE '.$this->builder::whereClause($this->option['where'], $params);
         return $this->db->exec(isset($this->option['limit']) ? "$sql LIMIT ".$this->option['limit'] : $sql, $params);
     }
     
@@ -146,6 +146,6 @@ class Query extends QueryChain
         if (isset($id)) {
             $this->option['where'] = [[$pk, '=', $id]];
         }
-        return $this->db->delete($this->table, $this->option['where'], isset($this->option['limit']) ? $this->option['limit'] : 0);
+        return $this->exec(...$this->builder::delete($this->table, $this->option));
     }
 }

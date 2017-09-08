@@ -8,9 +8,8 @@ class Relate extends QueryChain
     protected $query;
     protected $optimize;
 
-	public function __construct($db, $table, $query, $with, $alias = null)
+	protected function init($table, $query, $with, $alias = null)
     {
-        $this->db = $db;
         $this->with = $with;
         $this->table = $table;
         $this->alias = $alias;
@@ -65,14 +64,15 @@ class Relate extends QueryChain
         $in_data = array_unique(array_column($data, $field1[0]));
         if ($in_data) {
             $params = [];
-            $sql = ($this->db::BUILDER)::whereItem($params, $field1[1], 'IN', $in_data);
-            $related_data = $this->db->exec("SELECT `$field1[1]`, `$field2[1]` FROM `$related` WHERE $sql", $params);
+            $sql = $this->builder::whereItem($params, $field1[1], 'IN', $in_data);
+            $sql = 'SELECT '.$this->builder::keywordEscape($field1[1]).', '.$this->builder::keywordEscape($field2[1]).' FROM '.$this->builder::keywordEscape($related).' WHERE '.$sql;
+            $related_data = $this->db->exec($sql, $params);
             if ($related_data) {
                 foreach ($related_data as $rd) {
                     $field2_field1_related[$rd[$field2[1]]][] = $rd[$field1[1]];
                 }
                 unset($related_data);
-                $with_data = $this->db->exec(...($this->db::BUILDER)::select($this->with, [
+                $with_data = $this->db->exec(...$this->builder::select($this->with, [
                     'order' => $this->option['order'],
                     'fields'=> $this->option['fields'],
                     'where' => array_merge([[$field2[0], 'IN', array_keys($field2_field1_related)]], $this->option['where'])

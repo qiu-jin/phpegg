@@ -3,7 +3,7 @@ namespace framework\driver\db;
 
 class Oracle extends Pdo
 {
-    const BUILDER = 'framework\driver\db\builder\Oracle';
+    const BUILDER = builder\Oracle::class;
     
     protected function dsn($config)
     {
@@ -14,11 +14,6 @@ class Oracle extends Pdo
     
     protected function getFields($table)
     {
-        /*
-        $query = $this->query("describe `$table`");
-        while ($row = $this->fetch($query)) {
-            $fields[] = $row['Field'];
-        }
-        */
+        //return array_column($this->exec("describe `$table`"), 'Field');
     }
 }

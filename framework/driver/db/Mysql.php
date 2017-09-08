@@ -23,9 +23,6 @@ class Mysql extends Pdo
     
     protected function getFields($table)
     {
-        $query = $this->query("desc $table");
-        while ($row = $this->fetch($query)) {
-            $fields[] = $row['Field'];
-        }
+        return array_column($this->exec("desc `$table`"), 'Field');
     }
 }

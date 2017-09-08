@@ -57,15 +57,11 @@ class Maxmind extends Geoip
     
     protected function dbHandle($ip, $raw = false)
     {
-        try {
-            if (empty($this->db['eader'])) {
-                $this->db['reader'] = new Reader($this->db['file']);
-            }
-            $record = $this->db['reader']->get($ip);
-            return $raw ? $record : ['iso_code' => $record['country']['iso_code'], 'country' => $record['country']['names'][$this->lang]];
-        } catch (\Exception $e) {
-            return error($e->getMessage());
+        if (empty($this->db['eader'])) {
+            $this->db['reader'] = new Reader($this->db['file']);
         }
+        $record = $this->db['reader']->get($ip);
+        return $raw ? $record : ['iso_code' => $record['country']['iso_code'], 'country' => $record['country']['names'][$this->lang]];
     }
     
     public function __destruct()

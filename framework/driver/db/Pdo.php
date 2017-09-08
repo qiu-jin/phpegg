@@ -29,39 +29,37 @@ abstract class Pdo extends Db
             $query = $this->prepareExecute($sql, $params);
             if ($query) {
                 switch ($cmd) {
+                    case 'SELECT':
+                        return $query->fetchAll(\PDO::FETCH_ASSOC);
                     case 'INSERT':
                         return $this->link->lastInsertId();
                     case 'UPDATE':
                         return $query->rowCount();
                     case 'DELETE':
                         return $query->rowCount();
-                    case 'SELECT':
-                        return $query->fetchAll(\PDO::FETCH_ASSOC);
                     default:
-                        return true;
+                        return $query->fetchAll(\PDO::FETCH_ASSOC);
                 }
             }
         } else {
             if ($cmd === 'SELECT') {
                 $query = $this->link->query($sql);
-                if ($query === false) {
-                    $error = $this->link->errorInfo();
-                    throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
-                } else {
+                if ($query !== false) {
                     return $query->fetchAll(\PDO::FETCH_ASSOC);
                 }
-            } else {
+            } elseif ($cmd === 'INSERT' || $cmd === 'UPDATE' || $cmd === 'DELETE') {
                 $affected = $this->link->exec($sql);
-                if ($affected === false) {
-                    $error = $this->link->errorInfo();
-                    throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
-                } else {
-                    if ($cmd === 'INSERT') {
-                        return $this->link->lastInsertId();
-                    }
-                    return $affected;
+                if ($affected !== false) {
+                    return $cmd === 'INSERT' ? $this->link->lastInsertId() : $affected;
+                }
+            } else {
+                $query = $this->link->query($sql);
+                if ($query !== false) {
+                    return $query->fetchAll(\PDO::FETCH_ASSOC);
                 }
             }
+            $error = $this->link->errorInfo();
+            throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
         }
         return false;
     }

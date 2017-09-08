@@ -9,12 +9,11 @@ class Join extends QueryChain
     protected $options = [];
     protected static $join_type = ['INNER', 'LEFT', 'RIGHT'];
 
-	public function __construct($db, $table, $option, $join, $type = 'LEFT', $prefix = true)
+	protected function init($table, $option, $join, $type = 'LEFT', $prefix = true)
     {
         if (!in_array($type, self::$join_type, true)) {
             throw new \Exception('Join Type Error: '.var_export($type, true));
         }
-        $this->db = $db;
         $this->cur = $join;
         $this->table = $table;
         $this->join[$join] = array('type' => $type);
@@ -79,14 +78,14 @@ class Join extends QueryChain
                         break;
                     case 'where':
                         if ($value) {
-                            $where[] = ($this->db::BUILDER)::whereClause($value, $params, $table);
+                            $where[] = $this->builder::whereClause($value, $params, $table);
                         }
                         break;
                     case 'group':
                         $group = [$value, $table];
                         break;
                     case 'having':
-                        $having[] = ($this->db::BUILDER)::whereClause($value, $params, $table);
+                        $having[] = $this->builder::whereClause($value, $params, $table);
                         break;
                     case 'order':
                         foreach ($value as $v) {
@@ -100,29 +99,29 @@ class Join extends QueryChain
                 }
             }
         }
-        $sql = 'SELECT '.implode(',', $fields).' FROM `'.$this->table.'`';
+        $sql = 'SELECT '.implode(',', $fields).' FROM '.$this->builder::keywordEscape($this->table);
         foreach ($this->join as $table => $join) {
-            $sql .= " {$join['type']} JOIN `$table` ON";
+            $sql .= " {$join['type']} JOIN ".$this->builder::keywordEscape($table)." ON ";
             if (isset($join['on'])) {
-                $sql .= "`$this->table`.`{$join['on'][0]}` = `$table`.`{$join['on'][1]}`";
+                $sql .= $this->builder::keywordEscapePair($this->table, $join['on'][0])." = ".$this->builder::keywordEscapePair($table, $join['on'][1]);
             } else {
-                $sql .= "`$this->table`.`id` = `$table`.`{$this->table}_id`";
+                $sql .= $this->builder::keywordEscapePair($this->table, 'id')." = ".$this->builder::keywordEscapePair($table, "{$this->table}_id");
             }
         }
         if ($where) {
             $sql .= ' WHERE '.implode(' AND ', $where);
         }
         if ($group) {
-            $sql .= ($this->db::BUILDER)::groupClause(...$group);
+            $sql .= $this->builder::groupClause(...$group);
         }
         if ($having) {
             $sql .= ' HAVING '.implode(' AND ', $having);
         }
         if ($order) {
-            $sql .= ($this->db::BUILDER)::orderClause($order);
+            $sql .= $this->builder::orderClause($order);
         }
         if ($limit) {
-            $sql .= ($this->db::BUILDER)::limitClause($limit);
+            $sql .= $this->builder::limitClause($limit);
         }
         return [$sql, $params];
     }
@@ -134,15 +133,15 @@ class Join extends QueryChain
                 $prefix = $table;
             }
             if (!$value) {
-                foreach ($this->db->getFields($table) as $field) {
-                    $fields[] = "`$table`.`$field` AS `{$prefix}_$field`";
+                foreach ($this->db->fields($table) as $field) {
+                    $fields[] = $this->builder::keywordEscapePair($table, $field)." AS ".$this->builder::keywordEscape("{$prefix}_$field");
                 }
             } else {
                 foreach ($value as $field) {
                     if (is_array($field)) {
-                        $fields[] = $this->setField($field, $table);
+                        $fields[] = $this->fields($field, $table);
                     } else {
-                        $fields[] = "`$table`.`$field` AS `{$prefix}_$field`";
+                        $fields[] = $this->builder::keywordEscapePair($table, $field)." AS ".$this->builder::keywordEscape("{$prefix}_$field");
                     }
                 }
             }
@@ -150,13 +149,13 @@ class Join extends QueryChain
             if ($value) {
                 foreach ($value as $field) {
                     if (is_array($field)) {
-                        $fields[] = $this->setField($field, $table);
+                        $fields[] = $this->fields($field, $table);
                     } else {
-                        $fields[] = "`$table`.`$field`";
+                        $fields[] = $this->builder::keywordEscapePair($table, $field);
                     }
                 }
             } else {
-                $fields[] = "`$table`.*";
+                $fields[] = $this->builder::keywordEscape("$table")."*";
             } 
         }
         return $fields;
@@ -166,10 +165,10 @@ class Join extends QueryChain
     {
         $count = count($field);
         if ($count === 2) {
-            return "`$table`.`$field[0]` AS `$field[1]`";
+            return $this->builder::keywordEscapePair($table, $field[0]).' AS '.$this->builder::keywordEscape($field[1]);
         } elseif ($count === 3){
-            $field1 =  $field[1] === '*' ? '*' : "`$field[1]`";
-            return "$field[0](`$table`.$field1) AS `$field[2]`";
+            $field1 =  $field[1] === '*' ? '*' : $this->builder::keywordEscape($field[1]);
+            return "$field[0](".$this->builder::keywordEscape($table).".$field1) AS ".$this->builder::keywordEscape($field[2]);
         }
         throw new \Exception('Join Field ERROR: '.var_export($field, true));
     }

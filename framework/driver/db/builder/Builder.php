@@ -2,53 +2,91 @@
 namespace framework\driver\db\builder;
 
 class Builder
-{   
+{
+    const ORDER_RANDOM = 'RAND()';
+    const KEYWORD_ESCAPE_LEFT = '`';
+    const KEYWORD_ESCAPE_RIGHT = '`';
+    
+    protected static $order_rand = 'RAND()';
     protected static $where_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
     protected static $where_operator = ['=', '!=', '>', '>=', '<', '<=', 'LIKE', 'IN', 'IS', 'BETWEEN'];
-    protected static $order_rand = 'RAND()';
 
     public static function select($table, array $option)
     {
         $params = [];
-        $sql = self::selectFrom($table, isset($option['fields']) ? $option['fields'] : null);
+        $sql = static::selectFrom($table, isset($option['fields']) ? $option['fields'] : null);
         if (isset($option['where'])) {
-            $sql .= ' WHERE '.self::whereClause($option['where'], $params);
+            $sql .= ' WHERE '.static::whereClause($option['where'], $params);
         }
         if (isset($option['group'])) {
-            $sql .= self::groupClause($option['group']);
+            $sql .= static::groupClause($option['group']);
         }
         if (isset($option['having'])) {
-            $sql .= ' HAVING '.self::whereClause($option['having'], $params);
+            $sql .= ' HAVING '.static::whereClause($option['having'], $params);
         }
         if (isset($option['order'])) {
-            $sql .= self::orderClause($option['order']);
+            $sql .= static::orderClause($option['order']);
         }
         if (isset($option['limit'])) {
-            $sql .= self::limitClause($option['limit']);
+            $sql .= static::limitClause($option['limit']);
         }
         return [$sql, $params];
     }
-
+    
+    public static function insert($table, $data)
+    {
+        $sql = 'INSERT INTO '.self::keywordEscape($table).' (';
+        $sql .= self::keywordEscape(implode(self::keywordEscape(','), array_keys($data)));
+        $sql .= ') VALUES ('.implode(',', array_fill(0, count($data), '?')).')';
+        return [$sql, array_values($data)];
+    }
+    
+    public static function update($table, $data, $option)
+    {
+        list($set, $params) = static::setData($data);
+        $sql =  "UPDATE ".self::keywordEscape($table)." SET $set";
+        if (isset($option['where'])) {
+            $sql .= ' WHERE '.static::whereClause($option['where'], $params);
+        }
+        if (isset($option['limit'])) {
+            $sql .= " LIMIT ".$option['limit'];
+        }
+        return [$sql, $params];
+    }
+    
+    public static function delete($table, $option)
+    {
+        $params = [];
+        $sql = "DELETE FROM ".self::keywordEscape($table);
+        if (isset($option['where'])) {
+            $sql .= ' WHERE '.static::whereClause($option['where'], $params);
+        }
+        if (isset($option['limit'])) {
+            $sql .= " LIMIT ".$option['limit'];
+        }
+        return [$sql, $params];
+    }
+    
     public static function selectFrom($table, array $fields = null)
     {
         if (!$fields) {
-            return "SELECT * FROM `$table`";
+            return "SELECT * FROM ".self::keywordEscape($table);
         }
         foreach ($fields as $field) {
             if (is_array($field)) {
                 $count = count($field);
                 if ($count === 2) {
-                    $select[] = "`$field[0]` AS `$field[1]`";
+                    $select[] = self::keywordEscape($field[0]).' AS '.self::keywordEscape($field[1]);
                 } elseif ($count === 3){
-                    $select[] = "$field[0](".($field[1] === '*' ? '*' : "`$field[1]`").") AS `$field[2]`";
+                    $select[] = "$field[0](".($field[1] === '*' ? '*' : self::keywordEscape($field[1])).") AS ".self::keywordEscape($field[2]);
                 } else {
                     throw new \Exception('SQL Field ERROR: '.var_export($field, true));
                 }
             } else {
-                $select[] = "`$field`";
+                $select[] = self::keywordEscape($field);
             }
         }
-        return 'SELECT '.implode(',', (array) $select).' FROM `'.$table.'`';
+        return 'SELECT '.implode(',', (array) $select).' FROM '.self::keywordEscape($table);
     }
 
     public static function whereClause($data, &$params, $prefix = null)
@@ -62,21 +100,21 @@ class Builder
                 }
             } else {
                 $k = strtoupper(strtok($k, '#'));
-                if (in_array($k, self::$where_logic, true)) {
+                if (in_array($k, static::$where_logic, true)) {
                     $sql = $sql.' '.$k.' ';
-                } elseif (preg_match('/^('.implode('|', self::$where_logic).')\#.+$/', $k, $match)) {
+                } elseif (preg_match('/^('.implode('|', static::$where_logic).')\#.+$/', $k, $match)) {
                     $sql = $sql.' '.$match[1].' ';
                 } else {
                     throw new \Exception('SQL WHERE ERROR: '.var_export($k, true));
                 }
             }
-            if (count($v) === 3 && in_array($v[1], self::$where_operator, true)) {
+            if (count($v) === 3 && in_array($v[1], static::$where_operator, true)) {
                 if ($prefix !== null) {
-                    $sql .= "`$prefix`.";
+                    $sql .= self::keywordEscape($prefix).'.';
                 }
-                $sql .= self::whereItem($params, ...$v);
+                $sql .= static::whereItem($params, ...$v);
             } else {
-                $where = self::whereClause($v, $params, $prefix);
+                $where = static::whereClause($v, $params, $prefix);
                 $sql .=  $sql.'('.$where[0].')';
             }
             $i++;
@@ -86,16 +124,16 @@ class Builder
     
     public static function groupClause($field, $table = null)
     {
-        return " GROUP BY ".($table === null ? '' : "`$table`.")."`$field`";
+        return " GROUP BY ".($table === null ? '' : self::keywordEscape($table).'.').self::keywordEscape($field);
     }
     
 	public static function orderClause($orders)
     {
         foreach ($orders as $order) {
             if ($order[0] === false) {
-                $items[] = self::$order_rand;
+                $items[] = static::ORDER_RANDOM;
             } else {
-                $field = isset($order[2]) ? "`$order[2]`.`$order[0]`" : "`$order[0]`";
+                $field = isset($order[2]) ? self::keywordEscapePair($order[0], $order[0]) : self::keywordEscape($order[0]);
                 $items[] = $order[1] ? "$field DESC" : $field;
             }
         }
@@ -116,7 +154,7 @@ class Builder
         $item = [];
         $params = [];
 		foreach ($data as $k => $v) {
-            $item[] = "`$k`=?";
+            $item[] = self::keywordEscape($k)."=?";
             $params[] = $v;
 		}
         return [implode(" $glue ", $item), $params];
@@ -128,24 +166,34 @@ class Builder
             case 'IN':
                 if(is_array($value)) {
                     $params = array_merge($params, $value);
-                    return "`$field` IN (".implode(",", array_fill(0, count($value), '?')).")";
+                    return self::keywordEscape($field)." IN (".implode(",", array_fill(0, count($value), '?')).")";
                 }
                 break;
             case 'BETWEEN':
                 if (count($value) === 2) {
                     $params = array_merge($params, $value);
-                    return "`$field` BETWEEN ?  AND ?";
+                    return self::keywordEscape($field)." BETWEEN ?  AND ?";
                 }
                 break;
             case 'IS':
                 if ($value === NULL) {
-                    return "`$field` IS NULL";
+                    return self::keywordEscape($field)." IS NULL";
                 }
                 break;
             default :
                 $params[] = $value;
-                return "`$field` $exp ?";
+                return self::keywordEscape($field)." $exp ?";
         }
+    }
+    
+    public static function keywordEscape($kw)
+    {
+        return static::KEYWORD_ESCAPE_LEFT.$kw.static::KEYWORD_ESCAPE_RIGHT;
+    }
+    
+    public static function keywordEscapePair($kw1, $kw2)
+    {
+        return static::KEYWORD_ESCAPE_LEFT.$kw1.static::KEYWORD_ESCAPE_RIGHT.'.'.static::KEYWORD_ESCAPE_LEFT.$kw2.static::KEYWORD_ESCAPE_RIGHT;
     }
     
     public static function export($sql, array $params = null)

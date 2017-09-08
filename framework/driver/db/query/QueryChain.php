@@ -9,6 +9,14 @@ abstract class QueryChain
         'where' => null,
         'fields' => null
     ];
+    protected $builder;
+    
+	public function __construct(...$params)
+    {
+        $this->db = array_shift($params);
+        $this->builder = $this->db::BUILDER;
+        $this->init(...$params);
+    }
     
     public function with($table, $alias = null, $optimize = null)
     {
@@ -70,13 +78,9 @@ abstract class QueryChain
         return $this;
     }
     
-    public function limit($limit, $offset = 0)
+    public function limit($param1, $param2 = null)
     {
-        if ($offset > 0) {
-            $this->option['limit'] = [$offset, $limit];
-        } else {
-            $this->option['limit'] = $limit;
-        }
+        $this->option['limit'] = isset($param2) ? [$param1, $param2] : $param1;
         return $this;
     }
     

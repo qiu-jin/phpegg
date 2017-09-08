@@ -3,7 +3,7 @@ namespace framework\driver\db;
 
 class Pgsql extends Pdo
 {
-    const BUILDER = 'framework\driver\db\builder\Pgsql';
+    const BUILDER = builder\Pgsql::class;
     
     protected function dsn($config)
     {
@@ -16,11 +16,6 @@ class Pgsql extends Pdo
     
     protected function getFields($table)
     {
-        /*
-        $query = $this->query("\d `$table`");
-        while ($row = $this->fetch($query)) {
-            $fields[] = $row['Field'];
-        }
-        */
+        return array_column($this->exec("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_NAME = '$table'"), 'column_name');
     }
 }

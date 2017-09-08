@@ -3,7 +3,7 @@ namespace framework\driver\db;
 
 class Sqlite extends Pdo
 {
-    const BUILDER = 'framework\driver\db\builder\Sqlite';
+    const BUILDER = builder\Sqlite::class;
     
     protected function dsn($config)
     {
@@ -12,11 +12,6 @@ class Sqlite extends Pdo
     
     protected function getFields($table)
     {
-        /*
-        $query = $this->query(".schema `$table`");
-        while ($row = $this->fetch($query)) {
-            $fields[] = $row['Field'];
-        }
-        */
+        return array_column($this->exec("PRAGMA table_info(`$table`)"), 'name');
     }
 }

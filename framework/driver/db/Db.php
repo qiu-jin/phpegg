@@ -6,6 +6,7 @@ use framework\core\Container;
 
 abstract class Db
 {
+    protected $sql;
     protected $link;
     protected $debug;
     protected $cache;
@@ -13,7 +14,7 @@ abstract class Db
     protected $dbname;
     protected $cache_config;
     
-    const BUILDER = 'framework\driver\db\builder\Builder';
+    const BUILDER = builder\Builder::class;
     
     abstract public function exec($sql);
     
@@ -48,7 +49,9 @@ abstract class Db
         if (isset($config['cache'])) {
             $this->cache_config = $config['cache'];
         }
-        $this->dbname = $config['dbname'];
+        if (isset($config['dbname'])) {
+            $this->dbname = $config['dbname'];
+        }
         $this->debug = !empty($config['debug']) || APP_DEBUG;
     }
     
@@ -73,46 +76,6 @@ abstract class Db
             throw new \Exception($e->getMessage());
         }
     }
-
-    public function select($table, array $fields = null, array $where = [], array $option = [])
-    {
-        $option['where'] = $where;
-        $option['fields'] = $fields;
-        return $this->exec(...query\Builder::select($table, $option));
-    }
-
-    public function insert($table, array $data, $replace = false)
-    {
-        $sql = ($replace ? 'REPLACE' : 'INSERT')." INTO `$table` SET ";
-        $data = query\Builder::setData($data);
-        return $this->exec($sql.$data[0], $data[1]);
-    }
-    
-    public function update($table, array $data, $where = null, $limit = 0)
-    {
-        list($set, $params) = query\Builder::setData($data);
-        $sql =  "UPDATE `$table` SET $set";
-        if ($where) {
-            $sql .= ' WHERE '.query\Builder::whereClause($where, $params);
-        }
-        if ($limit > 0) {
-            $sql .= " LIMIT $limit";
-        }
-        return $this->exec($sql, $params);
-    }
-   
-    public function delete($table, $where = null, $limit = 0)
-    {
-        $params = [];
-        $sql = "DELETE FROM `$table`";
-        if ($where) {
-            $sql .= ' WHERE '.query\Builder::whereClause($where, $params);
-        }
-        if ($limit > 0) {
-            $sql .= " LIMIT $limit";
-        }
-        return $this->exec($sql, $params);
-    }
     
     public function fields($table)
     {
@@ -133,7 +96,7 @@ abstract class Db
             if (isset($this->cache)) {
                 $this->cache->set($key, $fields);
             }
-            return $this->table_fields[$table] = $fields;
+            return $this->fields[$table] = $fields;
         }
     }
     
@@ -149,7 +112,7 @@ abstract class Db
     
     protected function writeDebug($sql, $params)
     {
-        $sql = query\Builder::export($sql, $params);
+        $sql = (self::BUILDER)::export($sql, $params);
         logger::write(Logger::DEBUG, $sql);
         $this->sql[] = $sql;
     }

@@ -8,9 +8,8 @@ class Union extends QueryChain
     private $fields;
     private $options = [];
     
-	public function __construct($db, $table, $option, $union, $all = true)
+	protected function init($table, $option, $union, $all = true)
     {
-        $this->db = $db;
         $this->all = $all;
         $this->table = $table;
         $this->union = $union;
@@ -38,7 +37,7 @@ class Union extends QueryChain
         $this->options[$this->union] = $this->option;
         foreach ($this->options as $table => $option) {
             $option['fields'] = $this->fields;
-            $select = ($this->db::BUILDER)::select($table, $option);
+            $select = $this->builder::select($table, $option);
             $sql[] = '('.$select[0].')';
             $params = array_merge($params, $select[1]);
         }

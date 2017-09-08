@@ -3,7 +3,7 @@ namespace framework\driver\db;
 
 class Mssql extends Pdo
 {
-    const BUILDER = 'framework\driver\db\builder\Mssql';
+    const BUILDER = builder\Mssql::class;
     
     protected function dsn($config)
     {
@@ -25,11 +25,6 @@ class Mssql extends Pdo
     
     protected function getFields($table)
     {
-        /*
-        $query = $this->query("sp_columns `$table`");
-        while ($row = $this->fetch($query)) {
-            $fields[] = $row['Field'];
-        }
-        */
+        //return array_column($this->exec("sp_columns `$table`"), 'Field');
     }
 }

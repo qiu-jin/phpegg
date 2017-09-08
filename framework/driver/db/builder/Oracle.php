@@ -3,7 +3,9 @@ namespace framework\driver\db\builder;
 
 class Oracle extends Builder
 {
-    protected static $order_rand = 'DBMS_RANDOM.value';
+    const ORDER_RANDOM = 'DBMS_RANDOM.value';
+    const KEYWORD_ESCAPE_LEFT = '"';
+    const KEYWORD_ESCAPE_RIGHT = '"';
     
     public static function limitClause($limit)
     {
