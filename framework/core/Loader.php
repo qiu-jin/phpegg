@@ -73,7 +73,7 @@ class Loader
     public static function importPrefixClass($class)
     {
         $arr = explode('\\', $class);
-        $file = self::$class_prefix[array_shift($arr)].implode('/', $arr)'.php';
+        $file = self::$class_prefix[array_shift($arr)].implode('/', $arr).'.php';
         if (is_php_file($file)) {
             __include($file);
             return true;
