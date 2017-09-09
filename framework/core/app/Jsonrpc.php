@@ -2,6 +2,7 @@
 namespace framework\core\app;
 
 use framework\App;
+use framework\core\Loader;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
@@ -31,7 +32,7 @@ class Jsonrpc extends App
                 if ($action{0} !== '_' ) {
                     $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
                     $class = $this->ns.implode('\\', $method);
-                    if (class_exists($class)) {
+                    if (Loader::importPrefixClass($class) && class_exists($class)) {
                         $controller = new $class();
                         if (is_callable($controller, $action)) {
                             return [

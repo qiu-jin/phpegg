@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\db;
 
+
 class Cluster extends Mysqli
 {
     protected $work_link;
@@ -32,17 +33,17 @@ class Cluster extends Mysqli
     
     public function exec($sql, $params = null)
     {
-        return $this->sql_method('exec', $sql, $params);
+        return $this->callMethod('exec', $sql, $params);
     }
     
     public function query($sql, $params = null)
     {
-        return $this->sql_method('query', $sql, $params);
+        return $this->callMethod('query', $sql, $params);
     }
     
     public function prepare($sql)
     {
-        return $this->link($this->is_wirte($sql))->prepare($sql);
+        return $this->link($this->isWirte($sql))->prepare($sql);
     }
     
     public function insert_id()
@@ -78,15 +79,15 @@ class Cluster extends Mysqli
         $this->wirte_link = null;
     }
     
-    protected function is_wirte(&$sql)
+    protected function isWirte(&$sql)
     {
         return trim(strtoupper(strtok($sql, ' ')), "\t(") !== 'SELECT';
     }
     
-    protected function sql_method($method, $sql, $params)
+    protected function callMethod($method, $sql, $params)
     {
         $method = 'parent::'.$method;
-        if ($this->is_wirte($sql)) {
+        if ($this->isWirte($sql)) {
             $this->link = $this->link();
             $this->work_link = $this->link;
             try {
@@ -95,7 +96,7 @@ class Cluster extends Mysqli
                 return $return;
             } catch (\Exception $e) {
                 $this->link = $this->read_link;
-                throw new Exception($e->getMessage());
+                throw $e;
             }
         } else {
             $this->work_link = $this->link;

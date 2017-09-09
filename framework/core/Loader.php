@@ -70,15 +70,15 @@ class Loader
         }
     }
     
-    /*
-     * 加载php文件，忽略.php后缀
-     */
-    private static function import($name)
+    public static function importPrefixClass($class)
     {
-        $file = "$name.php";
+        $arr = explode('\\', $class);
+        $file = self::$class_prefix[array_shift($arr)].implode('/', $arr)'.php';
         if (is_php_file($file)) {
             __include($file);
+            return true;
         }
+        return false;
     }
 
     /*
@@ -96,6 +96,14 @@ class Loader
         } elseif ($prefix === 'exception') {
             class_alias(Exception::class, $class);
         }
+    }
+    
+    /*
+     * 加载php文件，忽略.php后缀
+     */
+    private static function import($name)
+    {
+        __include("$name.php");
     }
 }
 Loader::init();

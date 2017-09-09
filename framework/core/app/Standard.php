@@ -5,6 +5,7 @@ use framework\App;
 use framework\util\Str;
 use framework\core\View;
 use framework\core\Router;
+use framework\core\Loader;
 use framework\core\Config;
 use framework\core\http\Request;
 use framework\core\http\Response;
@@ -170,7 +171,7 @@ class Standard extends App
                 $class_array[] = Str::toCamel(array_pop($class_array));
             }
             $class = $this->ns.implode('\\', $class_array);
-            if (class_exists($class)) {
+            if (Loader::importPrefixClass($class) && class_exists($class)) {
                 $controller = new $class();
                 if (is_callable([$controller, $action])) {
                     if ($depth && $count > $depth+1) {
@@ -195,7 +196,7 @@ class Standard extends App
         if ($dispatch) {
             $action = array_pop($dispatch[0]);
             $class = $this->ns.implode('\\', $dispatch[0]);
-            if (class_exists($class)) {
+            if (Loader::importPrefixClass($class) && class_exists($class)) {
                 $controller = new $class();
                 $method = new \ReflectionMethod($controller, $action);
                 if (!$method->isPublic()) {

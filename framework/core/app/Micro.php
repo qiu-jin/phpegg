@@ -3,6 +3,7 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\core\Router;
+use framework\core\Loader;
 use framework\core\http\Request;
 
 class Micro extends App
@@ -51,7 +52,7 @@ class Micro extends App
     {
         $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
         $class = $this->ns.$controller;
-        if (class_exists($class, $action) && $action{0} !== '_') {
+        if (Loader::importPrefixClass($class) && class_exists($class, $action) && $action{0} !== '_') {
             $controller = new $class;
             if (is_callable([$controller, $action])) {
                 return [$controller, $action];

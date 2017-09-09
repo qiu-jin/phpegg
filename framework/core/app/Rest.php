@@ -4,6 +4,7 @@ namespace framework\core\app;
 use framework\App;
 use framework\util\Xml;
 use framework\core\Router;
+use framework\core\Loader;
 use framework\core\Config;
 use framework\core\http\Request;
 use framework\core\http\Response;
@@ -99,7 +100,7 @@ class Rest extends App
             $this->config['param_mode'] = 0;
             $class = $this->ns.implode('\\', $path);
         }
-        if (isset($class) && class_exists($class)) {
+        if (isset($class) && Loader::importPrefixClass($class) && class_exists($class)) {
             $controller = new $class();
             if (is_callable([$controller, $method])) {
                 $params = null;
@@ -121,7 +122,7 @@ class Rest extends App
         if ($dispatch) {
             $action = array_pop($dispatch[0]);
             $class = $this->ns.implode('\\', $dispatch[0]);
-            if (class_exists($class)) {
+            if (Loader::importPrefixClass($class) && class_exists($class)) {
                 $controller = new $class();
                 $refmethod = new \ReflectionMethod($controller, $action);
                 if (!$refmethod->isPublic()) {
