@@ -171,7 +171,7 @@ class Standard extends App
                 $class_array[] = Str::toCamel(array_pop($class_array));
             }
             $class = $this->ns.implode('\\', $class_array);
-            if (Loader::importPrefixClass($class) && class_exists($class)) {
+            if (Loader::importPrefixClass($class)) {
                 $controller = new $class();
                 if (is_callable([$controller, $action])) {
                     if ($depth && $count > $depth+1) {
