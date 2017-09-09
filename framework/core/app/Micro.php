@@ -52,7 +52,7 @@ class Micro extends App
     {
         $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
         $class = $this->ns.$controller;
-        if (Loader::importPrefixClass($class) && class_exists($class, $action) && $action{0} !== '_') {
+        if ($action{0} !== '_' && Loader::importPrefixClass($class)) {
             $controller = new $class;
             if (is_callable([$controller, $action])) {
                 return [$controller, $action];

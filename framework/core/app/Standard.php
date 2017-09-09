@@ -196,7 +196,7 @@ class Standard extends App
         if ($dispatch) {
             $action = array_pop($dispatch[0]);
             $class = $this->ns.implode('\\', $dispatch[0]);
-            if (Loader::importPrefixClass($class) && class_exists($class)) {
+            if (Loader::importPrefixClass($class)) {
                 $controller = new $class();
                 $method = new \ReflectionMethod($controller, $action);
                 if (!$method->isPublic()) {

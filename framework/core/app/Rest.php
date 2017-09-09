@@ -100,7 +100,7 @@ class Rest extends App
             $this->config['param_mode'] = 0;
             $class = $this->ns.implode('\\', $path);
         }
-        if (isset($class) && Loader::importPrefixClass($class) && class_exists($class)) {
+        if (isset($class) && Loader::importPrefixClass($class)) {
             $controller = new $class();
             if (is_callable([$controller, $method])) {
                 $params = null;
