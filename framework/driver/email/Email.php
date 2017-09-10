@@ -89,9 +89,9 @@ abstract class Email
         return $this;
     }
 
-    public function delay()
+    public function defer()
     {
-        $this->option['delay'] = true;
+        $this->option['defer'] = true;
         return $this;
     }
     
@@ -100,10 +100,8 @@ abstract class Email
         $to && $this->option['to'] = [(array) $to];
         $subject && $this->option['subject'] = $subject;
         $content && $this->option['content'] = $content;
-        if (!empty($this->option['delay'])) {
+        if (!empty($this->option['defer'])) {
             Hook::add('close', [$this, 'handle']);
-        } elseif (!empty($this->option['queue'])) {
-            //todo
         } else {
             return $this->handle();
         }

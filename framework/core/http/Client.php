@@ -11,7 +11,7 @@ class Client
 {
     private $url;
     private $body;
-    private $debug = APP_DEBUG;
+    private $debug;
     private $result;
     private $method;
     private $headers = [];
@@ -19,9 +19,12 @@ class Client
     private $curlopt = [CURLOPT_TIMEOUT => 30];
     private $curlinfo = ['status'];
     
+    const EOL = "\r\n";
+    
     public function __construct($method, $url)
     {
         $this->url = $url;
+        $this->debug = APP_DEBUG;
         $this->method = $method;
     }
 
@@ -98,12 +101,20 @@ class Client
         if (!$this->boundary) {
             $this->boundary = uniqid();
             $this->headers[] = 'Content-Type: multipart/form-data; boundary='.$this->boundary;
-        }
-        if (is_array($this->body)) {
-            foreach ($this->body as $pk => $pv) {
-                $body .= "--$this->boundary\r\nContent-Disposition: form-data; name=\"$pk\"\r\n\r\n$pv\r\n";
+            if (is_array($this->body)) {
+                foreach ($this->body as $pk => $pv) {
+                    $body[] = "--$this->boundary";
+                    $body[] = "Content-Disposition: form-data; name=\"$pk\"";
+                    $body[] = '';
+                    $body[] = $pv;
+                }
+                $body[] = '';
+                $this->body = implode(self::EOL, $body);
+            } else {
+                $this->body = null;
             }
-            $this->body = $body;
+        } else {
+            $this->body = substr($this->body, 0, -strlen("--$this->boundary--".self::EOL));
         }
         $this->body .= self::multipartFile($this->boundary, $name, $content, $filename, $mimetype);
         return $this;
@@ -189,9 +200,6 @@ class Client
     public function result($name = null)
     {
         if (!$this->result) {
-            if ($this->boundary) {
-                $this->body .= "--$this->boundary--\r\n";
-            }
             if ($this->debug) {
                 $this->curlopt[CURLOPT_HEADER] = true;
                 $this->curlopt[CURLINFO_HEADER_OUT] = true;
@@ -273,9 +281,9 @@ class Client
             if ($result) {
                 //忽略 HTTP/1.1 100 continue
                 if (substr($result, 9, 3) === '100') {
-                    list($tmp, $header, $result) = explode("\r\n\r\n", $result, 3);
+                    list(, $header, $result) = explode(self::EOL.self::EOL, $result, 3);
                 } else {
-                    list($header, $result) = explode("\r\n\r\n", $result, 2);
+                    list($header, $result) = explode(self::EOL.self::EOL, $result, 2);
                 }
                 $return['headers'] = self::parseHeaders($header);
             } else {
@@ -315,16 +323,22 @@ class Client
      */
     protected static function multipartFile($boundary, $name, $content, $filename, $mimetype)
     {
-        $file = '';
         if (empty($filename)) {
             $filename = $name;
         }
         if (empty($mimetype)) {
             $mimetype = 'application/octet-stream';
         }
-        $file .= "--$boundary\r\nContent-Disposition: form-data; name=\"$name\"; filename=\"$filename\"\r\n";
-        $file .= "Content-Type: $mimetype\r\nContent-Transfer-Encoding: binary\r\n\r\n".(string) $content."\r\n";
-        return $file;
+        return implode(self::EOL, [
+            "--$boundary",
+            "Content-Disposition: form-data; name=\"$name\"; filename=\"$filename\"",
+            "Content-Type: $mimetype",
+            "Content-Transfer-Encoding: binary",
+            '',
+            (string) $content,
+            "--$this->boundary--",
+            ''
+        ]);
     }
     
     /*
@@ -333,7 +347,7 @@ class Client
     protected static function parseHeaders($str)
     {
         $headers = [];
-        $arr = explode("\r\n", $str);
+        $arr = explode(self::EOL, $str);
         foreach ($arr as $v) {
             $line = explode(":", $v, 2);
             if(count($line) === 2) {
@@ -345,7 +359,7 @@ class Client
     
     protected static function writeDebug($body, $return)
     {
-        $header_out = explode("\r\n", $return['header_out'], 2);
+        $header_out = explode(self::EOL, $return['header_out'], 2);
         $log['Request'] = [
             'query'     => $header_out[0],
             'headers'   => self::parseHeaders($header_out[1]),

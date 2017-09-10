@@ -40,7 +40,7 @@ class Smtp extends Email
                 }
             }
             $this->command('DATA');
-            $data = $this->command($mime."\r\n.");
+            $data = $this->command($mime.Mime::EOL.".");
             if (substr($data, 0, 3) != '250') {
                 return error($data);
             }
@@ -85,7 +85,7 @@ class Smtp extends Email
     
     protected function command($cmd)
     {
-        fputs($this->link, "$cmd\r\n");
+        fputs($this->link, $cmd.Mime::EOL);
         return $this->read();
     }
     

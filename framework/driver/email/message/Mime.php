@@ -3,48 +3,58 @@ namespace framework\driver\email\message;
 
 class Mime
 {
+    const EOL = "\r\n";
+    
     public static function build($option)
     {
         $mime = '';
-        $addrs = []; 
-        $mime = "MIME-Version: 1.0\r\n";
-        $mime .= "Date: ".date("D, j M Y G:i:s O")."\r\n";
+        $addrs = [];
+        $mime = ["MIME-Version: 1.0", "Date: ".date("D, j M Y G:i:s O")];
         if (isset($option['from'])) {
-            $mime .= 'From: '.self::buildAddr($option['from'])."\r\n";
+            $mime[] = 'From: '.self::buildAddr($option['from']);
         }
         foreach ($option['to'] as $to) {
-            $mime .= "To: ".self::buildAddr($to)."\r\n";
+            $mime[] = "To: ".self::buildAddr($to);
             $addrs[] = $to[0];
         }
         if (isset($option['cc'])) {
             foreach ($option['cc'] as $cc) {
-                $mime .= "CC: ".self::buildAddr($cc)."\r\n";
+                $mime[] = "CC: ".self::buildAddr($cc);
                 $addrs[] = $cc[0];
             }
         }
         if (isset($option['bcc'])) {
             foreach ($option['bcc'] as $bcc) {
-                $mime .= "BCC: ".self::buildAddr($bcc)."\r\n";
+                $mime[] = "BCC: ".self::buildAddr($bcc);
                 $addrs[] = $bcc[0];
             }
         }
         if (isset($option['replyto'])) {
-            $mime .= 'Reply-To: '.self::buildAddr($option['replyto'])."\r\n";
+            $mime[] = 'Reply-To: '.self::buildAddr($option['replyto']);
         }
         if (isset($option['subject'])) {
-            $mime .= "Subject: ".self::encodeHeader($option['subject'])."\r\n";
+            $mime[] = "Subject: ".self::encodeHeader($option['subject']);
         }
         $type = empty($option['ishtml']) ? 'text/plain' : 'text/html';
         if (isset($option['attach'])) {
             $boundary = uniqid();
-            $mime .= "Content-Type:multipart/mixed;boundary=\"$boundary\"\r\n\r\n";
-            $mime .= "--$boundary\r\nContent-Type: $type; charset=utf-8\r\nContent-Transfer-Encoding: base64";
-            $mime .= "\r\n\r\n".base64_encode($option['content'])."\r\n\r\n";
-            $mime .= self::buildAttachments($option['attach'], $boundary, $option['attach_is_buffer']);
+            $mime[] = "Content-Type:multipart/mixed;boundary=\"$boundary\"";
+            $mime[] = '';
+            $mime[] = "--$boundary";
+            $mime[] = "Content-Type: $type; charset=utf-8";
+            $mime[] = "Content-Transfer-Encoding: base64";
+            $mime[] = '';
+            $mime[] = base64_encode($option['content']);
+            $mime[] = '';
+            $mime[] = self::buildAttachments($option['attach'], $boundary, $option['attach_is_buffer']);
+            $mime[] = '';
         } else {
-            $mime .= "Content-Type: $type; charset=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n".$option['content'];
+            $mime[] = "Content-Type: $type; charset=utf-8";
+            $mime[] = "Content-Transfer-Encoding: 8bit";
+            $mime[] = '';
+            $mime[] = $option['content'];
         }
-        return [$addrs, $mime];
+        return [$addrs, implode(self::EOL, $mime)];
     }
     
     public static function buildAddr($addr)
@@ -59,7 +69,6 @@ class Mime
     
     public static function buildAttachments($attachs, $boundary, $is_buffer)
     {
-        $mime = '';
         foreach ($attachs as $attach) {
             if ($is_buffer) {
                 $content = $attach[0];
@@ -75,9 +84,14 @@ class Mime
                 $mimetype = $is_buffer ? finfo_buffer($finfo, $attach[0]) : finfo_file($finfo, $attach[0]);
                 finfo_close($finfo);
             }
-            $mime .= "--$boundary\r\nContent-Type: $mimetype; name=$filename\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; name=$filename";
-            $mime .= "\r\n\r\n".base64_encode($content)."\r\n\r\n";
+            $mime[] = "--$boundary";
+            $mime[] = "Content-Type: $mimetype; name=$filename";
+            $mime[] = "Content-Transfer-Encoding: base64";
+            $mime[] = "Content-Disposition: attachment; name=$filename";
+            $mime[] = '';
+            $mime[] = base64_encode($content);
+            $mime[] = '';
         }
-        return $mime."--$boundary--\r\n";
+        return implode(self::EOL, $mime);
     }
 }

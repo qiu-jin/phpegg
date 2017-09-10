@@ -17,7 +17,7 @@ class Sendmail extends Email
     {
         $subject = Mime::encodeHeader(Arr::pop($this->option, 'subject'));
         list($addrs, $mime) = Mime::build($this->option);
-        list($header, $content) = explode("\r\n\r\n", $mime, 2);
+        list($header, $content) = explode(Mime::EOL.Mime::EOL, $mime, 2);
         return mail(implode(',', $addrs), Mime::encodeHeader($subject), $content, $header);
     }
 }

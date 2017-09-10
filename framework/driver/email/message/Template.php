@@ -3,17 +3,17 @@ namespace framework\driver\email\message;
 
 class Template
 {
-    public function view()
+    public static function view()
     {
         
     }
     
-    public function simple()
+    public static function simple()
     {
         
     }
     
-    public function makedown()
+    public static function makedown()
     {
         
     }
