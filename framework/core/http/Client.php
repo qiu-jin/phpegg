@@ -3,6 +3,7 @@ namespace framework\core\http;
 
 use framework\util\Xml;
 use framework\core\Logger;
+use framework\extend\debug\HttpClient as HttpClientDebug;
 
 define('CURLINFO_STATUS', CURLINFO_HTTP_CODE);
 
@@ -296,11 +297,27 @@ class Client
             }
             $return['body'] = $result;
             if ($debug) {
-                self::writeDebug($body, $return);
+                HttpClientDebug::write($body, $return);
             }
             return $return;
         }
         return $result;
+    }
+    
+    /*
+     * 解析headers
+     */
+    public static function parseHeaders($str)
+    {
+        $headers = [];
+        $arr = explode(self::EOL, $str);
+        foreach ($arr as $v) {
+            $line = explode(":", $v, 2);
+            if(count($line) === 2) {
+                $headers[trim($line[0])] = trim($line[1]);
+            }
+        }
+        return $headers;
     }
     
     /*
@@ -339,41 +356,5 @@ class Client
             "--$this->boundary--",
             ''
         ]);
-    }
-    
-    /*
-     * 解析headers
-     */
-    protected static function parseHeaders($str)
-    {
-        $headers = [];
-        $arr = explode(self::EOL, $str);
-        foreach ($arr as $v) {
-            $line = explode(":", $v, 2);
-            if(count($line) === 2) {
-                $headers[trim($line[0])] = trim($line[1]);
-            }
-        }
-        return $headers;
-    }
-    
-    protected static function writeDebug($body, $return)
-    {
-        $header_out = explode(self::EOL, $return['header_out'], 2);
-        $log['Request'] = [
-            'query'     => $header_out[0],
-            'headers'   => self::parseHeaders($header_out[1]),
-            'body'      => is_string($body) && strlen($body) > 1024 ? substr($body, 0, 1024).'......' : $body
-        ];
-        if (isset($return['error'])) {
-            $log['Response']['error'] = $return['error'];
-        } else {
-            $log['Response'] = [
-                'status'    => $return['status'],
-                'headers'   => $return['headers'],
-                'body'      => strlen($return['body']) > 1024 ? substr($return['body'], 0, 1024).'......' : $return['body']
-            ];
-        }
-        Logger::write(Logger::DEBUG, $log);
     }
 }

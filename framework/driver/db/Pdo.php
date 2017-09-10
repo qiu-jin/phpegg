@@ -1,6 +1,8 @@
 <?php
 namespace framework\driver\db;
 
+use framework\extend\debug\Db as DBDebug;
+
 abstract class Pdo extends Db
 {
     protected $commands;
@@ -23,7 +25,7 @@ abstract class Pdo extends Db
     
     public function exec($sql, $params = null)
     {
-        $this->debug && $this->writeDebug($sql, $params);
+        $this->debug && DBDebug::write($sql, $params);
         $cmd = trim(strtoupper(strtok($sql, ' ')), "\t(");
         if ($params) {
             $query = $this->prepareExecute($sql, $params);
@@ -66,7 +68,7 @@ abstract class Pdo extends Db
     
     public function query($sql, $params = null)
     {
-        $this->debug && $this->writeDebug($sql, $params);
+        $this->debug && DBDebug::write($sql, $params);
         if ($params) {
             return $this->prepareExecute($sql, $params);
         } else {

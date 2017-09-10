@@ -1,6 +1,8 @@
 <?php
 namespace framework\driver\db;
 
+use framework\extend\debug\Db as DBDebug;
+
 class Mysqli extends Db
 {
     protected function connect($config)
@@ -43,7 +45,7 @@ class Mysqli extends Db
     
     public function exec($sql, array $params = null, $is_assoc = false)
     {
-        $this->debug && $this->writeDebug($sql, $params, $is_assoc);
+        $this->debug && DBDebug::write($sql, $params, $is_assoc);
         $cmd = trim(strtoupper(strtok($sql, ' ')),"\t(");
         if ($params) {
             $query = $this->prepareExecute($sql, $params, $is_assoc);
@@ -82,7 +84,7 @@ class Mysqli extends Db
     
     public function query($sql, array $params = null, $is_assoc = false)
     {
-        $this->debug && $this->writeDebug($sql, $params, $is_assoc);
+        $this->debug && DBDebug::write($sql, $params, $is_assoc);
         if ($params) {
             return $this->prepareExecute($sql, $params, $is_assoc)->get_result();
         } else {

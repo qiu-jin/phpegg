@@ -1,7 +1,6 @@
 <?php
 namespace framework\driver\db;
 
-use framework\core\Logger;
 use framework\core\Container;
 
 abstract class Db
@@ -105,15 +104,10 @@ abstract class Db
         $this->debug = (bool) $bool;
     }
     
+    /*
     public function getSql($all = true)
     {
         return $all ? $this->sql : end($this->sql);
     }
-    
-    protected function writeDebug($sql, $params)
-    {
-        $sql = (self::BUILDER)::export($sql, $params);
-        logger::write(Logger::DEBUG, $sql);
-        $this->sql[] = $sql;
-    }
+    */
 }

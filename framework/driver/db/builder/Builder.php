@@ -196,21 +196,6 @@ class Builder
         return static::KEYWORD_ESCAPE_LEFT.$kw1.static::KEYWORD_ESCAPE_RIGHT.'.'.static::KEYWORD_ESCAPE_LEFT.$kw2.static::KEYWORD_ESCAPE_RIGHT;
     }
     
-    public static function export($sql, array $params = null)
-    {
-        if ($params) {
-            if (isset($params[0])) {
-                return vsprintf(str_replace("?", "'%s'", $sql), $params);
-            } else {
-                foreach ($params as $k => $v) {
-                    $replace_pairs[':'.$k] = "'$v'";
-                }
-                return strtr($sql, $replace_pairs);
-            }
-        }
-        return $sql;
-    }
-    
     public static function isField($str)
     {
         return preg_match('/^\w*$/', $str);
