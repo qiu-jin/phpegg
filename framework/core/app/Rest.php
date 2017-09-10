@@ -25,7 +25,10 @@ class Rest extends App
         $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
         $method = strtolower(Request::method());
         if (in_array($method, ['get','post', 'put', 'delete', 'options', 'head', 'patch'], true)) {
-            $path = explode('/', trim(Request::path(), '/'));
+            $path = trim(Request::path(), '/');
+            if ($path) {
+                $path = explode('/', $path);
+            }
             switch ($this->config['route_mode']) {
                 case 0:
                     return $this->defaultDispatch($path, $method);

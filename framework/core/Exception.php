@@ -3,19 +3,19 @@ namespace framework\core;
 
 class Exception extends \Exception
 {
-    protected $data;
     protected $class;
     
-    public function __construct($message, $class = null, $data = null)
+    public function __construct($message, $class = null)
     {
-        $this->data     = $data;
         $this->class    = $class;
         $this->message  = $message;
     }
     
     public static function __callStatic($name, $params)
     {
-        return new self(...$params);
+        $e = new self(...$params);
+        $e->class = ucfirst($name).'Exception';
+        return $e;
     }
     
     public function getClass()
@@ -26,15 +26,5 @@ class Exception extends \Exception
     public function setClass($class)
     {
         $this->class = $class;
-    }
-    
-    public function getData()
-    {
-        return $this->data;
-    }
-    
-    public function setData($data)
-    {
-        $this->data = $data;
     }
 }

@@ -35,7 +35,10 @@ class Micro extends App
         if (!empty($this->dispatch['bind'])) {
             return ($this->dispatch['bind'])();
         } elseif (!empty($this->dispatch['route'])) {
-            $path = explode('/', trim(Request::path(), '/'));
+            $path = trim(Request::path(), '/');
+            if ($path) {
+                $path = explode('/', $path);
+            }
             $dispatch = $this->routeDispatch($path);
             if ($dispatch) {
                 return $dispatch[0](...$dispatch[1]);
@@ -64,12 +67,15 @@ class Micro extends App
     protected function routeDispatch($path)
     {
         $params = [];
+        $route = $this->dispatch['route'];
+        if (isset($route['rule']['/'])) {
+            $index_ruote = $route['rule']['/'];
+            unset($route['rule']['/']);
+        } 
         if (empty($path)) {
-            if (isset($this->dispatch['route']['rule']['/'])) {
-                $index = $this->dispatch['route']['call']['/'];
-            }
+            $index = $index_ruote ?? null;
         } else {
-            foreach ($this->dispatch['route']['rule'] as $rule => $i) {
+            foreach ($route['rule'] as $rule => $i) {
                 $rule = explode('/', trim($rule, '/'));
                 $macth = Router::macth($rule, $path);
                 if ($macth !== false) {
@@ -83,10 +89,10 @@ class Micro extends App
             if (is_array($index)) {
                 $method = Request::method();
                 if (isset($index[$method])) {
-                    return [$this->dispatch['route']['call'][$index[$method]], $params];
+                    return [$route['call'][$index[$method]], $params];
                 }
             } else {
-                return [$this->dispatch['route']['call'][$index], $params];
+                return [$route['call'][$index], $params];
             }
         }
         return false;

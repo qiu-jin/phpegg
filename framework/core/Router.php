@@ -5,7 +5,10 @@ class Router
 {
     // 过滤器
     private static $filters = [
-        
+        'id' => 'Validator::id',
+        'hash' => 'Validator::hash',
+        'email' => 'Validator::email',
+        'mobile' => 'Validator::mobile',
     ];
 
     /*
@@ -13,47 +16,50 @@ class Router
      */
     public static function dispatch($path, $ruotes, $method = null)
     {
+        if (isset($ruotes['/'])) {
+            $index_ruote = $ruotes['/'];
+            unset($ruotes['/']);
+        } 
         if (empty($path)) {
-            if (isset($ruotes['/']))  {
-                return [explode('/', trim($ruotes['/'])), ['/', $ruotes['/']], []];
-            }
-            return false;
+            return isset($index_ruote) ? [explode('/', trim($rule)), ['/', $rule], []] : false;
         }
-        $count = count($path);
-        foreach ($ruotes as $rule => $to) {
-            $rule = explode('/', trim($rule, '/'));
-            if ($count === count($rule)) {
-                $macth = self::macth($path, $rule);
-                if ($macth !== false) {
-                    if (is_array($to)) {
-                        if (isset($to[$method])) {
-                            $to = $to[$method];
-                        } else {
-                            return null;
+        if ($ruotes) {
+            $count = count($path);
+            foreach ($ruotes as $rule => $to) {
+                $rule = explode('/', trim($rule, '/'));
+                if ($count === count($rule)) {
+                    $macth = self::macth($path, $rule);
+                    if ($macth !== false) {
+                        if (is_array($to)) {
+                            if (isset($to[$method])) {
+                                $to = $to[$method];
+                            } else {
+                                return null;
+                            }
                         }
-                    }
-                    $pairs = explode('?', $to, 2);
-                    $call = explode('/', $pairs[0]);
-                    if (count($call) > 0) {
-                        foreach ($call as $i => $v) {
-                            if ($v{0} == '$' && is_numeric($v{1})) $call[$i] = $macth[$v{1}-1];
-                        }
-                        $params = [];
-                        if (isset($pairs[1])) {
-                            parse_str($pairs[1],$param);
-                            if (count($param) > 0) {
-                                foreach ($param as $k => $v) {
-                                    if ($v{0} == '$' && is_numeric($v{1})) {
-                                        $params[$k] = $macth[$v{1}-1];
-                                    } else {
-                                        $params[$k] = $v;
+                        $pairs = explode('?', $to, 2);
+                        $call = explode('/', $pairs[0]);
+                        if (count($call) > 0) {
+                            foreach ($call as $i => $v) {
+                                if ($v[0] == '$' && is_numeric($v[1])) $call[$i] = $macth[$v[1]-1];
+                            }
+                            $params = [];
+                            if (isset($pairs[1])) {
+                                parse_str($pairs[1],$param);
+                                if (count($param) > 0) {
+                                    foreach ($param as $k => $v) {
+                                        if ($v[0] == '$' && is_numeric($v[1])) {
+                                            $params[$k] = $macth[$v[1]-1];
+                                        } else {
+                                            $params[$k] = $v;
+                                        }
                                     }
                                 }
+                            } else {
+                                $params = [];
                             }
-                        } else {
-                            $params = [];
+                            return [$call, $params, [$rule => $to]];
                         }
-                        return [$call, $params, [$rule => $to]];
                     }
                 }
             }
@@ -68,7 +74,7 @@ class Router
     {
         $macth = [];
         foreach ($rule as $i => $unit) {
-            switch ($unit{0}) {
+            switch ($unit[0]) {
                 case '*':
                     if (strlen($unit) === 1) {
                         $macth[] = $path[$i];

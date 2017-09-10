@@ -12,7 +12,7 @@ trait Getter
             } elseif (is_array($value)) {
                 $class = array_shift($value);
                 return $this->$name = new $class(...$value);
-            } elseif (is_callable($value)) {
+            } elseif (is_a($value, 'Closure')) {
                 return $this->$name = $value();
             }
         } elseif ($object = Container::make($name)) {
