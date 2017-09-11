@@ -31,7 +31,7 @@ class Rest extends App
     
     protected function dispatch()
     {
-        $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
+        $this->ns = 'app\\'.$this->config['controller_path'].'\\';
         $method = Request::method();
         if (in_array($method, self::$methods, true)) {
             $path = Request::pathArr();

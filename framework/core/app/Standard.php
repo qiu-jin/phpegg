@@ -42,7 +42,7 @@ class Standard extends App
      */
     protected function dispatch()
     {
-        $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
+        $this->ns = 'app\\'.$this->config['controller_path'].'\\';
         $path = Request::pathArr();
         switch ($this->config['route_mode']) {
             case 0:

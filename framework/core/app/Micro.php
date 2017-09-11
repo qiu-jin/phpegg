@@ -71,7 +71,7 @@ class Micro extends App
     {
         if ($this->dispatch['default']) {
             list($controller, $action) = $this->dispatch['default'];
-            $class = 'app\\'.$this->config['controller_prefix'].'\\'.$controller;
+            $class = 'app\\'.$this->config['controller_path'].'\\'.$controller;
             if ($action[0] !== '_' && Loader::importPrefixClass($class)) {
                 $controller = new $class;
                 if (is_callable([$controller, $action])) {

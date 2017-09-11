@@ -23,7 +23,7 @@ class Inline extends App
     
     protected function dispatch()
     {
-        $this->dir = APP_DIR.'/'.$this->config['controller_prefix'].'/';
+        $this->dir = APP_DIR.'/'.$this->config['controller_path'].'/';
         $path = trim(Request::path(), '/');
         switch ($this->config['route_mode']) {
             case 0:
