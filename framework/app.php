@@ -25,10 +25,7 @@ abstract class App
     // 设置错误处理器
     private static $error_handler;
     // 应用配置项
-    protected $config = [
-        // 控制器前缀
-        'controller_prefix' => 'controller',
-    ];
+    protected $config = [];
     // 应用调度结果
     protected $dispatch = [];
     

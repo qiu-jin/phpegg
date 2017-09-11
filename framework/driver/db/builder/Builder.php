@@ -195,9 +195,4 @@ class Builder
     {
         return static::KEYWORD_ESCAPE_LEFT.$kw1.static::KEYWORD_ESCAPE_RIGHT.'.'.static::KEYWORD_ESCAPE_LEFT.$kw2.static::KEYWORD_ESCAPE_RIGHT;
     }
-    
-    public static function isField($str)
-    {
-        return preg_match('/^\w*$/', $str);
-    }
 }

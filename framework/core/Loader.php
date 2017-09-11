@@ -72,9 +72,8 @@ class Loader
     
     public static function importPrefixClass($class)
     {
-        $prefix = strstr($class, '\\', true);
-        if (isset(self::$class_prefix[$prefix])) {
-            $file = self::$class_prefix[$prefix].strstr(strtr($class, '\\', '/'), '/').'.php';
+        if (preg_match('/^(\w+)((\\\\\w+)+)$/', $class, $match) && isset(self::$class_prefix[$match[1]])) {
+            $file = self::$class_prefix[$match[1]].strtr(substr($match[2], 1), '\\', '/').'.php';
             if (is_php_file($file)) {
                 __include($file);
                 return class_exists($class, false);

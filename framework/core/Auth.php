@@ -1,6 +1,8 @@
 <?php
 namespace framework\core;
 
+use framework\App;
+
 abstract class Auth
 {
     private static $auth;

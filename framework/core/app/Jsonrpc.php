@@ -9,12 +9,11 @@ use framework\core\http\Response;
 class Jsonrpc extends App
 {
     protected $id;
-    protected $ns;
     protected $config = [
         'param_mode' => 0,
         'serialize' => 'jsonencode',
         'unserialize' => 'jsondecode',
-        'controller_prefix' => 'controller',
+        'controller_path' => 'controller',
     ];
     const VERSION = '2.0';
     
@@ -29,9 +28,8 @@ class Jsonrpc extends App
             $method = explode('.', $method);
             if (count($method) > 1) {
                 $action = array_pop($method);
-                if ($action{0} !== '_' ) {
-                    $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
-                    $class = $this->ns.implode('\\', $method);
+                if ($action[0] !== '_' ) {
+                    $class = 'app\\'.$this->config['controller_prefix'].'\\'.implode('\\', $method);
                     if (Loader::importPrefixClass($class)) {
                         $controller = new $class();
                         if (is_callable($controller, $action)) {
@@ -51,9 +49,11 @@ class Jsonrpc extends App
 
     protected function handle()
     {
-        $action = $this->dispatch['action'];
-        $params = $this->dispatch['params'];
-        $controller = $this->dispatch['controller'];
+        list(
+            'action'    => $action, 
+            'params'    => $params, 
+            'controller'=> $controller
+        ) = $this->dispatch;
         if (empty($this->config['param_mode'])) {
             return $controller->$action(...$params);
         } else {

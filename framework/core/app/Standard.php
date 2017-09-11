@@ -27,7 +27,7 @@ class Standard extends App
         // 控制器类namespace深度，0为不确定
         'controller_depth' => 1,
         // 控制器前缀
-        'controller_prefix' => 'controller',
+        'controller_path' => 'controller',
         // 视图模版文件名是否转为下划线风格，0否，1是
         'template_to_snake' => 1,
         // 控制器名是否转为驼峰风格，0否，1是
@@ -35,6 +35,7 @@ class Standard extends App
         // 控制器缺省方法
         'controller_default_action' => 'index'
     ];
+    protected $ref_method;
     
     /*
      * 标准模式应用控制器调度
@@ -42,10 +43,7 @@ class Standard extends App
     protected function dispatch()
     {
         $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
-        $path = trim(Request::path(), '/');
-        if ($path) {
-            $path = explode('/', $path);
-        }
+        $path = Request::pathArr();
         switch ($this->config['route_mode']) {
             case 0:
                 return $this->defaultDispatch($path);
@@ -62,26 +60,24 @@ class Standard extends App
      */
     protected function handle()
     {
-        $action = $this->dispatch['action'];
-        $params = $this->dispatch['params'];
-        $controller = $this->dispatch['controller'];
-        if ($this->config['param_mode'] === 2) {
-            if (isset($this->dispatch['method'])) {
-                $method = $this->dispatch['method'];
-            } else {
-                $method =  new \ReflectionMethod($controller, $action);
-            }
-        }
+        list(
+            'action'    => $action, 
+            'params'    => $params, 
+            'controller'=> $controller
+        ) = $this->dispatch;
         switch ($this->config['param_mode']) {
             case 1:
                 return $controller->$action(...$params);
             case 2:
                 $parameters = [];
-                if ($method->getnumberofparameters() > 0) {
+                if (!isset($this->ref_method)) {
+                    $this->ref_method =  new \ReflectionMethod($controller, $action);
+                }
+                if ($this->ref_method->getnumberofparameters() > 0) {
                     if ($this->config['query_to_params']) {
                         $params = array_merge($_GET, $params);
                     }
-                    foreach ($method->getParameters() as $param) {
+                    foreach ($this->ref_method->getParameters() as $param) {
                         if (isset($params[$param->name])) {
                             $parameters[] = $params[$param->name];
                         } elseif($param->isDefaultValueAvailable()) {
@@ -91,7 +87,7 @@ class Standard extends App
                         }
                     }
                 }
-                return $method->invokeArgs($controller, $parameters);
+                return $this->ref_method->invokeArgs($controller, $parameters);
             default:
                 return $controller->$action();
         }
@@ -196,18 +192,19 @@ class Standard extends App
         if ($dispatch) {
             $action = array_pop($dispatch[0]);
             $class = $this->ns.implode('\\', $dispatch[0]);
-            if (Loader::importPrefixClass($class)) {
+            if (class_exists($class)) {
                 $controller = new $class();
-                $method = new \ReflectionMethod($controller, $action);
-                if (!$method->isPublic()) {
-                    if ($method->isProtected()) {
-                        $method->setAccessible(true);
+                $ref_method = new \ReflectionMethod($controller, $action);
+                if (!$ref_method->isPublic()) {
+                    if ($ref_method->isProtected()) {
+                        $ref_method->setAccessible(true);
                     } else {
                         return false;
                     }
                 }
-                $this->config['param_mode'] = 2;
-                return ['controller'=> $controller, 'action' => $action, 'params' => $dispatch[1], 'method' => $method];
+                $this->ref_method = $ref_method;
+                $this->config['param_mode'] = $dispatch[2];
+                return ['controller'=> $controller, 'action' => $action, 'params' => $dispatch[1]];
             }
         }
         return false;

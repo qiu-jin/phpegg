@@ -18,7 +18,7 @@ class Inline extends App
         'enable_getter' => 1,
         'return_1_to_null' => 0,
         'index_dispatch' => 'index',
-        'controller_prefix' => 'controller',
+        'controller_path' => 'controller',
     ];
     
     protected function dispatch()
@@ -79,7 +79,7 @@ class Inline extends App
     protected function defaultDispatch($path) 
     {
         if ($path) {
-            if (preg_match('/^(\w+)(\/\w+)*$/', $path)) {
+            if (preg_match('/^(\w+)(\/\w+)+$/', $path)) {
                 $file = $this->dir.$path.'.php';
                 if (is_php_file($file)) {
                     return ['file' => $file];

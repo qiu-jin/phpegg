@@ -11,31 +11,41 @@ use framework\core\http\Response;
 
 class Rest extends App
 {
+    private static $methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'];
+    
     protected $ns;
     protected $config = [
         'route_mode' => 0,
         'param_mode' => 0,
         'query_to_params' => 0,
-        'controller_depth' => 0,
-        'controller_prefix' => 'controller',
+        'controller_depth' => 1,
+        'controller_path' => 'controller',
+        'resource_route_rules' => [
+            '/'     => ['GET' => 'index', 'POST' => 'create'],
+            '*'     => ['GET' => 'show', 'PUT' => 'update', 'DELETE' => 'destroy'],
+            'create'=> ['GET' => 'new'],
+            '*/edit'=> ['GET' => 'edit']
+        ]
     ];
+    protected $ref_method;
     
     protected function dispatch()
     {
         $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
-        $method = strtolower(Request::method());
-        if (in_array($method, ['get','post', 'put', 'delete', 'options', 'head', 'patch'], true)) {
-            $path = trim(Request::path(), '/');
-            if ($path) {
-                $path = explode('/', $path);
-            }
+        $method = Request::method();
+        if (in_array($method, self::$methods, true)) {
+            $path = Request::pathArr();
             switch ($this->config['route_mode']) {
                 case 0:
                     return $this->defaultDispatch($path, $method);
                 case 1:
-                    return $this->routeDispatch($path, $method);
+                    return $this->resourceDispatch($path, $method);
                 case 2:
+                    return $this->routeDispatch($path, $method);
+                case 3:
                     return $this->defaultDispatch($path, $method) ?: $this->routeDispatch($path, $method);
+                case 4:
+                    return $this->resourceDispatch($path, $method) ?: $this->routeDispatch($path, $method);
             }
         }
         return false;
@@ -44,27 +54,24 @@ class Rest extends App
     protected function handle()
     {
         $this->setPostParams();
-        $action = $this->dispatch['action'];
-        $params = $this->dispatch['params'];
-        $controller = $this->dispatch['controller'];
-        if ($this->config['param_mode'] === 2) {
-            if (isset($this->dispatch['method'])) {
-                $method = $this->dispatch['method'];
-            } else {
-                $method =  new \ReflectionMethod($controller, $action);
-            }
-        }
-        $this->dispatch = null;
+        list(
+            'action'    => $action, 
+            'params'    => $params, 
+            'controller'=> $controller
+        ) = $this->dispatch;
         switch ($this->config['param_mode']) {
             case 1:
                 return $controller->$action(...$params);
             case 2:
                 $parameters = [];
-                if ($method->getnumberofparameters() > 0) {
+                if (!isset($this->ref_method)) {
+                    $this->ref_method =  new \ReflectionMethod($controller, $action);
+                }
+                if ($this->ref_method->getnumberofparameters() > 0) {
                     if ($this->config['query_to_params']) {
                         $params = array_merge($_GET, $params);
                     }
-                    foreach ($method->getParameters() as $param) {
+                    foreach ($this->ref_method->getParameters() as $param) {
                         if (isset($params[$param->name])) {
                             $parameters[] = $params[$param->name];
                         } elseif($param->isDefaultValueAvailable()) {
@@ -74,7 +81,7 @@ class Rest extends App
                         }
                     }
                 }
-                return $method->invokeArgs($controller, $parameters);
+                return $this->ref_method->invokeArgs($controller, $parameters);
             default:
                 return $controller->$action();
         }
@@ -118,25 +125,44 @@ class Rest extends App
         }
         return false;
     }
-
+    
+    protected function resourceDispatch($path, $method)
+    {
+        $count = count($path);
+        $depth = $this->config['controller_depth'];
+        if ($depth > 0 && $count >= $depth) {
+            $class = $this->ns.implode('\\', array_slice($path, 0, $depth));
+            $action_path = array_slice($path, $depth);
+            $dispatch = Router::dispatch($action_path, $this->config['resource_route_rules'], $method);
+            if ($dispatch && class_exists($class)) {
+                $controller = new $class();
+                if (is_callable([$controller, $dispatch[0]])) {
+                    $this->config['param_mode'] = $dispatch[2];
+                    return ['controller'=> $controller, 'action' => $dispatch[0], 'params' => $dispatch[1]];
+                }
+            }
+        }
+        return false;
+    }
+    
     protected function routeDispatch($path, $method)
     {
         $dispatch = Router::dispatch($path, Config::get('router'), $method);
         if ($dispatch) {
             $action = array_pop($dispatch[0]);
             $class = $this->ns.implode('\\', $dispatch[0]);
-            if (Loader::importPrefixClass($class)) {
+            if (class_exists($class)) {
                 $controller = new $class();
-                $refmethod = new \ReflectionMethod($controller, $action);
-                if (!$refmethod->isPublic()) {
-                    if ($refmethod->isProtected()) {
-                        $refmethod->setAccessible(true);
+                $ref_method = new \ReflectionMethod($controller, $action);
+                if (!$ref_method->isPublic()) {
+                    if ($ref_method->isProtected()) {
+                        $ref_method->setAccessible(true);
                     } else {
                         return false;
                     }
                 }
-                $this->method = $refmethod;
-                $this->config['param_mode'] = 2;
+                $this->ref_method = $ref_method;
+                $this->config['param_mode'] = $dispatch[2];
                 return ['controller'=> $controller, 'action' => $action, 'params' => $dispatch[1]];
             }
         }

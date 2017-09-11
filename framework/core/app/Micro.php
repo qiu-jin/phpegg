@@ -2,97 +2,92 @@
 namespace framework\core\app;
 
 use framework\App;
+use framework\core\Getter;
 use framework\core\Router;
 use framework\core\Loader;
 use framework\core\http\Request;
+use framework\core\http\response;
 
 class Micro extends App
 {
-    public function bind($controller, $action)
+    private static $methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'];
+    
+    protected $config = [
+        'enable_closure_getter' => 1,
+        'controller_path' => 'controller',
+    ];
+    
+    public function default($controller, $action)
     {
-        $this->dispatch['bind'] = $this->defaultDispatch($controller, $action);
-        return (bool) $this->dispatch['bind'];
+        $this->dispatch['default'] = [$controller, $action];
     }
     
     public function route($role, callable $call, $method = null)
     {
         $index = count($this->dispatch['route']['call']);
-        $this->dispatch['route']['call'][] = $call;
-        if ($method && in_array($method, ['get', 'post', 'put', 'delete', 'head', 'options', 'patch'], true)) {
+        if ($method) {
+            if (!in_array($method, self::$methods, true)) {
+                return;
+            }
             $this->dispatch['route']['rule'][$role][$method] = $index;
         } else {
             $this->dispatch['route']['rule'][$role] = $index;
         }
+        $this->dispatch['route']['call'][] = $call;
     }
     
     protected function dispatch()
     {
-        return ['bind' => null, 'route' => null];
+        return ['default' => null, 'route' => null];
     }
     
     protected function handle()
     {
-        if (!empty($this->dispatch['bind'])) {
-            return ($this->dispatch['bind'])();
-        } elseif (!empty($this->dispatch['route'])) {
-            $path = trim(Request::path(), '/');
-            if ($path) {
-                $path = explode('/', $path);
-            }
-            $dispatch = $this->routeDispatch($path);
-            if ($dispatch) {
+        if ($dispatch = $this->defaultDispatch()) {          
+            return $dispatch();
+        } elseif ($dispatch = $this->routeDispatch()) {
+            if ($this->config['enable_closure_getter']) {
+                return $dispatch[0]->call(new class () {
+                    use Getter;
+                }, ...$dispatch[1]);
+            } else {
                 return $dispatch[0](...$dispatch[1]);
             }
         }
        $this->abort(404);
     }
     
-    protected function error() {}
+    protected function error($code = null, $message = null)
+    {
+        Response::status($code ?: 500);
+        if ($message) {
+            Response::send(is_array($message) ? var_export($message) : $message);
+        }
+    }
     
     protected function response() {}
     
-    protected function defaultDispatch($controller, $action)
+    protected function defaultDispatch()
     {
-        $this->ns = 'app\\'.$this->config['controller_prefix'].'\\';
-        $class = $this->ns.$controller;
-        if ($action{0} !== '_' && Loader::importPrefixClass($class)) {
-            $controller = new $class;
-            if (is_callable([$controller, $action])) {
-                return [$controller, $action];
+        if ($this->dispatch['default']) {
+            list($controller, $action) = $this->dispatch['default'];
+            $class = 'app\\'.$this->config['controller_prefix'].'\\'.$controller;
+            if ($action[0] !== '_' && Loader::importPrefixClass($class)) {
+                $controller = new $class;
+                if (is_callable([$controller, $action])) {
+                    return [$controller, $action];
+                }
             }
         }
         return false;
     }
     
-    protected function routeDispatch($path)
+    protected function routeDispatch()
     {
-        $params = [];
-        $route = $this->dispatch['route'];
-        if (isset($route['rule']['/'])) {
-            $index_ruote = $route['rule']['/'];
-            unset($route['rule']['/']);
-        } 
-        if (empty($path)) {
-            $index = $index_ruote ?? null;
-        } else {
-            foreach ($route['rule'] as $rule => $i) {
-                $rule = explode('/', trim($rule, '/'));
-                $macth = Router::macth($rule, $path);
-                if ($macth !== false) {
-                    $index = $i;
-                    $params = $macth;
-                    break;
-                }
-            }
-        }
-        if (isset($index)) {
-            if (is_array($index)) {
-                $method = Request::method();
-                if (isset($index[$method])) {
-                    return [$route['call'][$index[$method]], $params];
-                }
-            } else {
-                return [$route['call'][$index], $params];
+        if ($this->dispatch['route']) {
+            $result = Router::route(Request::pathArr(), $this->dispatch['route']['rule'], Request::method());
+            if ($result) {
+                return [$this->dispatch['route']['call'][$result[0]], $result[1]];
             }
         }
         return false;

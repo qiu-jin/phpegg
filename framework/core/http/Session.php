@@ -14,10 +14,10 @@ class Session
         self::$init = true;
         $config = Config::get('session');
         if ($config) {
-            isset($config['id']) && session_id($config['id']);
-            isset($config['name']) && session_name($config['name']);
-            isset($config['save_path']) && session_save_path($config['save_path']);
-            isset($config['cache_expire']) && session_cache_expire($config['cache_expire']);
+            isset($config['id'])            && session_id($config['id']);
+            isset($config['name'])          && session_name($config['name']);
+            isset($config['save_path'])     && session_save_path($config['save_path']);
+            isset($config['cache_expire'])  && session_cache_expire($config['cache_expire']);
             isset($config['cache_limiter']) && session_cache_limiter($config['cache_limiter']);
             if (isset($config['cookie_params'])) {
                 session_set_cookie_params(...$config['cookie_params']);

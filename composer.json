@@ -10,9 +10,9 @@
     ],
     "require": {
         "php": ">=7.0",
-        "gregwar/captcha": "^1.1"
     },
     "require-dev": {
+        "gregwar/captcha": "^1.1",
         "maxmind-db/reader": "^1.1",
         "pda/pheanstalk": "^3.1",
         "symfony/var-dumper": "^3.2",

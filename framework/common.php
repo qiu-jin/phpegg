@@ -6,7 +6,7 @@ use framework\core\Config;
 use framework\core\Container;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\extend\view\Debug;
+use framework\extend\debug\Debug;
 
 function env($name, $default = null)
 {
