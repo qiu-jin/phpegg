@@ -10,11 +10,13 @@ use framework\core\http\response;
 
 class Micro extends App
 {
-    private static $methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'];
-    
     protected $config = [
-        'enable_closure_getter' => 1,
+        // 控制器公共路径
         'controller_path' => 'controller',
+        // 路由模式下是否启用Getter魔术方法，0否，1是
+        'route_dispatch_enable_getter' => 1,
+        // 路由模式下允许的HTTP方法
+        'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH']
     ];
     
     public function default($controller, $action)
@@ -26,7 +28,7 @@ class Micro extends App
     {
         $index = count($this->dispatch['route']['call']);
         if ($method) {
-            if (!in_array($method, self::$methods, true)) {
+            if (!in_array($method, $this->config['route_dispatch_http_methods'], true)) {
                 return;
             }
             $this->dispatch['route']['rule'][$role][$method] = $index;

@@ -10,11 +10,22 @@ class Jsonrpc extends App
 {
     protected $id;
     protected $config = [
-        'param_mode' => 0,
-        'serialize' => 'jsonencode',
-        'unserialize' => 'jsondecode',
+        // 控制器公共路径
         'controller_path' => 'controller',
+        /* 参数模式
+         * 0 无参数
+         * 1 循序参数
+         * 2 键值参数
+         */
+        'param_mode' => 1,
+        // Request 解码
+        'request_serialize' => 'jsonencode',
+        // Response 编码
+        'response_unserialize' => 'jsondecode',
+        // Response header content type
+        'response_content_type' => 'application/json; charset=UTF-8',
     ];
+    
     const VERSION = '2.0';
     
     protected function dispatch()
@@ -49,38 +60,48 @@ class Jsonrpc extends App
 
     protected function handle()
     {
-        list(
-            'action'    => $action, 
-            'params'    => $params, 
-            'controller'=> $controller
-        ) = $this->dispatch;
-        if (empty($this->config['param_mode'])) {
-            return $controller->$action(...$params);
-        } else {
-            $parameters = [];
-            $method = new \ReflectionMethod($controller, $action);
-            if ($method->getnumberofparameters() > 0) {
-                foreach ($method->getParameters() as $param) {
-                    if (isset($params[$param->name])) {
-                        $parameters[] = $params[$param->name];
-                    } elseif($param->isDefaultValueAvailable()) {
-                        $parameters[] = $param->getdefaultvalue();
-                    } else {
-                        $this->abort('-32602', 'Invalid params');
+        $action = $this->dispatch['action'];
+        $params = $this->dispatch['params'];
+        $controller = $this->dispatch['controller'];
+        switch ($this->config['param_mode']) {
+            case 1:
+                return $controller->$action(...$params);
+            case 2:
+                $parameters = [];
+                $method = new \ReflectionMethod($controller, $action);
+                if ($method->getnumberofparameters() > 0) {
+                    foreach ($method->getParameters() as $param) {
+                        if (isset($params[$param->name])) {
+                            $parameters[] = $params[$param->name];
+                        } elseif($param->isDefaultValueAvailable()) {
+                            $parameters[] = $param->getdefaultvalue();
+                        } else {
+                            $this->abort('-32602', 'Invalid params');
+                        }
                     }
                 }
-            }
-            return $method->invokeArgs($controller, $parameters);
+                return $method->invokeArgs($controller, $parameters);
+            default:
+                Request::set('post', $params);
+                return $controller->$action();
         }
     }
     
     protected function error($code = null, $message = null)
     {
-        Response::send(($this->config['unserialize'])(['id' => $this->id, 'jsonrpc' => self::VERSION, 'error' => compact('code', 'message')]), false);
+        Response::send(($this->config['unserialize'])([
+            'id'        => $this->id,
+            'jsonrpc'   => self::VERSION,
+            'error'     => compact('code', 'message')
+        ]), $this->config['response_content_type'], false);
     }
     
     protected function response($return = null)
     {
-        Response::send(($this->config['unserialize'])(['id' => $this->id, 'jsonrpc' => self::VERSION, 'result' => $return]), false);
+        Response::send(($this->config['unserialize'])([
+            'id'        => $this->id,
+            'jsonrpc'   => self::VERSION,
+            'result'    => $return
+        ]), $this->config['response_content_type'], false);
     }
 }

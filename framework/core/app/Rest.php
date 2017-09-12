@@ -11,41 +11,50 @@ use framework\core\http\Response;
 
 class Rest extends App
 {
-    private static $methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'];
-    
     protected $ns;
     protected $config = [
-        'route_mode' => 0,
-        'param_mode' => 0,
-        'query_to_params' => 0,
-        'controller_depth' => 1,
-        'controller_path' => 'controller',
-        'resource_route_rules' => [
+        // 调度模式，支持default resource route组合
+        'dispatch_mode'     => 'default',
+        'controller_path'   => 'controller',
+        'controller_depth'  => 1,
+        'query_to_action_params'   => 0,
+        
+        // 默认调度的路径转为驼峰风格
+        'default_dispatch_to_camel' => '-',
+        /* 默认调度的参数模式
+         * 0 无参数
+         * 1 循序参数
+         * 2 键值参数
+         */
+        'default_dispatch_param_mode' => 0,
+        // 默认调度下允许的HTTP方法
+        'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'],
+        
+        // 资源调度默认路由表
+        'resource_dispatch_routes'=> [
             '/'     => ['GET' => 'index', 'POST' => 'create'],
-            '*'     => ['GET' => 'show', 'PUT' => 'update', 'DELETE' => 'destroy'],
+            '*'     => ['GET' => 'show',  'PUT'  => 'update', 'DELETE' => 'destroy'],
             'create'=> ['GET' => 'new'],
             '*/edit'=> ['GET' => 'edit']
-        ]
+        ],
+        
+        // 路由调度的路由表
+        'route_dispatch_routes' => null,
+        // 路由调启是否用动作路由
+        'route_dispatch_action_route' => 0,
     ];
+    protected $method;
     protected $ref_method;
     
     protected function dispatch()
     {
         $this->ns = 'app\\'.$this->config['controller_path'].'\\';
-        $method = Request::method();
-        if (in_array($method, self::$methods, true)) {
-            $path = Request::pathArr();
-            switch ($this->config['route_mode']) {
-                case 0:
-                    return $this->defaultDispatch($path, $method);
-                case 1:
-                    return $this->resourceDispatch($path, $method);
-                case 2:
-                    return $this->routeDispatch($path, $method);
-                case 3:
-                    return $this->defaultDispatch($path, $method) ?: $this->routeDispatch($path, $method);
-                case 4:
-                    return $this->resourceDispatch($path, $method) ?: $this->routeDispatch($path, $method);
+        $this->method = Request::method();
+        $path = Request::pathArr();
+        foreach ((array) $this->config['dispatch_mode'] as $mode) {
+            $dispatch = $this->{$mode.'Dispatch'}($path);
+            if ($dispatch) {
+                return $dispatch;
             }
         }
         return false;
@@ -54,12 +63,10 @@ class Rest extends App
     protected function handle()
     {
         $this->setPostParams();
-        list(
-            'action'    => $action, 
-            'params'    => $params, 
-            'controller'=> $controller
-        ) = $this->dispatch;
-        switch ($this->config['param_mode']) {
+        $action = $this->dispatch['action'];
+        $params = $this->dispatch['params'];
+        $controller = $this->dispatch['controller'];
+        switch ($this->dispatch['param_mode']) {
             case 1:
                 return $controller->$action(...$params);
             case 2:
@@ -93,77 +100,145 @@ class Rest extends App
         Response::json(['error' => compact('code', 'message')], false);
     }
     
-    protected function response($return)
+    protected function response($return = null)
     {
         Response::json(['result' => $return], false);
     }
     
-    protected function defaultDispatch($path, $method) 
+    protected function defaultDispatch($path) 
     {
+        if (!in_array($this->method, $this->config['default_dispatch_http_methods'], true)) {
+            return false;
+        }
+        $params = [];
         $count = count($path);
         $depth = $this->config['controller_depth'];
         if ($depth > 0) {
-            if ($count >= $depth) {
-                $class = $this->ns.implode('\\', $count === $depth ? $path : array_slice($path, 0, $depth));
+            if ($count < $depth) {
+                return false;
+            }
+            if ($count === $depth) {
+                $class_array = $path;
+            } else {
+                if ($this->config['default_dispatch_param_mode'] < 1) {
+                    return false;
+                }
+                $class_array = array_slice($path, 0, $depth);
+                $params = array_slice($path, $depth);
+                if ($this->config['default_dispatch_param_mode'] === 2) {
+                    $params = $this->getKvParams($params);
+                }
             }
         } else {
-            $this->config['param_mode'] = 0;
-            $class = $this->ns.implode('\\', $path);
+            if ($this->config['default_dispatch_param_mode'] !== 0) {
+                throw new \Exception('If param_mode > 0, must controller_depth > 0');
+            }
+            $class_array = $path;
         }
-        if (isset($class) && Loader::importPrefixClass($class)) {
+        if (!empty($this->config['default_dispatch_to_camel'])) {
+            $class_array[] = Str::toCamel(array_pop($class_array), $this->config['default_dispatch_to_camel']);
+        }
+        $class = $this->ns.implode('\\', $class_array);
+        if (Loader::importPrefixClass($class)) {
             $controller = new $class();
-            if (is_callable([$controller, $method])) {
-                $params = null;
-                if ($depth && $count > $depth) {
-                    $params = array_slice($path, $depth);
-                    if ($this->config['param_mode'] === 2) {
-                        $params = $this->getKvParams($params);
-                    }
-                }
-                return ['controller' => $controller, 'action' => $action, 'params' => $params];
+            if (is_callable([$controller, $this->method])) {
+                return [
+                    'controller'    => $controller,
+                    'action'        => $this->method,
+                    'params'        => $params,
+                    'param_mode'    => $this->config['default_dispatch_param_mode']
+                ];
             }
         }
         return false;
     }
     
-    protected function resourceDispatch($path, $method)
+    protected function resourceDispatch($path)
     {
-        $count = count($path);
         $depth = $this->config['controller_depth'];
-        if ($depth > 0 && $count >= $depth) {
+        if ($depth < 1) {
+            throw new \Exception('If use resource_dispatch, must controller_depth > 0');
+        }
+        if (count($path) >= $depth) {
             $class = $this->ns.implode('\\', array_slice($path, 0, $depth));
             $action_path = array_slice($path, $depth);
-            $dispatch = Router::dispatch($action_path, $this->config['resource_route_rules'], $method);
-            if ($dispatch && class_exists($class)) {
-                $controller = new $class();
-                if (is_callable([$controller, $dispatch[0]])) {
-                    $this->config['param_mode'] = $dispatch[2];
-                    return ['controller'=> $controller, 'action' => $dispatch[0], 'params' => $dispatch[1]];
+            $dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], $this->method);
+            if ($dispatch && count($dispatch[0]) === 1) {
+                $action = $dispatch[0][0];
+                if (class_exists($class)) {
+                    $controller = new $class();
+                    if (is_callable([$controller, $action])) {
+                        return [
+                            'controller'    => $controller,
+                            'action'        => $action,
+                            'params'        => $dispatch[1],
+                            'param_mode'    => $dispatch[2]
+                        ];
+                    }
                 }
             }
         }
         return false;
     }
     
-    protected function routeDispatch($path, $method)
+    protected function routeDispatch($path)
     {
-        $dispatch = Router::dispatch($path, Config::get('router'), $method);
-        if ($dispatch) {
-            $action = array_pop($dispatch[0]);
-            $class = $this->ns.implode('\\', $dispatch[0]);
-            if (class_exists($class)) {
-                $controller = new $class();
-                $ref_method = new \ReflectionMethod($controller, $action);
-                if (!$ref_method->isPublic()) {
-                    if ($ref_method->isProtected()) {
-                        $ref_method->setAccessible(true);
-                    } else {
-                        return false;
+        if ($this->config['route_dispatch_routes']) {
+            $dispatch = Router::dispatch($path, $this->config['route_dispatch_routes'], $this->method);
+            if ($dispatch) {
+                $action = array_pop($dispatch[0]);
+                $class = $this->ns.implode('\\', $dispatch[0]);
+                if (class_exists($class)) {
+                    $controller = new $class();
+                    $ref_method = new \ReflectionMethod($controller, $action);
+                    if (!$ref_method->isPublic()) {
+                        if ($ref_method->isProtected()) {
+                            $ref_method->setAccessible(true);
+                        } else {
+                            throw new \Exception("Route action $action() not exists");
+                        }
+                    }
+                    $this->ref_method = $ref_method;
+                    return [
+                        'controller'    => $controller,
+                        'action'        => $action,
+                        'params'        => $dispatch[1],
+                        'param_mode'    => $dispatch[2]
+                    ];
+                }
+                throw new \Exception("Route class $class not exists");
+            }
+        }
+        if ($this->config['route_dispatch_action_route']) {
+            $depth = $this->config['controller_depth'];
+            if ($depth < 1) {
+                throw new \Exception('If enable action route, must controller_depth > 0');
+            }
+            if (count($path) >= $depth) {
+                $class = $this->ns.implode('\\', array_slice($path, 0, $depth));
+                if (property_exists($class, 'routes')) {
+                    $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'];
+                    if ($routes) {
+                        $action_path = array_slice($path, $depth);
+                        $dispatch = Router::dispatch($action_path, $routes, $this->method);
+                        if ($dispatch) {
+                            if (count($dispatch[0]) === 1) {
+                                $action = $dispatch[0][0];
+                                $controller = new $class();
+                                if (is_callable([$controller, $action])) {
+                                    $this->config['param_mode'] = $dispatch[2];
+                                    return [
+                                        'controller'    => $controller,
+                                        'action'        => $action,
+                                        'params'        => $dispatch[1],
+                                        'param_mode'    => $dispatch[2]
+                                    ];
+                                }
+                            }
+                            throw new \Exception("Route action $action() not exists");
+                        }
                     }
                 }
-                $this->ref_method = $ref_method;
-                $this->config['param_mode'] = $dispatch[2];
-                return ['controller'=> $controller, 'action' => $action, 'params' => $dispatch[1]];
             }
         }
         return false;

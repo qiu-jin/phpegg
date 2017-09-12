@@ -14,26 +14,36 @@ class Standard extends App
 {
     protected $ns;
     protected $config = [
-        // 路由模式，0默认调度，1路由调度，2混合调度
-        'route_mode' => 0,
-        // 参数模式，0无参数，1循序参数，2键值参数
-        'param_mode' => 0,
-        // 是否启用视图，0否，1是
-        'enable_view' => 0,
-        // Url query参数是否转为控制器参数，0否，1是
-        'query_to_params' => 0,
-        // 缺省调度
-        'index_dispatch' => null,
+        // 调度模式，支持default route组合
+        'dispatch_mode' => 'default',
         // 控制器类namespace深度，0为不确定
         'controller_depth' => 1,
-        // 控制器前缀
+        // 控制器公共路径
         'controller_path' => 'controller',
+        // 是否启用视图，0否，1是
+        'enable_view' => 0,
         // 视图模版文件名是否转为下划线风格，0否，1是
         'template_to_snake' => 1,
-        // 控制器名是否转为驼峰风格，0否，1是
-        'controller_to_camel' => 1,
-        // 控制器缺省方法
-        'controller_default_action' => 'index'
+        // URL query参数是否转为控制器方法参数，0否，1是
+        'query_to_params' => 0,
+        
+        /* 默认调度的参数模式
+         * 0 无参数
+         * 1 循序参数
+         * 2 键值参数
+         */
+        'default_dispatch_param_mode' => 0,
+        // 默认调度的缺省调度
+        'default_dispatch_index' => null,
+        // 默认调度的控制器缺省方法
+        'default_dispatch_default_action' => 'index',
+        // 默认调度的路径转为驼峰风格
+        'default_dispatch_to_camel' => '-',
+        
+        // 路由调度的路由表
+        'route_dispatch_routes' => null,
+        // 路由调启是否用动作路由
+        'route_dispatch_action_route' => 0,
     ];
     protected $ref_method;
     
@@ -44,13 +54,11 @@ class Standard extends App
     {
         $this->ns = 'app\\'.$this->config['controller_path'].'\\';
         $path = Request::pathArr();
-        switch ($this->config['route_mode']) {
-            case 0:
-                return $this->defaultDispatch($path);
-            case 1:
-                return $this->routeDispatch($path);
-            case 2:
-                return $this->defaultDispatch($path) ?: $this->routeDispatch($path);
+        foreach ((array) $this->config['dispatch_mode'] as $mode) {
+            $dispatch = $this->{$mode.'Dispatch'}($path);
+            if ($dispatch) {
+                return $dispatch;
+            }
         }
         return false;
     }
@@ -60,12 +68,10 @@ class Standard extends App
      */
     protected function handle()
     {
-        list(
-            'action'    => $action, 
-            'params'    => $params, 
-            'controller'=> $controller
-        ) = $this->dispatch;
-        switch ($this->config['param_mode']) {
+        $action = $this->dispatch['action'];
+        $params = $this->dispatch['params'];
+        $controller = $this->dispatch['controller'];
+        switch ($this->dispatch['param_mode']) {
             case 1:
                 return $controller->$action(...$params);
             case 2:
@@ -136,10 +142,9 @@ class Standard extends App
         $count = count($path);
         $depth = $this->config['controller_depth'];
         if (empty($path)) {
-            if (isset($this->config['index_dispatch'])) {
-                $index = explode('/', $this->config['index_dispatch']);
-                $action = array_pop($index);
-                $class_array = $index;
+            if (isset($this->config['default_dispatch_index'])) {
+                $class_array = explode('/', $this->config['default_dispatch_index']);
+                $action = array_pop($class_array);
             }
         } else {
             if ($depth > 0) {
@@ -148,35 +153,42 @@ class Standard extends App
                         $action = array_pop($path);
                         $class_array = $path;
                     } else {
-                        $action = $path[$depth];
-                        $class_array = array_slice($path, 0, $depth);
+                        if ($this->config['default_dispatch_param_mode'] > 0) {
+                            $action = $path[$depth];
+                            $class_array = array_slice($path, 0, $depth);
+                            $params = array_slice($path, $depth+1);
+                            if ($this->config['default_dispatch_param_mode'] === 2) {
+                                $params = $this->getKvParams($params);
+                            }
+                        }
                     }
-                } elseif ($count == $depth && isset($this->config['controller_default_action'])) {
-                    $action = $this->config['controller_default_action'];
+                } elseif ($count == $depth && isset($this->config['default_dispatch_default_action'])) {
+                    $action = $this->config['default_dispatch_default_action'];
                     $class_array = $path;
                 }
             } elseif ($count > 1) {
-                $this->config['param_mode'] = 0;
+                if ($this->config['default_dispatch_param_mode'] !== 0) {
+                    throw new \Exception('If param_mode > 0, must controller_depth > 0');
+                }
                 $action = array_pop($path);
                 $class_array = $path;
             }
         }
-        if (isset($class_array) && $action{0} !== '_') {
-            if (!empty($this->config['controller_to_camel'])) {
-                $action = Str::toCamel($action);
-                $class_array[] = Str::toCamel(array_pop($class_array));
+        if (isset($class_array) && $action[0] !== '_') {
+            if (!empty($this->config['default_dispatch_to_camel'])) {
+                $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
+                $class_array[] = Str::toCamel(array_pop($class_array), $this->config['default_dispatch_to_camel']);
             }
             $class = $this->ns.implode('\\', $class_array);
             if (Loader::importPrefixClass($class)) {
                 $controller = new $class();
                 if (is_callable([$controller, $action])) {
-                    if ($depth && $count > $depth+1) {
-                        $params = array_slice($path, $depth+1);
-                        if ($this->config['param_mode'] === 2) {
-                            $params = $this->getKvParams($params);
-                        }
-                    }
-                    return ['controller' => $controller, 'action' => $action, 'params' => $params];
+                    return [
+                        'controller'    => $controller,
+                        'action'        => $action,
+                        'params'        => $params,
+                        'param_mode'    => $this->config['default_dispatch_param_mode']
+                    ];
                 }
             }
         }
@@ -188,23 +200,61 @@ class Standard extends App
      */
     protected function routeDispatch($path) 
     {
-        $dispatch = Router::dispatch($path, Config::get('router'));
-        if ($dispatch) {
-            $action = array_pop($dispatch[0]);
-            $class = $this->ns.implode('\\', $dispatch[0]);
-            if (class_exists($class)) {
-                $controller = new $class();
-                $ref_method = new \ReflectionMethod($controller, $action);
-                if (!$ref_method->isPublic()) {
-                    if ($ref_method->isProtected()) {
-                        $ref_method->setAccessible(true);
-                    } else {
-                        return false;
+        if ($this->config['route_dispatch_routes']) {
+            $dispatch = Router::dispatch($path, $this->config['route_dispatch_routes']);
+            if ($dispatch) {
+                $action = array_pop($dispatch[0]);
+                $class = $this->ns.implode('\\', $dispatch[0]);
+                if (class_exists($class)) {
+                    $controller = new $class();
+                    $ref_method = new \ReflectionMethod($controller, $action);
+                    if (!$ref_method->isPublic()) {
+                        if ($ref_method->isProtected()) {
+                            $ref_method->setAccessible(true);
+                        } else {
+                            throw new \Exception("Route action $action() not exists");
+                        }
+                    }
+                    $this->ref_method = $ref_method;
+                    return [
+                        'controller'    => $controller,
+                        'action'        => $action,
+                        'params'        => $dispatch[1],
+                        'param_mode'    => $dispatch[2]
+                    ];
+                }
+                throw new \Exception("Route class $class not exists");
+            }
+        }
+        if ($this->config['route_dispatch_action_route']) {
+            $depth = $this->config['controller_depth'];
+            if ($depth < 1) {
+                throw new \Exception('If enable action route, must controller_depth > 0');
+            }
+            if (count($path) >= $depth) {
+                $class = $this->ns.implode('\\', array_slice($path, 0, $depth));
+                if (property_exists($class, 'routes')) {
+                    $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'];
+                    if ($routes) {
+                        $action_path = array_slice($path, $depth);
+                        $dispatch = Router::dispatch($action_path, $routes);
+                        if ($dispatch) {
+                            if (count($dispatch[0]) === 1) {
+                                $action = $dispatch[0][0];
+                                $controller = new $class();
+                                if (is_callable([$controller, $action])) {
+                                    return [
+                                        'controller'    => $controller,
+                                        'action'        => $action,
+                                        'params'        => $dispatch[1],
+                                        'param_mode'    => $dispatch[2]
+                                    ];
+                                }
+                            }
+                            throw new \Exception("Route action $action() not exists");
+                        }
                     }
                 }
-                $this->ref_method = $ref_method;
-                $this->config['param_mode'] = $dispatch[2];
-                return ['controller'=> $controller, 'action' => $action, 'params' => $dispatch[1]];
             }
         }
         return false;

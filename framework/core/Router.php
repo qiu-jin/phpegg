@@ -3,6 +3,9 @@ namespace framework\core;
 
 class Router
 {
+    private static $init;
+    
+    private static $cache;
     // 过滤器
     private static $filters = [
         'id' => 'Validator::id',
@@ -10,6 +13,16 @@ class Router
         'email' => 'Validator::email',
         'mobile' => 'Validator::mobile',
     ];
+    
+    public static function init()
+    {
+        if (self::$init) return;
+        self::$init = true;
+        $config = Config::get('router');
+        if (isset($config['filters'])) {
+            self::$filters = array_merge(self::$filters, $config['filters']);
+        }
+    }
 
     /*
      * 路由调度
@@ -18,6 +31,8 @@ class Router
     {
         $result = self::route($path, $ruotes, $method);
         if ($result) {
+            $mode = 0;
+            $params = [];
             list($call, $macth) = $result;
             $pair = explode('?', $call, 2);
             $unit = explode('/', $pair[0]);
@@ -25,7 +40,6 @@ class Router
                 foreach ($unit as $i => $v) {
                     if ($v[0] == '$' && is_numeric($v[1])) $unit[$i] = $macth[$v[1]-1];
                 }
-                $mode = 0;
                 if (isset($pair[1])) {
                     $mode = 2;
                     parse_str($pair[1],$param);
@@ -55,7 +69,14 @@ class Router
             unset($ruotes['/']);
         } 
         if (empty($path)) {
-            return isset($index_ruote) ? [$index_ruote, []] : false;
+            if (isset($index_ruote)) {
+                if (is_array($index_ruote)) {
+                    return isset($index_ruote[$method]) ? [$index_ruote[$method], []] : false;
+                } else {
+                    return [$index_ruote, []];
+                }
+            }
+            return false;
         }
         if ($ruotes) {
             $count = count($path);

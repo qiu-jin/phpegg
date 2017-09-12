@@ -116,7 +116,7 @@ class Query extends QueryChain
         if (isset($id)) {
             $this->option['where'] = [[$pk, '=', $id]];
         }
-        return $this->exec(...$this->builder::update($this->table, $data, $this->option));
+        return $this->db->exec(...$this->builder::update($this->table, $data, $this->option));
     }
     
     public function updateAuto($auto, $data = null)
@@ -147,6 +147,6 @@ class Query extends QueryChain
         if (isset($id)) {
             $this->option['where'] = [[$pk, '=', $id]];
         }
-        return $this->exec(...$this->builder::delete($this->table, $this->option));
+        return $this->db->exec(...$this->builder::delete($this->table, $this->option));
     }
 }

@@ -42,12 +42,12 @@ abstract class App
     /*
      * 错误处理
      */
-    abstract protected function error();
+    abstract protected function error($code, $message);
     
     /*
      * 响应处理
      */
-    abstract protected function response();
+    abstract protected function response($return);
     
     /*
      * 构造函数，合并配置项

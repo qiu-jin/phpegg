@@ -13,25 +13,33 @@ class Inline extends App
 {
     protected $dir;
     protected $config = [
-        'route_mode' => 0,
-        'enable_view' => 0,
-        'enable_getter' => 1,
-        'return_1_to_null' => 0,
-        'index_dispatch' => 'index',
-        'controller_path' => 'controller',
+        // 调度模式，支持default route组合
+        'dispatch_mode'     => 'default',
+        // 控制器公共路径
+        'controller_path'   => 'controller',
+        // 是否启用视图，0否，1是
+        'enable_view'       => 0,
+        // 是否启用Getter魔术方法，0否，1是
+        'enable_getter'     => 1,
+        // 是否将返回值1改成null，0否，1是
+        'return_1_to_null'  => 0,
+        
+        // 默认调度的缺省调度
+        'default_dispatch_index' => null,
+        
+        // 路由调度的路由表
+        'route_dispatch_routes' => null,
     ];
     
     protected function dispatch()
     {
         $this->dir = APP_DIR.'/'.$this->config['controller_path'].'/';
         $path = trim(Request::path(), '/');
-        switch ($this->config['route_mode']) {
-            case 0:
-                return $this->defaultDispatch($path);
-            case 1:
-                return $this->routeDispatch($path);
-            case 2:
-                return $this->defaultDispatch($path) ?: $this->routeDispatch($path);
+        foreach ((array) $this->config['dispatch_mode'] as $mode) {
+            $dispatch = $this->{$mode.'Dispatch'}($path);
+            if ($dispatch) {
+                return $dispatch;
+            }
         }
         return false;
     }
@@ -43,13 +51,13 @@ class Inline extends App
         if ($this->config['enable_getter']) {
             $return = (new class() {
                 use Getter;
-                public function __invoke($__file, $params)
+                public function __invoke($__file, $_PARAMS)
                 {
                     return require($__file);
                 }
             })($file, $params);
         } else {
-            $return = (static function($__file, $params) {
+            $return = (static function($__file, $_PARAMS) {
                 return require($__file);
             })($file, $params);
         }
@@ -79,14 +87,14 @@ class Inline extends App
     protected function defaultDispatch($path) 
     {
         if ($path) {
-            if (preg_match('/^(\w+)(\/\w+)+$/', $path)) {
+            if (preg_match('/^(\w+)(\/\w+)*$/', $path)) {
                 $file = $this->dir.$path.'.php';
                 if (is_php_file($file)) {
                     return ['file' => $file];
                 }
             }
-        } elseif (isset($this->config['index_dispatch'])) {
-            $file = $this->dir.$this->config['index_dispatch'].'.php';
+        } elseif (isset($this->config['default_dispatch_index'])) {
+            $file = $this->dir.$this->config['default_dispatch_index'].'.php';
             if (is_php_file($file)) {
                 return ['file' => $file]; 
             }
@@ -96,11 +104,14 @@ class Inline extends App
     
     protected function routeDispatch($path)
     {
-        $dispatch = Router::dispatch($path, Config::get('router'));
-        if ($dispatch) {
-            $file = $this->dir.implode('/', $dispatch[0]);
-            if (is_php_file($file)) {
-                return ['file' => $file, 'params' => $dispatch[1]];
+        if ($this->config['route_dispatch_routes']) {
+            $dispatch = Router::dispatch($path, $this->config['route_dispatch_routes']);
+            if ($dispatch) {
+                $file = $this->dir.implode('/', $dispatch[0]);
+                if (is_php_file($file)) {
+                    return ['file' => $file, 'params' => $dispatch[1]];
+                }
+                throw new \Exception("Route file $file not exists");
             }
         }
         return false;
