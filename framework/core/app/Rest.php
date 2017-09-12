@@ -17,7 +17,7 @@ class Rest extends App
         'dispatch_mode'     => 'default',
         'controller_path'   => 'controller',
         'controller_depth'  => 1,
-        'query_to_action_params'   => 0,
+        'query_to_params'   => 0,
         
         // 默认调度的路径转为驼峰风格
         'default_dispatch_to_camel' => '-',
