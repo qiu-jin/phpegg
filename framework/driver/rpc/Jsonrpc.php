@@ -8,25 +8,41 @@ class Jsonrpc
     protected $config = [
         'client_method_alias' => null
     ];
-    const ALLOW_CLIENT_METHODS = ['header', 'timeout', 'debug'];
+    const ALLOW_CLIENT_METHODS = ['id', 'header', 'timeout', 'debug'];
     
     public function __construct($config)
     {
         $this->config = array_merge($this->config, $config);
     }
-
-    public function __get($class)
+    
+    public function __get($name)
     {
-        return new query\Query($this, $class, $this->config['client_method_alias']);
+        return $this->query($name);
     }
-
+    
     public function __call($method, $params = [])
     {
         return $this->__send(null, $method, $params);
     }
+
+    public function batch()
+    {
+        return new query\Batch($this);
+    }
+
+    public function query($name = null)
+    {
+        return new query\Query($this, $name, $this->config['client_method_alias']);
+    }
     
     public function __send($ns, $method, $params, $client_methods = null)
     {
+        if (isset($client_methods['id'])) {
+            $id = end($client_methods['id']);
+            unset($client_methods['id']);
+        } else {
+            $id = uniqid();
+        }
         $client = Client::post($this->host);
         if (isset($this->config['headers'])) {
             $client->headers($this->config['headers']);
@@ -45,7 +61,7 @@ class Jsonrpc
             'jsonrpc'   => '2.0',
             'params'    => $params,
             'method'    => $ns ? implode('.', $ns).'.'.$method : $method,
-            'id'        => empty($id) ? uniqid() : $id
+            'id'        => $id
         ])->json;
         if (isset($data['result'])) {
             return $data['result'];

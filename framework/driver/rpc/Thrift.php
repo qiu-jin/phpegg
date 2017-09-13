@@ -44,9 +44,9 @@ class Thrift
         isset($config['tmultiplexed']) && $this->tmultiplexed = $config['tmultiplexed'];
     }
 
-    public function __get($class)
+    public function __get($name)
     {
-        return new query\Query($this, $class);
+        return new query\Query($this, $name);
     }
 
     public function __call($method, $params = [])

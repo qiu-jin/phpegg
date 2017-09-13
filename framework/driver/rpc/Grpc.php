@@ -27,9 +27,9 @@ class Grpc
         isset($config['bind_params']) && $this->bind_params = $config['bind_params'];
     }
     
-    public function __get($class)
+    public function __get($name)
     {
-        return new query\Query($this, $class);
+        return new query\Query($this, $name);
     }
 
     public function __call($method, $params = [])
