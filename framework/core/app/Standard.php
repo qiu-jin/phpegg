@@ -19,7 +19,7 @@ class Standard extends App
         // 控制器类namespace深度，0为不确定
         'controller_depth' => 1,
         // 控制器公共路径
-        'controller_path' => 'controller',
+        'controller_ns' => 'controller',
         // 是否启用视图，0否，1是
         'enable_view' => 0,
         // 视图模版文件名是否转为下划线风格，0否，1是
@@ -52,7 +52,7 @@ class Standard extends App
      */
     protected function dispatch()
     {
-        $this->ns = 'app\\'.$this->config['controller_path'].'\\';
+        $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
         $path = Request::pathArr();
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
             $dispatch = $this->{$mode.'Dispatch'}($path);
@@ -68,10 +68,8 @@ class Standard extends App
      */
     protected function handle()
     {
-        $action = $this->dispatch['action'];
-        $params = $this->dispatch['params'];
-        $controller = $this->dispatch['controller'];
-        switch ($this->dispatch['param_mode']) {
+        extract($this->dispatch, EXTR_SKIP);
+        switch ($param_mode) {
             case 1:
                 return $controller->$action(...$params);
             case 2:

@@ -12,7 +12,7 @@ class Micro extends App
 {
     protected $config = [
         // 控制器公共路径
-        'controller_path' => 'controller',
+        'controller_ns' => 'controller',
         // 路由模式下是否启用Getter魔术方法，0否，1是
         'route_dispatch_enable_getter' => 1,
         // 路由模式下允许的HTTP方法
@@ -73,7 +73,7 @@ class Micro extends App
     {
         if ($this->dispatch['default']) {
             list($controller, $action) = $this->dispatch['default'];
-            $class = 'app\\'.$this->config['controller_path'].'\\'.$controller;
+            $class = 'app\\'.$this->config['controller_ns'].'\\'.$controller;
             if ($action[0] !== '_' && Loader::importPrefixClass($class)) {
                 $controller = new $class;
                 if (is_callable([$controller, $action])) {

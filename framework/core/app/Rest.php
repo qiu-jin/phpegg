@@ -15,7 +15,7 @@ class Rest extends App
     protected $config = [
         // 调度模式，支持default resource route组合
         'dispatch_mode'     => 'default',
-        'controller_path'   => 'controller',
+        'controller_ns'     => 'controller',
         'controller_depth'  => 1,
         'query_to_params'   => 0,
         
@@ -48,7 +48,7 @@ class Rest extends App
     
     protected function dispatch()
     {
-        $this->ns = 'app\\'.$this->config['controller_path'].'\\';
+        $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
         $this->method = Request::method();
         $path = Request::pathArr();
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
@@ -63,10 +63,8 @@ class Rest extends App
     protected function handle()
     {
         $this->setPostParams();
-        $action = $this->dispatch['action'];
-        $params = $this->dispatch['params'];
-        $controller = $this->dispatch['controller'];
-        switch ($this->dispatch['param_mode']) {
+        extract($this->dispatch, EXTR_SKIP);
+        switch ($param_mode) {
             case 1:
                 return $controller->$action(...$params);
             case 2:

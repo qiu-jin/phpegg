@@ -12,38 +12,42 @@ use framework\core\http\Response;
 
 class Jsonrpc extends App
 {
-    protected $id;
-    protected $return;
     protected $config = [
         // 控制器公共路径
-        'controller_path' => 'controller',
+        'controller_ns' => 'controller',
         /* 参数模式
          * 0 无参数
          * 1 循序参数
          * 2 键值参数
          */
-        'param_mode' => 1,
-        // 启用批调用
-        'enable_batch' => 0,
-        // 最大批调用数
-        'max_batch_num' => 999,
+        'param_mode'    => 1,
+        // 最大批调用数，不大于1则不启用批调用
+        'batch_max_num' => 1,
+        // 批调用异常中断
+        'batch_exception_abort' => 0,
         /* 通知调用模式
          * null, false, 不使用通知调用
-         * ture，使用Hook close实现
+         * true，使用Hook close实现
          * string，使用异步队列任务实现，string为队列任务名
          */
         'notification_mode' => null,
         // 通知回调方法
         'notification_callback' => null,
         // Request 解码
-        'request_encode' => 'jsonencode',
+        'request_decode' => 'jsondecode',
         // Response 编码
-        'response_decode' => 'jsondecode',
-        // Response header content type
+        'response_encode' => 'jsonencode',
+        // Response content type header
         'response_content_type' => null
     ];
+    // 保存返回值
+    protected $return;
+    // 当前请求是否为批请求
     protected $is_batch_call = false;
+    // 批请求控制器实例缓存
     protected $controller_instances = [];
+    // 批请求控制器方法反射实例缓存
+    protected $controller_ref_methods = [];
     
     const VERSION = '2.0';
     
@@ -53,17 +57,16 @@ class Jsonrpc extends App
         if (!$data) {
             $this->abort(-32700, 'Parse error');
         }
-        //批调度
-        if ($this->config['enable_batch'] && !Arr::isAssoc($data)) {
-            if (count($data) > $this->config['max_batch_num']) {
-                $this->abort(-32001, 'Max batch num');
+        if ($this->config['batch_max_num'] > 1 && !Arr::isAssoc($data)) {
+            if (count($data) > $this->config['batch_max_num']) {
+                $this->abort(-32001, 'Than batch max num');
             }
             $this->is_batch_call = true;
             foreach ($data as $item) {
-                $dispatch[] = $this->getDispatch($item);
+                $dispatch[] = $this->defaultDispatch($item);
             }
         } else {
-            $dispatch[] = $this->getDispatch($data);
+            $dispatch[] = $this->defaultDispatch($data);
         }
         return $dispatch;
     }
@@ -71,52 +74,46 @@ class Jsonrpc extends App
     protected function handle()
     {
         foreach ($this->dispatch as $dispatch) {
-            $id = $dispatch['id'] ?? null;
+            $return = [
+                'id'        => $dispatch['id'],
+                'jsonrpc'   => self::VERSION
+            ];
             if (isset($dispatch['error'])) {
-                $return[] = [
-                    'id'        => $id,
-                    'jsonrpc'   => self::VERSION,
-                    'error'     => $dispatch['error']
-                ];
+                $return['error'] = $dispatch['error'];
             } else {
-                // 通知调度
-                if (!isset($dispatch['id']) && $this->config['notification_mode']) {
-                    $this->addJob($dispatch);
-                    $return[] = null;
-                } else {
-                    try {
-                        $return[] = [
-                            'id'        => $id,
-                            'jsonrpc'   => self::VERSION,
-                            'result'    => $this->call($dispatch)
-                        ];
-                    } catch (\Throwable $e) {
-                        $return[] = [
-                            'id'        => $id,
-                            'jsonrpc'   => self::VERSION,
-                            'error'     => ['code' => $e->getCode() ?? -32000, 'message' => $e->getMessage()]
-                        ];
-                        $this->writeExceptionLog($e);
+                if (isset($dispatch['id']) || !$this->config['notification_mode']) {
+                    if ($this->config['batch_exception_abort']) {
+                        $return['result'] = $this->call($dispatch);
+                    } else {
+                        try {
+                            $return['result'] = $this->call($dispatch);
+                        } catch (\Throwable $e) {
+                            $return['error']  = $this->setError($e);
+                        }
                     }
+                } else {
+                    $this->addJob($dispatch);
+                    $return = null;
                 }
             }
+            $this->return[] = $return;
         }
-        return $this->is_batch_call ? $return : $return[0];
+        $ret = $this->is_batch_call ? $this->return : $return;
+        $this->return = null;
+        return $ret;
     }
     
     protected function call($dispatch)
     {
-        $action = $dispatch['action'];
-        $params = $dispatch['params'];
-        $controller = $dispatch['controller'];
-        switch ($this->config['param_mode']) {
+        extract($dispatch, EXTR_SKIP);
+        switch ($param_mode) {
             case 1:
                 return $controller->{$action}(...$params);
             case 2:
                 $parameters = [];
-                $method = new \ReflectionMethod($controller, $action);
-                if ($method->getnumberofparameters() > 0) {
-                    foreach ($method->getParameters() as $param) {
+                $ref_method = $this->getRefMethod($controller, $action);
+                if ($ref_method->getnumberofparameters() > 0) {
+                    foreach ($ref_method->getParameters() as $param) {
                         if (isset($params[$param->name])) {
                             $parameters[] = $params[$param->name];
                         } elseif($param->isDefaultValueAvailable()) {
@@ -133,46 +130,6 @@ class Jsonrpc extends App
         }
     }
     
-    protected function getDispatch($item)
-    {
-        $id = $data['id'] ?? null;
-        if (isset($item['method'])) {
-            $method = explode('.', $item['method']);
-            if (count($method) > 1) {
-                $action = array_pop($method);
-                if ($action[0] !== '_' ) {
-                    $class = $this->getClass($method);
-                    if (isset($this->controller_instances[$class])) {
-                        $controller = $this->controller_instances[$class];
-                    } else {
-                        if (Loader::importPrefixClass($class)) {
-                            $controller = new $class();
-                            $this->controller_instances[$class] = $controller;
-                        } else {
-                            $this->controller_instances[$class] = false;
-                        }
-                    }
-                    if (!empty($controller) && is_callable($controller, $action)) {
-                        return [
-                            'id'            => $id,
-                            'controller'    => $controller,
-                            'action'        => $action,
-                            'params'        => $data['params'] ?? []
-                        ];
-                    }
-                }
-            }
-            return [
-                'id'    => $id,
-                'error' => ['code' => -32601, 'message' => 'Method not found']
-            ];
-        }
-        return [
-            'id'    => $id,
-            'error' => ['code' => -32600, 'message' => 'Invalid Request']
-        ];
-    }
-    
     protected function error($code = null, $message = null)
     {
         if ($this->is_batch_call) {
@@ -180,7 +137,7 @@ class Jsonrpc extends App
             $dispatch_count = count($this->dispatch);
             if ($dispatch_count > $return_count) {
                 $this->return[] = [
-                    'id'        => $this->dispatch[$return_count]['id'] ?? null,
+                    'id'        => $this->dispatch[$return_count]['id'],
                     'jsonrpc'   => self::VERSION,
                     'error'     => [
                         'code'      => $code ?? -32000,
@@ -190,9 +147,9 @@ class Jsonrpc extends App
                 if ($dispatch_count > $return_count + 1) {
                     for ($i = $return_count + 1; $i < $dispatch_count; $i++) {
                         $this->return[] = [
-                            'id'        => $this->dispatch[$return_count+$i]['id'] ?? null,
+                            'id'        => $this->dispatch[$return_count+$i]['id'],
                             'jsonrpc'   => self::VERSION,
-                            'error'     => ['code'=> -32000, 'message' => 'Server error']
+                            'error'     => ['code'=> -32002, 'message' => 'Batch request abort']
                         ];
                     }
                 }
@@ -209,13 +166,66 @@ class Jsonrpc extends App
     
     protected function response($return = null)
     {
-        $this->return = null;
-        Response::send(($this->config['response_decode'])($return), $this->config['response_content_type'], false);
+        Response::send(($this->config['response_encode'])($return), $this->config['response_content_type'], false);
     }
     
-    protected function getClass($method)
+    protected function defaultDispatch($item)
     {
-        return 'app\\'.$this->config['controller_path'].'\\'.implode('\\', $method);
+        $id = $item['id'] ?? null;
+        if (isset($item['method'])) {
+            $method = explode('.', $item['method']);
+            if (count($method) > 1) {
+                $action = array_pop($method);
+                if ($action[0] !== '_' ) {
+                    $controller = $this->makeController($method);
+                    if (!empty($controller) && is_callable([$controller, $action])) {
+                        return [
+                            'id'            => $id,
+                            'controller'    => $controller,
+                            'action'        => $action,
+                            'params'        => $item['params'] ?? []
+                        ];
+                    }
+                }
+            }
+            return [
+                'id'    => $id,
+                'error' => ['code' => -32601, 'message' => 'Method not found']
+            ];
+        }
+        return [
+            'id'    => $id,
+            'error' => ['code' => -32600, 'message' => 'Invalid Request']
+        ];
+    }
+    
+    protected function makeController($path)
+    {
+        $class = 'app\\'.$this->config['controller_ns'].'\\'.implode('\\', $path);
+        if (!$this->is_batch_call) {
+            return Loader::importPrefixClass($class) ? new $class() : false;
+        }
+        if (isset($this->controller_instances[$class])) {
+            return $this->controller_instances[$class];
+        } else {
+            if (Loader::importPrefixClass($class)) {
+                return $this->controller_instances[$class] = new $class();
+            } else {
+                return $this->controller_instances[$class] = false;
+            }
+        }
+    }
+    
+    protected function getRefMethod($controller, $action)
+    {
+        if ($this->is_batch_call) {
+            $class = get_class($controller);
+            if (isset($this->controller_ref_methods[$class][$action])) {
+                return $this->controller_ref_methods[$class][$action];
+            }
+            return $this->controller_ref_methods[$class][$action] = new \ReflectionMethod($controller, $action);
+        }
+        return new \ReflectionMethod($controller, $action);
     }
     
     protected function addJob($dispatch)
@@ -244,12 +254,13 @@ class Jsonrpc extends App
         */
     }
     
-    protected function writeExceptionLog($e)
+    protected function setError($e)
     {
-        Logger::write(Logger::ERROR, 'Uncaught '.get_class($e).': '.$e->getMessage(), [
+        $message = $e->getMessage();
+        Logger::write(Logger::ERROR, 'Uncaught '.get_class($e).': '.$message, [
             'file' => $e->getFile(),
             'line' => $e->getLine()
         ]);
+        return ['code' => $e->getCode() ?? -32000, 'message' => $message];
     }
-
 }
