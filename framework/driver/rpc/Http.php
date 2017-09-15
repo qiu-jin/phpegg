@@ -11,12 +11,11 @@ class Http
         'url_style' => null,
         'requset_encode' => 'body',
         'response_decode' => 'body',
-        'client_method_alias' => null
     ];
-    const ALLOW_CLIENT_METHODS = [
+    protected $allow_client_methods = [
         'filter', 'body', 'json', 'form', 'file', 'buffer', 'stream', 'header', 'headers', 'timeout', 'curlopt', 'curlinfo', 'debug'
     ];
-    
+
     public function __construct($config)
     {
         $this->config = array_merge($this->config, $config);
@@ -24,10 +23,15 @@ class Http
     
     public function __get($name)
     {
-        return new query\Http($this, $name, $this->config['client_method_alias']);
+        return $this->query($name);
+    }
+
+    public function query($name, $client_methods = null)
+    {
+        return new query\Http($this, $name, $this->config['ns_method_name'] ?? 'ns', $client_methods);
     }
     
-    public function __send($method, $ns, $params, $client_methods)
+    public function call($ns, $method, $params, $client_methods)
     {
         return $this->send(isset($params) ? 'POST' : 'GET', implode('/', $ns)."/$method", $params, $client_methods);
     }
@@ -76,8 +80,10 @@ class Http
         }
         if ($client_methods) {
             foreach ($client_methods as $name=> $values) {
-                foreach ($values as $value) {
-                    $client->{$name}(...$value);
+                if (in_array($name, self::$allow_client_methods)) {
+                    foreach ($values as $value) {
+                        $client->{$name}(...$value);
+                    }
                 }
             }
         }

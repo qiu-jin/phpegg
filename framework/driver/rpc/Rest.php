@@ -7,16 +7,16 @@ class Rest extends Http
         'get', 'put', 'post', 'delete', 'patch', 'options', 'head'
     ];
     
-    public function __get($name)
+    public function query($name, $client_methods = null)
     {
-        return new query\Rest($this, $name);
+        return new query\Rest($this, $name, $client_methods);
     }
     
-    public function __send($ns, $method, $params, $client_methods)
+    public function call($ns, $method, $params, $client_methods)
     {
         if (!in_array($method, self::$methods, true)) {
             throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
         }
-        return $this->send($method, implode('/', $ns), $params, $client_methods);
+        return parent::call($method, implode('/', $ns), $params, $client_methods);
     }
 }

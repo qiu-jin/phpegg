@@ -23,8 +23,6 @@ class Thrift
     protected $bind_params = true;
     protected $bind_params_name = [];
     
-    const ALLOW_CLIENT_METHODS = [];
-    
     public function __construct($config)
     {
         $socket = new TSocket($config['host'], $config['port']);
@@ -46,15 +44,20 @@ class Thrift
 
     public function __get($name)
     {
-        return new query\Query($this, $name);
+        return $this->query($name);
     }
 
     public function __call($method, $params = [])
     {
-        return $this->__send(null, $method, $params);
+        return $this->call(null, $method, $params);
     }
     
-    public function __send($ns, $method, $params = [])
+    public function query($name, $client_methods = null)
+    {
+        return new query\Query($this, $name, $client_methods);
+    }
+    
+    public function call($ns, $method, $params, $client_methods)
     {
         $class = $this->prefix;
         if ($ns) {
@@ -69,12 +72,12 @@ class Thrift
             }
         }
         if ($this->bind_params && $params) {
-            $this->__bindParams($class, $method, $params);
+            $this->bindParams($class, $method, $params);
         }
         return $this->rpc[$class]->$method(...$params);
     }
     
-    protected function __bindParams($class, $method, &$params)
+    protected function bindParams($class, $method, &$params)
     {
         if (isset($this->bind_params_name[$class][$method])) {
             if (empty($this->bind_params_name[$class][$method])) {

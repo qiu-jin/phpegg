@@ -5,10 +5,14 @@ use framework\core\http\Client;
 
 class Jsonrpc
 {
+    const VERSION = '2.0'; 
+    
     protected $config = [
-        'client_method_alias' => null
+        'id_method_name' => 'id',
+        'requset_encode' => 'jsonencode',
+        'response_decode' => 'jsondecode',
     ];
-    const ALLOW_CLIENT_METHODS = ['id', 'header', 'timeout', 'debug'];
+    protected $allow_client_methods = ['header', 'timeout', 'debug'];
     
     public function __construct($config)
     {
@@ -20,29 +24,58 @@ class Jsonrpc
         return $this->query($name);
     }
     
-    public function __call($method, $params = [])
+    public function __call($method, $params)
     {
-        return $this->__send(null, $method, $params);
+        return $this->call(null, $method, $params);
     }
 
-    public function batch()
+    public function query($name, $client_methods = null)
     {
-        return new query\Batch($this);
-    }
-
-    public function query($name = null)
-    {
-        return new query\Query($this, $name, $this->config['client_method_alias']);
+        return new query\Jsonrpc($this, $name, $this->config['id_method_name'], $client_methods);
     }
     
-    public function __send($ns, $method, $params, $client_methods = null)
+    public function batch($client_methods = null)
     {
-        if (isset($client_methods['id'])) {
-            $id = end($client_methods['id']);
-            unset($client_methods['id']);
-        } else {
-            $id = uniqid();
+        return new query\JsonrpcBatch($this, $this->config['id_method_name'], $client_methods);
+    }
+    
+    public function call($ns, $method, $params, $id = null, $client_methods = null)
+    {
+        $client = $this->makeClient($this->builde($ns, $method, $params, $id), $client_methods);
+        $data = ($this->config['response_decode'])($client->body);
+        if (isset($data['result'])) {
+            return $data['result'];
         }
+        $this->setError($client, $data);
+        return false;
+    }
+    
+    public function callBatch($batch, $client_methods = null)
+    {
+        foreach ($batch as $item) {
+            $body[] = $this->builde(...$item);
+        }
+        $client = $this->makeClient($body, $client_methods);
+        $data = $client->json;
+        if ($data && array_keys($data) === array_keys($batch)) {
+            return $data;
+        }
+        $this->setError($client, $data);
+        return false;
+    }
+    
+    protected function builde($ns, $method, $params, $id)
+    {
+        return [
+            'jsonrpc'   => self::VERSION,
+            'method'    => ($this->ns ? implode('.', $this->ns).'.' : '.').$method,
+            'params'    => $params,
+            'id'        => $id === true ? uniqid() : $id
+        ]
+    }
+    
+    protected function makeClient($data, $client_methods)
+    {
         $client = Client::post($this->host);
         if (isset($this->config['headers'])) {
             $client->headers($this->config['headers']);
@@ -52,20 +85,19 @@ class Jsonrpc
         }
         if ($client_methods) {
             foreach ($client_methods as $name=> $values) {
-                foreach ($values as $value) {
-                    $client->{$name}(...$value);
+                if (in_array($name, self::$allow_client_methods)) {
+                    foreach ($values as $value) {
+                        $client->{$name}(...$value);
+                    }
                 }
             }
         }
-        $data = $client->json([
-            'jsonrpc'   => '2.0',
-            'params'    => $params,
-            'method'    => $ns ? implode('.', $ns).'.'.$method : $method,
-            'id'        => $id
-        ])->json;
-        if (isset($data['result'])) {
-            return $data['result'];
-        }
+        $client->send(($this->config['requset_encode'])($data));
+        return $client;
+    }
+    
+    protected function setError($client, $data)
+    {
         if (isset($data['error'])) {
             error($data['error']['code'].' '.$data['error']['message']);
         } else {
@@ -76,6 +108,5 @@ class Jsonrpc
                 error('-32603 nvalid JSON-RPC response');
             }
         }
-        return false;
     }
 }

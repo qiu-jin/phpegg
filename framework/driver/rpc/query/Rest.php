@@ -3,9 +3,9 @@ namespace framework\driver\rpc\query;
 
 class Rest extends Query
 {
-    public function with($class)
+    public function ns($name)
     {
-        $this->ns[] = $class;
+        $this->ns[] = $name;
         return $this;
     }
 }

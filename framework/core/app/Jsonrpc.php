@@ -21,7 +21,7 @@ class Jsonrpc extends App
          * 2 键值参数
          */
         'param_mode'    => 1,
-        // 最大批调用数，不大于1则不启用批调用
+        // 最大批调用数，1不启用批调用，0无限批调用数
         'batch_max_num' => 1,
         // 批调用异常中断
         'batch_exception_abort' => 0,
@@ -57,8 +57,9 @@ class Jsonrpc extends App
         if (!$data) {
             $this->abort(-32700, 'Parse error');
         }
-        if ($this->config['batch_max_num'] > 1 && !Arr::isAssoc($data)) {
-            if (count($data) > $this->config['batch_max_num']) {
+        $batch_max_num = $this->config['batch_max_num'];
+        if ($batch_max_num !== 1 && !Arr::isAssoc($data)) {
+            if ($batch_max_num !== 0 || count($data) > $batch_max_num) {
                 $this->abort(-32001, 'Than batch max num');
             }
             $this->is_batch_call = true;
