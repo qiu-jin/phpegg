@@ -83,9 +83,7 @@ class Logger
     public static function free()
     {
         self::$writer = null;
-        self::$configs = null;
         self::$handlers = null;
-        self::$level_handler_name = null;
     }
     
     /*

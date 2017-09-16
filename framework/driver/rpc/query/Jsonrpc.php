@@ -6,17 +6,17 @@ class Jsonrpc
     protected $id = true;
     protected $ns;
     protected $rpc;
+    protected $id_method;
     protected $client_methods;
-    protected $id_method_name;
     
-    public function __construct($rpc, $name, $id_method_name, $client_methods = null)
+    public function __construct($rpc, $name, $id_method, $client_methods = null)
     {
         $this->rpc = $rpc;
-        $this->client_methods;
-        $this->id_method_name = $id_method_name;
         if ($name) {
             $this->ns[] = $name;
         }
+        $this->id_method = $id_method;
+        $this->client_methods = $client_methods;
     }
 
     public function __get($name)
@@ -27,7 +27,7 @@ class Jsonrpc
     
     public function __call($method, $params = [])
     {
-        if ($this->id_method_name === $method) {
+        if ($this->id_method === $method) {
             $this->id = $params[0];
             return $this;
         }

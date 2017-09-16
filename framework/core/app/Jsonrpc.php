@@ -59,8 +59,8 @@ class Jsonrpc extends App
         }
         $batch_max_num = $this->config['batch_max_num'];
         if ($batch_max_num !== 1 && !Arr::isAssoc($data)) {
-            if ($batch_max_num !== 0 || count($data) > $batch_max_num) {
-                $this->abort(-32001, 'Than batch max num');
+            if ($batch_max_num !== 0 && count($data) > $batch_max_num) {
+                $this->abort(-32001, "Than batch max num $batch_max_num");
             }
             $this->is_batch_call = true;
             foreach ($data as $item) {
@@ -107,7 +107,7 @@ class Jsonrpc extends App
     protected function call($dispatch)
     {
         extract($dispatch, EXTR_SKIP);
-        switch ($param_mode) {
+        switch ($this->config['param_mode']) {
             case 1:
                 return $controller->{$action}(...$params);
             case 2:
@@ -231,11 +231,11 @@ class Jsonrpc extends App
     
     protected function addJob($dispatch)
     {
-        Hook::add('close', function () {
+        Hook::add('close', function () use ($dispatch) {
             try {
                 $return = $this->call($dispatch);
             } catch (\Throwable $e) {
-                $this->writeExceptionLog($e);
+                $this->setError($e);
             }
             if (isset($dispatch['callback']) && isset($this->config['notification_callback'])) {
                 ($this->config['notification_callback'])($dispatch['callback'], $return);

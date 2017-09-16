@@ -28,7 +28,7 @@ class Http
 
     public function query($name, $client_methods = null)
     {
-        return new query\Http($this, $name, $this->config['ns_method_name'] ?? 'ns', $client_methods);
+        return new query\Http($this, $name, $this->config['ns_method'] ?? 'ns', $client_methods);
     }
     
     public function call($ns, $method, $params, $client_methods)

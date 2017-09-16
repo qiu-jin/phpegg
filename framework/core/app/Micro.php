@@ -48,7 +48,7 @@ class Micro extends App
         if ($dispatch = $this->defaultDispatch()) {          
             return $dispatch();
         } elseif ($dispatch = $this->routeDispatch()) {
-            if ($this->config['enable_closure_getter']) {
+            if ($this->config['route_dispatch_enable_getter']) {
                 return $dispatch[0]->call(new class () {
                     use Getter;
                 }, ...$dispatch[1]);
@@ -67,7 +67,7 @@ class Micro extends App
         }
     }
     
-    protected function response() {}
+    protected function response($return) {}
     
     protected function defaultDispatch()
     {

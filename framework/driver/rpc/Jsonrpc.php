@@ -8,7 +8,8 @@ class Jsonrpc
     const VERSION = '2.0'; 
     
     protected $config = [
-        'id_method_name' => 'id',
+        'id_method' => 'id',
+        'call_method' => 'call',
         'requset_encode' => 'jsonencode',
         'response_decode' => 'jsondecode',
     ];
@@ -31,20 +32,24 @@ class Jsonrpc
 
     public function query($name, $client_methods = null)
     {
-        return new query\Jsonrpc($this, $name, $this->config['id_method_name'], $client_methods);
+        return new query\Jsonrpc($this, $name, $this->config['id_method'], $client_methods);
     }
     
     public function batch($client_methods = null)
     {
-        return new query\JsonrpcBatch($this, $this->config['id_method_name'], $client_methods);
+        return new query\JsonrpcBatch($this, $this->config['id_method'], $this->config['call_method'], $client_methods);
     }
     
     public function call($ns, $method, $params, $id = null, $client_methods = null)
     {
         $client = $this->makeClient($this->builde($ns, $method, $params, $id), $client_methods);
         $data = ($this->config['response_decode'])($client->body);
-        if (isset($data['result'])) {
-            return $data['result'];
+        if ($data) {
+            if (!isset($data['error'])) {
+                return $data['result'];
+            }
+        } elseif($id === null && $data === null) {
+            return;
         }
         $this->setError($client, $data);
         return false;
@@ -68,15 +73,15 @@ class Jsonrpc
     {
         return [
             'jsonrpc'   => self::VERSION,
-            'method'    => ($this->ns ? implode('.', $this->ns).'.' : '.').$method,
+            'method'    => ($ns ? implode('.', $ns).'.' : '.').$method,
             'params'    => $params,
             'id'        => $id === true ? uniqid() : $id
-        ]
+        ];
     }
     
     protected function makeClient($data, $client_methods)
     {
-        $client = Client::post($this->host);
+        $client = Client::post($this->config['host']);
         if (isset($this->config['headers'])) {
             $client->headers($this->config['headers']);
         }
@@ -92,14 +97,14 @@ class Jsonrpc
                 }
             }
         }
-        $client->send(($this->config['requset_encode'])($data));
+        $client->body(($this->config['requset_encode'])($data));
         return $client;
     }
     
     protected function setError($client, $data)
     {
         if (isset($data['error'])) {
-            error($data['error']['code'].' '.$data['error']['message']);
+            error($data['error']['code'].': '.$data['error']['message']);
         } else {
             $clierr = $client->error;
             if ($clierr) {

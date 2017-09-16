@@ -5,15 +5,17 @@ class Http
 {
     protected $ns;
     protected $rpc;
+    protected $ns_method;
     protected $client_methods;
-    protected $ns_method_name;
     
-    public function __construct($rpc, $name, $ns_method_name, $client_methods = null)
+    public function __construct($rpc, $name, $ns_method, $client_methods = null)
     {
-        $this->ns[] = $name;
         $this->rpc = $rpc;
-        $this->client_methods;
-        $this->ns_method_name = $ns_method_name;
+        if ($name) {
+            $this->ns[] = $name;
+        }
+        $this->ns_method = $ns_method;
+        $this->client_methods = $client_methods;
     }
 
     public function __get($name)
@@ -24,10 +26,10 @@ class Http
     
     public function __call($method, $params = [])
     {
-        if ($this->ns_method_name === $method) {
+        if ($this->ns_method === $method) {
             $this->ns[] = $method;
             return $this;
         }
-        return $this->rpc->call($this->ns, $method, $params, $this->id, $this->client_methods);
+        return $this->rpc->call($this->ns, $method, $params, $this->client_methods);
     }
 }
