@@ -27,25 +27,21 @@ class Rest
         return $this;
     }
     
-    public function filter($key, $value)
+    public function filter($params)
     {
-        $this->filters[$key] = $value;
-        return $this;
-    }
-    
-    public function filters($values)
-    {
-        $this->filters = array_merge($this->filters, $values);
-        return $this;
+        $num = func_num_args();
+        if ($num === 1) {
+            $this->filters = array_merge($this->filters, $params);
+        } elseif ($num === 2) {
+            $this->filters[$params[0]] = $params[1];
+        }
     }
     
     public function __call($method, $params)
     {
         if (in_array($method, $this->rpc::ALLOW_HTTP_METHODS, true)) {
-            if ($params) {
-                $params = $this->setParams($params);
-            }
-            return $this->rpc->call($method, implode('/', $this->ns), $this->filters, $params, $this->client_methods);
+            $body = $params ? $this->setParams($params) : null;
+            return $this->rpc->call($method, implode('/', $this->ns), $this->filters, $body, $this->client_methods);
         }
         if (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
             $this->client_methods[$method][] = $params;
@@ -56,17 +52,10 @@ class Rest
     
     protected function setParams($params)
     {
-        $count = count($params);
-        if ($count === 1) {
-            if (is_array($params[0])) {
-                return $params[0];
-            }
-            $this->ns[] = $params[0];
-            return null;
-        } elseif ($count === 2) {
-            $this->ns[] = $params[0];
-            return $params[1];
+        $return = is_array(end($params)) ? array_pop($params) : null;
+        if ($params) {
+            $this->ns = array_merge($this->ns, $params);
         }
-        return null;
+        return $return;
     }
 }

@@ -5,7 +5,7 @@ class Rest
 {
     protected $ns;
     protected $rpc;
-    protected $filter;
+    protected $filters;
     protected $ns_method;
     protected $filter_method;
     protected $client_methods;
@@ -36,17 +36,27 @@ class Rest
             $this->filter($params);
             return $this;
         }
+        $body = $params ? $this->setParams($params) : null;
         $path = implode('/', $this->ns)."/$method";
-        return $this->rpc->call(isset($params) ? 'POST' : 'GET', $path, $this->filter, $params[0] ?? null, $this->client_methods);
+        return $this->rpc->call(isset($params) ? 'POST' : 'GET', $path, $this->filter, $body, $this->client_methods);
     }
     
     protected function filter($params)
     {
         $num = func_num_args();
         if ($num === 1) {
-            $this->filter = array_merge($this->filter, $params);
+            $this->filters = array_merge($this->filters, $params);
         } elseif ($num === 2) {
-            $this->filter[$params[0]] = $params[1];
+            $this->filters[$params[0]] = $params[1];
         }
+    }
+    
+    protected function setParams($params)
+    {
+        $return = is_array(end($params)) ? array_pop($params) : null;
+        if ($params) {
+            $this->ns = array_merge($this->ns, $params);
+        }
+        return $return;
     }
 }

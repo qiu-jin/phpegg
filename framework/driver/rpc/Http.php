@@ -31,7 +31,7 @@ class Http
         return new query\Rest($this, $name, $client_methods);
     }
     
-    public function call($method, $path, $filters, $params, $client_methods)
+    public function call($method, $path, $filters, $body, $client_methods)
     {
         if (isset($this->config['url_style'])) {
             $path = $this->convertUrlStyle($path);
@@ -56,8 +56,8 @@ class Http
                 }
             }
         }
-        if ($params) {
-            $client->{$this->config['requset_encode']}($params);
+        if ($body) {
+            $client->{$this->config['requset_encode']}($body);
         }
         $status = $client->status;
         if ($status >= 200 && $status < 300) {
