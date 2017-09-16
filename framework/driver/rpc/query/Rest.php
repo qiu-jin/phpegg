@@ -5,7 +5,7 @@ class Rest
 {
     protected $ns;
     protected $rpc;
-    protected $filter;
+    protected $filters;
     protected $client_methods;
     
     public function __construct($rpc, $name, $client_methods = null)
@@ -27,14 +27,15 @@ class Rest
         return $this;
     }
     
-    public function filter(...$params)
+    public function filter($key, $value)
     {
-        $num = func_num_args();
-        if ($num === 1) {
-            $this->filter = array_merge($this->filter, $params);
-        } elseif ($num === 2) {
-            $this->filter[$params[0]] = $params[1];
-        }
+        $this->filters[$key] = $value;
+        return $this;
+    }
+    
+    public function filters($values)
+    {
+        $this->filters = array_merge($this->filters, $values);
         return $this;
     }
     
@@ -44,7 +45,7 @@ class Rest
             if ($params) {
                 $params = $this->setParams($params);
             }
-            return $this->rpc->call($method, implode('/', $this->ns), $this->filter, $params, $this->client_methods);
+            return $this->rpc->call($method, implode('/', $this->ns), $this->filters, $params, $this->client_methods);
         }
         if (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
             $this->client_methods[$method][] = $params;
