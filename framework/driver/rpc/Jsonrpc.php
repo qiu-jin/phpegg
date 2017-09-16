@@ -10,8 +10,8 @@ class Jsonrpc
     protected $config = [
         'id_method' => 'id',
         'call_method' => 'call',
-        'requset_encode' => 'jsonencode',
-        'response_decode' => 'jsondecode',
+        'requset_serialize' => 'jsonencode',
+        'response_unserialize' => 'jsondecode',
     ];
     protected $allow_client_methods = ['header', 'timeout', 'debug'];
     
@@ -43,7 +43,7 @@ class Jsonrpc
     public function call($ns, $method, $params, $id = null, $client_methods = null)
     {
         $client = $this->makeClient($this->builde($ns, $method, $params, $id), $client_methods);
-        $data = ($this->config['response_decode'])($client->body);
+        $data = ($this->config['response_unserialize'])($client->body);
         if ($data) {
             if (!isset($data['error'])) {
                 return $data['result'];
@@ -61,7 +61,7 @@ class Jsonrpc
             $body[] = $this->builde(...$item);
         }
         $client = $this->makeClient($body, $client_methods);
-        $data = $client->json;
+        $data = ($this->config['response_unserialize'])($client->body);
         if ($data && array_keys($data) === array_keys($batch)) {
             return $data;
         }
@@ -97,7 +97,7 @@ class Jsonrpc
                 }
             }
         }
-        $client->body(($this->config['requset_encode'])($data));
+        $client->body(($this->config['requset_serialize'])($data));
         return $client;
     }
     
@@ -108,9 +108,9 @@ class Jsonrpc
         } else {
             $clierr = $client->error;
             if ($clierr) {
-                error("-32000 Internet error $clierr[0]: $clierr[1]");
+                error("-32000: Internet error [$clierr[0]] $clierr[1]");
             } else {
-                error('-32603 nvalid JSON-RPC response');
+                error('-32603: nvalid JSON-RPC response');
             }
         }
     }

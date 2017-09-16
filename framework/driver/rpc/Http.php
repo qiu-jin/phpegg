@@ -12,7 +12,7 @@ class Http
         'requset_encode' => 'body',
         'response_decode' => 'body',
     ];
-    protected $allow_client_methods = [
+    const ALLOW_CLIENT_METHODS = [
         'filter', 'body', 'json', 'form', 'file', 'buffer', 'stream', 'header', 'headers', 'timeout', 'curlopt', 'curlinfo', 'debug'
     ];
 
@@ -28,48 +28,19 @@ class Http
 
     public function query($name, $client_methods = null)
     {
-        return new query\Http($this, $name, $this->config['ns_method'] ?? 'ns', $client_methods);
+        $ns_method = $this->config['ns_method'] ?? 'ns';
+        $filter_method = $this->config['filter_method'] ?? 'filter';
+        return new query\Http($this, $name, $ns_method,  $filter_method, $client_methods);
     }
     
-    public function call($ns, $method, $params, $client_methods)
-    {
-        return $this->send(isset($params) ? 'POST' : 'GET', implode('/', $ns)."/$method", $params, $client_methods);
-    }
-
-    protected function send($method, $path, $params, $client_methods)
+    public function call($method, $path, $filter, $params, $client_methods)
     {
         if (isset($this->config['url_style'])) {
-            switch ($this->config['url_style']) {
-                case 'snake_spinal':
-                    $path = strtr('_', '-', $path);
-                    break;
-                case 'camel_spinal':
-                    $path = Str::toSnake($path, '-');
-                    break;
-                case 'snake_to_camel':
-                    $path = Str::toCamel($path);
-                    break;
-                case 'camel_to_snake':
-                    $path = Str::toSnake($path);
-                    break;
-            }
+            $path = $this->convertUrlStyle($path);
         }
         $url = $this->config['host'].'/'.$path.$this->config['ext'];
-        $data = null;
-        $count = count($params);
-        if ($count === 1) {
-            if (is_array($params[0])) {
-                $data = $params[0];
-            } else {
-                $url .= '/'.$params[0];
-            }
-        } elseif ($count > 1) {
-            $url .= '/'.$params[0];
-            $data = $params[1];
-        }
-        if (isset($client_methods['filter'])) {
-            $url .= (strpos('?', $url) ? '&' : '?').http_build_query($this->filter($client_methods['filter']));
-            unset($client_methods['filter']);
+        if ($filter) {
+            $url .= '?'.http_build_query($filter);
         }
         $client = new Client($method, $url);
         if (isset($this->config['headers'])) {
@@ -80,15 +51,15 @@ class Http
         }
         if ($client_methods) {
             foreach ($client_methods as $name=> $values) {
-                if (in_array($name, self::$allow_client_methods)) {
+                if (in_array($name, self::ALLOW_CLIENT_METHODS)) {
                     foreach ($values as $value) {
                         $client->{$name}(...$value);
                     }
                 }
             }
         }
-        if ($data) {
-            $client->{$this->config['requset_encode']}($data);
+        if ($params) {
+            $client->{$this->config['requset_encode']}($params);
         }
         $status = $client->status;
         if ($status >= 200 && $status < 300) {
@@ -97,17 +68,18 @@ class Http
         return $status ? error($status) : error(var_export($client->error, true));
     }
     
-    protected function filter($vaules)
+    protected function convertUrlStyle()
     {
-        $filters = [];
-        foreach ($vaules as $filter) {
-            $count = count($filter);
-            if ($count === 2) {
-                $filters[$filter[0]] = $filter[1];
-            } elseif ($count === 1 && is_array($filter)) {
-                $filters += $filter;
-            }
+        switch ($this->config['url_style']) {
+            case 'snake_to_spinal':
+                return strtr('_', '-', $path);
+            case 'camel_to_spinal':
+                return Str::toSnake($path, '-');
+            case 'snake_to_camel':
+                return Str::toCamel($path);
+            case 'camel_to_snake':
+                return Str::toSnake($path);
         }
-        return $filters;
+        throw new Exception("Illegal url style: $this->config['url_style']");
     }
 }

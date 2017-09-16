@@ -17,7 +17,6 @@ class Rest extends Http
     {
         if (isset($config['methods'])) {
             $this->methods = $config['methods'];
-            unset($config['methods']);
         }
         $this->config = array_merge($this->config, $config);
     }

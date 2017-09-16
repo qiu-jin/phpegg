@@ -33,10 +33,10 @@ class Jsonrpc extends App
         'notification_mode' => null,
         // 通知回调方法
         'notification_callback' => null,
-        // Request 解码
-        'request_decode' => 'jsondecode',
-        // Response 编码
-        'response_encode' => 'jsonencode',
+        // Request 解码,  igbinary_unserialize msgpack_unserialize
+        'request_unserialize' => 'jsondecode',
+        // Response 编码, igbinary_serialize  msgpack_serialize 
+        'response_serialize' => 'jsonencode',
         // Response content type header
         'response_content_type' => null
     ];
@@ -53,7 +53,7 @@ class Jsonrpc extends App
     
     protected function dispatch()
     {
-        $data = ($this->config['request_decode'])(Request::body());
+        $data = ($this->config['request_unserialize'])(Request::body());
         if (!$data) {
             $this->abort(-32700, 'Parse error');
         }
@@ -167,7 +167,7 @@ class Jsonrpc extends App
     
     protected function response($return = null)
     {
-        Response::send(($this->config['response_encode'])($return), $this->config['response_content_type'], false);
+        Response::send(($this->config['response_serialize'])($return), $this->config['response_content_type'], false);
     }
     
     protected function defaultDispatch($item)
