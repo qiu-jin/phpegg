@@ -79,7 +79,7 @@ class Standard extends App
                     $method_cou = count($params);
                     if ($method_num > $method_cou) {
                         $parameters = $ref_method->getParameters();
-                        for ($i = $method_cou, $i < $method_num, $i++) {
+                        for ($i = $method_cou; $i < $method_num; $i++) {
                             if ($parameters[$i]->isDefaultValueAvailable()) {
                                 $params[] = $parameters[$i]->getdefaultvalue();
                             } else {
@@ -87,7 +87,6 @@ class Standard extends App
                             }
                         }
                     }
-                    array_pad($params, $ref_method->getnumberofparameters(), null);
                 }
                 return $controller->$action(...$params);
             case 2:
