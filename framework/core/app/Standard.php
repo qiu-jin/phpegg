@@ -106,7 +106,7 @@ class Standard extends App
                             } elseif ($this->config['missing_params_to_null']) {
                                 $new_params[] = null;
                             } else {
-                                $this->abort(404);
+                                throw new \Exception('Invalid params');
                             }
                         }
                     }

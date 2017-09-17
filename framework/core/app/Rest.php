@@ -68,27 +68,25 @@ class Rest extends App
             case 1:
                 return $controller->$action(...$params);
             case 2:
+                $new_params = [];
                 if ($this->config['query_to_kv_params'] && $_GET) {
                     $params = array_merge($_GET, $params);
                 }
                 if ($params) {
-                    if (!isset($this->ref_method)) {
-                        $this->ref_method =  new \ReflectionMethod($controller, $action);
-                    }
-                    if ($this->ref_method->getnumberofparameters() > 0) {
-                        foreach ($this->ref_method->getParameters() as $param) {
+                    $ref_method = $this->ref_method ?? new \ReflectionMethod($controller, $action);
+                    if ($ref_method->getnumberofparameters() > 0) {
+                        foreach ($ref_method->getParameters() as $param) {
                             if (isset($params[$param->name])) {
-                                $parameters[] = $params[$param->name];
+                                $new_params[] = $params[$param->name];
                             } elseif($param->isDefaultValueAvailable()) {
-                                $parameters[] = $param->getdefaultvalue();
+                                $new_params[] = $param->getdefaultvalue();
                             } else {
-                                $this->abort(404);
+                                throw new \Exception('Invalid params');
                             }
                         }
-                        return $this->ref_method->invokeArgs($controller, $parameters);
                     }
                 }
-                return $controller->$action();
+                return $controller->$action(...$new_params);
             default:
                 return $controller->$action();
         }

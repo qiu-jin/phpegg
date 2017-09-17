@@ -109,27 +109,27 @@ class Jsonrpc extends App
         extract($dispatch, EXTR_SKIP);
         switch ($this->config['param_mode']) {
             case 1:
-                return $controller->{$action}(...$params);
+                return $controller->$action(...$params);
             case 2:
+                $new_params = [];
                 if ($params) {
                     $ref_method = $this->getRefMethod($controller, $action);
                     if ($ref_method->getnumberofparameters() > 0) {
                         foreach ($ref_method->getParameters() as $param) {
                             if (isset($params[$param->name])) {
-                                $parameters[] = $params[$param->name];
+                                $new_params[] = $params[$param->name];
                             } elseif($param->isDefaultValueAvailable()) {
-                                $parameters[] = $param->getdefaultvalue();
+                                $new_params[] = $param->getdefaultvalue();
                             } else {
                                 throw new \Exception('Invalid params', -32602);
                             }
                         }
-                        return $method->invokeArgs($controller, $parameters);
                     }
                 }
-                return $controller->{$action}();
+                return $controller->$action(...$new_params);
             default:
                 Request::set('post', $params);
-                return $controller->{$action}();
+                return $controller->$action();
         }
     }
     
