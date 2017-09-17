@@ -45,9 +45,9 @@ class Jsonrpc extends App
     // 当前请求是否为批请求
     protected $is_batch_call = false;
     // 批请求控制器实例缓存
-    protected $controller_instances = [];
+    protected $controller_instances;
     // 批请求控制器方法反射实例缓存
-    protected $controller_ref_methods = [];
+    protected $controller_ref_methods;
     
     const VERSION = '2.0';
     
@@ -111,20 +111,22 @@ class Jsonrpc extends App
             case 1:
                 return $controller->{$action}(...$params);
             case 2:
-                $parameters = [];
-                $ref_method = $this->getRefMethod($controller, $action);
-                if ($ref_method->getnumberofparameters() > 0) {
-                    foreach ($ref_method->getParameters() as $param) {
-                        if (isset($params[$param->name])) {
-                            $parameters[] = $params[$param->name];
-                        } elseif($param->isDefaultValueAvailable()) {
-                            $parameters[] = $param->getdefaultvalue();
-                        } else {
-                            throw new \Exception('Invalid params', -32602);
+                if ($params) {
+                    $ref_method = $this->getRefMethod($controller, $action);
+                    if ($ref_method->getnumberofparameters() > 0) {
+                        foreach ($ref_method->getParameters() as $param) {
+                            if (isset($params[$param->name])) {
+                                $parameters[] = $params[$param->name];
+                            } elseif($param->isDefaultValueAvailable()) {
+                                $parameters[] = $param->getdefaultvalue();
+                            } else {
+                                throw new \Exception('Invalid params', -32602);
+                            }
                         }
+                        return $method->invokeArgs($controller, $parameters);
                     }
                 }
-                return $method->invokeArgs($controller, $parameters);
+                return $controller->{$action}();
             default:
                 Request::set('post', $params);
                 return $controller->{$action}();

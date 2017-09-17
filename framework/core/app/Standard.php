@@ -26,6 +26,8 @@ class Standard extends App
         'template_to_snake' => 1,
         // URL query参数是否转为控制器方法参数，0否，1是
         'query_to_kv_params' => 0,
+        // 缺少的参数设为null值
+        'missing_params_to_null' => 0,
         
         /* 默认调度的参数模式
          * 0 无参数
@@ -71,29 +73,45 @@ class Standard extends App
         extract($this->dispatch, EXTR_SKIP);
         switch ($param_mode) {
             case 1:
+                if ($this->config['missing_params_to_null']) {
+                    $ref_method = $this->ref_method ?? new \ReflectionMethod($controller, $action);
+                    $method_num = $ref_method->getnumberofparameters();
+                    $method_cou = count($params);
+                    if ($method_num > $method_cou) {
+                        $parameters = $ref_method->getParameters();
+                        for ($i = $method_cou, $i < $method_num, $i++) {
+                            if ($parameters[$i]->isDefaultValueAvailable()) {
+                                $params[] = $parameters[$i]->getdefaultvalue();
+                            } else {
+                                $params[] = null;
+                            }
+                        }
+                    }
+                    array_pad($params, $ref_method->getnumberofparameters(), null);
+                }
                 return $controller->$action(...$params);
             case 2:
+                $new_params = [];
                 if ($this->config['query_to_kv_params'] && $_GET) {
                     $params = array_merge($_GET, $params);
                 }
-                if ($params) {
-                    if (!isset($this->ref_method)) {
-                        $this->ref_method =  new \ReflectionMethod($controller, $action);
-                    }
-                    if ($this->ref_method->getnumberofparameters() > 0) {
-                        foreach ($this->ref_method->getParameters() as $param) {
+                if ($params || $this->config['missing_params_to_null']) {
+                    $ref_method = $this->ref_method ?? new \ReflectionMethod($controller, $action);
+                    if ($ref_method->getnumberofparameters() > 0) {
+                        foreach ($ref_method->getParameters() as $param) {
                             if (isset($params[$param->name])) {
-                                $parameters[] = $params[$param->name];
+                                $new_params[] = $params[$param->name];
                             } elseif($param->isDefaultValueAvailable()) {
-                                $parameters[] = $param->getdefaultvalue();
+                                $new_params[] = $param->getdefaultvalue();
+                            } elseif ($this->config['missing_params_to_null']) {
+                                $new_params[] = null;
                             } else {
                                 $this->abort(404);
                             }
                         }
-                        return $this->ref_method->invokeArgs($controller, $parameters);
                     }
                 }
-                return $controller->$action();
+                return $controller->$action(...$new_params);
             default:
                 return $controller->$action();
         }
