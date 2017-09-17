@@ -89,7 +89,8 @@ class Loader
     {
         $prefix = strstr($class, '\\', true);
         if(isset(self::$class_prefix[$prefix])) {
-            self::import(self::$class_prefix[$prefix].strstr(strtr($class, '\\', '/'), '/'));
+            $path = substr(strstr(strtr($class, '\\', '/'), '/'), 1);
+            self::import(self::$class_prefix[$prefix].$path);
         } elseif(isset(self::$class_map[$class])) {
             self::import(self::$class_map[$class]);
         } elseif (isset(self::$class_alias[$class])) {

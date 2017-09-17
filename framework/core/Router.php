@@ -31,8 +31,6 @@ class Router
     {
         $result = self::route($path, $ruotes, $method);
         if ($result) {
-            $mode = 0;
-            $params = [];
             list($call, $macth) = $result;
             $pair = explode('?', $call, 2);
             $unit = explode('/', $pair[0]);
@@ -41,7 +39,6 @@ class Router
                     if ($v[0] == '$' && is_numeric($v[1])) $unit[$i] = $macth[$v[1]-1];
                 }
                 if (isset($pair[1])) {
-                    $mode = 2;
                     parse_str($pair[1],$param);
                     if (count($param) > 0) {
                         foreach ($param as $k => $v) {
@@ -53,11 +50,10 @@ class Router
                         }
                     }
                 } else {
-                    $mode = 1;
                     $params = $macth;
                 }
             }
-            return [$unit, $params, $mode];
+            return [$unit, $params ?? []];
         }
         return false;
     }

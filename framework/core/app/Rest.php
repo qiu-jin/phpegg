@@ -17,7 +17,7 @@ class Rest extends App
         'dispatch_mode'     => 'default',
         'controller_ns'     => 'controller',
         'controller_depth'  => 1,
-        'query_to_params'   => 0,
+        'query_to_kv_params'   => 0,
         
         // 默认调度的路径转为驼峰风格
         'default_dispatch_to_camel' => '-',
@@ -68,25 +68,27 @@ class Rest extends App
             case 1:
                 return $controller->$action(...$params);
             case 2:
-                $parameters = [];
-                if (!isset($this->ref_method)) {
-                    $this->ref_method =  new \ReflectionMethod($controller, $action);
+                if ($this->config['query_to_kv_params'] && $_GET) {
+                    $params = array_merge($_GET, $params);
                 }
-                if ($this->ref_method->getnumberofparameters() > 0) {
-                    if ($this->config['query_to_params']) {
-                        $params = array_merge($_GET, $params);
+                if ($params) {
+                    if (!isset($this->ref_method)) {
+                        $this->ref_method =  new \ReflectionMethod($controller, $action);
                     }
-                    foreach ($this->ref_method->getParameters() as $param) {
-                        if (isset($params[$param->name])) {
-                            $parameters[] = $params[$param->name];
-                        } elseif($param->isDefaultValueAvailable()) {
-                            $parameters[] = $param->getdefaultvalue();
-                        } else {
-                            $this->abort(404);
+                    if ($this->ref_method->getnumberofparameters() > 0) {
+                        foreach ($this->ref_method->getParameters() as $param) {
+                            if (isset($params[$param->name])) {
+                                $parameters[] = $params[$param->name];
+                            } elseif($param->isDefaultValueAvailable()) {
+                                $parameters[] = $param->getdefaultvalue();
+                            } else {
+                                $this->abort(404);
+                            }
                         }
+                        return $this->ref_method->invokeArgs($controller, $parameters);
                     }
                 }
-                return $this->ref_method->invokeArgs($controller, $parameters);
+                return $controller->$action();
             default:
                 return $controller->$action();
         }
@@ -108,9 +110,12 @@ class Rest extends App
         if (!in_array($this->method, $this->config['default_dispatch_http_methods'], true)) {
             return false;
         }
-        $params = [];
         $count = count($path);
         $depth = $this->config['controller_depth'];
+        $param_mode = $this->config['default_dispatch_param_mode'];
+        if ($this->config['query_to_kv_params'] && $param_mode === 0) {
+            $param_mode = 2;
+        }
         if ($depth > 0) {
             if ($count < $depth) {
                 return false;
@@ -118,17 +123,17 @@ class Rest extends App
             if ($count === $depth) {
                 $class_array = $path;
             } else {
-                if ($this->config['default_dispatch_param_mode'] < 1) {
+                if ($param_mode < 1) {
                     return false;
                 }
                 $class_array = array_slice($path, 0, $depth);
                 $params = array_slice($path, $depth);
-                if ($this->config['default_dispatch_param_mode'] === 2) {
+                if ($param_mode === 2) {
                     $params = $this->getKvParams($params);
                 }
             }
         } else {
-            if ($this->config['default_dispatch_param_mode'] !== 0) {
+            if ($param_mode !== 0) {
                 throw new \Exception('If param_mode > 0, must controller_depth > 0');
             }
             $class_array = $path;
@@ -143,8 +148,8 @@ class Rest extends App
                 return [
                     'controller'    => $controller,
                     'action'        => $this->method,
-                    'params'        => $params,
-                    'param_mode'    => $this->config['default_dispatch_param_mode']
+                    'params'        => $params ?? [],
+                    'param_mode'    => $param_mode
                 ];
             }
         }
@@ -170,7 +175,7 @@ class Rest extends App
                             'controller'    => $controller,
                             'action'        => $action,
                             'params'        => $dispatch[1],
-                            'param_mode'    => $dispatch[2]
+                            'param_mode'    => 1
                         ];
                     }
                 }
@@ -201,7 +206,7 @@ class Rest extends App
                         'controller'    => $controller,
                         'action'        => $action,
                         'params'        => $dispatch[1],
-                        'param_mode'    => $dispatch[2]
+                        'param_mode'    => 2
                     ];
                 }
                 throw new \Exception("Route class $class not exists");
@@ -229,7 +234,7 @@ class Rest extends App
                                         'controller'    => $controller,
                                         'action'        => $action,
                                         'params'        => $dispatch[1],
-                                        'param_mode'    => $dispatch[2]
+                                        'param_mode'    => 2
                                     ];
                                 }
                             }

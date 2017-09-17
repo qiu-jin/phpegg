@@ -28,7 +28,9 @@ class Http
 
     public function query($name, $client_methods = null)
     {
-        return new query\Rest($this, $name, $client_methods);
+        $ns_method = $this->config['ns_method'] ?? 'ns';
+        $filter_method = $this->config['filter_method'] ?? 'filter';
+        return new query\Http($this, $name, $ns_method, $filter_method,$client_methods);
     }
     
     public function call($method, $path, $filters, $body, $client_methods)

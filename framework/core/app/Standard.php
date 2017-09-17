@@ -25,7 +25,7 @@ class Standard extends App
         // 视图模版文件名是否转为下划线风格，0否，1是
         'template_to_snake' => 1,
         // URL query参数是否转为控制器方法参数，0否，1是
-        'query_to_params' => 0,
+        'query_to_kv_params' => 0,
         
         /* 默认调度的参数模式
          * 0 无参数
@@ -38,7 +38,7 @@ class Standard extends App
         // 默认调度的控制器缺省方法
         'default_dispatch_default_action' => 'index',
         // 默认调度的路径转为驼峰风格
-        'default_dispatch_to_camel' => '-',
+        'default_dispatch_to_camel' => null,
         
         // 路由调度的路由表
         'route_dispatch_routes' => null,
@@ -73,25 +73,27 @@ class Standard extends App
             case 1:
                 return $controller->$action(...$params);
             case 2:
-                $parameters = [];
-                if (!isset($this->ref_method)) {
-                    $this->ref_method =  new \ReflectionMethod($controller, $action);
+                if ($this->config['query_to_kv_params'] && $_GET) {
+                    $params = array_merge($_GET, $params);
                 }
-                if ($this->ref_method->getnumberofparameters() > 0) {
-                    if ($this->config['query_to_params']) {
-                        $params = array_merge($_GET, $params);
+                if ($params) {
+                    if (!isset($this->ref_method)) {
+                        $this->ref_method =  new \ReflectionMethod($controller, $action);
                     }
-                    foreach ($this->ref_method->getParameters() as $param) {
-                        if (isset($params[$param->name])) {
-                            $parameters[] = $params[$param->name];
-                        } elseif($param->isDefaultValueAvailable()) {
-                            $parameters[] = $param->getdefaultvalue();
-                        } else {
-                            $this->abort(404);
+                    if ($this->ref_method->getnumberofparameters() > 0) {
+                        foreach ($this->ref_method->getParameters() as $param) {
+                            if (isset($params[$param->name])) {
+                                $parameters[] = $params[$param->name];
+                            } elseif($param->isDefaultValueAvailable()) {
+                                $parameters[] = $param->getdefaultvalue();
+                            } else {
+                                $this->abort(404);
+                            }
                         }
+                        return $this->ref_method->invokeArgs($controller, $parameters);
                     }
                 }
-                return $this->ref_method->invokeArgs($controller, $parameters);
+                return $controller->$action();
             default:
                 return $controller->$action();
         }
@@ -136,9 +138,12 @@ class Standard extends App
      */
     protected function defaultDispatch($path) 
     {
-        $params = [];
         $count = count($path);
         $depth = $this->config['controller_depth'];
+        $param_mode = $this->config['default_dispatch_param_mode'];
+        if ($this->config['query_to_kv_params'] && $param_mode === 0) {
+            $param_mode = 2;
+        }
         if (empty($path)) {
             if (isset($this->config['default_dispatch_index'])) {
                 $class_array = explode('/', $this->config['default_dispatch_index']);
@@ -151,11 +156,11 @@ class Standard extends App
                         $action = array_pop($path);
                         $class_array = $path;
                     } else {
-                        if ($this->config['default_dispatch_param_mode'] > 0) {
+                        if ($param_mode > 0) {
                             $action = $path[$depth];
                             $class_array = array_slice($path, 0, $depth);
                             $params = array_slice($path, $depth+1);
-                            if ($this->config['default_dispatch_param_mode'] === 2) {
+                            if ($param_mode === 2) {
                                 $params = $this->getKvParams($params);
                             }
                         }
@@ -165,7 +170,7 @@ class Standard extends App
                     $class_array = $path;
                 }
             } elseif ($count > 1) {
-                if ($this->config['default_dispatch_param_mode'] !== 0) {
+                if ($param_mode !== 0) {
                     throw new \Exception('If param_mode > 0, must controller_depth > 0');
                 }
                 $action = array_pop($path);
@@ -184,8 +189,8 @@ class Standard extends App
                     return [
                         'controller'    => $controller,
                         'action'        => $action,
-                        'params'        => $params,
-                        'param_mode'    => $this->config['default_dispatch_param_mode']
+                        'params'        => $params ?? [],
+                        'param_mode'    => $param_mode
                     ];
                 }
             }
@@ -218,7 +223,7 @@ class Standard extends App
                         'controller'    => $controller,
                         'action'        => $action,
                         'params'        => $dispatch[1],
-                        'param_mode'    => $dispatch[2]
+                        'param_mode'    => 2
                     ];
                 }
                 throw new \Exception("Route class $class not exists");
@@ -245,7 +250,7 @@ class Standard extends App
                                         'controller'    => $controller,
                                         'action'        => $action,
                                         'params'        => $dispatch[1],
-                                        'param_mode'    => $dispatch[2]
+                                        'param_mode'    => 2
                                     ];
                                 }
                             }

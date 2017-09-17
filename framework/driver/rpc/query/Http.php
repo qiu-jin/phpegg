@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\rpc\query;
 
-class Rest
+class Http
 {
     protected $ns;
     protected $rpc;
@@ -36,9 +36,9 @@ class Rest
             $this->filter($params);
             return $this;
         }
+        $this->ns[] = $method;
         $body = $params ? $this->setParams($params) : null;
-        $path = implode('/', $this->ns)."/$method";
-        return $this->rpc->call(isset($params) ? 'POST' : 'GET', $path, $this->filter, $body, $this->client_methods);
+        return $this->rpc->call(isset($params) ? 'POST' : 'GET', implode('/', $this->ns), $this->filter, $body, $this->client_methods);
     }
     
     protected function filter($params)
