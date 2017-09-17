@@ -20,10 +20,12 @@ class Standard extends App
         'controller_depth' => 1,
         // 控制器公共路径
         'controller_ns' => 'controller',
+        
         // 是否启用视图，0否，1是
         'enable_view' => 0,
         // 视图模版文件名是否转为下划线风格，0否，1是
         'template_to_snake' => 1,
+        
         // URL query参数是否转为控制器方法参数，0否，1是
         'query_to_kv_params' => 0,
         // 缺少的参数设为null值
@@ -129,13 +131,16 @@ class Standard extends App
         }
     }
     
+    /*
+     * 默认响应输出
+     */
     protected function response($return = [])
     {
         $this->config['enable_view'] ? Response::view($this->getTemplate(), $return, false) : Response::json($return, false);
     }
     
     /*
-     * 获取试图模版
+     * 获取视图模版
      */
     protected function getTemplate()
     {
@@ -158,9 +163,6 @@ class Standard extends App
         $count = count($path);
         $depth = $this->config['controller_depth'];
         $param_mode = $this->config['default_dispatch_param_mode'];
-        if ($this->config['query_to_kv_params'] && $param_mode === 0) {
-            $param_mode = 2;
-        }
         if (empty($path)) {
             if (isset($this->config['default_dispatch_index'])) {
                 $class_array = explode('/', $this->config['default_dispatch_index']);

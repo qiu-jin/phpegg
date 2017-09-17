@@ -111,9 +111,6 @@ class Rest extends App
         $count = count($path);
         $depth = $this->config['controller_depth'];
         $param_mode = $this->config['default_dispatch_param_mode'];
-        if ($this->config['query_to_kv_params'] && $param_mode === 0) {
-            $param_mode = 2;
-        }
         if ($depth > 0) {
             if ($count < $depth) {
                 return false;
