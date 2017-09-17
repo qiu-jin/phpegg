@@ -24,10 +24,21 @@ class Mongo
     {
         return $this->findRaw($filter, $options)->toArray();
     }
+    
+    public function count($filter = [], $options = [])
+    {
+        return count($this->findRaw($filter, $options));
+    }
 
     public function insert($data)
     {
         return $this->insertRaw($data)->getInsertedCount();
+    }
+    
+    public function save($id, $data)
+    {
+        $update = $this->updateRaw(['_id' => $id], $data, ['upsert' => true]);
+        return $update->getUpsertedCount() ?: $update->getModifiedCount();
     }
     
     public function update($data, $filter = [], $options = [])
@@ -35,16 +46,14 @@ class Mongo
         return $this->updateRaw($data, $filter, $options)->getModifiedCount();
     }
     
-    public function delete($filter = [], $options = [])
+    public function delete($filter, $options = [])
     {
-        return $this->deleteRaw($filter, $options)->getModifiedCount();
+        if (!is_array($filter)) {
+            $filter = ['_id' => $filter];
+        }
+        return $this->deleteRaw($filter, $options)->getDeletedCount();
     }
-    
-    public function drop()
-    {
-        
-    }
-    
+
     public function getRaw($id)
     {
         return $this->manager->executeQuery($this->ns, new Query(['_id' => $id]));

@@ -11,7 +11,7 @@ class Mongo
     
     public function __construct($config)
     {
-        $this->manager = new Manager('mongodb://'.$config['host'].':'.($config['port'] ?? 27017));
+        $this->manager = new Manager($config['uri'], $config['uri_options'] ?? [], $config['driver_options'] ?? []);
         if (isset($config['dbname'])) {
             $this->dbname = $config['dbname'];
         }
