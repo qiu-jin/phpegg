@@ -3,6 +3,10 @@ namespace framework\driver\search;
 
 use framework\core\http\Client;
 
+/*
+ * https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html
+ */
+
 class Elastic
 {
     protected $host;
@@ -29,12 +33,12 @@ class Elastic
         return new query\Elastic("$this->host:$this->port/$name/$this->default_type");
     }
     
-    public function bulkRaw($query)
+    public function bulk($query)
     {
         return Client::post("$this->host:$this->port")->json($query)->json;
     }
     
-    public function getMultiRaw($query)
+    public function getMulti($query)
     {
         return Client::get("$this->host:$this->port/_mget")->json($query)->json;
     }

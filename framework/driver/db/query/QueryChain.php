@@ -11,10 +11,10 @@ abstract class QueryChain
     ];
     protected $builder;
     
-	public function __construct(...$params)
+	public function __construct($db, ...$params)
     {
-        $this->db = array_shift($params);
-        $this->builder = $this->db::BUILDER;
+        $this->db = $db;
+        $this->builder = $db::BUILDER;
         $this->init(...$params);
     }
     

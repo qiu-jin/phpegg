@@ -23,6 +23,11 @@ class Elastic
         return isset($result['hits']['hits']) ? array_column($result['hits']['hits'], '_source') : null;
     }
     
+    public function put($id, $data)
+    {
+        return $this->putRaw(...$params)['created'] ?? false;
+    }
+    
     public function index(...$params)
     {
         return $this->indexRaw(...$params)['created'] ?? false;
@@ -45,46 +50,54 @@ class Elastic
     
     public function getRaw($id)
     {
-        return $this->send('GET', "/$id");
+        return $this->send('GET', $id);
     }
     
     public function searchRaw($query)
     {
-        return is_array($query) ? $this->send('POST', '/_search', ['query' => $query]) : $this->send('GET', '/_search?q='.$query) ;
+        if (is_array($query)) {
+            return $this->send('POST', '_search', ['query' => $query]);
+        } else {
+            return $this->send('GET', '_search?q='.$query) ;
+        }
     }
     
-    public function indexRaw(...$params)
+    public function putRaw($id, $data)
     {
-        $count = count($params);
-        if ($count === 1) {
-            return $this->send('POST', null, $params[0]);
-        } elseif ($count === 2) {
-            return $this->send('PUT', '/'.$params[0], $params[1]);
-        }
+        return $this->send('PUT', $id, $data);
+    }
+    
+    public function indexRaw($data)
+    {
+        return $this->send('POST', null, $data);
     }
     
     public function updateRaw($query, $data)
     {
         if (is_array($query)) {
             $data['query'] = $query;
-            return $this->send('POST', '/_update_by_query', $data);
+            return $this->send('POST', '_update_by_query', $data);
         }
-        return $this->send('POST', "/$find/_update", $data);
-    }
-    
-    public function getMultiRaw(...$params)
-    {
-        return $this->send('GET', "/_mget", count($params) > 1 ? ['ids' => $params] : $params[0]);
+        return $this->send('POST', "$query/_update", $data);
     }
     
     public function deleteRaw($query)
     {
-        return is_array($query) ? $this->send('POST', '/_delete_by_query', ['query' => $query]) : $this->send('DELETE', "/$query");
+        return is_array($query) ? $this->send('POST', '_delete_by_query', ['query' => $query]) : $this->send('DELETE', $query);
+    }
+    
+    public function getMultiRaw(...$params)
+    {
+        return $this->send('GET', "_mget", count($params) > 1 ? ['ids' => $params] : $params[0]);
     }
 
     public function send($method, $query = null, $data = null)
     {
-        $client = new Client($method, "$this->url/$query");
+        $url = $this->url;
+        if ($query) {
+            $url .= "/$query";
+        }
+        $client = new Client($method, $url);
         if ($data) {
             $client->json($data);
         }

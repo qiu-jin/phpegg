@@ -13,8 +13,6 @@ class Grpc
     protected $host;
     protected $port;
     protected $prefix;
-    protected $bind_params = true;
-    protected $bind_params_name = [];
     
     public function __construct($config)
     {
@@ -22,7 +20,6 @@ class Grpc
         $this->port = $config['port'];
         Loader::add($config['services']);
         isset($config['prefix']) && $this->prefix = $config['prefix'];
-        isset($config['bind_params']) && $this->bind_params = $config['bind_params'];
     }
     
     public function __get($name)
@@ -49,19 +46,11 @@ class Grpc
         if (!isset($this->rpc[$class])) {
             $this->rpc[$class] = new $class("$this->host:$this->port", ['credentials' => \Grpc\ChannelCredentials::createInsecure()]);
         }
-        if ($params) {
-            if ($this->bind_params) {
-                $param = $this->bindParams($class, $method, $params);
-            } else {
-                $param = $params[0];
-            }
-            list($reply, $status) = $this->rpc[$class]->$method($param)->wait();
-        } else {
-            list($reply, $status) = $this->rpc[$class]->$method()->wait();
-        }
+        list($reply, $status) = $this->rpc[$class]->$method(...$params)->wait();
         return $reply;
     }
     
+    /*
     protected function bindParams($class, $method, $params)
     {
         if (!isset($this->bind_params_name[$class][$method])) {
@@ -75,4 +64,5 @@ class Grpc
         }
         return $request;
     }
+    */
 }

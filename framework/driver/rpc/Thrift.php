@@ -20,8 +20,6 @@ class Thrift
     protected $protocol;
     protected $transport;
     protected $tmultiplexed = false;
-    protected $bind_params = true;
-    protected $bind_params_name = [];
     
     public function __construct($config)
     {
@@ -38,7 +36,6 @@ class Thrift
         Loader::add($config['services']);
         isset($config['types']) && Loader::add($config['types'], 'files');
         isset($config['prefix']) && $this->prefix = $config['prefix'];
-        isset($config['bind_params']) && $this->bind_params = $config['bind_params'];
         isset($config['tmultiplexed']) && $this->tmultiplexed = $config['tmultiplexed'];
     }
 
@@ -71,12 +68,10 @@ class Thrift
                 $this->rpc[$class] = new $class($this->protocol);
             }
         }
-        if ($this->bind_params && $params) {
-            $this->bindParams($class, $method, $params);
-        }
         return $this->rpc[$class]->$method(...$params);
     }
     
+    /*
     protected function bindParams($class, $method, &$params)
     {
         if (isset($this->bind_params_name[$class][$method])) {
@@ -99,6 +94,7 @@ class Thrift
             }
         }
     }
+    */
     
     public function __destruct()
     {

@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\db\builder;
 
-class Mssql extends Builder
+class Sqlsrv extends Builder
 {
     const KEYWORD_ESCAPE_LEFT = '[';
     const KEYWORD_ESCAPE_RIGHT = ']';

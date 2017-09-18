@@ -3,26 +3,30 @@ namespace framework\driver\data;
 
 /*
  * http://datastax.github.io/php-driver/
- *
- * http://docs.scylladb.com/
  */
 
 class Cassandra
 {
     protected $session;
+    protected $keyspace;
     
     public function __construct($config)
     {
-        if (isset($config['driver'])) {
-            unset($config['driver']);
-        }
         if (isset($config['ssl'])) {
             $config['ssl'] = $this->build(\Cassandra::ssl(), $config['ssl']);
+        }
+        if (isset($config['driver'])) {
+            unset($config['driver']);
         }
         $this->session = $this->build(\Cassandra::cluster(), $config)->connect();
     }
     
     public function __get($name)
+    {
+        return $this->table($name);
+    }
+    
+    public function table($name)
     {
         return new query\Cassandra($this, $name);
     }
@@ -41,12 +45,7 @@ class Cassandra
     protected function build($object, $option)
     {
         foreach ($option as $key => $value) {
-            $method = 'with'.ucfirst($key);
-            if (is_array($value)) {
-                $ssl->$method(...$value);
-            } else {
-                $ssl->$method($value);
-            }
+            $ssl->{'with'.ucfirst($key)}(...(array) $value);
         }
         $object->build();
         return $object;

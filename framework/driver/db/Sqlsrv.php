@@ -1,9 +1,9 @@
 <?php
 namespace framework\driver\db;
 
-class Mssql extends Pdo
+class Sqlsrv extends Pdo
 {
-    const BUILDER = builder\Mssql::class;
+    const BUILDER = builder\Sqlsrv::class;
     
     protected function dsn($config)
     {

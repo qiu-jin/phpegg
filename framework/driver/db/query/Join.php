@@ -155,7 +155,7 @@ class Join extends QueryChain
                     }
                 }
             } else {
-                $fields[] = $this->builder::keywordEscape("$table")."*";
+                $fields[] = $this->builder::keywordEscape("$table").".*";
             } 
         }
         return $fields;
