@@ -28,16 +28,11 @@ class Micro extends App
     
     public function route($role, callable $call, $method = null)
     {
-        $index = count($this->dispatch['route']['call']);
-        if ($method) {
-            if (!in_array($method, $this->config['route_dispatch_http_methods'], true)) {
-                return;
-            }
-            $this->dispatch['route']['rule'][$role][$method] = $index;
-        } else {
-            $this->dispatch['route']['rule'][$role] = $index;
+        if ($method === null) {
+            $this->dispatch['route'][$role] = $call;
+        } elseif (in_array($method, $this->config['route_dispatch_http_methods'], true)) {
+            $this->dispatch['route'][$role][$method] = $call;
         }
-        $this->dispatch['route']['call'][] = $call;
     }
     
     protected function dispatch()
@@ -53,7 +48,7 @@ class Micro extends App
                 return $dispatch[0](...$dispatch[1]);
             }
         }
-        $this->abort(404);
+        self::abort(404);
     }
     
     protected function error($code = null, $message = null)
@@ -72,9 +67,9 @@ class Micro extends App
             list($controller, $action, $params) = $this->dispatch['default'];
             $class = 'app\\'.$this->config['controller_ns'].'\\'.$controller;
             if ($action[0] !== '_' && Loader::importPrefixClass($class)) {
-                $controller = new $class;
-                if (is_callable([$controller, $action])) {
-                    return [[$controller, $action], $params];
+                $call = [new $class, $action];
+                if (is_callable($call)) {
+                    return [$call, $params];
                 }
             }
         }
@@ -84,15 +79,14 @@ class Micro extends App
     protected function routeDispatch()
     {
         if ($this->dispatch['route']) {
-            $result = Router::route(Request::pathArr(), $this->dispatch['route']['rule'], Request::method());
+            $result = Router::route(Request::pathArr(), $this->dispatch['route'], Request::method());
             if ($result) {
-                $closure = $this->dispatch['route']['call'][$result[0]];
                 if ($this->config['route_dispatch_enable_getter']) {
-                    return [\Closure::bind($closure, new class () {
+                    return [\Closure::bind($result[0], new class () {
                         use Getter;
                     }), $result[1]];
                 } else {
-                    return [$closure, $result[1]];
+                    return [$result[0], $result[1]];
                 }
             }
         }
