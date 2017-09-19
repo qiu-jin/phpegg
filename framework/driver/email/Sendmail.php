@@ -13,10 +13,10 @@ class Sendmail extends Email
         }
     }
     
-    protected function handle()
+    public function handle($options)
     {
-        $subject = Mime::encodeHeader(Arr::pop($this->option, 'subject'));
-        list($addrs, $mime) = Mime::build($this->option);
+        $subject = Mime::encodeHeader(Arr::pop($options, 'subject'));
+        list($addrs, $mime) = Mime::build($options);
         list($header, $content) = explode(Mime::EOL.Mime::EOL, $mime, 2);
         return mail(implode(',', $addrs), Mime::encodeHeader($subject), $content, $header);
     }

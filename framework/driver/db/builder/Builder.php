@@ -133,7 +133,7 @@ class Builder
             if ($order[0] === false) {
                 $items[] = static::ORDER_RANDOM;
             } else {
-                $field = isset($order[2]) ? self::keywordEscapePair($order[0], $order[0]) : self::keywordEscape($order[0]);
+                $field = isset($order[2]) ? self::keywordEscapePair($order[2], $order[0]) : self::keywordEscape($order[0]);
                 $items[] = $order[1] ? "$field DESC" : $field;
             }
         }

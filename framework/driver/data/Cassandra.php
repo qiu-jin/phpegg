@@ -8,17 +8,17 @@ namespace framework\driver\data;
 class Cassandra
 {
     protected $session;
-    protected $keyspace;
     
     public function __construct($config)
     {
         if (isset($config['ssl'])) {
-            $config['ssl'] = $this->build(\Cassandra::ssl(), $config['ssl']);
+            $config['ssl'] = $this->initBuild(\Cassandra::ssl(), $config['ssl']);
         }
         if (isset($config['driver'])) {
             unset($config['driver']);
         }
-        $this->session = $this->build(\Cassandra::cluster(), $config)->connect();
+        //$keyspace = 
+        $this->session = $this->initBuild(\Cassandra::cluster(), $config)->connect();
     }
     
     public function __get($name)
@@ -42,7 +42,7 @@ class Cassandra
         }
     }
     
-    protected function build($object, $option)
+    protected function initBuild($object, $option)
     {
         foreach ($option as $key => $value) {
             $ssl->{'with'.ucfirst($key)}(...(array) $value);

@@ -35,7 +35,7 @@ class Mongo
         return $this->insertRaw($data)->getInsertedCount();
     }
     
-    public function save($id, $data)
+    public function upsert($id, $data)
     {
         $update = $this->updateRaw(['_id' => $id], $data, ['upsert' => true]);
         return $update->getUpsertedCount() ?: $update->getModifiedCount();

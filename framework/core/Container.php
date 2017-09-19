@@ -96,11 +96,12 @@ class Container
                 }
                 throw new Exception("Alias same name");
             case 'object':
-                if (is_callable($value)) {
+                if ($value instanceof \Closure) {
                     self::$providers['closure'][$name] = $value;
                 }
                 break;
         }
+        throw new Exception("Bind illegal type to $name");
     }
     
     /*

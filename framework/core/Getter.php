@@ -12,12 +12,12 @@ trait Getter
             } elseif (is_array($value)) {
                 $class = array_shift($value);
                 return $this->$name = new $class(...$value);
-            } elseif (is_a($value, 'Closure')) {
+            } elseif ($value instanceof \Closure) {
                 return $this->$name = $value();
             }
         } elseif ($object = Container::make($name)) {
             return $this->$name = $object;
         }
-        throw new \exception\GetterException('Undefined property: '.__CLASS__.'::$'.$name, 'GetterException');
+        throw new \Exception('Undefined property: '.__CLASS__.'::$'.$name);
     }
 }

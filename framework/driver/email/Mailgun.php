@@ -7,7 +7,7 @@ class Mailgun extends Email
 {
     protected $acckey;
     protected $domain;
-    protected static $host = 'https://api.mailgun.net/v3/';
+    protected static $host = 'https://api.mailgun.net/v3';
     
     protected function init($config)
     {
@@ -15,35 +15,35 @@ class Mailgun extends Email
         $this->acckey = $config['acckey'];
     }
 
-    protected function handle()
+    public function handle($options)
     {
         $form = [
-            'subject'   => $this->option['subject'],
-            'to'        => $this->buildAddrs($this->option['to']),
-            'from'      => $this->buildAddr($this->option['from'])
+            'subject'   => $options['subject'],
+            'to'        => $this->buildAddrs($options['to']),
+            'from'      => $this->buildAddr($options['from'])
         ];
-        if (isset($this->option['cc'])) {
-            $form['cc'] = $this->buildAddrs($this->option['cc']);
+        if (isset($options['cc'])) {
+            $form['cc'] = $this->buildAddrs($options['cc']);
         }
-        if (isset($this->option['bcc'])) {
-            $form['bcc'] = $this->buildAddrs($this->option['bcc']);
+        if (isset($options['bcc'])) {
+            $form['bcc'] = $this->buildAddrs($options['bcc']);
         }
-        if (empty($this->option['ishtml'])) {
-            $form['text'] = $this->option['content'];
+        if (empty($options['ishtml'])) {
+            $form['text'] = $options['content'];
         } else {
-            $form['html'] = $this->option['content'];
+            $form['html'] = $options['content'];
         }
-        if (isset($this->option['option'])) {
-            $form = array_merge($this->option['option'], $from);
+        if (isset($options['option'])) {
+            $form = array_merge($options['option'], $from);
         }
-        $client = Client::post(self::$host.$this->domain.'/messages')
+        $client = Client::post(self::$host."/$this->domain/messages")
                         ->header('Authorization', 'Basic '.base64_encode('api:'.$this->acckey))
                         ->form($form);
-        if (isset($this->option['attach'])) {
-            if (empty($this->option['attach_is_buffer'])) {
-                $client->file('attachments', ...end($this->option['attach']));
+        if (isset($options['attach'])) {
+            if (empty($options['attach_is_buffer'])) {
+                $client->file('attachments', ...end($options['attach']));
             } else {
-                $client->buffer('attachments', ...end($this->option['attach']));
+                $client->buffer('attachments', ...end($options['attach']));
             }
         }
         $result = $client->json;

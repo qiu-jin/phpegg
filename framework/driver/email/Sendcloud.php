@@ -7,67 +7,63 @@ class Sendcloud extends Email
 {
     protected $acckey;
     protected $seckey;
-    protected $template;
-    protected static $host = 'http://api.sendcloud.net/apiv2/mail/';
+    protected $templates;
+    protected static $host = 'http://api.sendcloud.net/apiv2/mail';
     
     protected function init($config)
     {
         $this->acckey = $config['acckey'];
         $this->seckey = $config['seckey'];
-        if (isset($config['template'])) {
-            $this->template  = $config['template'];
+        if (isset($config['templates'])) {
+            $this->templates  = $config['templates'];
         }
     }
     
-    protected function handle()
+    public function __call($method, $params)
+    {
+        return (new query\Sendcloud($this, [
+            'from'      => $this->from,
+            'templates' => $this->templates
+        ]))->$method(...$params);
+    }
+    
+    public function handle($options)
     {
         $from = [
             'apiUser'   => $this->acckey,
             'apiKey'    => $this->seckey,
-            'from'      => $this->option['from'][0],
-            'to'        => implode(';', array_column($this->option['to'], 0))
+            'from'      => $options['from'][0],
+            'to'        => implode(';', array_column($options['to'], 0))
         ];
-        if (isset($this->option['from'][1])) {
-            $from['fromName'] = $this->option['from'][1];
+        if (isset($options['from'][1])) {
+            $from['fromName'] = $options['from'][1];
         }
-        if (isset($this->option['cc'])) {
-            $from['cc'] = implode(';', array_column($this->option['cc'], 0));
+        if (isset($options['cc'])) {
+            $from['cc'] = implode(';', array_column($options['cc'], 0));
         }
-        if (isset($this->option['bcc'])) {
-            $from['bcc'] = implode(';', array_column($this->option['bcc'], 0));
+        if (isset($options['bcc'])) {
+            $from['bcc'] = implode(';', array_column($options['bcc'], 0));
         }
-        if (isset($this->option['template'])) {
+        if (isset($options['sendtemplate'])) {
             $method = 'sendtemplate';
-            list($template, $vars) = $this->option['template'];
-            if (isset($this->template[$template])) {
-                if ($vars) {
-                    foreach ($vars as $k => $v) {
-                        $xsmtpapi['sub']['%'.$k.'%'] = array($v);
-                    }
-                    $from['xsmtpapi'] = json_encode($xsmtpapi);
-                }
-                $from['templateInvokeName'] = $this->template[$template];
-            } else {
-                return error('Template not exists');;
-            }
         } else {
             $method = 'send';
-            $form['subject'] = $this->option['subject'];
-            if (empty($this->option['ishtml'])) {
-                $form['plain'] = $this->option['content'];
+            $form['subject'] = $options['subject'];
+            if (empty($options['ishtml'])) {
+                $form['plain'] = $options['content'];
             } else {
-                $form['html'] = $this->option['content'];
+                $form['html'] = $options['content'];
             }
         }
-        if (isset($this->option['option'])) {
-            $from = array_merge($this->option['option'], $from);
+        if (isset($options['options'])) {
+            $from = array_merge($options['options'], $from);
         }
-        $client = Client::post(self::$host.$method)->form($form);
-        if (isset($this->option['attach'])) {
-            if (empty($this->option['attach_is_buffer'])) {
-                $client->file('attachments', ...end($this->option['attach']));
+        $client = Client::post(self::$host."/$method")->form($form);
+        if (isset($options['attach'])) {
+            if (empty($options['attach_is_buffer'])) {
+                $client->file('attachments', ...end($options['attach']));
             } else {
-                $client->buffer('attachments', ...end($this->option['attach']));
+                $client->buffer('attachments', ...end($options['attach']));
             }
         }
         $data = $client->json;
@@ -75,14 +71,5 @@ class Sendcloud extends Email
             return error($data['message'] ?? $client->error);
         }
         return true;
-    }
-    
-    public function template($template, $vars = null, $api_template = false)
-    {
-        if ($api_template) {
-            $this->option['template'] = [$template, $vars];
-            return $this;
-        }
-        return parent::template($template, $vars);
     }
 }

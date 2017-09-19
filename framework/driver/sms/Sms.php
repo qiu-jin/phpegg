@@ -8,6 +8,12 @@ abstract class Sms
     protected $signname;
     protected $template;
     
+    /* 
+     * 发送短信
+     * $to 接受短信手机号
+     * $$template 短信模版id
+     * $$data 短信内容变量
+     */
     abstract public function send($to, $template, $data);
     
     public function __construct(array $config)

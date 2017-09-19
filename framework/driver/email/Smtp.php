@@ -21,15 +21,11 @@ class Smtp extends Email
         $this->password = $config['password'];
     }
     
-    protected function handle()
+    public function handle($options)
     {
         if ($this->connect()) {
-            try {
-                list($addrs, $mime) = Mime::build($this->option);
-            } catch (\Exception $e) {
-                return error($e->getMessage()); 
-            }
-            $data = $this->command('MAIL FROM: <'.$this->option['from'][0].'>');
+            list($addrs, $mime) = Mime::build($options);
+            $data = $this->command('MAIL FROM: <'.$options['from'][0].'>');
             if (substr($data, 0, 3) != '250') {
                 return error($data);
             }
