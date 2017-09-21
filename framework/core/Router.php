@@ -13,6 +13,7 @@ class Router
         'email' => 'Validator::email',
         'mobile' => 'Validator::mobile',
     ];
+    private static $replace_call = false;
     
     public static function init()
     {
@@ -23,41 +24,30 @@ class Router
             self::$filters = array_merge(self::$filters, $config['filters']);
         }
     }
-
+    
     /*
      * 路由调度
      */
-    public static function dispatch($path, $ruotes, $method = null)
+    public static function dispatch($path, $ruotes, $param_mode, $method = null)
     {
         $result = self::route($path, $ruotes, $method);
         if ($result) {
-            list($call, $macth) = $result;
-            $pair = explode('?', $call, 2);
-            $unit = explode('/', $pair[0]);
-            if (count($macth) > 0) {
-                foreach ($unit as $i => $v) {
-                    if ($v[0] == '$' && is_numeric($v[1])) $unit[$i] = $macth[$v[1]-1];
-                }
-                if (isset($pair[1])) {
-                    parse_str($pair[1],$param);
-                    if (count($param) > 0) {
-                        foreach ($param as $k => $v) {
-                            if ($v[0] == '$' && is_numeric($v[1])) {
-                                $params[$k] = $macth[$v[1]-1];
-                            } else {
-                                $params[$k] = $v;
-                            }
-                        }
-                    }
+            list($call_role, $macth) = $result;
+            if (preg_match('/^(.+?)(\((.*?)\))?$/', $call_role, $call_match)) {
+                $call = self::$replace_call ? self::replaceCall($call_match[1], $macth) : $call_match[1];
+                if (!$param_mode || empty($call_match[3])) {
+                    $params = [];
                 } else {
-                    $params = $macth;
+                    $param_method = $param_mode === 2 ? 'parseKvParams' : 'parseListParams';
+                    $params = self::{$param_method}($call_match[3], $macth);
                 }
+                return [$call, $params];
             }
-            return [$unit, $params ?? []];
+            throw new Exception('Illegal start call');
         }
         return false;
     }
-    
+
     public static function route($path, $ruotes, $method = null)
     {
         if (isset($ruotes['/'])) {
@@ -154,5 +144,51 @@ class Router
     public static function addFilter($name, $filter)
     {
         self::$filters[$name] = $filter;
+    }
+    
+    protected static function replaceCall($call, $macth)
+    {
+        return preg_replace_callback('/\$(\d)/', $call, function ($macthes) use ($macth) {
+            if (isset($macth[$macthes[1]])) {
+                return $macth[$macthes[1]];
+            }
+            throw new Exception('Illegal start call');
+        });
+    }
+    
+    protected static function parseListParams($rules, $macth)
+    {
+        $params = [];
+        foreach (explode(',', $rules) as $rule) {
+            $rule = trim($rule);
+            if ($rule[0] === '$') {
+                $index = substr($rule, 1)-1;
+                if (isset($macth[$index])) {
+                    $params[] = $macth[$index];
+                } 
+            }
+        }
+        return $params;
+    }
+    
+    protected static function parseKvParams($rules, $macth)
+    {
+        $params = [];
+        foreach (explode(',', $rules) as $rule) {
+            list($k, $v) = explode('=', trim($rule));
+            $k = trim($k);
+            $v = trim($v);
+            if ($v[0] === '$') {
+                $index = substr($v, 1)-1;
+                if (isset($macth[$index])) {
+                    $params[$k] = $macth[$index];
+                } else {
+                    break;
+                }
+            } else {
+                $params[$k] = $v;
+            }
+        }
+        return $params;
     }
 }

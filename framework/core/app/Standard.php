@@ -36,7 +36,7 @@ class Standard extends App
          * 1 循序参数
          * 2 键值参数
          */
-        'default_dispatch_param_mode' => 0,
+        'default_dispatch_param_mode' => 1,
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
         // 默认调度的控制器缺省方法
@@ -44,7 +44,13 @@ class Standard extends App
         // 默认调度的路径转为驼峰风格
         'default_dispatch_to_camel' => null,
         
-        // 路由调度的路由表
+        /* 路由调度的参数模式
+         * 0 无参数
+         * 1 循序参数
+         * 2 键值参数
+         */
+        'route_dispatch_param_mode' => 1,
+        // 路由调度的路由表，如果值为字符串则作为PHP文件include
         'route_dispatch_routes' => null,
         // 路由调启是否用动作路由
         'route_dispatch_action_route' => 0,
@@ -73,49 +79,46 @@ class Standard extends App
     protected function handle()
     {
         extract($this->dispatch, EXTR_SKIP);
-        switch ($param_mode) {
-            case 1:
-                if ($this->config['missing_params_to_null']) {
-                    $ref_method = $this->ref_method ?? new \ReflectionMethod($controller, $action);
-                    $method_num = $ref_method->getnumberofparameters();
-                    $method_cou = count($params);
-                    if ($method_num > $method_cou) {
-                        $parameters = $ref_method->getParameters();
-                        for ($i = $method_cou; $i < $method_num; $i++) {
-                            if ($parameters[$i]->isDefaultValueAvailable()) {
-                                $params[] = $parameters[$i]->getdefaultvalue();
-                            } else {
-                                $params[] = null;
-                            }
+        if ($param_mode) {
+            $ref_method = $this->ref_method ?? new \ReflectionMethod($controller, $action);
+            if ($param_mode === 1) {
+                $method_cou = count($params);
+                $method_num = $ref_method->getnumberofparameters();
+                if ($method_num > $method_cou) {
+                    $parameters = $ref_method->getParameters();
+                    for ($i = $method_cou; $i < $method_num; $i++) {
+                        if ($parameters[$i]->isDefaultValueAvailable()) {
+                            $params[] = $parameters[$i]->getdefaultvalue();
+                        } elseif ($this->config['missing_params_to_null']) {
+                            $params[] = null;
+                        } else {
+                            self::abort(500, 'Invalid params');
                         }
                     }
                 }
                 return $controller->$action(...$params);
-            case 2:
+            } elseif ($param_mode === 2) {
                 $new_params = [];
                 if ($this->config['query_to_kv_params'] && $_GET) {
                     $params = array_merge($_GET, $params);
                 }
-                if ($params || $this->config['missing_params_to_null']) {
-                    $ref_method = $this->ref_method ?? new \ReflectionMethod($controller, $action);
-                    if ($ref_method->getnumberofparameters() > 0) {
-                        foreach ($ref_method->getParameters() as $param) {
-                            if (isset($params[$param->name])) {
-                                $new_params[] = $params[$param->name];
-                            } elseif($param->isDefaultValueAvailable()) {
-                                $new_params[] = $param->getdefaultvalue();
-                            } elseif ($this->config['missing_params_to_null']) {
-                                $new_params[] = null;
-                            } else {
-                                throw new \Exception('Invalid params');
-                            }
+                if ($ref_method->getnumberofparameters() > 0) {
+                    foreach ($ref_method->getParameters() as $param) {
+                        if (isset($params[$param->name])) {
+                            $new_params[] = $params[$param->name];
+                        } elseif($param->isDefaultValueAvailable()) {
+                            $new_params[] = $param->getdefaultvalue();
+                        } elseif ($this->config['missing_params_to_null']) {
+                            $new_params[] = null;
+                        } else {
+                            self::abort(500, 'Invalid params');
                         }
                     }
                 }
                 return $controller->$action(...$new_params);
-            default:
-                return $controller->$action();
+            }
         }
+        return $controller->$action();
     }
     
     /*
@@ -222,30 +225,19 @@ class Standard extends App
      */
     protected function routeDispatch($path) 
     {
+        $param_mode = $this->config['route_dispatch_param_mode'];
         if ($this->config['route_dispatch_routes']) {
-            $dispatch = Router::dispatch($path, $this->config['route_dispatch_routes']);
+            $routes = $this->config['route_dispatch_routes'];
+            $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes), $param_mode);
             if ($dispatch) {
-                $action = array_pop($dispatch[0]);
-                $class = $this->ns.implode('\\', $dispatch[0]);
-                if (class_exists($class)) {
-                    $controller = new $class();
-                    $ref_method = new \ReflectionMethod($controller, $action);
-                    if (!$ref_method->isPublic()) {
-                        if ($ref_method->isProtected()) {
-                            $ref_method->setAccessible(true);
-                        } else {
-                            throw new \Exception("Route action $action() not exists");
-                        }
-                    }
-                    $this->ref_method = $ref_method;
-                    return [
-                        'controller'    => $controller,
-                        'action'        => $action,
-                        'params'        => $dispatch[1],
-                        'param_mode'    => 2
-                    ];
-                }
-                throw new \Exception("Route class $class not exists");
+                list($class, $action) = explode('::', $this->ns.$dispatch[0]);
+                $this->checkMethodAccessible($class, $action);
+                return [
+                    'controller'    => new $class,
+                    'action'        => $action,
+                    'params'        => $dispatch[1],
+                    'param_mode'    => $param_mode
+                ];
             }
         }
         if ($this->config['route_dispatch_action_route']) {
@@ -259,21 +251,15 @@ class Standard extends App
                     $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'];
                     if ($routes) {
                         $action_path = array_slice($path, $depth);
-                        $dispatch = Router::dispatch($action_path, $routes);
+                        $dispatch = Router::dispatch($action_path, $routes, $param_mode);
                         if ($dispatch) {
-                            if (count($dispatch[0]) === 1) {
-                                $action = $dispatch[0][0];
-                                $controller = new $class();
-                                if (is_callable([$controller, $action])) {
-                                    return [
-                                        'controller'    => $controller,
-                                        'action'        => $action,
-                                        'params'        => $dispatch[1],
-                                        'param_mode'    => 2
-                                    ];
-                                }
-                            }
-                            throw new \Exception("Route action $action() not exists");
+                            $this->checkMethodAccessible($class, $dispatch[0]);
+                            return [
+                                'controller'    => new $class,
+                                'action'        => $dispatch[0],
+                                'params'        => $dispatch[1],
+                                'param_mode'    => $param_mode
+                            ];
                         }
                     }
                 }
@@ -293,5 +279,17 @@ class Standard extends App
             $params[$path[$i]] = $path[$i+1] ?? null;
         }
         return $params;
+    }
+    
+    protected function checkMethodAccessible($controller, $action)
+    {
+        $this->ref_method = new \ReflectionMethod($controller, $action);
+        if (!$this->ref_method->isPublic()) {
+            if ($this->ref_method->isProtected()) {
+                $this->ref_method->setAccessible(true);
+            } else {
+                throw new \Exception("Route action $action() not exists");
+            }
+        }
     }
 }

@@ -107,7 +107,7 @@ class Inline extends App
         if ($this->config['route_dispatch_routes']) {
             $dispatch = Router::dispatch($path, $this->config['route_dispatch_routes']);
             if ($dispatch) {
-                $file = $this->dir.implode('/', $dispatch[0]);
+                $file = $this->dir.$dispatch[0];
                 if (is_php_file($file)) {
                     return ['file' => $file, 'params' => $dispatch[1]];
                 }

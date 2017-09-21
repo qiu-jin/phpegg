@@ -28,7 +28,7 @@ class Rest extends App
          */
         'default_dispatch_param_mode' => 0,
         // 默认调度下允许的HTTP方法
-        'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'],
+        'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/],
         
         // 资源调度默认路由表
         'resource_dispatch_routes'=> [
@@ -38,6 +38,12 @@ class Rest extends App
             '*/edit'=> ['GET' => 'edit']
         ],
         
+        /* 路由调度的参数模式
+         * 0 无参数
+         * 1 循序参数
+         * 2 键值参数
+         */
+        'route_dispatch_param_mode' => 1,
         // 路由调度的路由表
         'route_dispatch_routes' => null,
         // 路由调启是否用动作路由
@@ -160,15 +166,14 @@ class Rest extends App
         if (count($path) >= $depth) {
             $class = $this->ns.implode('\\', array_slice($path, 0, $depth));
             $action_path = array_slice($path, $depth);
-            $dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], $this->method);
-            if ($dispatch && count($dispatch[0]) === 1) {
-                $action = $dispatch[0][0];
-                if (class_exists($class)) {
+            $dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 1, $this->method);
+            if ($dispatch) {
+                if (Loader::importPrefixClass($class)) {
                     $controller = new $class();
-                    if (is_callable([$controller, $action])) {
+                    if (is_callable([$controller, $dispatch[0]])) {
                         return [
                             'controller'    => $controller,
-                            'action'        => $action,
+                            'action'        => $dispatch[0],
                             'params'        => $dispatch[1],
                             'param_mode'    => 1
                         ];
@@ -181,30 +186,22 @@ class Rest extends App
     
     protected function routeDispatch($path)
     {
+        $param_mode = $this->config['route_dispatch_param_mode'];
         if ($this->config['route_dispatch_routes']) {
-            $dispatch = Router::dispatch($path, $this->config['route_dispatch_routes'], $this->method);
+            $routes = $this->config['route_dispatch_routes'];
+            $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes), $param_mode, $this->method);
             if ($dispatch) {
-                $action = array_pop($dispatch[0]);
-                $class = $this->ns.implode('\\', $dispatch[0]);
-                if (class_exists($class)) {
-                    $controller = new $class();
-                    $ref_method = new \ReflectionMethod($controller, $action);
-                    if (!$ref_method->isPublic()) {
-                        if ($ref_method->isProtected()) {
-                            $ref_method->setAccessible(true);
-                        } else {
-                            throw new \Exception("Route action $action() not exists");
-                        }
-                    }
-                    $this->ref_method = $ref_method;
+                list($class, $action) = explode('::', $this->ns.$dispatch[0]);
+                $controller = new $class();
+                if (is_callable([$controller, $action])) {
                     return [
                         'controller'    => $controller,
                         'action'        => $action,
                         'params'        => $dispatch[1],
-                        'param_mode'    => 2
+                        'param_mode'    => $param_mode
                     ];
                 }
-                throw new \Exception("Route class $class not exists");
+                throw new \Exception("Route method $action not exists");
             }
         }
         if ($this->config['route_dispatch_action_route']) {
@@ -218,20 +215,17 @@ class Rest extends App
                     $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'];
                     if ($routes) {
                         $action_path = array_slice($path, $depth);
-                        $dispatch = Router::dispatch($action_path, $routes, $this->method);
+                        $dispatch = Router::dispatch($action_path, $routes, $param_mode, $this->method);
                         if ($dispatch) {
-                            if (count($dispatch[0]) === 1) {
-                                $action = $dispatch[0][0];
-                                $controller = new $class();
-                                if (is_callable([$controller, $action])) {
-                                    $this->config['param_mode'] = $dispatch[2];
-                                    return [
-                                        'controller'    => $controller,
-                                        'action'        => $action,
-                                        'params'        => $dispatch[1],
-                                        'param_mode'    => 2
-                                    ];
-                                }
+                            $controller = new $class();
+                            if (is_callable([$controller, $action])) {
+                                $this->config['param_mode'] = $dispatch[2];
+                                return [
+                                    'controller'    => $controller,
+                                    'action'        => $action,
+                                    'params'        => $dispatch[1],
+                                    'param_mode'    => $param_mode
+                                ];
                             }
                             throw new \Exception("Route action $action() not exists");
                         }
