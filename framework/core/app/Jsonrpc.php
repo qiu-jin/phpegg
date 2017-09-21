@@ -9,6 +9,7 @@ use framework\core\Loader;
 use framework\core\Logger;
 use framework\core\http\Request;
 use framework\core\http\Response;
+use framework\extend\misc\ReflectionMethod;
 
 class Jsonrpc extends App
 {
@@ -24,7 +25,7 @@ class Jsonrpc extends App
         // 最大批调用数，1不启用批调用，0无限批调用数
         'batch_max_num' => 1,
         // 批调用异常中断
-        'batch_exception_abort' => 0,
+        'batch_exception_abort' => false,
         /* 通知调用模式
          * null, false, 不使用通知调用
          * true，使用Hook close实现
@@ -84,10 +85,10 @@ class Jsonrpc extends App
             } else {
                 if (isset($dispatch['id']) || !$this->config['notification_mode']) {
                     if ($this->config['batch_exception_abort']) {
-                        $return['result'] = $this->call($dispatch);
+                        $return += $this->call($dispatch);
                     } else {
                         try {
-                            $return['result'] = $this->call($dispatch);
+                            $return += $this->call($dispatch);
                         } catch (\Throwable $e) {
                             $return['error']  = $this->setError($e);
                         }
@@ -107,30 +108,20 @@ class Jsonrpc extends App
     protected function call($dispatch)
     {
         extract($dispatch, EXTR_SKIP);
-        switch ($this->config['param_mode']) {
-            case 1:
-                return $controller->$action(...$params);
-            case 2:
-                $new_params = [];
-                if ($params) {
-                    $ref_method = $this->getRefMethod($controller, $action);
-                    if ($ref_method->getnumberofparameters() > 0) {
-                        foreach ($ref_method->getParameters() as $param) {
-                            if (isset($params[$param->name])) {
-                                $new_params[] = $params[$param->name];
-                            } elseif($param->isDefaultValueAvailable()) {
-                                $new_params[] = $param->getdefaultvalue();
-                            } else {
-                                throw new \Exception('Invalid params', -32602);
-                            }
-                        }
-                    }
-                }
-                return $controller->$action(...$new_params);
-            default:
-                Request::set('post', $params);
-                return $controller->$action();
+        if ($this->config['param_mode']) {
+            $ref_method = $this->getRefMethod($controller, $action);
+            if ($param_mode === 1) {
+                $params = ReflectionMethod::bindListParams($ref_method, $params);
+            } elseif ($param_mode === 2) {
+                $params = ReflectionMethod::bindKvParams($ref_method, $params);
+            }
+            if ($params === false) {
+                return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
+            }
+            return ['result' => $controller->$action(...$params)];
         }
+        Request::set('post', $params);
+        return ['result' => $controller->$action()];
     }
     
     protected function error($code = null, $message = null)

@@ -28,7 +28,7 @@ class Router
     /*
      * 路由调度
      */
-    public static function dispatch($path, $ruotes, $param_mode, $method = null)
+    public static function dispatch($path, $ruotes, $param_mode = 0, $method = null)
     {
         $result = self::route($path, $ruotes, $method);
         if ($result) {
@@ -36,7 +36,7 @@ class Router
             if (preg_match('/^(.+?)(\((.*?)\))?$/', $call_role, $call_match)) {
                 $call = self::$replace_call ? self::replaceCall($call_match[1], $macth) : $call_match[1];
                 if (!$param_mode || empty($call_match[3])) {
-                    $params = [];
+                    $params = $macth;
                 } else {
                     $param_method = $param_mode === 2 ? 'parseKvParams' : 'parseListParams';
                     $params = self::{$param_method}($call_match[3], $macth);

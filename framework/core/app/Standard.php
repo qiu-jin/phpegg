@@ -9,6 +9,7 @@ use framework\core\Loader;
 use framework\core\Config;
 use framework\core\http\Request;
 use framework\core\http\Response;
+use framework\extend\misc\ReflectionMethod;
 
 class Standard extends App
 {
@@ -21,15 +22,15 @@ class Standard extends App
         // 控制器公共路径
         'controller_ns' => 'controller',
         
-        // 是否启用视图，0否，1是
-        'enable_view' => 0,
-        // 视图模版文件名是否转为下划线风格，0否，1是
-        'template_to_snake' => 1,
+        // 是否启用视图
+        'enable_view' => false,
+        // 视图模版文件名是否转为下划线风格
+        'template_to_snake' => true,
         
-        // URL query参数是否转为控制器方法参数，0否，1是
-        'query_to_kv_params' => 0,
+        // URL query参数是否转为控制器方法参数
+        'bind_request_params' => null,
         // 缺少的参数设为null值
-        'missing_params_to_null' => 0,
+        'missing_params_to_null' => false,
         
         /* 默认调度的参数模式
          * 0 无参数
@@ -53,7 +54,7 @@ class Standard extends App
         // 路由调度的路由表，如果值为字符串则作为PHP文件include
         'route_dispatch_routes' => null,
         // 路由调启是否用动作路由
-        'route_dispatch_action_route' => 0,
+        'route_dispatch_action_route' => false,
     ];
     protected $ref_method;
     
@@ -82,43 +83,18 @@ class Standard extends App
         if ($param_mode) {
             $ref_method = $this->ref_method ?? new \ReflectionMethod($controller, $action);
             if ($param_mode === 1) {
-                $method_cou = count($params);
-                $method_num = $ref_method->getnumberofparameters();
-                if ($method_num > $method_cou) {
-                    $parameters = $ref_method->getParameters();
-                    for ($i = $method_cou; $i < $method_num; $i++) {
-                        if ($parameters[$i]->isDefaultValueAvailable()) {
-                            $params[] = $parameters[$i]->getdefaultvalue();
-                        } elseif ($this->config['missing_params_to_null']) {
-                            $params[] = null;
-                        } else {
-                            self::abort(500, 'Invalid params');
-                        }
-                    }
-                }
-                return $controller->$action(...$params);
+                $params = ReflectionMethod::bindListParams($ref_method, $params, $this->config['missing_params_to_null']);
             } elseif ($param_mode === 2) {
-                $new_params = [];
-                if ($this->config['query_to_kv_params'] && $_GET) {
-                    $params = array_merge($_GET, $params);
-                }
-                if ($ref_method->getnumberofparameters() > 0) {
-                    foreach ($ref_method->getParameters() as $param) {
-                        if (isset($params[$param->name])) {
-                            $new_params[] = $params[$param->name];
-                        } elseif($param->isDefaultValueAvailable()) {
-                            $new_params[] = $param->getdefaultvalue();
-                        } elseif ($this->config['missing_params_to_null']) {
-                            $new_params[] = null;
-                        } else {
-                            self::abort(500, 'Invalid params');
-                        }
+                if ($this->config['bind_request_params']) {
+                    foreach ($this->config['bind_request_params'] as $request) {
+                        $params = array_merge(Request::{$request}(), $params);
                     }
                 }
-                return $controller->$action(...$new_params);
+                $params = ReflectionMethod::bindKvParams($ref_method, $params, $this->config['missing_params_to_null']);
             }
+            if ($params === false) self::abort(500, 'Missing argument');
         }
-        return $controller->$action();
+        return $controller->$action(...$params);
     }
     
     /*

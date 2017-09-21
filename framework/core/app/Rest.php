@@ -8,6 +8,7 @@ use framework\core\Loader;
 use framework\core\Config;
 use framework\core\http\Request;
 use framework\core\http\Response;
+use framework\extend\misc\ReflectionMethod;
 
 class Rest extends App
 {
@@ -17,10 +18,10 @@ class Rest extends App
         'dispatch_mode'     => 'default',
         'controller_ns'     => 'controller',
         'controller_depth'  => 1,
-        'query_to_kv_params'   => 0,
+        'bind_request_params'   => null,
         
         // 默认调度的路径转为驼峰风格
-        'default_dispatch_to_camel' => '-',
+        'default_dispatch_to_camel' => null,
         /* 默认调度的参数模式
          * 0 无参数
          * 1 循序参数
@@ -33,9 +34,9 @@ class Rest extends App
         // 资源调度默认路由表
         'resource_dispatch_routes'=> [
             '/'     => ['GET' => 'index', 'POST' => 'create'],
-            '*'     => ['GET' => 'show',  'PUT'  => 'update', 'DELETE' => 'destroy'],
+            '*'     => ['GET' => 'show($id)',  'PUT'  => 'update($id)', 'DELETE' => 'destroy($id)'],
             'create'=> ['GET' => 'new'],
-            '*/edit'=> ['GET' => 'edit']
+            '*/edit'=> ['GET' => 'edit($id)']
         ],
         
         /* 路由调度的参数模式
@@ -47,7 +48,7 @@ class Rest extends App
         // 路由调度的路由表
         'route_dispatch_routes' => null,
         // 路由调启是否用动作路由
-        'route_dispatch_action_route' => 0,
+        'route_dispatch_action_route' => false,
     ];
     protected $method;
     protected $ref_method;
@@ -70,32 +71,21 @@ class Rest extends App
     {
         $this->setPostParams();
         extract($this->dispatch, EXTR_SKIP);
-        switch ($param_mode) {
-            case 1:
-                return $controller->$action(...$params);
-            case 2:
-                $new_params = [];
-                if ($this->config['query_to_kv_params'] && $_GET) {
-                    $params = array_merge($_GET, $params);
-                }
-                if ($params) {
-                    $ref_method = $this->ref_method ?? new \ReflectionMethod($controller, $action);
-                    if ($ref_method->getnumberofparameters() > 0) {
-                        foreach ($ref_method->getParameters() as $param) {
-                            if (isset($params[$param->name])) {
-                                $new_params[] = $params[$param->name];
-                            } elseif($param->isDefaultValueAvailable()) {
-                                $new_params[] = $param->getdefaultvalue();
-                            } else {
-                                throw new \Exception('Invalid params');
-                            }
-                        }
+        if ($param_mode) {
+            $ref_method = $this->ref_method ?? new \ReflectionMethod($controller, $action);
+            if ($param_mode === 1) {
+                $params = ReflectionMethod::bindListParams($ref_method, $params);
+            } elseif ($param_mode === 2) {
+                if ($this->config['bind_request_params']) {
+                    foreach ($this->config['bind_request_params'] as $request) {
+                        $params = array_merge(Request::{$request}(), $params);
                     }
                 }
-                return $controller->$action(...$new_params);
-            default:
-                return $controller->$action();
+                $params = ReflectionMethod::bindKvParams($ref_method, $params);
+            }
+            if ($params === false) self::abort(500, 'Missing argument')
         }
+        return $controller->$action(...$params);
     }
     
     protected function error($code = null, $message = null)
@@ -166,7 +156,7 @@ class Rest extends App
         if (count($path) >= $depth) {
             $class = $this->ns.implode('\\', array_slice($path, 0, $depth));
             $action_path = array_slice($path, $depth);
-            $dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 1, $this->method);
+            $dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method);
             if ($dispatch) {
                 if (Loader::importPrefixClass($class)) {
                     $controller = new $class();
@@ -175,7 +165,7 @@ class Rest extends App
                             'controller'    => $controller,
                             'action'        => $dispatch[0],
                             'params'        => $dispatch[1],
-                            'param_mode'    => 1
+                            'param_mode'    => 0
                         ];
                     }
                 }

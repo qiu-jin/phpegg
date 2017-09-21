@@ -47,7 +47,7 @@ class Inline extends App
     protected function handle()
     {
         $file = $this->dispatch['file'];
-        $params = $this->dispatch['params'] ?? null;
+        $params = $this->dispatch['params'] ?? [];
         if ($this->config['enable_getter']) {
             $return = (new class() {
                 use Getter;
@@ -74,7 +74,7 @@ class Inline extends App
         }
     }
     
-    protected function response($return = [])
+    protected function response($return = null)
     {
         $this->config['enable_view'] ? Response::view($this->getTemplate(), $return, false) : Response::json($return, false);
     }
@@ -94,10 +94,7 @@ class Inline extends App
                 }
             }
         } elseif (isset($this->config['default_dispatch_index'])) {
-            $file = $this->dir.$this->config['default_dispatch_index'].'.php';
-            if (is_php_file($file)) {
-                return ['file' => $file]; 
-            }
+            return ['file' => $this->dir.$this->config['default_dispatch_index'].'.php'];
         }
         return false;
     }
@@ -107,11 +104,7 @@ class Inline extends App
         if ($this->config['route_dispatch_routes']) {
             $dispatch = Router::dispatch($path, $this->config['route_dispatch_routes']);
             if ($dispatch) {
-                $file = $this->dir.$dispatch[0];
-                if (is_php_file($file)) {
-                    return ['file' => $file, 'params' => $dispatch[1]];
-                }
-                throw new \Exception("Route file $file not exists");
+                return ['file' => $this->dir.$dispatch[0], 'params' => $dispatch[1]];
             }
         }
         return false;

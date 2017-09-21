@@ -13,21 +13,22 @@ abstract class App
     private static $boot;
     /* 标示退出状态
      * 0 未标示
-     * 1 请求自然完成并退出
-     * 2 用户强制退出，使用exit
-     * 3 错误退出，Error::errorHandler调用
-     * 4 异常退出，Error::exceptionHandler调用
-     * 5 致命错误退出，Error::fatalHandler调用
+     * 1 用户强制退出，使用exit
+     * 2 请求完成并退出
+     * 3 错误退出
+     * 4 异常退出
+     * 5 致命错误退出
      */
     private static $exit;
     // 标示run方法知否在执行，防止重复执行
     private static $runing;
     // 设置错误处理器
     private static $error_handler;
+    
     // 应用配置项
-    protected $config = [];
+    protected $config;
     // 应用调度结果
-    protected $dispatch = [];
+    protected $dispatch;
     
     /*
      * 应用调度方法，调度成功返回数组，失败返回false
@@ -71,7 +72,7 @@ abstract class App
             $return_handler($return);
         }
         $this->response($return);
-        self::$exit = 1;
+        self::$exit = 2;
     }
     
     /*
@@ -108,36 +109,35 @@ abstract class App
      */
     public static function start($app = 'Standard', array $config = null)
     {
-        if (!self::$app) {
-            self::boot();
-            if (static::class !== __CLASS__) {
-                throw new Exception('Illegal start call');
-            }
-            if (in_array($app, ['Standard', 'Inline', 'Micro', 'Rest', 'Jsonrpc'], true)) {
-                $app = 'framework\core\app\\'.$app;
-            } elseif (!is_subclass_of($app, __CLASS__)) {
-                throw new Exception('Illegal app class: '.$app);
-            }
-            self::$app = new $app($config ?? Config::get('app'));
-            self::$app->dispatch = self::$app->dispatch();
-            if (self::$app->dispatch) {
-                Hook::listen('start', self::$app->dispatch);
-                return self::$app;
-            }
-            self::abort(404);
+        if (self::$app) return;
+        self::boot();
+        if (static::class !== __CLASS__) {
+            throw new Exception('Illegal start call');
         }
+        if (in_array($app, ['Standard', 'Inline', 'Micro', 'Rest', 'Jsonrpc'], true)) {
+            $app = 'framework\core\app\\'.$app;
+        } elseif (!is_subclass_of($app, __CLASS__)) {
+            throw new Exception('Illegal app class: '.$app);
+        }
+        self::$app = new $app($config ?? Config::get('app'));
+        self::$app->dispatch = self::$app->dispatch();
+        if (self::$app->dispatch) {
+            Hook::listen('start', self::$app->dispatch);
+            return self::$app;
+        }
+        self::abort(404);
     }
     
     /*
      * 退出应用
      */
-    public static function exit($status = 2)
+    public static function exit($status = 1)
     {
         if ($status === 0) {
             return self::$exit;
-        } elseif ($status === 2) {
+        } elseif ($status === 1) {
             if (!self::$exit) {
-                self::$exit = 2;
+                self::$exit = 1;
                 exit;
             }
         } else {
