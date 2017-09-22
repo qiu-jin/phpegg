@@ -43,6 +43,11 @@ class Jsonrpc extends App
     ];
     // 保存返回值
     protected $return;
+    // 核心错误
+    protected $core_errors = [
+        404 => [-32601, 'Method not found'],
+        500 => [-32000, 'Server error']
+    ];
     // 当前请求是否为批请求
     protected $is_batch_call = false;
     // 批请求控制器实例缓存
@@ -150,6 +155,12 @@ class Jsonrpc extends App
             }
             $this->response($this->return);
         } else {
+            if (isset($this->core_errors[$code])) {
+                $code = $this->core_errors[$code][0];
+                if ($message == null) {
+                    $message = $this->core_errors[$code][1];
+                }
+            }
             $this->response([
                 'id'        => $this->dispatch['id'] ?? null,
                 'jsonrpc'   => self::VERSION,

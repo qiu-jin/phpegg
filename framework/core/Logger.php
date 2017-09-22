@@ -95,7 +95,7 @@ class Logger
             return self::$handlers[$name];
         } else {
             $config = self::$configs[$name];
-            $handler = Container::makeDriver('logger', $config);
+            $handler = Container::driver('logger', $config);
             if (isset($config['format'])) {
                 $handler->setFormatter(new Formatter($config['format']));
             }

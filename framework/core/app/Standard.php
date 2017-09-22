@@ -86,8 +86,8 @@ class Standard extends App
                 $params = ReflectionMethod::bindListParams($ref_method, $params, $this->config['missing_params_to_null']);
             } elseif ($param_mode === 2) {
                 if ($this->config['bind_request_params']) {
-                    foreach ($this->config['bind_request_params'] as $request) {
-                        $params = array_merge(Request::{$request}(), $params);
+                    foreach ($this->config['bind_request_params'] as $param) {
+                        $params = array_merge(Request::{$param}(), $params);
                     }
                 }
                 $params = ReflectionMethod::bindKvParams($ref_method, $params, $this->config['missing_params_to_null']);
@@ -224,7 +224,7 @@ class Standard extends App
             if (count($path) >= $depth) {
                 $class = $this->ns.implode('\\', array_slice($path, 0, $depth));
                 if (property_exists($class, 'routes')) {
-                    $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'];
+                    $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'] ?? null;
                     if ($routes) {
                         $action_path = array_slice($path, $depth);
                         $dispatch = Router::dispatch($action_path, $routes, $param_mode);

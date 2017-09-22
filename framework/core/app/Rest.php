@@ -34,9 +34,9 @@ class Rest extends App
         // 资源调度默认路由表
         'resource_dispatch_routes'=> [
             '/'     => ['GET' => 'index', 'POST' => 'create'],
-            '*'     => ['GET' => 'show($id)',  'PUT'  => 'update($id)', 'DELETE' => 'destroy($id)'],
+            '*'     => ['GET' => 'show',  'PUT'  => 'update', 'DELETE' => 'destroy'],
             'create'=> ['GET' => 'new'],
-            '*/edit'=> ['GET' => 'edit($id)']
+            '*/edit'=> ['GET' => 'edit']
         ],
         
         /* 路由调度的参数模式
@@ -77,8 +77,8 @@ class Rest extends App
                 $params = ReflectionMethod::bindListParams($ref_method, $params);
             } elseif ($param_mode === 2) {
                 if ($this->config['bind_request_params']) {
-                    foreach ($this->config['bind_request_params'] as $request) {
-                        $params = array_merge(Request::{$request}(), $params);
+                    foreach ($this->config['bind_request_params'] as $param) {
+                        $params = array_merge(Request::{$param}(), $params);
                     }
                 }
                 $params = ReflectionMethod::bindKvParams($ref_method, $params);
@@ -202,7 +202,7 @@ class Rest extends App
             if (count($path) >= $depth) {
                 $class = $this->ns.implode('\\', array_slice($path, 0, $depth));
                 if (property_exists($class, 'routes')) {
-                    $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'];
+                    $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'] ?? null;
                     if ($routes) {
                         $action_path = array_slice($path, $depth);
                         $dispatch = Router::dispatch($action_path, $routes, $param_mode, $this->method);
