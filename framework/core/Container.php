@@ -97,14 +97,14 @@ class Container
     public static function driver($type, $name = null)
     {
         if (is_array($name)) {
-            return self::makeDriver($type, $name);
+            return self::getDriver($type, $name);
         }
-        return self::$container[$name ? "$type.$name" : $type] = self::makeDriver($type, $name);
+        return self::$container[$name ? "$type.$name" : $type] = self::getDriver($type, $name);
     }
     
     public static function model($name)
     {
-        return self::$container[$name] = self::makeModel($name);
+        return self::$container[$name] = self::getModel(...explode('.', $name));
     }
     
     /*
@@ -143,16 +143,27 @@ class Container
     {
         $depth = self::$providers['model'][$params[0]];
         if ($depth > 0) {
-            if (count($params) === $depth + 1) {
-                return self::makeModel($params);
-            }
-            return self::makeModelNs($params, $depth);
+            return count($params) === $depth + 1 ? self::makeModel($params) : self::makeModelNs($params, $depth);
         }
     }
     
+    /*
+     * 生成驱动实例
+     */
     protected static function getDriver($type, $name = null)
     {
-        return self::makeDriver($type, $name);
+        if ($name) {
+            $config = is_array($name) ? $name : Config::get("$type.$name");
+        } else {
+            list($index, $config) = Config::firstPair($type);
+        }
+        if (isset($config['driver'])) {
+            $class = 'framework\driver\\'.$type.'\\'.ucfirst($config['driver']);
+            if (isset($index)) {
+                return self::$container["$type.$index"] = new $class($config);
+            }
+            return new $class($config);
+        }
     }
 
     protected static function getClass($name)
@@ -172,25 +183,6 @@ class Container
     }
     
     /*
-     * 生成驱动实例
-     */
-    protected static function makeDriver($type, $name = null)
-    {
-        if ($name) {
-            $config = is_array($name) ? $name : Config::get("$type.$name");
-        } else {
-            list($index, $config) = Config::firstPair($type);
-        }
-        if (isset($config['driver'])) {
-            $class = 'framework\driver\\'.$type.'\\'.ucfirst($config['driver']);
-            if (isset($index)) {
-                return self::$container["$type.$index"] = new $class($config);
-            }
-            return new $class($config);
-        }
-    }
-    
-    /*
      * 获取模型类实例
      */
     protected static function makeModel($params)
@@ -202,15 +194,15 @@ class Container
     /*
      * 获取模型
      */
-    protected static function makeModelNs($params, $depth)
+    protected static function makeModelNs($ns, $depth)
     {
-        return new class($params, $depth) extends Container{
-            protected $__name;
+        return new class($ns, $depth) extends Container{
+            protected $__ns;
             protected $__depth;
             public function __construct($ns, $depth)
             {
                 $this->__ns = $ns;
-                $this->__depth = $depth;
+                $this->__depth = $depth - 1;
             }
             public function __get($name)
             {
@@ -219,13 +211,7 @@ class Container
                 if (isset(self::$container[$model])) {
                     return $this->$name = self::$container[$model];
                 }
-                if ($this->__depth === 1) {
-                    $this->$name = self::makeModel($this->__ns);
-                } elseif ($this->__depth > 0) {
-                    $this->$name = new self($this->__ns, $this->__depth - 1);
-                } else {
-                    throw new Exception("Get undefined model $model");
-                }
+                $this->$name = $this->__depth < 1 ? self::makeModel($this->__ns) : new self($this->__ns, $this->__depth);
                 return self::$container[$model] = $this->$name;
             }
         };

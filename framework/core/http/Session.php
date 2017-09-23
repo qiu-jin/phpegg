@@ -6,7 +6,6 @@ use framework\core\Config;
 class Session
 {
     private static $init;
-    private static $session;
     
     public static function init()
     {
@@ -14,11 +13,11 @@ class Session
         self::$init = true;
         $config = Config::get('session');
         if ($config) {
-            isset($config['id'])            && session_id($config['id']);
-            isset($config['name'])          && session_name($config['name']);
-            isset($config['save_path'])     && session_save_path($config['save_path']);
-            isset($config['cache_expire'])  && session_cache_expire($config['cache_expire']);
-            isset($config['cache_limiter']) && session_cache_limiter($config['cache_limiter']);
+            foreach ($config as $key => $value) {
+                if (in_array($key, ['id', 'name', 'save_path', 'cache_expire', 'cache_limiter'], true)) {
+                    call_user_func("session_$key", $value);
+                }
+            }
             if (isset($config['cookie_params'])) {
                 session_set_cookie_params(...$config['cookie_params']);
             }
@@ -49,6 +48,11 @@ class Session
         $_SESSION[$name] = $value;
     }
     
+    public static function flash($name, $value)
+    {
+        
+    }
+    
     public static function delete($name)
     {
         if (isset($_SESSION[$name])) {
@@ -66,11 +70,6 @@ class Session
         $_SESSION = [];
         session_unset();
         session_destroy();
-    }
-
-    public static function free()
-    {
-        //self::$session = null;
     }
 }
 Session::init();
