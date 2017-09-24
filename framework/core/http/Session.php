@@ -48,11 +48,6 @@ class Session
         $_SESSION[$name] = $value;
     }
     
-    public static function flash($name, $value)
-    {
-        
-    }
-    
     public static function delete($name)
     {
         if (isset($_SESSION[$name])) {

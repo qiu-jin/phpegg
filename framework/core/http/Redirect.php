@@ -38,17 +38,12 @@ class Redirect
         
     }
     
-    public static function getError()
-    {
-        
-    }
-    
     public static function withData()
     {
         
     }
     
-    public static function withError()
+    public static function getError()
     {
         
     }

@@ -226,8 +226,7 @@ class Standard extends App
                 if (property_exists($class, 'routes')) {
                     $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'] ?? null;
                     if ($routes) {
-                        $action_path = array_slice($path, $depth);
-                        $dispatch = Router::dispatch($action_path, $routes, $param_mode);
+                        $dispatch = Router::dispatch(array_slice($path, $depth), $routes, $param_mode);
                         if ($dispatch) {
                             $this->checkMethodAccessible($class, $dispatch[0]);
                             return [

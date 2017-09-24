@@ -204,8 +204,7 @@ class Rest extends App
                 if (property_exists($class, 'routes')) {
                     $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'] ?? null;
                     if ($routes) {
-                        $action_path = array_slice($path, $depth);
-                        $dispatch = Router::dispatch($action_path, $routes, $param_mode, $this->method);
+                        $dispatch = Router::dispatch(array_slice($path, $depth), $routes, $param_mode, $this->method);
                         if ($dispatch) {
                             $controller = new $class();
                             if (is_callable([$controller, $action])) {

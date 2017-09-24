@@ -249,14 +249,7 @@ class Jsonrpc extends App
     
     protected function addQueueJob($dispatch)
     {
-        /*
-        Job::add($this->config['notification_mode'], function () {
-            $return = $this->call($dispatch);
-            if (isset($dispatch['callback']) && isset($this->config['notification_callback'])) {
-                ($this->config['notification_callback'])($dispatch['callback'], $return);
-            }
-        });
-        */
+
     }
     
     protected function setError($e)
