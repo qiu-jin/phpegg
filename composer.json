@@ -10,6 +10,8 @@
     ],
     "require": {
         "php": ">=7.0",
+        "google/protobuf": "^3.4",
+        "grpc/grpc": "^1.6"
     },
     "require-dev": {
         "gregwar/captcha": "^1.1",

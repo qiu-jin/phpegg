@@ -18,7 +18,9 @@ class Grpc
     {
         $this->host = $config['host'];
         $this->port = $config['port'];
-        Loader::add($config['services']);
+        foreach ($config['service_schemes'] as $type => $scheme) {
+            Loader::add($scheme, $type);
+        }
         isset($config['prefix']) && $this->prefix = $config['prefix'];
     }
     
@@ -43,6 +45,7 @@ class Grpc
         if ($ns) {
             $class .= '\\'.implode('\\', $ns);
         }
+        $class .= 'Client';
         if (!isset($this->rpc[$class])) {
             $this->rpc[$class] = new $class("$this->host:$this->port", ['credentials' => \Grpc\ChannelCredentials::createInsecure()]);
         }

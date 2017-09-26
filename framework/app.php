@@ -114,7 +114,7 @@ abstract class App
         if (static::class !== __CLASS__) {
             throw new Exception('Illegal start call');
         }
-        if (in_array($app, ['Standard', 'Inline', 'Micro', 'Rest', 'Jsonrpc'], true)) {
+        if (in_array($app, ['Standard', 'Inline', 'Micro', 'Rest', 'Jsonrpc', 'Grpc'], true)) {
             $app = 'framework\core\app\\'.$app;
         } elseif (!is_subclass_of($app, __CLASS__)) {
             throw new Exception('Illegal app class: '.$app);
