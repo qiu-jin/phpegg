@@ -26,22 +26,25 @@ class Hook
     /*
      * 添加hook设置
      */
-    public static function add($name, $call, $priority = 5)
+    public static function add($name, $call, $priority = 10)
     {
-        if (empty(self::$hooks[$name])) {
-            self::$hooks[$name] = new \SplPriorityQueue();
-        }
-        self::$hooks[$name]->insert($call, (int) $priority);
+        self::$hooks[$name][$priority][] = $call;
     }
-    
+
     /*
      * 监听hook
      */
     public static function listen($name, ...$params)
     {
         if (isset(self::$hooks[$name])) {
-            while (self::$hooks[$name]->valid()) {
-                (self::$hooks[$name]->extract())(...$params);
+            $stop = false;
+            $params[] =& $stop;
+            krsort(self::$hooks[$name]);
+            foreach (self::$hooks[$name] as $priority => $calls) {
+                foreach ($calls as $call) {
+                    $call(...$params);
+                    if ($stop) break 2;
+                }
             }
             unset(self::$hooks[$name]);
         }
@@ -50,9 +53,11 @@ class Hook
     /*
      * 清除hook设置
      */
-    public static function delete($name)
+    public static function clear($name = null)
     {
-        if (isset(self::$hooks[$name])) {
+        if ($name === null) {
+            self::$hooks = [];
+        } elseif (isset(self::$hooks[$name])) {
             unset(self::$hooks[$name]);
         }
     }

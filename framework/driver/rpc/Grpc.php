@@ -13,6 +13,8 @@ class Grpc
     protected $host;
     protected $port;
     protected $prefix;
+    protected $param_mode = 1;
+    protected $request_scheme_suffix = 'Request';
     
     public function __construct($config)
     {
@@ -22,6 +24,8 @@ class Grpc
             Loader::add($scheme, $type);
         }
         isset($config['prefix']) && $this->prefix = $config['prefix'];
+        isset($config['param_mode']) && $this->param_mode = $config['param_mode'];
+        isset($config['request_scheme_suffix']) && $this->request_scheme_suffix = $config['request_scheme_suffix'];
     }
     
     public function __get($name)
@@ -45,27 +49,43 @@ class Grpc
         if ($ns) {
             $class .= '\\'.implode('\\', $ns);
         }
-        $class .= 'Client';
         if (!isset($this->rpc[$class])) {
-            $this->rpc[$class] = new $class("$this->host:$this->port", ['credentials' => \Grpc\ChannelCredentials::createInsecure()]);
+            $client = $class.'Client';
+            $this->rpc[$class] = new $client("$this->host:$this->port", ['credentials' => \Grpc\ChannelCredentials::createInsecure()]);
         }
-        list($reply, $status) = $this->rpc[$class]->$method(...$params)->wait();
-        return $reply;
+        if ($this->param_mode === 2) {
+            $params = $this->bindParams($class.ucfirst($method).$this->request_scheme_suffix, $params);
+        }
+        list($reply, $status) = $this->rpc[$class]->$method($params)->wait();
+        if ($status->code === 0) {
+            return $reply;
+        }
+        error("$status->code: $status->details");
+    }
+    
+    protected function bindParams($request_class, $params)
+    {
+        $i = 0;
+        $request_object = new $request_class;
+        foreach (get_class_methods($request_class) as $method) {
+            if (substr($method, 0, 3) === 'set') {
+                if (!isset($params[$i])) {
+                    break;
+                }
+                $request_object->$method($params[$i]);
+                $i++;
+            }
+        }
+        return $request_object;
     }
     
     /*
-    protected function bindParams($class, $method, $params)
+    protected function getRequestClass($class, $method)
     {
-        if (!isset($this->bind_params_name[$class][$method])) {
-            $this->bind_params_name[$class][$method] = (new \ReflectionMethod($class, $method))->getParameters()[0]->getName();
+        if (!isset($this->request_classes[$class][$method])) {
+            $this->request_classes[$class][$method] = (new \ReflectionMethod($class, $method))->getParameters()[0]->getName();
         }
-        $name = $this->bind_params_name[$class][$method];
-        $name = $parameter->getName();
-        $request = new $name();
-        foreach ($params as $k => $v) {
-            $request->{'set'.ucfirst($k)}($v);
-        }
-        return $request;
+        return $this->request_classes[$class][$method];
     }
     */
 }
