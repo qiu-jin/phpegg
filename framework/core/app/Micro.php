@@ -13,8 +13,10 @@ class Micro extends App
     protected $config = [
         // 调度模式，支持default route组合
         'dispatch_mode' => ['default', 'route'],
-        // 默认模式下控制器公共路径
-        'default_dispatch_controller_ns' => 'controller',
+        // 控制器公共路径
+        'controller_ns' => 'controller',
+        // 控制器类名后缀
+        'controller_suffix' => null,
         // 路由模式下是否启用Getter魔术方法，0否，1是
         'route_dispatch_enable_getter' => 1,
         // 路由模式下允许的HTTP方法
@@ -65,7 +67,7 @@ class Micro extends App
     {
         if ($this->dispatch['default']) {
             list($controller, $action, $params) = $this->dispatch['default'];
-            $class = 'app\\'.$this->config['default_dispatch_controller_ns'].'\\'.$controller;
+            $class = 'app\\'.$this->config['controller_ns'].'\\'.$controller.$this->config['controller_suffix'];
             if ($action[0] !== '_' && Loader::importPrefixClass($class)) {
                 $call = [new $class, $action];
                 if (is_callable($call)) {

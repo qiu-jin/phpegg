@@ -21,6 +21,8 @@ class Standard extends App
         'controller_depth' => 1,
         // 控制器公共路径
         'controller_ns' => 'controller',
+        // 控制器类名后缀
+        'controller_suffix' => null,
         
         // 是否启用视图
         'enable_view' => false,
@@ -123,7 +125,11 @@ class Standard extends App
      */
     protected function getTemplate()
     {
-        $class = str_replace($this->ns, '', get_class($this->dispatch['controller']));
+        $class = get_class($this->dispatch['controller']);
+        if ($this->config['controller_suffix']) {
+            $class = substr($class, 0, - strlen($this->config['controller_suffix']));
+        }
+        $class = str_replace($this->ns, '', $class);
         if (empty($this->config['template_to_snake'])) {
             return '/'.strtr('\\', '/', $class).'/'.$this->dispatch['action'];
         } else {
@@ -180,7 +186,7 @@ class Standard extends App
                 $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
                 $class_array[] = Str::toCamel(array_pop($class_array), $this->config['default_dispatch_to_camel']);
             }
-            $class = $this->ns.implode('\\', $class_array);
+            $class = $this->ns.implode('\\', $class_array).$this->config['controller_suffix'];
             if (Loader::importPrefixClass($class)) {
                 $controller = new $class();
                 if (is_callable([$controller, $action])) {
@@ -206,7 +212,7 @@ class Standard extends App
             $routes = $this->config['route_dispatch_routes'];
             $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes), $param_mode);
             if ($dispatch) {
-                list($class, $action) = explode('::', $this->ns.$dispatch[0]);
+                list($class, $action) = explode('::', $this->ns.$dispatch[0].$this->config['controller_suffix']);
                 $this->checkMethodAccessible($class, $action);
                 return [
                     'controller'    => new $class,
@@ -222,7 +228,7 @@ class Standard extends App
                 throw new \Exception('If enable action route, must controller_depth > 0');
             }
             if (count($path) >= $depth) {
-                $class = $this->ns.implode('\\', array_slice($path, 0, $depth));
+                $class = $this->ns.implode('\\', array_slice($path, 0, $depth)).$this->config['controller_suffix'];
                 if (property_exists($class, 'routes')) {
                     $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'] ?? null;
                     if ($routes) {

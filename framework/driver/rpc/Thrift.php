@@ -20,6 +20,8 @@ class Thrift
     protected $protocol;
     protected $transport;
     protected $tmultiplexed = false;
+    protected $auto_bind_param = false;
+    protected $service_method_params;
     
     public function __construct($config)
     {
@@ -33,8 +35,9 @@ class Thrift
         $this->transport = new TBufferedTransport($socket, 1024, 1024);
         $this->protocol  = new TBinaryProtocol($this->transport);
         $this->transport->open();
-        Loader::add($config['services']);
-        isset($config['types']) && Loader::add($config['types'], 'files');
+        foreach ($config['service_schemes'] as $type => $scheme) {
+            Loader::add($scheme, $type);
+        }
         isset($config['prefix']) && $this->prefix = $config['prefix'];
         isset($config['tmultiplexed']) && $this->tmultiplexed = $config['tmultiplexed'];
     }
@@ -68,33 +71,34 @@ class Thrift
                 $this->rpc[$class] = new $class($this->protocol);
             }
         }
+        if ($this->auto_bind_param && $params) {
+            $this->bindParams($class, $method, $params);
+        }
         return $this->rpc[$class]->$method(...$params);
     }
     
-    /*
     protected function bindParams($class, $method, &$params)
     {
-        if (isset($this->bind_params_name[$class][$method])) {
-            if (empty($this->bind_params_name[$class][$method])) {
+        if (isset($this->service_method_params[$class][$method])) {
+            if (empty($this->service_method_params[$class][$method])) {
                 return;
             }
-            foreach ($this->bind_params_name[$class][$method] as $i => $name) {
+            foreach ($this->service_method_params[$class][$method] as $i => $name) {
                $params[$i] = new $name($params[$i]);
             }
         } else {
-            $this->bind_params_name[$class][$method] = [];
+            $this->service_method_params[$class][$method] = [];
             $refs = (new \ReflectionMethod($class, $method))->getParameters();
             foreach ($refs as $i => $ref) {
                 $type = (string) $ref->getType();
                 if ($type === 'object') {
                     $name = $ref->getName();
                     $params[$i] = new $name($params[$i]);
-                    $this->bind_params_name[$class][$method][$i] = $name;
+                    $this->service_method_params[$class][$method][$i] = $name;
                 }
             }
         }
     }
-    */
     
     public function __destruct()
     {

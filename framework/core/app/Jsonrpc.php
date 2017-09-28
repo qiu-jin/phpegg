@@ -16,6 +16,7 @@ class Jsonrpc extends App
     protected $config = [
         // 控制器公共路径
         'controller_ns' => 'controller',
+        'controller_suffix' => null,
         /* 参数模式
          * 0 无参数
          * 1 循序参数
@@ -206,7 +207,7 @@ class Jsonrpc extends App
     
     protected function makeController($path)
     {
-        $class = 'app\\'.$this->config['controller_ns'].'\\'.implode('\\', $path);
+        $class = 'app\\'.$this->config['controller_ns'].'\\'.implode('\\', $path).$this->config['controller_suffix'];
         if (!$this->is_batch_call) {
             return Loader::importPrefixClass($class) ? new $class() : false;
         }

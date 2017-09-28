@@ -18,6 +18,7 @@ class Rest extends App
         'dispatch_mode'     => 'default',
         'controller_ns'     => 'controller',
         'controller_depth'  => 1,
+        'controller_suffix' => null,
         'bind_request_params'   => null,
         
         // 默认调度的路径转为驼峰风格
@@ -132,7 +133,7 @@ class Rest extends App
         if (!empty($this->config['default_dispatch_to_camel'])) {
             $class_array[] = Str::toCamel(array_pop($class_array), $this->config['default_dispatch_to_camel']);
         }
-        $class = $this->ns.implode('\\', $class_array);
+        $class = $this->ns.implode('\\', $class_array).$this->config['controller_suffix'];
         if (Loader::importPrefixClass($class)) {
             $controller = new $class();
             if (is_callable([$controller, $this->method])) {
@@ -154,7 +155,7 @@ class Rest extends App
             throw new \Exception('If use resource_dispatch, must controller_depth > 0');
         }
         if (count($path) >= $depth) {
-            $class = $this->ns.implode('\\', array_slice($path, 0, $depth));
+            $class = $this->ns.implode('\\', array_slice($path, 0, $depth)).$this->config['controller_suffix'];
             $action_path = array_slice($path, $depth);
             $dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method);
             if ($dispatch) {
@@ -181,7 +182,7 @@ class Rest extends App
             $routes = $this->config['route_dispatch_routes'];
             $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes), $param_mode, $this->method);
             if ($dispatch) {
-                list($class, $action) = explode('::', $this->ns.$dispatch[0]);
+                list($class, $action) = explode('::', $this->ns.$dispatch[0].$this->config['controller_suffix']);
                 $controller = new $class();
                 if (is_callable([$controller, $action])) {
                     return [
@@ -200,7 +201,7 @@ class Rest extends App
                 throw new \Exception('If enable action route, must controller_depth > 0');
             }
             if (count($path) >= $depth) {
-                $class = $this->ns.implode('\\', array_slice($path, 0, $depth));
+                $class = $this->ns.implode('\\', array_slice($path, 0, $depth)).$this->config['controller_suffix'];
                 if (property_exists($class, 'routes')) {
                     $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'] ?? null;
                     if ($routes) {

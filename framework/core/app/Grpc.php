@@ -13,6 +13,7 @@ class Grpc extends App
     protected $config = [
         // 控制器公共路径
         'controller_ns'     => 'controller',
+        'controller_suffix' => null,
         /* 参数模式
          * 1 request response 参数模式
          * 2 kv  参数模式
@@ -21,9 +22,9 @@ class Grpc extends App
         // 服务定义文件
         'service_schemes'   => null,
         
-        'request_scheme_suffix' => 'Request',
+        'request_scheme_format' => '{service}{method}Request',
         
-        'response_scheme_suffix' => 'Response',
+        'response_scheme_format' => '{service}{method}Response',
     ];
     
     protected function dispatch()
@@ -32,7 +33,7 @@ class Grpc extends App
         $path = Request::pathArr();
         if (count($path) === 2) {
             list($class, $action) = $path;
-            $class = $this->ns.strtr($class, '.', '\\');
+            $class = $this->ns.strtr($class, '.', '\\').$this->config['controller_suffix'];
             if (Loader::importPrefixClass($class)) {
                 $controller = new $class();
                 if (is_callable([$controller, $action])) {
@@ -70,9 +71,10 @@ class Grpc extends App
             }
         } elseif ($this->config['param_mode'] === 2) {
             $new_params = [];
-            $ns = str_replace($this->ns, '', get_class($controller)).ucfirst($action);
-            $request_class = $ns.$this->config['request_scheme_suffix'];
-            $response_class = $ns.$this->config['response_scheme_suffix'];
+            $class = str_replace($this->ns, '', get_class($controller));
+            $replace = ['{service}' => $class, '{method}' => ucfirst($method)];
+            $request_class = strtr($this->config['request_scheme_format'], $replace);
+            $response_class =  strtr($this->config['response_scheme_format'], $replace);
             $request_object = new $request_class;
             $request_object->mergeFromString($params);
             foreach ($parameters as $parameter) {

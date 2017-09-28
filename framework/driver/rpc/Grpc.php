@@ -13,8 +13,9 @@ class Grpc
     protected $host;
     protected $port;
     protected $prefix;
-    protected $param_mode = 1;
-    protected $request_scheme_suffix = 'Request';
+    protected $request_classes;
+    protected $auto_bind_param = false;
+    protected $request_scheme_format;//'{service}{method}Request'
     
     public function __construct($config)
     {
@@ -24,8 +25,8 @@ class Grpc
             Loader::add($scheme, $type);
         }
         isset($config['prefix']) && $this->prefix = $config['prefix'];
-        isset($config['param_mode']) && $this->param_mode = $config['param_mode'];
-        isset($config['request_scheme_suffix']) && $this->request_scheme_suffix = $config['request_scheme_suffix'];
+        isset($config['auto_bind_param']) && $this->auto_bind_param = $config['auto_bind_param'];
+        isset($config['request_scheme_format']) && $this->request_scheme_format = $config['request_scheme_format'];
     }
     
     public function __get($name)
@@ -53,8 +54,13 @@ class Grpc
             $client = $class.'Client';
             $this->rpc[$class] = new $client("$this->host:$this->port", ['credentials' => \Grpc\ChannelCredentials::createInsecure()]);
         }
-        if ($this->param_mode === 2) {
-            $params = $this->bindParams($class.ucfirst($method).$this->request_scheme_suffix, $params);
+        if ($this->auto_bind_param) {
+            if ($this->request_scheme_format) {
+                $request_class = strtr($this->request_scheme_format, ['{service}' => $class, '{method}' => ucfirst($method)]);
+            } else {
+                $request_class = $this->getRequestClass($client, $method);
+            }
+            $params = $this->bindParams($request_class, $params);
         }
         list($reply, $status) = $this->rpc[$class]->$method($params)->wait();
         if ($status->code === 0) {
@@ -79,7 +85,6 @@ class Grpc
         return $request_object;
     }
     
-    /*
     protected function getRequestClass($class, $method)
     {
         if (!isset($this->request_classes[$class][$method])) {
@@ -87,5 +92,4 @@ class Grpc
         }
         return $this->request_classes[$class][$method];
     }
-    */
 }
