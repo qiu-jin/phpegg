@@ -6,20 +6,8 @@ use framework\App;
 abstract class Auth
 {
     private static $auth;
-
-    abstract protected function id();
-
-    abstract protected function user();
-
-    abstract protected function check();
-
-    abstract protected function faildo();
-
-    abstract protected function login();
     
-    abstract protected function logout();
-    
-    private function __construct(){}
+    protected function __construct(){}
     
     public static function init()
     {
@@ -33,22 +21,43 @@ abstract class Auth
         Hook::add('exit', __CLASS__.'::free');
     }
     
-    public static function run()
+    // 获取认证用户ID
+    abstract public function id();
+    
+    // 获取认证用户信息
+    abstract public function user();
+    
+    // 检查用户是否认证成功
+    abstract public function check();
+    
+    // 用户认证失败处理
+    abstract public function faildo();
+    
+    // 登记用户信息
+    abstract public function login();
+    
+    // 注销用户信息
+    abstract public function logout();
+    
+    // 运行认证处理，检查用户是否认证成功，否则失败处理并退出
+    public function run()
     {
-        if (!self::$auth->check()) {
-            self::$auth->faildo();
+        if (!$this->check()) {
+            $this->faildo();
             App::exit();
         }
     }
     
+    // 获取运行认证实例
+    public static function instance()
+    {
+        return self::$auth;
+    }
+    
+    // 清除
     public static function free()
     {
         self::$auth = null;
-    }
-    
-    public static function __callStatic($method, $params = [])
-    {
-        return self::$auth->$method(...$params);
     }
 }
 Auth::init();

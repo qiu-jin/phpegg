@@ -2,7 +2,6 @@
 namespace framework\core\http;
 
 use framework\util\Xml;
-use framework\core\Logger;
 use framework\extend\debug\HttpClient as HttpClientDebug;
 
 define('CURLINFO_STATUS', CURLINFO_HTTP_CODE);

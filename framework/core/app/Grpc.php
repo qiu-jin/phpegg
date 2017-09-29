@@ -6,6 +6,10 @@ use framework\core\Loader;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
+/*
+ * https://github.com/google/protobuf
+ */
+
 use Google\Protobuf\Internal\Message;
 
 class Grpc extends App
@@ -15,8 +19,8 @@ class Grpc extends App
         'controller_ns'     => 'controller',
         'controller_suffix' => null,
         /* 参数模式
+         * 0 kv 参数模式
          * 1 request response 参数模式
-         * 2 kv  参数模式
          */
         'param_mode'        => 1,
         // 服务定义文件
@@ -48,7 +52,7 @@ class Grpc extends App
         return false;
     }
     
-    protected function handle()
+    protected function call()
     {
         if ($this->config['service_schemes']) {
             foreach ($this->config['service_schemes'] as $type => $scheme) {
@@ -57,7 +61,7 @@ class Grpc extends App
         }
         extract($this->dispatch, EXTR_SKIP);
         $parameters = (new \ReflectionMethod($controller, $action))->getParameters();
-        if ($this->config['param_mode'] === 1) {
+        if ($this->config['param_mode']) {
             list($request, $response) = $parameters;
             $request_class = (string) $request->getType();
             $response_class = (string) $response->getType();
@@ -69,7 +73,8 @@ class Grpc extends App
                     return $return;
                 }
             }
-        } elseif ($this->config['param_mode'] === 2) {
+            self::abort(500, 'Illegal scheme class');
+        } else {
             $new_params = [];
             $class = str_replace($this->ns, '', get_class($controller));
             $replace = ['{service}' => $class, '{method}' => ucfirst($method)];
@@ -96,6 +101,7 @@ class Grpc extends App
                 }
                 return $responset_object;
             }
+            self::abort(500, 'Invalid return value');
         }
     }
     
@@ -108,15 +114,18 @@ class Grpc extends App
     {
         $size = $return->byteSize();
         Response::header('grpc-status', '0');
-        Response::send(pack('C1N1Z'.$size, 0, $size, $return->serializeToString()));
+        Response::send(pack('C1N1Z'.$size, 0, $size, $return->serializeToString()), null, false);
     }
     
     protected function readParams()
     {
         $body = Request::body();
         if (strlen($body) > 5) {
-            $arr = unpack('Cencode/Nzise/Z*message', $body);
-            return $arr['message'];
+            extract(unpack('Cencode/Nzise/Z*message', $body), EXTR_SKIP);
+            if ($zise === strlen($message)) {
+                return $message;
+            }
         }
+        self::abort(500, 'Invalid params');
     }
 }

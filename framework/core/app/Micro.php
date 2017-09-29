@@ -42,7 +42,7 @@ class Micro extends App
         return ['default' => null, 'route' => null];
     }
     
-    protected function handle()
+    protected function call()
     {
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
             $dispatch = $this->{$mode.'Dispatch'}();

@@ -29,7 +29,7 @@ class Standard extends App
         // 视图模版文件名是否转为下划线风格
         'template_to_snake' => true,
         
-        // URL query参数是否转为控制器方法参数
+        // request参数是否转为控制器方法参数
         'bind_request_params' => null,
         // 缺少的参数设为null值
         'missing_params_to_null' => false,
@@ -79,7 +79,7 @@ class Standard extends App
     /*
      * 运行应用
      */
-    protected function handle()
+    protected function call()
     {
         extract($this->dispatch, EXTR_SKIP);
         if ($param_mode) {

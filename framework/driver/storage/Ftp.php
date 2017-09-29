@@ -1,8 +1,6 @@
 <?php
 namespace framework\driver\storage;
 
-use framework\core\Hook;
-
 class Ftp extends Storage
 {
     private $link;

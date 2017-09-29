@@ -44,7 +44,7 @@ class Inline extends App
         return false;
     }
     
-    protected function handle()
+    protected function call()
     {
         $file = $this->dispatch['file'];
         $params = $this->dispatch['params'] ?? [];

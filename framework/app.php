@@ -36,9 +36,9 @@ abstract class App
     abstract protected function dispatch();
     
     /*
-     * 处理应用
+     * 调用应用
      */
-    abstract protected function handle();
+    abstract protected function call();
     
     /*
      * 错误处理
@@ -67,11 +67,13 @@ abstract class App
             throw new Exception('App is runing');
         }
         self::$runing = true;
-        $return = $this->handle();
-        if ($return_handler) {
-            $return_handler($return);
+        $return = $this->call();
+        if (!self::$exit) {
+            if ($return_handler) {
+                $return_handler($return);
+            }
+            $this->response($return);
         }
-        $this->response($return);
         self::$exit = 2;
     }
     
@@ -82,9 +84,9 @@ abstract class App
     {
         if (self::$boot) return;
         self::$boot = true;
+        define('NS', '\\');
         define('FW_DIR', __DIR__.'/');
-        define('APP_TIME', microtime(true));
-        define('APP_VERSION', '2.0.0');
+        define('APP_VERSION', '1.0.0');
         defined('APP_DEBUG')|| define('APP_DEBUG', false);
         defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
         defined('APP_DIR')  || define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');

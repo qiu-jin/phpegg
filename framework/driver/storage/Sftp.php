@@ -1,7 +1,9 @@
 <?php
 namespace framework\driver\storage;
 
-use framework\core\Hook;
+/*
+ * https://pecl.php.net/package/ssh2
+ */
 
 class Sftp extends Storage
 {

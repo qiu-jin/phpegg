@@ -9,7 +9,7 @@ class Smtp extends Email
     protected $link;
     protected $host;
     protected $port;
-    protected $debug = APP_DEBUG;
+    protected $debug;
     protected $username;
     protected $password;
     
@@ -19,6 +19,7 @@ class Smtp extends Email
         $this->port = $config['port'] ?? 25;
         $this->username = $config['username'];
         $this->password = $config['password'];
+        $this->debug = $config['debug'] ?? APP_DEBUG;
     }
     
     public function handle($options)

@@ -7,7 +7,7 @@ class Container
     protected static $container;
     protected static $providers = [
         //key表示支持的驱动类型名，value表示驱动类实例是否默认缓存
-        'driver' => [
+        'driver'    => [
             'db'        => true,
             'rpc'       => true,
             'cache'     => true,
@@ -22,14 +22,14 @@ class Container
             'captcha'   => true,
         ],
         //key表示支持的模型名，value表示模型类的namespace层数
-        'model'  => [
+        'model'     => [
             'model'     => 1,
             'logic'     => 1,
             'service'   => 1
         ],
-        'class'  => [],
-        'closure'=> [],
-        'alias'  => [],
+        'closure'   => [],
+        'class'     => [],
+        'alias'     => [],
     ];
 
     /*

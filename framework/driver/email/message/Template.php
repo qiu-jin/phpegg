@@ -8,9 +8,9 @@ class Template
         
     }
     
-    public static function simple()
+    public static function simple($template, array $vars = [])
     {
-        
+
     }
     
     public static function makedown()

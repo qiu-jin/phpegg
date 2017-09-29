@@ -54,7 +54,7 @@ class Rest extends App
     protected $method;
     protected $ref_method;
     
-    protected function dispatch()
+    protected function call()
     {
         $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
         $this->method = Request::method();
@@ -192,7 +192,7 @@ class Rest extends App
                         'param_mode'    => $param_mode
                     ];
                 }
-                throw new \Exception("Route method $action not exists");
+                throw new \Exception("Route action $action() not exists");
             }
         }
         if ($this->config['route_dispatch_action_route']) {

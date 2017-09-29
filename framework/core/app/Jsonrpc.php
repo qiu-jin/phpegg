@@ -79,7 +79,7 @@ class Jsonrpc extends App
         return $dispatch;
     }
     
-    protected function handle()
+    protected function call()
     {
         foreach ($this->dispatch as $dispatch) {
             $return = [
@@ -91,10 +91,10 @@ class Jsonrpc extends App
             } else {
                 if (isset($dispatch['id']) || !$this->config['notification_mode']) {
                     if ($this->config['batch_exception_abort']) {
-                        $return += $this->call($dispatch);
+                        $return += $this->handle($dispatch);
                     } else {
                         try {
-                            $return += $this->call($dispatch);
+                            $return += $this->handle($dispatch);
                         } catch (\Throwable $e) {
                             $return['error']  = $this->setError($e);
                         }
@@ -111,7 +111,7 @@ class Jsonrpc extends App
         return $ret;
     }
     
-    protected function call($dispatch)
+    protected function handle($dispatch)
     {
         extract($dispatch, EXTR_SKIP);
         if ($this->config['param_mode']) {
