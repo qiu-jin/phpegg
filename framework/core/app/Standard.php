@@ -61,7 +61,7 @@ class Standard extends App
     protected $ref_method;
     
     /*
-     * 标准模式应用控制器调度
+     * 控制器调度
      */
     protected function dispatch()
     {
@@ -77,7 +77,7 @@ class Standard extends App
     }
 
     /*
-     * 运行应用
+     * 调用控制器代码
      */
     protected function call()
     {
@@ -100,7 +100,7 @@ class Standard extends App
     }
     
     /*
-     * 应用错误处理
+     * 默认错误处理
      */
     protected function error($code = null, $message = null)
     {
@@ -262,6 +262,9 @@ class Standard extends App
         return $params;
     }
     
+    /*
+     * 检查控制器方法访问权限
+     */
     protected function checkMethodAccessible($controller, $action)
     {
         $this->ref_method = new \ReflectionMethod($controller, $action);

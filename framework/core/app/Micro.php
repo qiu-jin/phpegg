@@ -23,7 +23,7 @@ class Micro extends App
         'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/]
     ];
     
-    public function default($controller, $action, $params = [])
+    public function default($controller, $action, array $params = [])
     {
         $this->dispatch['default'] = [$controller, $action, $params];
     }

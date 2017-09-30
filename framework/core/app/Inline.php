@@ -34,7 +34,7 @@ class Inline extends App
     protected function dispatch()
     {
         $this->dir = APP_DIR.'/'.$this->config['controller_path'].'/';
-        $path = Request::pathArr();
+        $path = trim(Request::path(), '/');
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
             $dispatch = $this->{$mode.'Dispatch'}($path);
             if ($dispatch) {
@@ -87,6 +87,7 @@ class Inline extends App
     protected function defaultDispatch($path) 
     {
         if ($path) {
+            $path = strtr($path, '-', '_');
             if (preg_match('/^(\w+)(\/\w+)*$/', $path)) {
                 $file = $this->dir.$path.'.php';
                 if (is_php_file($file)) {
@@ -103,6 +104,7 @@ class Inline extends App
     {
         if ($this->config['route_dispatch_routes']) {
             $routes = $this->config['route_dispatch_routes'];
+            $path = empty($path) ? null : explode('/', $path);
             $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes));
             if ($dispatch) {
                 return ['file' => $this->dir.$dispatch[0], 'params' => $dispatch[1]];

@@ -2,6 +2,7 @@
 namespace framework\core;
 
 use framework\App;
+use framework\core\Hook;
 
 class Error
 {
@@ -54,7 +55,7 @@ class Error
         if (Config::env('STRICT_ERROR_MODE')) {
             throw new \ErrorException($message, $code, $code, $file, $line);
         } else {
-            self::record($level, $message, $file, $line);
+            self::record(null, $level, $message, $file, $line);
         }
     }
     
@@ -69,7 +70,7 @@ class Error
             } else {
                 list($level, $prefix) = self::getErrorLevelInfo($code);
                 $message = $prefix.': '.$message;
-                self::record($level, $message, $file, $line);
+                self::record('error', $level, $message, $file, $line);
                 if ($level === Logger::CRITICAL || $level === Logger::ALERT || $level === Logger::ERROR ) {
                     App::exit(3);
                     self::response();
@@ -88,7 +89,7 @@ class Error
         $level = Logger::ERROR;
         $name  = $e instanceof Exception ? ($e->getClass() ?? 'CoreException') : get_class($e);
         $message = 'Uncaught '.$name.': '.$e->getMessage();
-        self::record($level, $message, $e->getFile(), $e->getLine());
+        self::record('exception', $level, $message, $e->getFile(), $e->getLine());
         self::response();
     }
     
@@ -103,7 +104,7 @@ class Error
                 App::exit(5);
                 list($level, $prefix) = self::getErrorLevelInfo($last_error['type']);
                 $message = 'Fatal Error '.$prefix.': '.$last_error['message'];
-                self::record($level, $message, $last_error['file'], $last_error['line']);
+                self::record('fatal', $level, $message, $last_error['file'], $last_error['line']);
                 self::response();
     		} else {
     		    // Logger::write(Logger::WARNING, 'Illegal exit');
@@ -115,9 +116,12 @@ class Error
     /*
      * 记录错误
      */
-    private static function record($level, $message, $file, $line, $trace = null)
+    private static function record($type, $level, $message, $file, $line, $trace = null)
     {
-        self::$error[] = ['level' => $level, 'message' => $message, 'file' => $file, 'line' => $line, 'trace' => $trace];
+        if ($type) {
+           Hook::listen($type, $level, $message, $file, $line, $trace);
+        }
+        self::$error[] = compact('level', 'message', 'file', 'line', 'trace');
         Logger::write($level, $message, ['file' => $file, 'line' => $line]);
     }
     
