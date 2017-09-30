@@ -22,7 +22,7 @@ class Grpc extends App
          * 0 kv 参数模式
          * 1 request response 参数模式
          */
-        'param_mode'        => 1,
+        'param_mode'        => 0,
         // 服务定义文件
         'service_schemes'   => null,
         
@@ -62,22 +62,24 @@ class Grpc extends App
         extract($this->dispatch, EXTR_SKIP);
         $parameters = (new \ReflectionMethod($controller, $action))->getParameters();
         if ($this->config['param_mode']) {
-            list($request, $response) = $parameters;
-            $request_class = (string) $request->getType();
-            $response_class = (string) $response->getType();
-            if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
-                $request_object = new $request_class;
-                $request_object->mergeFromString($params);
-                $return = $controller->$action($request_object, new $response_class);
-                if ($return instanceof $response_class) {
-                    return $return;
+            if (count($parameters) === 2) {
+                list($request, $response) = $parameters;
+                $request_class = (string) $request->getType();
+                $response_class = (string) $response->getType();
+                if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
+                    $request_object = new $request_class;
+                    $request_object->mergeFromString($params);
+                    $return = $controller->$action($request_object, new $response_class);
+                    if ($return instanceof $response_class) {
+                        return $return;
+                    }
                 }
             }
-            self::abort(500, 'Illegal scheme class');
+            self::abort(500, 'Illegal param scheme class');
         } else {
             $new_params = [];
             $class = str_replace($this->ns, '', get_class($controller));
-            $replace = ['{service}' => $class, '{method}' => ucfirst($method)];
+            $replace = ['{service}' => $class, '{method}' => ucfirst($action)];
             $request_class = strtr($this->config['request_scheme_format'], $replace);
             $response_class =  strtr($this->config['response_scheme_format'], $replace);
             $request_object = new $request_class;

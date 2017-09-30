@@ -116,9 +116,9 @@ class Jsonrpc extends App
         extract($dispatch, EXTR_SKIP);
         if ($this->config['param_mode']) {
             $ref_method = $this->getRefMethod($controller, $action);
-            if ($param_mode === 1) {
+            if ($this->config['param_mode'] === 1) {
                 $params = ReflectionMethod::bindListParams($ref_method, $params);
-            } elseif ($param_mode === 2) {
+            } elseif ($this->config['param_mode'] === 2) {
                 $params = ReflectionMethod::bindKvParams($ref_method, $params);
             }
             if ($params === false) {
@@ -250,7 +250,7 @@ class Jsonrpc extends App
     
     protected function addQueueJob($dispatch)
     {
-
+        //todo
     }
     
     protected function setError($e)

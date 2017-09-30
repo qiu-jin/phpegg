@@ -88,7 +88,7 @@ class Grpc
     protected function getRequestClass($class, $method)
     {
         if (!isset($this->request_classes[$class][$method])) {
-            $this->request_classes[$class][$method] = (new \ReflectionMethod($class, $method))->getParameters()[0]->getName();
+            $this->request_classes[$class][$method] = (string) (new \ReflectionMethod($class, $method))->getParameters()[0]->getType();
         }
         return $this->request_classes[$class][$method];
     }
