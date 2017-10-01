@@ -10,7 +10,7 @@ class Graphql extends App
 
     }
     
-    protected function handle()
+    protected function call()
     {
         
     }

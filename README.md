@@ -1,47 +1,77 @@
-开发规范
+PSR
 ----
 开发规范基本基于[PSR-1](http://www.php-fig.org/psr/psr-1)和[PSR-2](http://www.php-fig.org/psr/psr-2)
 
-但是有部分地方也有特殊处理，例如在部分核心静态类中执行了init方法，不符合psr-1定义的从属效应，但是在类加载时init方法可以避免繁琐的初始化检查。
+但是有部分地方也有特殊处理，例如在部分核心静态类加载会执行init方法。
 
 Composer
 ----
-框架支持[composer](https://getcomposer.org)，可以方便的引用第三方扩展，框架的部分非核心模块也使用了composer
-如：
-> maxmind-db/reader #maxmind ip文件数据库读取
-> 
-> pda/pheanstalk #pheanstalk 队列底层驱动
-> 
-> apache/thrift #thrift rpc底层驱动
-> 
-> phpunit/phpunit #单元测试
-> 
-> symfony/var-dumper #更好的var_dump
+框架支持[composer](https://getcomposer.org)，可以方便的引用第三方扩展，框架的部分非核心模块也使用了composer，不过框架核心并不依赖composer，在不使用composer时也可以正常使用框架。
 
-不过框架核心并不依赖composer，在不使用composer时也可以正常使用框架
+composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的env.php文件)中添加VENDOR_DIR配置，值为composer vendor目录。
 
-开始应用
+此外框架本身也实现了一个简单的autoload，优先级大于composer autoload。
+
+应用模式
 ----
-框架目前支持Standard Simple Resource Jsonrpc Inline Cli(未完成) 等多种应用模式。
+框架目前支持Standard Rest Inline Jsonrpc Micro Grpc等多种应用模式，用户也可以实现自己的应用模式和不使用应用模式，以适应不同需求的应用开发。
 
-通常在可在public/index.php 应用入口文件中指定应用模式
+Standard
 
-```php
-include '../../../framework/app.php';
-
-framework\App::start('standard')->run();
 ```
-controller的代码的组织方式通常需要遵循应用模式，有时候同一套controller的代码也可以在不同应用模式下使用。
+默认推荐的标准模式
 
-文档补充中
+```
+Rest
+
+```
+RESTful风格模式
+```
+Inline
+
+```
+引用控制器文件代码
+```
+Jsonrpc
+
+```
+jsonrpc协议模式
+```
+Micro
+
+```
+微框架模式
+```
+Grpc
+
+```
+grpc协议模式（较粗糙）
+```
+View
+
+```
+视图驱动模式（未完成）
+```
+Cli
+
+```
+命令行模式（未开始）
+```
+自定义应用模式
+
+```
+用户可以自己实现和使用一个继承framework\App基类，并实现dispatch call error response等方法的应用模式类。
+```
+
+无应用模式
+
+```
+不使用任何应用模式，只需调用framework\App::boot()初始化环境，就可以编写代码。
+```
+
+部分核心类
 ----
-- [App](doc/app.md)
-	- [Standard](doc/app_standard.md)
-	- [Inline](doc/app_inline.md)
-	- [Simple](doc/app_simple.md)
-	- [Resource](doc/app_resource.md)
-	- [Jsonrpc](doc/app_jsonrpc.md)
-	- Cli (命令行模式，未完成)
+
 - Http
 	- [Client](doc/http_client.md)
 	- [Request](doc/http_request.md)
@@ -68,19 +98,6 @@ controller的代码的组织方式通常需要遵循应用模式，有时候同�
 - [Validator](doc/validator.md)
 
 - [Auth](doc/auth.md)
-
-- [DB](doc/db.md)
-	- [Query](doc/db_query.md)
-
-- [Cache](doc/cache.md)
-
-- [Storage](doc/storage.md)
-
-- [Email](doc/email.md)
-
-- [SMS](doc/sms.md)
-
-- [RPC](doc/rpc.md)
 
 驱动列表
 ----

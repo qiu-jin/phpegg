@@ -31,7 +31,7 @@ abstract class App
     protected $dispatch;
     
     /*
-     * 应用调度方法，调度成功返回数组，失败返回false
+     * 应用调度方法，调度失败返回false
      */
     abstract protected function dispatch();
     
@@ -84,9 +84,7 @@ abstract class App
     {
         if (self::$boot) return;
         self::$boot = true;
-        define('NS', '\\');
         define('FW_DIR', __DIR__.'/');
-        define('APP_VERSION', '1.0.0');
         defined('APP_DEBUG')|| define('APP_DEBUG', false);
         defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
         defined('APP_DIR')  || define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
@@ -116,7 +114,7 @@ abstract class App
         if (static::class !== __CLASS__) {
             throw new Exception('Illegal start call');
         }
-        if (in_array($app, ['Standard', 'Inline', 'Micro', 'Rest', 'Jsonrpc', 'Grpc'], true)) {
+        if (in_array($app, ['Standard', 'Inline', 'Micro', 'Rest', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'], true)) {
             $app = 'framework\core\app\\'.$app;
         } elseif (!is_subclass_of($app, __CLASS__)) {
             throw new Exception('Illegal app class: '.$app);
