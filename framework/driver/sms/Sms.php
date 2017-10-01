@@ -11,8 +11,8 @@ abstract class Sms
     /* 
      * 发送短信
      * $to 接受短信手机号
-     * $$template 短信模版id
-     * $$data 短信内容变量
+     * $template 短信模版id
+     * $data 短信内容变量
      */
     abstract public function send($to, $template, $data);
     
@@ -20,7 +20,9 @@ abstract class Sms
     {
         $this->acckey = $config['acckey'];
         $this->seckey = $config['seckey'];
-        $this->signname = $config['signname'];
         $this->template = $config['template'];
+        if (isset($config['signname'])) {
+            $this->signname = $config['signname'];
+        }
     }
 }

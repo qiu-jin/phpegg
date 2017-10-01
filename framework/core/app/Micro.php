@@ -13,12 +13,12 @@ class Micro extends App
     protected $config = [
         // 调度模式，支持default route组合
         'dispatch_mode' => ['default', 'route'],
-        // 控制器公共路径
+        // 控制器namespace
         'controller_ns' => 'controller',
         // 控制器类名后缀
         'controller_suffix' => null,
-        // 路由模式下是否启用Getter魔术方法，0否，1是
-        'route_dispatch_enable_getter' => 1,
+        // 路由模式下是否启用Getter魔术方法
+        'route_dispatch_enable_getter' => true,
         // 路由模式下允许的HTTP方法
         'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/]
     ];

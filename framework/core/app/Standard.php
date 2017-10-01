@@ -16,10 +16,10 @@ class Standard extends App
     protected $ns;
     protected $config = [
         // 调度模式，支持default route组合
-        'dispatch_mode' => 'default',
+        'dispatch_mode' => ['default'],
         // 控制器类namespace深度，0为不确定
         'controller_depth' => 1,
-        // 控制器公共路径
+        // 控制器namespace
         'controller_ns' => 'controller',
         // 控制器类名后缀
         'controller_suffix' => null,

@@ -15,10 +15,14 @@ class Rest extends App
     protected $ns;
     protected $config = [
         // 调度模式，支持default resource route组合
-        'dispatch_mode'     => 'default',
+        'dispatch_mode'     => ['default'],
+        // 控制器namespace
         'controller_ns'     => 'controller',
+        // 控制器类namespace深度，0为不确定
         'controller_depth'  => 1,
+        // 控制器类名后缀
         'controller_suffix' => null,
+        // request参数是否转为控制器方法参数
         'bind_request_params'   => null,
         
         // 默认调度的路径转为驼峰风格

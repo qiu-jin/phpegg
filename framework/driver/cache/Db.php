@@ -1,6 +1,8 @@
 <?php
 namespace framework\driver\cache;
 
+use framework\core\Container;
+
 /*
  * key char(128) NOT NULL PRIMARY KEY
  * value BLOB
@@ -13,7 +15,7 @@ class Db extends Cache
 
     protected function init($config)
     {
-        $this->link = db($config['db']);
+        $this->link = Container::driver('db', $config['db']);
         $this->table = $config['table'];
     }
     

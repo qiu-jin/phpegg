@@ -15,11 +15,12 @@ use Google\Protobuf\Internal\Message;
 class Grpc extends App
 {
     protected $config = [
-        // 控制器公共路径
+        // 控制器namespace
         'controller_ns'     => 'controller',
+        // 控制器类名后缀
         'controller_suffix' => null,
         /* 参数模式
-         * 0 kv 参数模式
+         * 0 键值参数模式
          * 1 request response 参数模式
          */
         'param_mode'        => 0,

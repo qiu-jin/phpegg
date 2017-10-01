@@ -14,7 +14,7 @@ composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的e
 
 应用模式
 ----
-框架目前支持Standard Rest Inline Jsonrpc Micro Grpc等多种应用模式，用户也可以实现自己的应用模式和不使用应用模式，以适应不同需求的应用开发。
+框架目前支持Standard Rest Inline Jsonrpc Micro Grpc等多种应用模式，用户也可以实现自己的应用模式和不使用应用模式，以适应不同需求的应用开发（Rest Jsonrpc Grpc用于接口应用，Standard Inline Micro即可用于接口应用也可用于视图应用，View只能用于视图应用），另外为了实现不同模式应用之间的相互调用，框架在rpc driver中实现了一套rpc client driver来远程调用服务。
 
 - [Standard](doc/app_standard.md)
 > 默认推荐的标准模式
@@ -28,7 +28,7 @@ composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的e
 - [Micro](doc/app_micro.md)
 > 微框架模式
 - [Grpc](doc/app_grpc.md)
-> grpc协议模式（较粗糙）
+> grpc协议模式（实验性）
 - View
 > 视图驱动模式（未完成）
 - Cli
@@ -54,23 +54,25 @@ composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的e
 - [Router](doc/router.md)
 
 - [View](doc/view.md)
-	- [Template](doc/view_template.md)
+	- Template
 
-- [Validator](doc/validator.md)
+- Validator
 
-- [Auth](doc/auth.md)
+- Auth
 
 - Http
 	- [Client](doc/http_client.md)
 	- [Request](doc/http_request.md)
 	- [Response](doc/http_response.md)
-	- [Cookie](doc/http_cookie.md)
-	- [Session](doc/http_session.md)
-	- [Uploaded](doc/http_uploaded.md)
-	- [UserAgent](doc/http_useragent.md)
+	- Cookie
+	- Session
+	- Uploaded
+	- UserAgent
 
-驱动列表
+驱动
 ----
+>驱动配置示例在app/demo/config目录中
+
 - [db 数据库](doc/db.md)
 
 | 驱动 | 描述         
@@ -252,6 +254,12 @@ $email->to('qiu-jin@qq.com', 'Qiujin')->subject('邮件标题')->template('email
 - sms 短信
 
 ```php
+/* 
+ * 发送短信
+ * $to 接受短信手机号
+ * $template 短信模版id
+ * $data 短信内容变量
+ */
 $sms->send('1520000000', 'register', ['code' => rand(1000, 9999)]);
 
 ```
