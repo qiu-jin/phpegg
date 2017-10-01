@@ -326,10 +326,10 @@ $crypt->decrypt('ia3E14cmVxkJhhP0YWPBvA==');
 
 | 驱动 | 描述         
 | ----|----
-|Redis | （坑）
-|Amqp | （坑）
-|Beanstalkd |（坑）
-|Kafka | （坑）
+|Redis | 使用redis list类型实现简单队列（坑）
+|Amqp | 基于Amqp协议RabbitMQ服务（坑）
+|Beanstalkd | pda/pheanstalk包（坑）
+|Kafka | php-rdkafka扩展（坑）
 
 
 
