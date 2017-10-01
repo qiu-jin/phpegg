@@ -16,57 +16,27 @@ composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的e
 ----
 框架目前支持Standard Rest Inline Jsonrpc Micro Grpc等多种应用模式，用户也可以实现自己的应用模式和不使用应用模式，以适应不同需求的应用开发。
 
-[Standard](doc/app_standard.md)
+- [Standard](doc/app_standard.md)
+> 默认推荐的标准模式
 
-```
-默认推荐的标准模式
-```
-[Rest](doc/app_rest.md)
-
-```
-RESTful风格模式
-```
-[Inline](doc/app_inline.md)
-
-```
-引用控制器文件代码
-```
-[Jsonrpc](doc/app_jsonrpc.md)
-
-```
-jsonrpc协议模式
-```
-[Micro](doc/app_micro.md)
-
-```
-微框架模式
-```
-[Grpc](doc/app_grpc.md)
-
-```
-grpc协议模式（较粗糙）
-```
-View
-
-```
-视图驱动模式（未完成）
-```
-Cli
-
-```
-命令行模式（未开始）
-```
-自定义应用模式
-
-```
-用户可以自己实现和使用一个继承framework\App基类，并实现dispatch call error response等方法的应用模式类。
-```
-
-无应用模式
-
-```
-不使用任何应用模式，只需调用framework\App::boot()初始化环境，就可以编写代码。
-```
+- [Rest](doc/app_rest.md)
+> RESTful风格模式
+- [Inline](doc/app_inline.md)
+> 引用控制器文件代码
+- [Jsonrpc](doc/app_jsonrpc.md)
+> jsonrpc协议模式
+- [Micro](doc/app_micro.md)
+> 微框架模式
+- [Grpc](doc/app_grpc.md)
+> grpc协议模式（较粗糙）
+- View
+> 视图驱动模式（未完成）
+- Cli
+> 命令行模式（未开始）
+- 自定义应用模式
+> 用户可以自己实现和使用一个继承framework\App基类，并实现dispatch call error response等方法的应用模式类。
+- 无应用模式
+> 不使用任何应用模式，只需调用framework\App::boot()初始化环境，就可以编写代码。
 
 部分核心类
 ----
@@ -101,7 +71,7 @@ Cli
 
 驱动列表
 ----
-- db 数据库
+- [db 数据库](doc/db.md)
 
 | 驱动 | 描述         
 | ----|----
@@ -233,6 +203,28 @@ $storage->fetch($from, $to);
 
 - rpc RPC
 
+```
+// 知乎rest api调用
+$zhihu->answers->get($id);
+
+// jsonrcp 服务调用
+$jsonrpc->User->getName($id);
+
+// jsonrcp 服务批量调用
+$jsonrpc->batch()
+        ->User->getName(1)
+        ->User->getName(2)
+        ->User->getName(3)
+        ->call();
+
+// thrift 服务调用，使用thriftpy创建的测试服务
+$thrift->PingPong->add(1, 2);
+
+// grpc 服务调用
+$grpc->User->getName($id);
+
+```
+
 | 驱动 | 描述         
 | ----|----
 |Jsonrpc | Jsonrpc协议rpc客户端
@@ -253,7 +245,7 @@ $email->to('qiu-jin@qq.com', 'Qiujin')->subject('邮件标题')->template('email
 | 驱动 | 描述         
 | ----|----
 |Smtp | 基于Smtp协议发送邮件
-|Sendmail | 使用php mail函数发送邮件（服务器需已装postfix等邮件服务器和以开放相应端口）
+|Sendmail | 使用php mail函数发送邮件（服务器需已装postfix等邮件服务器并已开放相应端口）
 |Mailgun | 使用Mailgun提供的邮件发送服务
 |Sendcloud | 使用Sendcloud提供的邮件发送服务 
 
