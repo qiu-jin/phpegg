@@ -117,20 +117,28 @@ Cli
 
 ```php
 // 设置缓存值
-$cache->set($key, $value, $ttl ＝ 0);
+$cache->set($key, $value, $ttl ＝ null);
 
 // 检查缓存是否存在
 $cache->has($key);
 
 // 获取缓存值
-$cache->get($key);
+$cache->get($key, $default = null);
 
-$cache->pop($key);
-
-$cache->remember($key);
+// 获取并删除缓存值
+$cache->pull($key);
 
 // 删除缓存
 $cache->delete($key);
+
+// 批量获取
+$cache->getMultiple($keys);
+
+// 批量设置
+$cache->setMultiple($values, $ttl = null);
+
+// 批量删除
+$cache->deleteMultiple($keys);
 
 // 清除所有缓存
 $cache->clear();
@@ -214,7 +222,7 @@ $storage->fetch($from, $to);
 |Qiniu | 七牛云存储
 |Webdav | 基于Webdav协议，兼容多种网盘，如Box OneDrive Pcloud 坚果云
 
-- logger 日志
+- [logger 日志](doc/logger.md)
 
 | 驱动 | 描述         
 | ----|----
@@ -228,12 +236,19 @@ $storage->fetch($from, $to);
 | 驱动 | 描述         
 | ----|----
 |Jsonrpc | Jsonrpc协议rpc客户端
-|Http | 模仿rpc调用风格的httpClient封装
-|Rest | 模仿rpc调用风格的Rest httpClient封装
+|Http | rpc调用风格的httpClient封装
+|Rest | rpc调用风格的Rest httpClient封装
 |Thrift | Thrift rpc客户端
 |Grpc | Grpc rpc客户端
 
 - email 邮件
+
+```php
+// 简单发送
+$email->send('qiu-jin@qq.com', '邮件标题', '邮件正文');
+// 高级发送
+$email->to('qiu-jin@qq.com', 'Qiujin')->subject('邮件标题')->template('email/register')->send();
+```
 
 | 驱动 | 描述         
 | ----|----
@@ -244,6 +259,11 @@ $storage->fetch($from, $to);
 
 - sms 短信
 
+```php
+$sms->send('1520000000', 'register', ['code' => rand(1000, 9999)]);
+
+```
+
 | 驱动 | 描述         
 | ----|----
 |Alidayu | 阿里大于短信服务
@@ -253,6 +273,9 @@ $storage->fetch($from, $to);
 
 - captcha 验证码
 
+```php
+$captcha->verify();
+```
 | 驱动 | 描述         
 | ----|----
 |Image | 使用gregwar/captcha包
@@ -261,6 +284,10 @@ $storage->fetch($from, $to);
 
 - geoip IP定位
 
+```php
+$geoip->locate('8.8.8.8');
+```
+
 | 驱动 | 描述         
 | ----|----
 |Baidu | Baidu地图IP定位接口，优点几乎不限请求，缺点无法定位国外ip
@@ -268,6 +295,13 @@ $storage->fetch($from, $to);
 |Maxmind | Maxmind IP定位，有在线api接口和离线数据库两种使用方式
 
 - crypt 加解密
+
+```
+//加密
+$crypt->encrypt('hello world');
+//解密
+$crypt->decrypt('ia3E14cmVxkJhhP0YWPBvA==');
+```
 
 | 驱动 | 描述         
 | ----|----

@@ -35,7 +35,7 @@ abstract class Cache
         return $this->link;
     }
     
-    public function pop($key)
+    public function pull($key)
     {
         $value = $this->get($key);
         $this->delete($key);
