@@ -7,7 +7,7 @@ class Oracle extends Pdo
     
     protected function dsn($config)
     {
-        $dsn = 'pgsql:dbname='.$config['dbname'].';host='.$config['host'];
+        $dsn = 'oci:dbname='.$config['dbname'].';host='.$config['host'];
         $dsn .= isset($config['port']) ? ':'.$config['port'] : '/';
         return $dsn;
     }
