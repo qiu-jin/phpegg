@@ -6,9 +6,9 @@ use framework\core\http\Client;
 class Qiniu extends Storage
 {
     protected $bucket;
+    protected $region;
     protected $acckey;
     protected $seckey;
-    protected $region;
     protected $public_read = false;
     protected static $host = 'https://rs.qbox.me';
     
@@ -18,7 +18,9 @@ class Qiniu extends Storage
         $this->domain = $config['domain'];
         $this->acckey = $config['acckey'];
         $this->seckey = $config['seckey'];
-        isset($config['region']) && $this->region = '-'.$config['region'];
+        if (isset($config['region'])) {
+            $this->region = '-'.$config['region'];
+        }
     }
 
     public function get($from, $to = null)

@@ -6,40 +6,25 @@ use framework\core\http\Client;
 class Ipip extends Geoip
 {
     protected $db;
-    protected $acckey;
+    protected $token;
 
     protected function init($config)
     {
-        if (isset($config['dbfile'])) {
+        if (isset($config['database'])) {
             $this->handle = 'dbHandle';
-            $this->db = ['file' => $config['dbfile']];
-        } elseif (isset($config['acckey'])) {
+            $this->db = ['database' => $config['database']];
+        } elseif (isset($config['token'])) {
             $this->handle = 'apiHandle';
-            $this->acckey = $config['acckey'];
+            $this->token = $config['token'];
         } else {
             throw new \Exception("Invalid configuration");
         }
     }
     
-    public function apiHandle($ip, $raw = false)
-    {
-        $client = Client::get('http://ipapi.ipip.net/find/?addr='.$ip)->header('Token', $this->acckey);
-        $result = $client->json;
-        if (isset($result['ret'])) {
-            if ($result['ret'] === 'ok') {
-                $result = $result['data'];
-                return $raw ? $result : ['country' => $result[0], 'state' => $result[1], 'city' => $result[2]];
-            } elseif ($result['ret'] === 'err') {
-                return error($result['msg']);
-            }
-        }
-        return error($client->error);
-    }
-    
     public function dbHandle($ip,  $raw = false)
     {
         if (empty($this->db['fp'])) {
-            $this->db['fp'] = fopen($this->db['file'], 'rb');
+            $this->db['fp'] = fopen($this->db['database'], 'rb');
             if ($this->db['fp']) {
                 $this->db['offset'] = unpack('Nlen', fread($this->db['fp'], 4));
                 $this->db['index']  = fread($this->db['fp'], $this->db['offset']['len'] - 4);
@@ -66,6 +51,21 @@ class Ipip extends Geoip
             return $raw ? $result : ['country' => $result[0], 'state' => $result[1], 'city' => $result[2]];
         }
         return false;
+    }
+    
+    public function apiHandle($ip, $raw = false)
+    {
+        $client = Client::get('http://ipapi.ipip.net/find/?addr='.$ip)->header('Token', $this->token);
+        $result = $client->json;
+        if (isset($result['ret'])) {
+            if ($result['ret'] === 'ok') {
+                $result = $result['data'];
+                return $raw ? $result : ['country' => $result[0], 'state' => $result[1], 'city' => $result[2]];
+            } elseif ($result['ret'] === 'err') {
+                return error($result['msg']);
+            }
+        }
+        return error($client->error);
     }
     
     public function __destruct()

@@ -13,7 +13,7 @@ class View extends App
         // 调度模式，支持default route组合
         'dispatch_mode'     => 'default',
 
-        'view_model'        => 'app\viewmodel\\',
+        'view_model_ns'     => 'viewmodel',
 
         // 默认调度的缺省调度
         'default_dispatch_index' => null,

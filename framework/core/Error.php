@@ -55,7 +55,7 @@ class Error
         if (Config::env('STRICT_ERROR_MODE')) {
             throw new \ErrorException($message, $code, $code, $file, $line);
         } else {
-            self::record(null, $level, $message, $file, $line);
+            self::record('error.user', $level, $message, $file, $line);
         }
     }
     
@@ -70,7 +70,7 @@ class Error
             } else {
                 list($level, $prefix) = self::getErrorLevelInfo($code);
                 $message = $prefix.': '.$message;
-                self::record('error', $level, $message, $file, $line);
+                self::record('error.error', $level, $message, $file, $line);
                 if ($level === Logger::CRITICAL || $level === Logger::ALERT || $level === Logger::ERROR ) {
                     App::exit(3);
                     self::response();
@@ -89,7 +89,7 @@ class Error
         $level = Logger::ERROR;
         $name  = $e instanceof Exception ? ($e->getClass() ?? 'CoreException') : get_class($e);
         $message = 'Uncaught '.$name.': '.$e->getMessage();
-        self::record('exception', $level, $message, $e->getFile(), $e->getLine());
+        self::record('error.exception', $level, $message, $e->getFile(), $e->getLine());
         self::response();
     }
     
@@ -104,7 +104,7 @@ class Error
                 App::exit(5);
                 list($level, $prefix) = self::getErrorLevelInfo($last_error['type']);
                 $message = 'Fatal Error '.$prefix.': '.$last_error['message'];
-                self::record('fatal', $level, $message, $last_error['file'], $last_error['line']);
+                self::record('error.fatal', $level, $message, $last_error['file'], $last_error['line']);
                 self::response();
     		} else {
     		    // Logger::write(Logger::WARNING, 'Illegal exit');

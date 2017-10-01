@@ -14,12 +14,13 @@ class Maxmind extends Geoip
     protected $db;
     protected $api = ['type' => 'country'];
     protected $lang = 'en';
-
+    protected static $host = 'https://geoip.maxmind.com/geoip/v2.1';
+    
     protected function init($config)
     {
-        if (isset($config['dbfile'])) {
+        if (isset($config['database'])) {
             $this->handle = 'dbHandle';
-            $this->db = ['file' => $config['dbfile']];
+            $this->db = ['database' => $config['database']];
         } elseif (isset($config['acckey']) && isset($config['seckey'])) {
             $this->handle = 'apiHandle';
             $this->api['acckey'] = $config['acckey'];
@@ -34,7 +35,7 @@ class Maxmind extends Geoip
     
     protected function apiHandle($ip, $raw = false)
     {
-        $url = 'https://geoip.maxmind.com/geoip/v2.1/'.$this->api['type'].'/'.$ip;
+        $url = self::$host.'/'.$this->api['type'].'/'.$ip;
         $client = Client::get($url)->header('Authorization', 'Basic '.base64_encode($this->api['acckey'].':'.$this->api['seckey']));
         $result = $client->json;
         if (isset($result['country'])) {
@@ -57,8 +58,8 @@ class Maxmind extends Geoip
     
     protected function dbHandle($ip, $raw = false)
     {
-        if (empty($this->db['eader'])) {
-            $this->db['reader'] = new Reader($this->db['file']);
+        if (empty($this->db['reader'])) {
+            $this->db['reader'] = new Reader($this->db['database']);
         }
         $record = $this->db['reader']->get($ip);
         return $raw ? $record : ['iso_code' => $record['country']['iso_code'], 'country' => $record['country']['names'][$this->lang]];
