@@ -8,7 +8,7 @@ define('APP_DEBUG', true);
 include '../../../framework/app.php';
 
 framework\App::start('Standard', [
-    'controller_ns' => 'controller\standard',
+    'default_dispatch_param_mode' => 1,
 ])->run();
 ```
 
@@ -17,7 +17,7 @@ framework\App::start('Standard', [
 ```php
 [
     // 调度模式，支持default route组合
-    'dispatch_mode' => 'default',
+    'dispatch_mode' => ['default'],
     // 控制器类namespace深度，0为不确定
     'controller_depth' => 1,
     // 控制器namespace
@@ -62,6 +62,14 @@ framework\App::start('Standard', [
 ```
 调度模式
 ---
+standard模式下支持默认调度与路由调度组合调度。
+> dispatch_mode为['default']时 只使用默认调度
+> 
+> dispatch_mode为['route']时 只使用路由调度
+> 
+> dispatch_mode为['default', 'route']时 先默认调度，成功则返回，失败则继续路由调度
+> 
+> dispatch_mode为['route', 'default']时 先路由调度，成功则返回，失败则继续默认调度
 
 1 默认调度
 
@@ -144,7 +152,7 @@ class User
 > 如请求/User/getNames/1/2/3/4，会调度app\controller\User::getNames('1', '2', '3', '4')
 
 路由调度下，路由表规则必须是list参数形式。
-> 如路由规则 'user/names/*/*/*/*'=> 'User::getNames($1, $2, $3, $4)'，请求/User/getNames/1/2/3/4，会调度app\controller\User::getNames('1', '2', '3', '4')
+> 如路由规则 'user/names/\*/\*/\*/*'=> 'User::getNames($1, $2, $3, $4)'，请求/User/getNames/1/2/3/4，会调度app\controller\User::getNames('1', '2', '3', '4')
 
 3 键值kv参数模式
 
@@ -165,13 +173,36 @@ class Foo
 ```
 
 路由调度下，路由表规则必须是kv参数形式。
-> 如路由规则 'foo/bar/*/*'=> 'Foo::bar(param1 = $1, param = $2)'，如请求/Foo/bar/1/2，会调度app\controller\Foo:: bar('1', '2')
+> 如路由规则 'foo/bar/\*/*'=> 'Foo::bar(param1 = $1, param = $2)'，如请求/Foo/bar/1/2，会调度app\controller\Foo:: bar('1', '2')
 
 
 bind_request_params配置（默认为空），支持将request get post等作为kv参数传给到控制器方法
 > 如bind_request_params为[get]时，请求/User/getName?id=1，app\controller\User::getName('1')
 
 missing_params_to_null配置（默认为false），当调用控制器方法时如果缺少参数，应用默认会返回一个错误响应（如404 500页面），为了避免错误可以将其设为true，此时会默认将缺少的参数赋予null值传给到控制器方法。
+
+
+视图设置
+---
+standard模式支持视图，但是默认情况下没有开启，开启需要将enable_view配置设为true。
+
+template_to_snake配置（默认为false），由于standard模式下对视图文件和模版文件查找是根据控制器类与方法名，但是制器类与方法名一般是使用驼峰风格，而视图文件和模版文件一般是使用小写下划线，所以把emplate_to_snake设为true会将驼峰风格的控制器类与方法名映射到小写下划线风格视图和模版文件
+
+>当emplate_to_snake为true时，请求/User/getUser会调用名为user/get_user的视图和模版文件
+
+视图的具体配置调用可以参考核心视图章节。
+
+响应输出
+---
+启用视图时输出对应html页面，不启用视图时默认输出json_encode($return)
+
+错误响应
+---
+启用视图时输出对应404 500等html错误页面，不启用视图时默认输出json_encode(['error' => ['code' => $code, 'message' => $message])
+
+
+
+
 
 
 
