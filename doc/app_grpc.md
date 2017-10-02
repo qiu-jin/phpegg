@@ -145,6 +145,8 @@ public function get (\TestGrpc\UserGetRequest $request, \TestGrpc\UserGetRespons
 设置grpc-status header头值为0（0为成功）
 将response message类实例数据编码为protobuf格式二进制数据放在body发送给请求者。
 
+> 注意grpc协议中request和response的二进制数据前5个字节用来描述protobuf数据，而不是protobuf数据本身的，这5个字节中第1个字节用来表示数据编码方式（默认为0），2-5字节用来表示protobuf数据大小（大端排序）
+
 错误
 ----
 按照grpc协议把错误码$code通过grpc-status header头，错误信息$message通过grpc-message header头发送给请求者，body为空。
