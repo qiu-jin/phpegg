@@ -19,7 +19,7 @@ framework\App::start('Jsonrpc', [
 ```php
 [
     // 控制器namespace
-    'controller_ns' => ['controller'],
+    'controller_ns' => 'controller',
     // 控制器类名后缀
     'controller_suffix' => null,
     /* 参数模式
@@ -58,7 +58,7 @@ jsonrpc模式是以jsonrpc请求数据中的method来调度，以符号.分割me
 
 > 如"method": "foo.Bar.baz" 会调用app\controller\foo\Bar::baz()
 
-controller_ns与controller_suffix配置说明参考[standard模式](doc/app_standard.md)
+controller_ns与controller_suffix配置说明参考[standard模式](app_standard.md)
 
 request_unserialize（默认为jsondecode）与response_serialize（默认为jsonencode）配置，用来处理请求数据的反序列化和响应数据序列化，虽然jsonrpc2.0协议规定使用json来编解码请求和响应，但是为了提高编解码效率和减少传输数据大小，我们还可以igbinary msgpack等协议来编解码请求和响应（需要安装对应扩展）。
 
@@ -98,7 +98,7 @@ param_mode支持3种参数模式（默认值为1）
 ```js
 {"jsonrpc": "2.0", "method": "User.getNames", "params": [1, 2, 3, 4], "id": 1}
 ```
-> 如上请求，会调度app\controller\User::getNames('1', '2', '3', '4')
+> 如上请求，会调度app\controller\User::getNames(1, 2, 3, 4)
 
 3 键值kv参数模式
 
@@ -107,7 +107,7 @@ param_mode支持3种参数模式（默认值为1）
 ```js
 {"jsonrpc": "2.0", "method": "User.getName", "params": {"id":1}, "id": 2}
 ```
-> 如上请求，会调度app\controller\User::getName('1')
+> 如上请求，会调度app\controller\User::getName(1)
 
 
 

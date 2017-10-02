@@ -15,7 +15,7 @@ class Jsonrpc extends App
 {
     protected $config = [
         // 控制器namespace
-        'controller_ns' => ['controller'],
+        'controller_ns' => 'controller',
         // 控制器类名后缀
         'controller_suffix' => null,
         /* 参数模式

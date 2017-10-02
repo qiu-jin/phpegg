@@ -83,7 +83,7 @@ inline模式支持视图，但默认没有开启，开启需要将enable_view配
 ----
 启用视图时输出对应html页面，不启用视图时默认输出json_encode($return)
 
-return_1_to_null配置（默认为false），由于php的特性，require一个控制器php文件时，即使没有任何return，也会获得一个值为1的整数return值，所以为了防止此特性对return值有所干扰，设为true时为整数1的return值会被转为null。
+return_1_to_null配置（默认为false），由于php的特性，require一个控制器php文件时，即使没有任何return，也会获得一个值为整数1的return值，所以为了防止此特性对return值有所干扰，设为true时为整数1的return值会被转为null。
 
 错误
 ----

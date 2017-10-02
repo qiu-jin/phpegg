@@ -12,7 +12,7 @@ composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的e
 
 此外框架本身也实现了一个简单的autoload，优先级大于composer autoload。
 
-应用模式
+开始应用
 ----
 框架目前支持Standard Rest Inline Jsonrpc Micro Grpc等多种应用模式，用户也可以实现自己的应用模式和不使用应用模式，以适应不同需求的应用开发（Rest Jsonrpc Grpc用于接口应用，Standard Inline Micro即可用于接口应用也可用于视图应用，View只能用于视图应用），另外为了实现不同模式应用之间的相互调用，框架在rpc driver中实现了一套rpc client driver来远程调用服务。
 

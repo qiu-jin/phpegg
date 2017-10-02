@@ -58,7 +58,7 @@ framework\App::start('Rest', [
 ```
 调度
 ---
-rest模式下大部分参数规则与standard模式基本一致，所以建议在阅读本章节时先阅读[standard模式](doc/app_standard.md)，这里不再详细说明.
+rest模式下大部分参数规则与standard模式基本一致，所以建议在阅读本章节时先阅读[standard模式](app_standard.md)，这里不再详细说明.
 
 rest模式下支持默认调度 资源调度 路由调度的自由排列组合调度。
 
