@@ -29,7 +29,7 @@ class Rest extends App
         'default_dispatch_to_camel' => null,
         /* 默认调度的参数模式
          * 0 无参数
-         * 1 循序参数
+         * 1 顺序参数
          * 2 键值参数
          */
         'default_dispatch_param_mode' => 0,

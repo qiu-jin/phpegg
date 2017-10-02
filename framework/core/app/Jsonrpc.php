@@ -15,12 +15,12 @@ class Jsonrpc extends App
 {
     protected $config = [
         // 控制器namespace
-        'controller_ns' => 'controller',
+        'controller_ns' => ['controller'],
         // 控制器类名后缀
         'controller_suffix' => null,
         /* 参数模式
          * 0 无参数
-         * 1 循序参数
+         * 1 顺序参数
          * 2 键值参数
          */
         'param_mode'    => 1,
