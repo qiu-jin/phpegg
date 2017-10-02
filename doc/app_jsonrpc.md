@@ -33,11 +33,11 @@ framework\App::start('Jsonrpc', [
     // 批调用异常中断
     'batch_exception_abort' => false,
     /* 通知调用模式
-     * null, false, 不使用通知调用
+     * false, 不使用通知调用
      * true，使用Hook close实现伪后台任务
      * string，使用异步队列任务实现，string为队列任务名
      */
-    'notification_mode' => null,
+    'notification_mode' => false,
     // 通知回调方法
     'notification_callback' => null,
     
@@ -54,13 +54,13 @@ framework\App::start('Jsonrpc', [
 调度
 ----
 
-jsonrpc模式调度但是以，jsonrpc请求数据中的method来调度，以符号.分割method成多个单元，从0到倒数第2个之间的单元匹配控制器类，最后一个单元匹配控制器方法。
+jsonrpc模式是以jsonrpc请求数据中的method来调度，以符号.分割method成多个单元，从0到倒数第2个之间的单元匹配控制器类，最后一个单元匹配控制器方法。
 
 > 如"method": "foo.Bar.baz" 会调用app\controller\foo\Bar::baz()
 
 controller_ns与controller_suffix配置说明参考[standard模式](doc/app_standard.md)
 
-request_unserialize（默认为jsondecode）与response_serialize（默认为jsonencode）配置，用来处理请求数据的反序列化和响应数据反序列，虽然jsonrpc2.0协议规定使用json来编解码请求和响应，但是为了提高编解码效率和减少传输数据大小，我们还可以igbinary msgpack等协议来编解码请求和响应（需要安装对应扩展）。
+request_unserialize（默认为jsondecode）与response_serialize（默认为jsonencode）配置，用来处理请求数据的反序列化和响应数据序列化，虽然jsonrpc2.0协议规定使用json来编解码请求和响应，但是为了提高编解码效率和减少传输数据大小，我们还可以igbinary msgpack等协议来编解码请求和响应（需要安装对应扩展）。
 
 如需设置特定content_type响应header头，可使用response_content_type配置（默认为空）
 
@@ -73,9 +73,9 @@ batch_exception_abort配置（默认为false），决定当批量调用时某个
 > 注意：即使batch_exception_abort设为false，调用App::abort()方法也会终止批量调用。
 
 
-notification_mode配置（默认为空），按照jsonrpc2.0协议，当请求的id为空时，此请求为一个通知请求，通知请求不需要立即将请求结果返回，所以服务端可以将通知请求任务放在后台运行，并提前关闭请求链接。
+notification_mode配置（默认为false），按照jsonrpc2.0协议，当请求的id为空时，此请求为一个通知请求，通知请求不需要立即将请求结果返回，所以服务端可以将通知请求任务放在后台运行，并提前关闭请求链接。
 
-当notification_mode为null时不启用通知请求，仍按照正常请求处理。
+当notification_mode为false时不启用通知请求，仍按照正常请求处理。
 
 当notification_mode为true，会提前使用fastcgi_finish_request关闭请求链接，再执行请求任务。
 

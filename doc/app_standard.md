@@ -186,8 +186,8 @@ bind_request_params配置（默认为空），支持将request get post等作为
 missing_params_to_null配置（默认为false），当调用控制器方法时如果缺少参数，应用默认会返回一个错误响应（如404 500页面），为了避免错误可以将其设为true，此时会默认将缺少的参数赋予null值传给到控制器方法。
 
 
-视图设置
----
+视图
+----
 standard模式支持视图，但是默认情况下没有开启，开启需要将enable_view配置设为true。
 
 template_to_snake配置（默认为false），由于standard模式下对视图文件和模版文件查找是根据控制器类与方法名，但是制器类与方法名一般是使用驼峰风格，而视图文件和模版文件一般是使用小写下划线，所以把emplate_to_snake设为true会将驼峰风格的控制器类与方法名映射到小写下划线风格视图和模版文件
@@ -196,15 +196,15 @@ template_to_snake配置（默认为false），由于standard模式下对视图�
 
 视图的具体配置调用可以参考核心视图章节。
 
-默认响应输出
----
+响应
+----
 启用视图时输出对应html页面，不启用视图时默认输出json_encode($return)
 
 所有模式的应用实例的run方法，都支持参数$return_handler用来过滤修改$return数据，也可以直接处理$return的输出。
 > 如使用$app->run('dd')，可以直接用dd()辅助函数打印$return数据，并跳过默认响应输出处理。
 
-默认错误响应
----
+错误
+----
 启用视图时输出对应404 500等html错误页面，不启用视图时默认输出json_encode(['error' => ['code' => $code, 'message' => $message])
 
 所有模式的应用实例都支持setErrorHandler方法，可以设置自己的错误处理器。

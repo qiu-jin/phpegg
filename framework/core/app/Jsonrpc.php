@@ -33,7 +33,7 @@ class Jsonrpc extends App
          * true，使用Hook close实现伪后台任务
          * string，使用异步队列任务实现，string为队列任务名
          */
-        'notification_mode' => null,
+        'notification_mode' => false,
         // 通知回调方法
         'notification_callback' => null,
         

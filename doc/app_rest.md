@@ -62,7 +62,7 @@ rest模式下大部分参数规则与standard模式基本一致，所以建议�
 
 rest模式下支持默认调度 资源调度 路由调度的自由排列组合调度。
 
-所有调度都支持调用控制器公用方法。
+所有调度都只支持调用控制器公用方法。
 
 
 1 默认调度
@@ -77,7 +77,8 @@ rest模式支持route_dispatch_routes与route_dispatch_action_route。
 
 rest模式下的路由调度与standard模式区别是，前者支持HTTP method级的路由规则表。
 
-> 如'User/*' => ['GET' => 'User::getUser($1)', 'DELETE' => 'User:: delete User($1)']规则。
+> 如'User/*' => ['GET' => 'User::getUser($1)', 'DELETE' => 'User:: deleteUser($1)']规则。
+> 
 > 请求 DELETE /User/1，会调度app\controller\User::deleteUser('1')
 
 3 资源调度
@@ -106,6 +107,8 @@ rest模式也有3种参数模式设置，基本与standard模式一致，但是�
 默认响应输出
 ---
 json_encode(['result' => $return])
+
+默认不支持html视图输出，但是可以自己实现return_handler处理器来支持html输出。
 
 默认错误响应
 ---
