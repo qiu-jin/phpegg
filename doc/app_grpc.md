@@ -105,7 +105,7 @@ message UserCreateResponse {
 
 1 键值参数模式
 
-在键值参数模式下，request_scheme_format和response_scheme_format配置定义了request message scheme和response message scheme类名的格式，并将请求的protobuf数据绑定到request message类实例，然后从request message类实例抽取field值，以键值对形式传给控制器方法。
+在键值参数模式下，request_scheme_format和response_scheme_format配置定义了request message scheme和response message scheme类名的格式，并将请求的protobuf数据绑定到request message类实例，然后从request message类实例抽取field值，以键值对形式传给控制器方法（比较讨厌protobuf官方php扩展实现的getXXX和 setXXX获取设置数据的方法，但是目前也没能力自己去实现一个，只好以这个种较别扭方式处理）。
 
 > 如request_scheme_format为{service}{method}Request时
 > 
