@@ -87,7 +87,7 @@ default_dispatch_index配置（默认为空）,当直接访问域名时也就是
 
 >例如default_dispatch_index为Home/index，请求/会默认调度app\controller\Home::index()
 
-default_dispatch_default_action配置（默认为空）,当url_path刚好匹配到控制器类，而控制器类缺失，设置default_dispatch_default_action可以调度默认控制器方法。
+default_dispatch_default_action配置（默认为空）,当url_path刚好匹配到控制器类，而控制器方法缺失，设置default_dispatch_default_action可以调度默认控制器方法。
 
 >例如default_dispatch_default_action为index，请求/Home会默认调度app\controller\Home::index()
 
@@ -108,6 +108,73 @@ route_dispatch_routes配置（默认为空），其值可以是一个路由表�
 route_dispatch_action_route配置（默认为false），为true时会开启控制器方法层级的路由（route_dispatch_routes相当于全局层级的路由），调度器会根据url_path先匹配到对应的控制器类（默认调度规则），然后使用控制器类中的routes属性的值作为路由规则表匹配剩下的url_path单元。
 
 使用route_dispatch_action_route优点是分散路由规则表，提高调度效率。缺点是不支持控制器类的路由匹配（有计划先通过route_dispatch_routes匹配到类，在使用route_dispatch_action_route匹配方法）。
+
+> 例如示例代码，请求/user/1/name会调度app\controller\User::getName('1')
+
+```php
+// 示例代码
+namespace app\controller;
+
+class User
+{
+    use \Getter;
+
+    protected $routes = [
+        '*/name' => 'getName($1)',
+    ];
+    
+    public function getName($id)
+    {
+        return $this->db->user->select('name')->get($id);
+    }
+}
+```
+
+参数模式
+---
+默认调度（配置default_dispatch_param_mode）和路由调度（配置route_dispatch_param_mode）都支持3种参数模式（默认值为1），不为0时与controller_depth为0冲突触发异常。
+
+1 无参数模式
+
+简而言之就是控制器方法不需要任何参数。
+
+2 循序list参数模式
+
+默认调度下，匹配完控制器类与方法后剩余url_path单元会作为list参数传给控制器方法
+> 如请求/User/getNames/1/2/3/4，会调度app\controller\User::getNames('1', '2', '3', '4')
+
+路由调度下，路由表规则必须是list参数形式。
+> 如路由规则 'user/names/*/*/*/*'=> 'User::getNames($1, $2, $3, $4)'，请求/User/getNames/1/2/3/4，会调度app\controller\User::getNames('1', '2', '3', '4')
+
+3 键值kv参数模式
+
+默认调度下，匹配完控制器类与方法后剩余url_path单元会解析成键值对作为kv参数传给控制器方法。
+> 如请求/Foo/bar/param1/1/param2/2，会调度app\controller\Foo:: bar('1', '2')
+
+```php
+// 示例代码
+namespace app\controller;
+
+class Foo
+{
+    public function bar($param1, $param2)
+    {
+        return $param1 + $param2;
+    }
+}
+```
+
+路由调度下，路由表规则必须是kv参数形式。
+> 如路由规则 'foo/bar/*/*'=> 'Foo::bar(param1 = $1, param = $2)'，如请求/Foo/bar/1/2，会调度app\controller\Foo:: bar('1', '2')
+
+
+bind_request_params配置（默认为空），支持将request get post等作为kv参数传给到控制器方法
+> 如bind_request_params为[get]时，请求/User/getName?id=1，app\controller\User::getName('1')
+
+missing_params_to_null配置（默认为false），当调用控制器方法时如果缺少参数，应用默认会返回一个错误响应（如404 500页面），为了避免错误可以将其设为true，此时会默认将缺少的参数赋予null值传给到控制器方法。
+
+
+
 
 
 
