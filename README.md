@@ -316,19 +316,58 @@ $crypt->decrypt('ia3E14cmVxkJhhP0YWPBvA==');
 
 - search 搜索（[配置](app/demo/config/search.php)）
 
+```php
+// 使用id获取一条数据
+$search->index->get($id);
+// 使用elastic原生query语法搜索
+$search->index->search($query);
+// 更新设置指定id数据
+$search->index->put($id, $data);
+// 添加索引数据
+$search->index->index($data);
+// 更新数据，使用query语法
+$search->index->update($query, $data);
+// 使用query语法删除
+$search->index->delete($query);
+```
+
 | 驱动 | 描述         
 | ----|----
-|Elastic | 基于Elastic rest接口 （粗略测试）
+|Elastic | 基于Elastic rest接口 （不完善）
 
 - data 非关系数据库（[配置](app/demo/config/data.php)）
 
+```php
+// mongodb
+// 使用id获取一条数据
+$mongo->db->collection->get($id);
+// 查找数据，使用mongodb原生filter options语法
+$mongo->db->collection->find($filter, $options);
+// 获取数据记录数
+$mongo->db->collection->count($filter, $options);
+// 插入数据
+$mongo->db->collection->insert($data);
+// 更新数据
+$mongo->db->collection->update($data, $filter, $options);
+// 更新指定id数据
+$mongo->db->collection->upsert($id, $data);
+// 删除
+$mongo->db->collection->delete($filter, $options);
+```
 | 驱动 | 描述         
 | ----|----
 |Cassandra | 使用datastax扩展（坑）
-|Mongo | 使用MongoDB扩展（粗略测试）
+|Mongo | 使用MongoDB扩展（不完善）
 |Hbase | 使用Thrift Rpc客户端（坑）
 
 - queue 队列（[配置](app/demo/config/queue.php)）
+
+```php
+// 生产者推送一条信息
+$queue->producer($job)->push($message);
+// 消费者拉取一条信息
+$queue->consumer($job)->pull();
+```
 
 | 驱动 | 描述         
 | ----|----
