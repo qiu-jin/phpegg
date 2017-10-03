@@ -111,6 +111,12 @@ class Demo
 - [db 数据库](doc/db.md)（[配置](app/demo/config/db.php)）
 
 ```php
+// 执行一条SQL并返回结果
+$db->exec("SELECT * FROM user WHERE id = ?", [1]);
+
+// 执行一条SQL并获返回query给后续方法处理
+$db->fetch($db->query("SELECT * FROM user"));
+
 $db->user->get(1);
 //SELECT * FROM user WHERE id = 1 LIMIT 1
 
