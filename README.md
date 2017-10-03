@@ -71,7 +71,40 @@ composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的e
 
 驱动
 ----
->驱动配置示例在app/demo/config目录中
+调用驱动实例有2种方式，驱动实例统一由容器类管理。
+> 1 使用辅助函数db cache storage rpc email sms driver
+
+```php
+// 辅助函数参数为空，会默认取驱动配置的第一个实例
+db()->table->get($id);
+// 参数指定使用email驱动配置的smtp实例
+email('smtp')->send($mail, $subject, $content);
+// geoip等驱动没有同名的辅助函数，但可以使用driver函数调用。
+driver('geoip', 'ipip')->locate('8.8.8.8');
+```
+> 2 trait Getter，继承其魔术方法__get
+
+```php
+class Demo
+{
+    use \Getter;
+    
+    protected $providers = [
+        'smtp' => 'email.smtp',
+        'ipip' => 'geoip.ipip',
+    ];
+
+    public function test()
+    {
+	     // 使用驱动类的同名的关键字，会默认取驱动配置的第一个实例
+        $this->db->table->get($id);
+        // 指定别名smtp到email驱动配置的smtp实例
+        $this->smtp->send($mail, $subject, $content);
+        // 指定别名ipip到geoip驱动配置的ipip实例
+        $this->ipip->locate('8.8.8.8');
+    }
+}
+```
 
 - [db 数据库](doc/db.md)（[配置](app/demo/config/db.php)）
 
