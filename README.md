@@ -104,43 +104,54 @@ $db->exec("SELECT * FROM user WHERE id = ?", [1]);
 // 执行一条SQL并获返回query给后续方法处理
 $db->fetch($db->query("SELECT * FROM user"));
 
+// 简单查询
 $db->user->get(1);
 // SELECT * FROM `user` WHERE `id` = '1' LIMIT 1
 
+// 组合查询
 $db->good->select('name')->where('id', '>', 2)->limit(2)->order('id')->find();
 // SELECT `name` FROM `good` WHERE `id` > '2' ORDER BY `id` LIMIT 2
 
+// 聚合查询，查询用户1的最大订单金额
 $db->orders->where('user_id', 1)->max('amount');
 // SELECT max(`amount`) AS `max_amount` FROM `orders` WHERE `user_id` = '1'
 
+// join连表查询，查询用户1的信息和他的订单
 $db->user->join('orders')->get(1);
 // desc `orders`
 // SELECT `user`.*,`orders`.`id` AS `orders_id`,`orders`.`user_id` AS `orders_user_id`,`orders`.`good_id` AS `orders_good_id`,`orders`.`quantity` AS `orders_quantity`,`orders`.`amount` AS `orders_amount`,`orders`.`time` AS `orders_time` FROM `user` LEFT JOIN `orders` ON `user`.`id` = `orders`.`user_id` WHERE `user`.`id` = '1'
 
+// join连表查询，在join从表指定了select字段时不再需要使用desc语句获取表字段
 $db->user->select('name')->join('orders')->select('good_id')->get(1);
 // SELECT `user`.`name`,`orders`.`good_id` AS `orders_good_id` FROM `user` LEFT JOIN `orders` ON `user`.`id` = `orders`.`user_id` WHERE `user`.`id` = '1'
 
+// with逻辑连表查询，先查询user，再根据结果查询orders
 $this->db->user->with('orders')->find();
 // SELECT * FROM `user`
 // SELECT * FROM `orders` WHERE `user_id` IN ('1','2','3')
 
+// with逻辑连表查询，使用on方法指定2个表的关联字段
 $this->db->orders->with('good')->on('good_id', 'id')->find();
 // SELECT * FROM `orders`
 // SELECT * FROM `good` WHERE `id` IN ('1','2')
 
+// relate逻辑连表查询，此查询方式需要一个中间表关联主表和从表的信息
 $this->db->user->relate('good')->find();
 // SELECT * FROM `user`
 // SELECT `user_id`, `good_id` FROM `user_good` WHERE `user_id` IN ('1','18','19')
 // SELECT * FROM `good` WHERE `id` IN ('1','3')
 
+// relate逻辑连表查询，使用on方法指定中间表名和关联字段
 $this->db->good->relate('user')->on('user_good')->find();
 // SELECT * FROM `good`
 // SELECT `good_id`, `user_id` FROM `user_good` WHERE `good_id` IN ('1','3')
 // SELECT * FROM `user` WHERE `id` IN ('1')
 
+// 子查询连表查询，子查询只作为主表查询过滤条件
 $db->user->sub('orders')->where('good_id', 1)->find();
 // SELECT * FROM `user` WHERE `id` IN (SELECT `user_id` FROM `orders` WHERE `good_id` = '1') 
 
+// union连表查询
 $db->orders->where('user_id', 1)->union('orders_2')->where('user_id', 2)->find();
 // (SELECT * FROM `orders` WHERE `user_id` = '1') UNION ALL (SELECT * FROM `orders_2` WHERE `user_id` = '2')
 ```
