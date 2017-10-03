@@ -1,5 +1,5 @@
 入口
----
+----
 ```php
 //app/demo/public/index_rest.php
 
@@ -57,7 +57,7 @@ framework\App::start('Rest', [
 ]
 ```
 调度
----
+----
 rest模式下大部分参数规则与standard模式基本一致，所以建议在阅读本章节时先阅读[standard模式](app_standard.md)，这里不再详细说明.
 
 rest模式下支持默认调度 资源调度 路由调度的自由排列组合调度。
@@ -99,19 +99,19 @@ rest模式下的路由调度与standard模式区别是，前者支持HTTP method
 > 请求 DELETE /User/1，会调度app\controller\User::destroy('1')
 
 参数
----
+----
 rest模式也有3种参数模式设置，基本与standard模式一致，但是不支持missing_params_to_null配置（对API类型应用要求较高，不考虑过多兼容）
 
 另外rest模式下默认会把application/json application/xml类型的请求数据绑定Resquset post，使用时可以用Resquset::post()方法获取
 
-默认响应输出
----
+响应
+----
 json_encode(['result' => $return])
 
 默认不支持html视图输出，但是可以自己实现return_handler处理器来支持html输出。
 
-默认错误响应
----
+错误
+----
 json_encode(['error' => ['code' => $code, 'message' => $message])
 
 

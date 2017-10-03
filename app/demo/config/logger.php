@@ -43,7 +43,7 @@ return [
         'driver'  => 'email',
 
         // 日志接受者的邮箱
-        'to'      => 'qiu-jin@qq.com',
+        'to'      => 'name@example.com',
         
         // email实例的配置
         'email'   => 'sendmail',

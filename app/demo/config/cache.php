@@ -108,9 +108,4 @@ return [
         // （可选配置）database
         //'database'  => ''
     ],
-    
-
-    
-
-
 ];

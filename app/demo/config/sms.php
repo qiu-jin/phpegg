@@ -1,8 +1,8 @@
 <?php
 
 return [
-	'alidayu' => [
-	    'driver'    => 'alidayu',
+    'alidayu' => [
+        'driver'    => 'alidayu',
         
         'acckey'    => 'your_acckey',
         'seckey'    => 'your_seckey',

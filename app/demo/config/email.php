@@ -5,10 +5,10 @@ return [
         'driver'    => 'smtp',
         
         // （可选配置）发件人信息
-        'from'      => ['your_name@qq.com', 'your_name'],
+        'from'      => ['name@example.com', 'your_name'],
 
         // 服务器地址
-        'host'      => 'ssl://smtp.qq.com',
+        'host'      => 'ssl://smtp.example.com',
         
         // 服务器端口
         'port'      => '465',
@@ -21,7 +21,7 @@ return [
     'mailgun' => [
         'driver'    => 'mailgun',
         
-        // 'from'      => ['your_name@qq.com', 'your_name'],
+        // 'from'      => ['name@example.com', 'your_name'],
         
         // mailgun domain配置
         'domain'    => 'your_domain',
@@ -33,7 +33,7 @@ return [
     'sendcloud' => [
         'driver'    => 'sendcloud',
         
-        // 'from'      => ['your_name@qq.com', 'your_name'],
+        // 'from'      => ['name@example.com', 'your_name'],
         
         // sendcloud apiUser
         'acckey'    => 'your_acckey',
@@ -45,7 +45,7 @@ return [
     'sendmail' => [
         'driver'    => 'sendmail',
         
-        // 'from'      => ['your_name@qq.com', 'your_name'],
+        // 'from'      => ['name@example.com', 'your_name'],
         
         // （可选配置）sendmail路径
         //'sendmail_path'=> null,
