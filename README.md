@@ -53,7 +53,9 @@ composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的e
 
 - [Router](doc/router.md)
 
-- [View](doc/view.md)
+- Container
+
+- View
 	- Template
 
 - Validator
@@ -80,7 +82,7 @@ db()->table->get($id);
 // 参数指定使用email驱动配置的smtp实例
 email('smtp')->send($mail, $subject, $content);
 // geoip等驱动没有同名的辅助函数，但可以使用driver函数调用。
-driver('geoip', 'ipip')->locate('8.8.8.8');
+driver('geoip', 'ipip')->locate($ip);
 ```
 > 2 trait Getter，继承其魔术方法__get
 
@@ -101,12 +103,33 @@ class Demo
         // 指定别名smtp到email驱动配置的smtp实例
         $this->smtp->send($mail, $subject, $content);
         // 指定别名ipip到geoip驱动配置的ipip实例
-        $this->ipip->locate('8.8.8.8');
+        $this->ipip->locate($ip);
     }
 }
 ```
 
 - [db 数据库](doc/db.md)（[配置](app/demo/config/db.php)）
+
+```php
+$db->user->get(1);
+//SELECT * FROM user WHERE id = 1 LIMIT 1
+
+$db->good->select('name')->where('id', '>', 2)->limit(2)->order('id')->find();
+//SELECT name FROM good WHERE id > 2 ORDER BY id LIMIT 2
+
+$db->orders->where('user_id', 1)->max('amount');
+//SELECT max(amount) FROM orders WHERE user_id = 1
+
+$db->user->join('orders')->get(1);
+
+$db->user->sub('subscribe')->where('good_id', 2)->find();
+
+$db->orders->where('user_id', 1)->union('old_orders')->where('user_id', 1)->find();
+
+$db->good->with('user')->on('subscribe')->get(2);
+
+$db->good->related('user')->on('subscribe')->find();
+```
 
 | 驱动 | 描述         
 | ----|----
@@ -114,7 +137,7 @@ class Demo
 |Mysql | 基于php pdo_mysql扩展
 |Pgsql | 基于php pdo_pgsql扩展（粗略测试）
 |Sqlite | 基于php pdo_sqlite扩展（粗略测试）
-|Sqlsrv | 基于php 在win系统下使用pdo_sqlsrv扩展，类unix系统下使用pdo_odbc扩展（无环境，未测试）
+|Sqlsrv | 在win系统下使用pdo_sqlsrv扩展，类unix系统下使用pdo_odbc扩展（无环境，未测试）
 |Oracle | 基于php pdo_oci扩展（无环境，未测试）
 |Cluster | 基于Mysqli，支持设置多个数据库服务器，实现读写分离主从分离，底层是根据SQL 的SELECT INSERT等语句将请求分配到不同的服务器。（无环境，未测试）
 

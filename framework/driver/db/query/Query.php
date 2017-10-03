@@ -81,10 +81,10 @@ class Query extends QueryChain
         return $data ? $data[0][$alias] : false;
     }
     
-    public function insert(array $data, $ignore_return_id = true)
+    public function insert(array $data, $return_id = false)
     {
         $params = $this->builder::insert($this->table, $data);
-        return $ignore_return_id ? $this->db->query(...$params) : $this->db->exec(...$params);
+        return $return_id ? $this->db->query(...$params) : $this->db->exec(...$params);
     }
     
     public function replace(array $data)

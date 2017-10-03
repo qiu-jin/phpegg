@@ -12,4 +12,20 @@ const CONFIG_DIR = APP_DIR.'config/';
 
 //composer vendor目录
 //const VENDOR_DIR = ROOT_DIR.'vendor/';
-
+return [
+    'log1' => [
+        'driver'  => 'file',
+        'level'   => array('error', 'warning', 'notice'),
+        'logfile' => APP_DIR.'storage/log/log1.log',
+    ],
+    'log2' => [
+        'driver'  => 'file',
+        'level'   => array('error', 'warning'),
+        'logfile' => APP_DIR.'storage/log/log2.log',
+    ],
+    'log3' => [
+        'driver'  => 'file',
+        'level'   => array('error'),
+        'logfile' => APP_DIR.'storage/log/log3.log',
+    ],
+];

@@ -1,8 +1,8 @@
-HOOK初始化
+初始化
 ----
-HOOK提供一种将用户代码注入到一次请求的生命周期各个阶段的方法。
+Hook提供一种将用户代码注入到一次请求的生命周期各个阶段的方法。
 
-框架已内置6个hook标签，可以在config/hook.php配置listen标签执行的代码。
+框架已内置6个hook标签，可以在hook配置项里配置listen标签执行的代码。
 
 boot
 > 触发在应用初始化后，App::boot()后，可以用于添加一些环境初始化代码，如时区设置等。
@@ -22,19 +22,21 @@ exit
 close
 > 触发在链接断开后，也就是执行fastcgi_finish_request()后，在此阶段客户端已经接收到了响应并断开了链接，可以将一些比较耗时的操作如发送邮件等放在此阶段执行。
 
-HOOK方法
+方法
 ----
+添加hook
+
 ```
-Hook::add($name, $call, $priority = 5);
+// $name标签名，$call执行方法，$priority优先级
+Hook::add($name, $call, $priority = 10);
 ```
-> 添加hook，$name标签名，$call执行方法，$priority优先级
+监听hook
 
 ```
 Hook::listen($name, ...$params);
 ```
-> 监听hook标签
+清除
 
 ```
 Hook::clear($name);
 ```
-> 清除标签方法

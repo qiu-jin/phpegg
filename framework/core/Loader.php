@@ -15,7 +15,6 @@ class Loader
     // 类别名设置
     private static $class_alias = [
         'App'       => 'framework\App',
-        'Auth'      => 'framework\core\Auth',
         'View'      => 'framework\core\View',
         'Getter'    => 'framework\core\Getter',
         'Validator' => 'framework\core\Validator',

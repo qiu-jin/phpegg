@@ -1,6 +1,6 @@
-错误处理初始化
+初始化
 ----
-初始化注册
+初始化注册会注册下列错误处理器
 
 ```
 set_error_handler 
@@ -9,25 +9,35 @@ set_exception_handler
 
 register_shutdown_function
 ```
-处理器，拦截并处理系统错误与异常。
 
-错误处理与logger和App::abort()关系紧密, logger提供记录错误的方法，App::abort()作用是将错误信息响应给客户端，在不同App模式下响应方式不同。
-
-默认情况下，如错误处理抓获一条错误，在存在对应error等级的logger处理器时，logger处理器会记录此条错误，否则忽略。并在error等级大于ERROR时触发App::abort()响应，error等级在WARNING及以下时不触发abort，另外在关闭APP_DEBUG情况下abort的error详细信息会被隐藏。
-
-Error方法
+模式
 ----
-```
-error($message, $limit = 1);
-```
-> 辅助函数，触发一个错误，等同于Error::set()方法
+设置环境常量STRICT_ERROR_MODE为true可开启严格错误模式
 
-```
+此模式下触发任何等级的错误如NOTICE WARNING等都会抛出ErrorException异常。
+
+行为
+----
+当错误触发后，错误处理器除了纪录错误信息，还会将错误信息设置好等级发送给logger处理里，如果是致命错误 异常等 还会调用App::abort()方法中断应用。
+
+App::abort()方法由各应用模式实现，处理方式各有不同。
+> 在关闭APP_DEBUG情况下，详细的错误信息不会传给abort方法（防止服务器信息泄露）
+
+
+方法
+----
+设置一个错误
+> 严格错误模式下会触发ErrorException异常，否则只会纪录信息。
+
+```php
+// 辅助函数
+error($message, $limit = 1);
+
 Error::set($message, $code = E_USER_ERROR, $limit = 1);
 ```
-> 触发一个错误
+获取错误信息
 
-```
+```php
+// $all＝false时获取最后一条错误，否则获取所有错误信息。
 Error::get($all = false);
 ```
-> 获取错误信息，$all＝false时获取最后一条错误，否则获取所有错误信息。

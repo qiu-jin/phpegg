@@ -2,6 +2,7 @@
 namespace framework\driver\email\query;
 
 use framework\core\Hook;
+use framework\core\View;
 
 class Query
 {
@@ -67,7 +68,7 @@ class Query
         if (!isset($this->options['ishtml'])) {
             $this->options['ishtml'] = true;
         }
-        $this->options['template'] = [$template, $vars];
+        $this->options['template'] = View::render($template, $vars);
         return $this;
     }
     
