@@ -94,6 +94,7 @@ class SubQuery extends QueryChain
     
     protected function buildSubQuery(&$params)
     {
+        $sql = '';
         if (isset($this->master['where'])) {
             $sql = $this->builder::whereClause($this->master['where'], $params);
             $logic = true;

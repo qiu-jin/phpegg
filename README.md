@@ -105,23 +105,44 @@ $db->exec("SELECT * FROM user WHERE id = ?", [1]);
 $db->fetch($db->query("SELECT * FROM user"));
 
 $db->user->get(1);
-//SELECT * FROM user WHERE id = 1 LIMIT 1
+// SELECT * FROM `user` WHERE `id` = '1' LIMIT 1
 
 $db->good->select('name')->where('id', '>', 2)->limit(2)->order('id')->find();
-//SELECT name FROM good WHERE id > 2 ORDER BY id LIMIT 2
+// SELECT `name` FROM `good` WHERE `id` > '2' ORDER BY `id` LIMIT 2
 
 $db->orders->where('user_id', 1)->max('amount');
-//SELECT max(amount) FROM orders WHERE user_id = 1
+// SELECT max(`amount`) AS `max_amount` FROM `orders` WHERE `user_id` = '1'
 
 $db->user->join('orders')->get(1);
+// desc `orders`
+// SELECT `user`.*,`orders`.`id` AS `orders_id`,`orders`.`user_id` AS `orders_user_id`,`orders`.`good_id` AS `orders_good_id`,`orders`.`quantity` AS `orders_quantity`,`orders`.`amount` AS `orders_amount`,`orders`.`time` AS `orders_time` FROM `user` LEFT JOIN `orders` ON `user`.`id` = `orders`.`user_id` WHERE `user`.`id` = '1'
 
-$db->user->sub('subscribe')->where('good_id', 2)->find();
+$db->user->select('name')->join('orders')->select('good_id')->get(1);
+// SELECT `user`.`name`,`orders`.`good_id` AS `orders_good_id` FROM `user` LEFT JOIN `orders` ON `user`.`id` = `orders`.`user_id` WHERE `user`.`id` = '1'
 
-$db->orders->where('user_id', 1)->union('old_orders')->where('user_id', 1)->find();
+$this->db->user->with('orders')->find();
+// SELECT * FROM `user`
+// SELECT * FROM `orders` WHERE `user_id` IN ('1','2','3')
 
-$db->good->with('user')->on('subscribe')->get(2);
+$this->db->orders->with('good')->on('good_id', 'id')->find();
+// SELECT * FROM `orders`
+// SELECT * FROM `good` WHERE `id` IN ('1','2')
 
-$db->good->related('user')->on('subscribe')->find();
+$this->db->user->relate('good')->find();
+// SELECT * FROM `user`
+// SELECT `user_id`, `good_id` FROM `user_good` WHERE `user_id` IN ('1','18','19')
+// SELECT * FROM `good` WHERE `id` IN ('1','3')
+
+$this->db->good->relate('user')->on('user_good')->find();
+// SELECT * FROM `good`
+// SELECT `good_id`, `user_id` FROM `user_good` WHERE `good_id` IN ('1','3')
+// SELECT * FROM `user` WHERE `id` IN ('1')
+
+$db->user->sub('orders')->where('good_id', 1)->find();
+// SELECT * FROM `user` WHERE `id` IN (SELECT `user_id` FROM `orders` WHERE `good_id` = '1') 
+
+$db->orders->where('user_id', 1)->union('orders_2')->where('user_id', 2)->find();
+// (SELECT * FROM `orders` WHERE `user_id` = '1') UNION ALL (SELECT * FROM `orders_2` WHERE `user_id` = '2')
 ```
 
 | 驱动 | 描述         

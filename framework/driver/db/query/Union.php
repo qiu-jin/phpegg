@@ -17,7 +17,7 @@ class Union extends QueryChain
             $this->fields = $option['fields'];
             unset($option['fields']);
         } else {
-            $this->fields = '*';
+            $this->fields = null;
         }
         $this->options[$table] = $option;
     }
