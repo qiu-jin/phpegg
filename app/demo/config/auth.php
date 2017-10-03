@@ -1,5 +1,8 @@
 <?php
 
 return [
-	'class' => 'app\lib\SessionAuth',
+    'class'    => 'app\auth\Base',
+    
+	'username' => 'username',
+    'password' => 'password',
 ];

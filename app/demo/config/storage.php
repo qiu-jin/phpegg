@@ -4,44 +4,45 @@ return [
     'local' => [
         'driver'    => 'local',
         
+        // 本地文件目录
         'dir'       => APP_DIR.'storage/',
     ],
     
     's3'  => [
         'driver'    => 's3',
         
-        'bucket'    => '',
-        'region'    => '',
-        'acckey'    => '',
-        'seckey'    => '',
+        'bucket'    => 'your_bucket',
+        'region'    => 'us-east-1',
+        'acckey'    => 'your_acckey',
+        'seckey'    => 'your_seckey',
     ],
     
     'oss' => [
         'driver'    => 'oss',
         
-        'bucket'    => '',
-        'endpoint'  => '',
-        'acckey'    => '',
-        'seckey'    => '',
+        'bucket'    => 'your_bucket',
+        'endpoint'  => 'oss-cn-beijing.aliyuncs.com',
+        'acckey'    => 'your_acckey',
+        'seckey'    => 'your_seckey',
     ],
     
     'qiniu' => [
         'driver'    => 'qiniu',
         
-        'bucket'    => '',
+        'bucket'    => 'your_bucket',
         'region'    => 'z1',
-        'domain'    => '',
-        'acckey'    => '',
-        'seckey'    => '',
+        'domain'    => 'your_domain',
+        'acckey'    => 'your_acckey',
+        'seckey'    => 'your_seckey',
     ],
     
     'ftp' => [
         'driver'    => 'ftp',
         
-        'host'      => '',
+        'host'      => '127.0.0.1',
         //'port'      => 21,
-        'username'  => '',
-        'password'  => '',
+        'username'  => 'username',
+        'password'  => 'password',
     ],
     
     'sftp' => [
@@ -49,20 +50,16 @@ return [
          
         'host'      => '127.0.0.1',
         //'port'      => 22,
-        //'chroot'    => '/home/',
-        'username'  => '',
-        'password'  => '',
+        //'chroot'    => '/home/qiujin',
+        'username'  => 'username',
+        'password'  => 'password',
     ],
     
     'webdav' => [
         'driver'    => 'webdav',
         
-        'server'    => '',
-        'username'  => '',
-        'password'  => '',
-        
-
-
-       */
+        'server'    => 'https://dav.jianguoyun.com/dav',
+        'username'  => 'username',
+        'password'  => 'password',
     ],
 ];

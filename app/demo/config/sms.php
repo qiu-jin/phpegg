@@ -4,31 +4,31 @@ return [
 	'alidayu' => [
 	    'driver'    => 'alidayu',
         
-        'acckey'    => '',
-        'seckey'    => '',
+        'acckey'    => 'your_acckey',
+        'seckey'    => 'your_seckey',
         'signname'  => '大鱼测试',
         'template'  => [
-            'test'  => ''
+            'register'  => 'service_template_id'
         ],
 	],
     
 	'aliyun' => [
 	    'driver'    => 'aliyun',
         
-        'acckey'    => '',
-        'seckey'    => '',
+        'acckey'    => 'your_acckey',
+        'seckey'    => 'your_seckey',
         'signname'  => '短信测试',
         'template'  => [
-            'register'  => ''
+            'register'  => 'service_template_id'
         ],
 	],
     
 	'qcloud' => [
 	    'driver'    => 'qcloud',
         
-        'acckey'    => '',
-        'seckey'    => '',
-        'signname'  => '',
+        'acckey'    => 'your_acckey',
+        'seckey'    => 'your_seckey',
+        'signname'  => '短信测试',
         'template'  => [
             'register'  => '验证码:{code}，您正在进行身份验证，此短信验证码{time}分钟内有效,请勿转发他人。'
         ],
@@ -37,11 +37,11 @@ return [
 	'yuntongxun' => [
 	    'driver'    => 'yuntongxun',
         
-        'appkey'    => '',
-        'acckey'    => '',
-        'seckey'    => '',
+        'appkey'    => 'your_appkey',
+        'acckey'    => 'your_acckey',
+        'seckey'    => 'your_seckey',
         'template'  => [
-            'register'  => ''
+            'register'  => 'service_template_id'
         ],
 	],
 ];

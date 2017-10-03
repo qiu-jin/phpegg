@@ -6,7 +6,7 @@ class Container
     protected static $init;
     protected static $container;
     protected static $providers = [
-        //key表示支持的驱动类型名，value表示驱动类实例是否默认缓存
+        //key表示支持的驱动类型名
         'driver'    => [
             'db'        => true,
             'rpc'       => true,

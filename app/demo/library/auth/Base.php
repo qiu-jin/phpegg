@@ -1,15 +1,15 @@
 <?php
-namespace app\lib;
+namespace app\auth;
 
 use framework\App;
 use framework\core\Auth;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
-class BaseAuth extends Auth
+class Base extends Auth
 {
-    private $username;
-    private $password;
+    private $username = 'username';
+    private $password = 'password';
     
     public function __construct($config)
     {
@@ -17,31 +17,30 @@ class BaseAuth extends Auth
         $this->password = $config['password'];
     }
     
+    protected function id()
+    {
+        return $this->username;
+    }
+    
+    protected function user()
+    {
+        return ['username' => $this->username];
+    }
+    
     protected function check()
     {
         return Request::server('PHP_AUTH_USER') === $this->username && Request::server('PHP_AUTH_PW') === $this->password;
     }
 
-    protected function fail()
+    protected function faildo()
     {
         Response::status(401);
         Response::header('WWW-Authenticate', 'Basic');
         App::exit(); 
     }
-
-    protected function user()
-    {
-        return $this->username;
-    }
     
-    protected function login()
-    {
-        
-    }
+    protected function login() {}
     
-    protected function logout()
-    {
-        
-    }
+    protected function logout() {}
 }
 

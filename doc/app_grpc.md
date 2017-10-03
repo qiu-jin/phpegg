@@ -1,9 +1,9 @@
 说明
 ----
-此应用模式目前在试验阶段，只支持简单的[grpc协议](https://grpc.io/)，另外需要配合使用nginx的ngx_http_v2_module来支持http2（虽然在php层没强制要求http2，但是要使用grpc官方提供的各语言client的话则是需要支持http2的）
+此应用模式目前在试验阶段，只支持简单（不支持流式请求与响应等）的[grpc协议](https://grpc.io/)，另外需要配合使用nginx的ngx_http_v2_module来支持http2（虽然在php层没强制要求http2，但是要使用grpc官方提供的各语言client的话则是需要支持http2的）
 
 实现grpc应用模式初衷是因为grpc官方没有提供php版的server，为了测试client自己模仿协议实现一个简单的grpc server（http2也是http，php实现也简单）。
-但是后面考虑到grpc使用并不广泛，用php实现并没多大优势，而且http2也会提高使用门槛，在php的的一次请求响应一个进程处理模型下http2的多路复用等特性也没多大优势，甚至还可能有劣势（http2强制要求ssl），所以grpc模式考虑实现成一个兼容grpc协议但不强制要求http2的应用模式。
+但是后面考虑到grpc使用并不广泛，用php实现并没多大优势，而且http2也会提高使用门槛，在php的的一次请求响应一个进程处理模型下http2的多路复用等特性也没多大优势，甚至还可能有劣势（http2强制要求ssl），所以grpc模式考虑实现成一个简单兼容grpc协议但不强制要求http2的应用模式。
 
 
 入口
@@ -113,7 +113,7 @@ message UserCreateResponse {
 > 
 > UserGetRequest中有一个field id，从中抽取id的值
 > 
-> 然后传给app\controller\ TestGrpc\User::get($id)方法
+> 然后传给app\controller\TestGrpc\User::get($id)方法
 > 
 > 方法return一个数组，处理器将数组绑定UserGetResponse类实例
 

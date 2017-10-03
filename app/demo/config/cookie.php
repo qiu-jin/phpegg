@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'crypt' => 'openssl',
+    'crypt' => 'sodium',
     
-    'serialize' => ['jsonencode', 'jsondecode']
+    'serializer' => ['jsonencode', 'jsondecode']
 ];

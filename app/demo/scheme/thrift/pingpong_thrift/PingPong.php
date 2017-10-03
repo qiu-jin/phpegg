@@ -15,8 +15,6 @@ use Thrift\Protocol\TProtocol;
 use Thrift\Protocol\TBinaryProtocolAccelerated;
 use Thrift\Exception\TApplicationException;
 
-include 'Types.php';
-
 interface PingPongIf {
   public function ping();
   public function add($num1, $num2);

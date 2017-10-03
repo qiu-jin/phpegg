@@ -6,7 +6,7 @@ class Opcache extends Cache
     protected $dir;
     protected $ext = '.cache.php';
     protected $gc_maxlife = 86400;
-    protected $filter_value = true;
+    protected $filter_value = false;
 
     protected function init($config)
     {

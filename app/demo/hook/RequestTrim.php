@@ -1,12 +1,12 @@
 <?php
 namespace app\hook;
 
-class Trim
+class RequestTrim
 {
     public static function run($request)
     {
-        $request->get && self::trim($request->get);
-        $request->post && self::trim($request->post);
+        self::trim($request->get);
+        self::trim($request->post);
     }
     
     private static function trim(&$array)

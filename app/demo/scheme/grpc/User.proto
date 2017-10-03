@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package TestGrpc;
+
+service User {
+  rpc get (UserGetRequest) returns (UserGetResponse) {}
+  
+  rpc create (UserCreateRequest) returns (UserCreateResponse) {}
+}
+
+message UserGetRequest {
+  int32 id = 1;
+}
+
+message UserGetResponse {
+  int32 id = 1;
+  string name = 2;
+  string email = 3;
+  string mobile = 4;
+}
+
+message UserCreateRequest {
+  string name = 1;
+  string email = 2;
+  string mobile = 3;
+}
+
+message UserCreateResponse {
+  int32 id = 1;
+}
+
+//./protoc --proto_path=./  --php_out=./ --grpc_out=./  --plugin=protoc-gen-grpc=./grpc_php_plugin ./User.proto

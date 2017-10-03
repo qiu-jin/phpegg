@@ -6,8 +6,8 @@ class Memcached extends Cache
     protected function init($config)
     {
         $link = new \Memcached;
-        if (isset($config['option'])) {
-            $link->setOptions($config['option']);
+        if (isset($config['options'])) {
+            $link->setOptions($config['options']);
         }
         if (isset($config['timeout'])) {
             $link->setOption(\Memcached::OPT_CONNECT_TIMEOUT, $config['timeout']);

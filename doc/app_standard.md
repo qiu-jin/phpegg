@@ -3,8 +3,6 @@
 ```php
 //app/demo/public/index_standard.php
 
-define('APP_DEBUG', true);
-
 include '../../../framework/app.php';
 
 framework\App::start('Standard', [
@@ -148,7 +146,7 @@ class User
 
 1 无参数模式
 
-简而言之就是控制器方法不需要任何参数。
+控制器方法不需要任何参数。
 
 2 顺序list参数模式
 
@@ -177,13 +175,13 @@ class Foo
 ```
 
 路由调度下，路由表规则必须是kv参数形式。
-> 如路由规则 'foo/bar/\*/*'=> 'Foo::bar(param1 = $1, param = $2)'，如请求/Foo/bar/1/2，会调度app\controller\Foo:: bar('1', '2')
+> 如路由规则 'foo/bar/\*/*'=> 'Foo::bar(param1 = $1, param2 = $2)'，如请求/Foo/bar/1/2，会调度app\controller\Foo:: bar('1', '2')
 
 
 bind_request_params配置（默认为空），支持将request get post等作为kv参数传给到控制器方法
-> 如bind_request_params为[get]时，请求/User/getName?id=1，app\controller\User::getName('1')
+> 如bind_request_params为['get']时，请求/User/getName?id=1，app\controller\User::getName('1')
 
-missing_params_to_null配置（默认为false），当调用控制器方法时如果缺少参数，应用默认会返回一个错误响应（如404 500页面），为了避免错误可以将其设为true，此时会默认将缺少的参数赋予null值传给到控制器方法。
+missing_params_to_null配置（默认为false），当调用控制器方法时如果缺少参数，应用默认会返回一个错误响应，为了避免错误可以将其设为true，此时会默认将缺少的参数赋予null值传给控制器方法。
 
 
 视图

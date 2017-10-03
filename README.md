@@ -12,7 +12,7 @@ composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的e
 
 此外框架本身也实现了一个简单的autoload，优先级大于composer autoload。
 
-开始应用
+应用
 ----
 框架目前支持Standard Rest Inline Jsonrpc Micro Grpc等多种应用模式，用户也可以实现自己的应用模式和不使用应用模式，以适应不同需求的应用开发（Rest Jsonrpc Grpc用于接口应用，Standard Inline Micro即可用于接口应用也可用于视图应用，View只能用于视图应用），另外为了实现不同模式应用之间的相互调用，框架在rpc driver中实现了一套rpc client driver来远程调用服务。
 
@@ -38,7 +38,7 @@ composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的e
 - 无应用模式
 > 不使用任何应用模式，只需调用framework\App::boot()初始化环境，就可以编写代码。
 
-部分核心类
+核心类
 ----
 
 - [Config](doc/config.md)
@@ -73,7 +73,7 @@ composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的e
 ----
 >驱动配置示例在app/demo/config目录中
 
-- [db 数据库](doc/db.md)
+- [db 数据库](doc/db.md)（[配置](app/demo/config/db.php)）
 
 | 驱动 | 描述         
 | ----|----
@@ -85,7 +85,7 @@ composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的e
 |Oracle | 基于php pdo_oci扩展（无环境，未测试）
 |Cluster | 基于Mysqli，支持设置多个数据库服务器，实现读写分离主从分离，底层是根据SQL 的SELECT INSERT等语句将请求分配到不同的服务器。（无环境，未测试）
 
-- cache 缓存
+- cache 缓存（[配置](app/demo/config/cache.php)）
 
 ```php
 // 设置缓存值
@@ -115,6 +115,12 @@ $cache->deleteMultiple($keys);
 // 清除所有缓存
 $cache->clear();
 
+// 自增，目前只有apc redis memcached支持
+$cache->increment($key, $value = 1);
+
+// 自减，目前只有apc redis memcached支持
+$cache->decrement($key, $value = 1);
+
 ```
 
 | 驱动 | 描述         
@@ -126,7 +132,7 @@ $cache->clear();
 |Opcache | 将缓存数据写入php文件，使用php Opcache来缓存数据
 |Redis | 使用Redis服务缓存数据
 
-- storage 存储
+- storage 存储（[配置](app/demo/config/storage.php)）
 
 ```php
 /* 
@@ -194,7 +200,7 @@ $storage->fetch($from, $to);
 |Qiniu | 七牛云存储
 |Webdav | 基于Webdav协议，兼容多种网盘，如Box OneDrive Pcloud 坚果云
 
-- [logger 日志](doc/logger.md)
+- [logger 日志](doc/logger.md)（[配置](app/demo/config/logger.php)）
 
 | 驱动 | 描述         
 | ----|----
@@ -203,7 +209,7 @@ $storage->fetch($from, $to);
 |File | 日志写入文件
 |Queue | 日志发送到队列（坑）
 
-- rpc RPC
+- rpc RPC（[配置](app/demo/config/rpc.php)）
 
 ```
 // 知乎rest api调用
@@ -235,7 +241,7 @@ $grpc->User->getName($id);
 |Thrift | Thrift rpc客户端
 |Grpc | Grpc rpc客户端
 
-- email 邮件
+- email 邮件（[配置](app/demo/config/email.php)）
 
 ```php
 // 简单发送
@@ -251,7 +257,7 @@ $email->to('qiu-jin@qq.com', 'Qiujin')->subject('邮件标题')->template('email
 |Mailgun | 使用Mailgun提供的邮件发送服务
 |Sendcloud | 使用Sendcloud提供的邮件发送服务 
 
-- sms 短信
+- sms 短信（[配置](app/demo/config/sms.php)）
 
 ```php
 /* 
@@ -271,7 +277,7 @@ $sms->send('1520000000', 'register', ['code' => rand(1000, 9999)]);
 |Qcloud | 腾讯云短信服务
 |Yuntongxun | 容联云通讯短信服务
 
-- captcha 验证码
+- captcha 验证码（[配置](app/demo/config/captcha.php)）
 
 ```php
 $captcha->verify();
@@ -282,7 +288,7 @@ $captcha->verify();
 |Recaptcha | google recaptcha     
 |Geetest | 极验验证
 
-- geoip IP定位
+- geoip IP定位（[配置](app/demo/config/geoip.php)）
 
 ```php
 $geoip->locate('8.8.8.8');
@@ -294,7 +300,7 @@ $geoip->locate('8.8.8.8');
 |Ipip | Ipip IP定位，有在线api接口和离线数据库两种使用方式
 |Maxmind | Maxmind IP定位，有在线api接口和离线数据库两种使用方式
 
-- crypt 加解密
+- crypt 加解密（[配置](app/demo/config/crypt.php)）
 
 ```
 //加密
@@ -308,13 +314,13 @@ $crypt->decrypt('ia3E14cmVxkJhhP0YWPBvA==');
 |Openssl | 基于php openssl扩展 
 |Sodium | 基于php libsodium扩展 
 
-- search 搜索
+- search 搜索（[配置](app/demo/config/search.php)）
 
 | 驱动 | 描述         
 | ----|----
 |Elastic | 基于Elastic rest接口 （粗略测试）
 
-- data 非关系数据库
+- data 非关系数据库（[配置](app/demo/config/data.php)）
 
 | 驱动 | 描述         
 | ----|----
@@ -322,7 +328,7 @@ $crypt->decrypt('ia3E14cmVxkJhhP0YWPBvA==');
 |Mongo | 使用MongoDB扩展（粗略测试）
 |Hbase | 使用Thrift Rpc客户端（坑）
 
-- queue 队列
+- queue 队列（[配置](app/demo/config/queue.php)）
 
 | 驱动 | 描述         
 | ----|----

@@ -76,7 +76,7 @@ class Grpc extends App
                     }
                 }
             }
-            self::abort(500, 'Illegal param scheme class');
+            self::abort(500, 'Illegal message scheme class');
         } else {
             $new_params = [];
             $class = str_replace($this->ns, '', get_class($controller));

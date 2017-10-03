@@ -1,5 +1,11 @@
 <?php
 
+define('APP_DEBUG', true);
+
 include '../../../framework/app.php';
 
-framework\App::start('inline', ['sub_controller' => 'inline'])->run('dump');
+framework\App::start('Inline', [
+    
+    'controller_path' => 'controller/inline',
+
+])->run();

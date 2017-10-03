@@ -46,6 +46,8 @@ $app->run('dd');
 
 micro模式没有默认调度规则，需要用户使用route方法和default方法自行设置绑定。
 
+route和default的优先执行顺序由dispatch_mode配置设置。
+
 1 route方法
 
 route方法接收3个参数，第1个参数是匹配的url，第2个参数是要调用的callable，第3个参数是要匹配的HTTP method（默认为空，匹配所有HTTP method）。

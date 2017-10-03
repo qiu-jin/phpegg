@@ -3,34 +3,51 @@
 return [
     'smtp' => [
         'driver'    => 'smtp',
-        'from'      => ['your@mail.com', 'your name'],
+        
+        // （可选配置）发件人信息
+        'from'      => ['your_name@qq.com', 'your_name'],
 
-        'host'      => 'smtp.your-mail.com',
-        //'port'      => '25',
-        'username'  => '',
-        'password'  => '',
+        // 服务器地址
+        'host'      => 'ssl://smtp.qq.com',
+        
+        // 服务器端口
+        'port'      => '465',
+        // 用户名
+        'username'  => 'your_username',
+        // 用户密码
+        'password'  => 'your_password',
     ],
     
     'mailgun' => [
         'driver'    => 'mailgun',
-        'from'      => ['your@mail.com', 'your name'],
         
-        'domain'    => '',
-        'acckey'    => '',
+        // 'from'      => ['your_name@qq.com', 'your_name'],
+        
+        // mailgun domain配置
+        'domain'    => 'your_domain',
+        
+        // mailgun Authorization key配置
+        'acckey'    => 'your_acckey',
     ],
     
     'sendcloud' => [
         'driver'    => 'sendcloud',
-        'from'      => ['your@mail.com', 'your name'],
         
-        'acckey'    => '',
-        'seckey'    => ''
+        // 'from'      => ['your_name@qq.com', 'your_name'],
+        
+        // sendcloud apiUser
+        'acckey'    => 'your_acckey',
+        
+        // sendcloud apiKey
+        'seckey'    => 'your_seckey'
     ],
 
     'sendmail' => [
         'driver'    => 'sendmail',
-        'from'      => ['your@mail.com', 'your name'],
         
-        //'bin_path'=> null,
+        // 'from'      => ['your_name@qq.com', 'your_name'],
+        
+        // （可选配置）sendmail路径
+        //'sendmail_path'=> null,
     ]
 ];
