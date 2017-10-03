@@ -1,16 +1,3 @@
-PSR
-----
-开发规范基本基于[PSR-1](http://www.php-fig.org/psr/psr-1)和[PSR-2](http://www.php-fig.org/psr/psr-2)
-
-但是有部分地方也有特殊处理，例如在部分核心静态类加载会执行init方法。
-
-Composer
-----
-框架支持[composer](https://getcomposer.org)，可以方便的引用第三方扩展，框架的部分非核心模块也使用了composer，不过框架核心并不依赖composer，在不使用composer时也可以正常使用框架。
-
-composer 默认关闭，如过要启用composer请将环境配置(APP_DIR下的env.php文件)中添加VENDOR_DIR配置，值为composer vendor目录。
-
-此外框架本身也实现了一个简单的autoload，优先级大于composer autoload。
 
 应用
 ----
@@ -98,7 +85,7 @@ class Demo
 
     public function test()
     {
-	     // 使用驱动类的同名的关键字，会默认取驱动配置的第一个实例
+        // 使用驱动类的同名的关键字，会默认取驱动配置的第一个实例
         $this->db->table->get($id);
         // 指定别名smtp到email驱动配置的smtp实例
         $this->smtp->send($mail, $subject, $content);
