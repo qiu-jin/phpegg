@@ -1,0 +1,6 @@
+/test/*
+.idea
+.DS_Store
+/vendor/*
+/app/test/*
+
