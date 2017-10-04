@@ -27,17 +27,17 @@
 return [
     'log1' => [
         'driver'  => 'file',
-        'level'   => array('error', 'warning', 'notice'),
+        'level'   => ['error', 'warning', 'notice'],
         'logfile' => APP_DIR.'storage/log/log1.log',
     ],
     'log2' => [
         'driver'  => 'file',
-        'level'   => array('error', 'warning'),
+        'level'   => ['error', 'warning'],
         'logfile' => APP_DIR.'storage/log/log2.log',
     ],
     'log3' => [
         'driver'  => 'file',
-        'level'   => array('error'),
+        'level'   => ['error'],
         'logfile' => APP_DIR.'storage/log/log3.log',
     ],
 ];
@@ -54,7 +54,7 @@ logger()->warning($log);
 // 会调用log1记录
 logger()->notice($log);
 
-// 不调用任何日志处理器，日式会被丢弃。
+// 不调用任何处理器，日志会被丢弃。
 logger()->debug($log);
 
 ```

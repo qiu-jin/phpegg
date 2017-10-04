@@ -19,18 +19,18 @@ Client::get($url)->save($path);
 
 ```
 $client = new Client('PUT', $url);
-$client->stream(fopen($path, 'r))->body;
+$client->stream(fopen($path, 'r'))->body;
 ```
 
 
 生成实例
 ----
-new 实例，不限制$method
+new 实例，不限制method
 
 ```
 new Client($method, $url)
 ```
-或者使用静态方法生成实例
+使用静态方法生成实例
 > 只支持get和post方法，其它方法使用new实例
 
 ```

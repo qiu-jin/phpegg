@@ -46,7 +46,7 @@
 
 - Container
 
-- View
+- [View](doc/view.md)
 	- Template
 
 - Validator

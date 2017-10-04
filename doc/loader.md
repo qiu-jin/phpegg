@@ -35,9 +35,15 @@ map
 
 files
 
->直接加载的文件
--
-另外如有设置环境常量VENDOR_DIR则会加载composer autoload，composer autoload的优先级小于Loader::autoload
+> 直接加载的文件
+
+Composer
+----
+框架支持composer，可以方便的引用第三方扩展，框架的部分模块也使用了composer，不过框架核心并不依赖composer，在不使用composer时也可以正常使用框架。
+
+composer 默认关闭，如过要启用composer请设置环境常量VENDOR_DIR，值为composer vendor目录。
+
+composer autoload的优先级小于framework\core\Loader::autoload
 
 方法
 ----
