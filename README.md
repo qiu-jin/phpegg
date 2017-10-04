@@ -29,7 +29,7 @@
 - 无应用模式
 > 不使用任何应用模式，只需调用framework\App::boot()初始化环境，就可以编写代码。
 
-核心类
+核心
 ----
 
 - [Config](doc/config.md)
@@ -64,8 +64,8 @@
 
 驱动
 ----
-调用驱动实例有2种方式，驱动实例统一由容器类管理。
-> 1 使用辅助函数db cache storage rpc email sms driver
+驱动实例统一由容器类管理，有2种调用方式。
+> 1 使用辅助函数 db() cache() storage() rpc() email() sms() driver()
 
 ```php
 // 辅助函数参数为空，会默认取驱动配置的第一个实例
@@ -82,6 +82,7 @@ class Demo
 {
     use \Getter;
     
+    // 配置getter providers，这里使用了别名配置
     protected $providers = [
         'smtp' => 'email.smtp',
         'ipip' => 'geoip.ipip',
@@ -168,7 +169,7 @@ $db->orders->where('user_id', 1)->union('orders_2')->where('user_id', 2)->find()
 |Sqlite | 基于php pdo_sqlite扩展（粗略测试）
 |Sqlsrv | 在win系统下使用pdo_sqlsrv扩展，类unix系统下使用pdo_odbc扩展（无环境，未测试）
 |Oracle | 基于php pdo_oci扩展（无环境，未测试）
-|Cluster | 基于Mysqli，支持设置多个数据库服务器，实现读写分离主从分离，底层是根据SQL 的SELECT INSERT等语句将请求分配到不同的服务器。（无环境，未测试）
+|Cluster | 基于Mysqli，支持设置多个数据库服务器，实现读写分离主从分离，原理是根据SQL的SELECT INSERT等语句将请求分配到不同的服务器。（无环境，未测试）
 
 - cache 缓存（[配置](app/demo/config/cache.php)）
 
@@ -330,9 +331,9 @@ $grpc->User->getName($id);
 
 ```php
 // 简单发送
-$email->send('qiu-jin@qq.com', '邮件标题', '邮件正文');
+$email->send('name@example.com', '邮件标题', '邮件正文');
 // 高级发送
-$email->to('qiu-jin@qq.com', 'Qiujin')->subject('邮件标题')->template('email/register')->send();
+$email->to('name@example.com', 'your_name')->subject('邮件标题')->template('email/register')->send();
 ```
 
 | 驱动 | 描述         
