@@ -120,7 +120,7 @@ $db->good->select('id', 'name')->where('id', '>', 2)->limit(2)->order('id')->fin
 $db->orders->where('user_id', 1)->max('amount');
 // SELECT max(`amount`) AS `max_amount` FROM `orders` WHERE `user_id` = '1'
 
-// join连表查询，查询用户1的信息和他的订单
+// join连表查询，查询用户1的信息和订单
 $db->user->join('orders')->get(1);
 // desc `orders`
 // SELECT `user`.*,`orders`.`id` AS `orders_id`,`orders`.`user_id` AS `orders_user_id`,`orders`.`good_id` AS `orders_good_id`,`orders`.`quantity` AS `orders_quantity`,`orders`.`amount` AS `orders_amount`,`orders`.`time` AS `orders_time` FROM `user` LEFT JOIN `orders` ON `user`.`id` = `orders`.`user_id` WHERE `user`.`id` = '1'
@@ -419,7 +419,7 @@ $search->index->delete($query);
 
 | 驱动 | 描述         
 | ----|----
-|Elastic | 基于Elastic rest接口 （不完善）
+|Elastic | 基于Elastic rest接口 （待完善）
 
 - data 非关系数据库（[配置](app/demo/config/data.php)）
 
@@ -443,7 +443,7 @@ $mongo->db->collection->delete($filter, $options);
 | 驱动 | 描述         
 | ----|----
 |Cassandra | 使用datastax扩展（坑）
-|Mongo | 使用MongoDB扩展（不完善）
+|Mongo | 使用MongoDB扩展（待完善）
 |Hbase | 使用Thrift Rpc客户端（坑）
 
 - queue 队列（[配置](app/demo/config/queue.php)）

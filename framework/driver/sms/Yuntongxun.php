@@ -16,26 +16,23 @@ class Yuntongxun extends Sms
         $this->template = $config['template'];
     }
     
-    public function send($to, $template, $data)
+    protected function handle($to, $template, $data)
     {
-        if (isset($this->template[$template])) {
-            $date = date('YmdHis');
-            $url = self::$host."$this->acckey/SMS/TemplateSMS?sig=".strtoupper(md5($this->acckey.$this->seckey.$date));
-            $client = Client::post($url)->json([
-                'to'        => $to,
-                'templateId'=> $this->template[$template],
-                'appId'     => $this->appkey,
-                'datas'     => array_values($data)
-            ])->headers([
-                'Accept:application/json',
-                'Authorization:'.base64_encode("$this->acckey:$date")
-            ]); 
-            $data = $client->json;
-            if (isset($data['statusCode']) && $data['statusCode'] === '000000') {
-                return true;
-            }
-            return error($data['statusMsg'] ?? $client->error);
+        $date = date('YmdHis');
+        $url = self::$host."$this->acckey/SMS/TemplateSMS?sig=".strtoupper(md5($this->acckey.$this->seckey.$date));
+        $client = Client::post($url)->json([
+            'to'        => $to,
+            'templateId'=> $this->template[$template],
+            'appId'     => $this->appkey,
+            'datas'     => array_values($data)
+        ])->headers([
+            'Accept:application/json',
+            'Authorization:'.base64_encode("$this->acckey:$date")
+        ]); 
+        $data = $client->json;
+        if (isset($data['statusCode']) && $data['statusCode'] === '000000') {
+            return true;
         }
-        return error('Template not exists');
+        return error($data['statusMsg'] ?? $client->error);
     }
 }

@@ -15,7 +15,7 @@ class Baidu extends Geoip
     
     public function handle($ip, $raw = false)
     {
-        $client = Client::get(self::$host."/?ip=$ip&ak=$this->acckey");
+        $client = Client::get(self::$host."?ip=$ip&ak=$this->acckey");
         $data = $client->json;
         if (isset($data['status']) && $data['status'] === 0) {
             return $raw ? $data['content'] : [

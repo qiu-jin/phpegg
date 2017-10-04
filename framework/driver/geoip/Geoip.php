@@ -16,7 +16,7 @@ abstract class Geoip
         }
     }
     
-    public function locate($ip, $fitler = true)
+    public function locate($ip, $fitler = false)
     {
         $handle = $this->handle;
         if ($fitler) {

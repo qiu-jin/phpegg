@@ -2,7 +2,6 @@
 namespace framework\core;
 
 use framework\core\http\Response;
-use framework\extend\view\Template;
 use framework\extend\view\Error as ViewError;
 
 class View

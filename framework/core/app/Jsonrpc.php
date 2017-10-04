@@ -98,7 +98,7 @@ class Jsonrpc extends App
                         try {
                             $return += $this->handle($dispatch);
                         } catch (\Throwable $e) {
-                            $return['error']  = $this->setError($e);
+                            $return['error'] = $this->setError($e);
                         }
                     }
                 } else {

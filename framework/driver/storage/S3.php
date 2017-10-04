@@ -133,7 +133,7 @@ class S3 extends Storage
         foreach ($headers as $k => $v) {
             $sendheaders[] = "$k: $v";
             $k = strtolower($k);
-            $v = rawurlencode(trim($v));
+            $v = trim($v);
             $tmparr[] = $k;
             $canonicalheaders .= "$k:$v\n";
         }

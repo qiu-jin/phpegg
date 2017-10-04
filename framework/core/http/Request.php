@@ -67,9 +67,9 @@ class Request
     }
     
     /*
-     * 获取COOKIE值
+     * 获取param
      */
-    public static function params($name = null, $default = null)
+    public static function param($name = null, $default = null)
     {
        return $name === null ? self::$request->params : self::$request->params[$name] ?? $default;
     }
@@ -85,7 +85,7 @@ class Request
     /*
      * 获取FILES值
      */
-    public static function files($name = null, $default = null)
+    public static function file($name = null, $default = null)
     {
         return $name === null ? $_FILES : $_FILES[$name] ?? $default;
     }

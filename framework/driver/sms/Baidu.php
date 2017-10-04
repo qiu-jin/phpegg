@@ -18,17 +18,17 @@ class Baidu extends Sms
         isset($config['expiration']) && $this->expiration = $config['expiration'];
     }
 
-    public function send($to, $template, $data)
+    protected function handle($to, $template, $data)
     {
         if (isset($this->template[$template])) {
-            $url = '/bce/v2/message';
+            $path = '/bce/v2/message';
             $body = json_encode([
                 'invoke'            => uniqid(),
                 'phoneNumber'       => $to,
                 'TemplateCode'      => $this->template[$template],
                 'contentVar'        => $data
             ]);
-            $client = Client::post('http://'.self::$host.$url)->headers($this->buildHeaders($url, $body))->body($body);
+            $client = Client::post("http://$this->host$path")->headers($this->buildHeaders($path, $body))->body($body);
             $data = $client->json;
             if (isset($data['code']) && $data['code'] === '1000') {
                 return true;
@@ -38,11 +38,11 @@ class Baidu extends Sms
         return error('Template not exists');
     }
     
-    protected function buildHeaders($url, $body)
+    protected function buildHeaders($path, $body)
     {
         $time = gmdate('Y-m-d\TH:i:s\Z');
         $headers = [
-            'Host' => self::$host,
+            'Host' => $this->host,
             'Content-Type' => 'application/json',
             'Content-Length' => strlen($body),
             'x-bce-date' => $time,
@@ -56,7 +56,7 @@ class Baidu extends Sms
             $canonicalheaders[] = "$k:".rawurlencode(trim($v));
         }
         $signkey = hash_hmac('sha256', "$this->version/$this->acckey/$time/$this->expiration", $this->seckey);
-        $signature = hash_hmac('sha256', "POST\n$url\n\n".implode("\n", $canonicalheaders), $signkey);
+        $signature = hash_hmac('sha256', "POST\n$path\n\n".implode("\n", $canonicalheaders), $signkey);
         $sendheaders[] = "Authorization: $this->version/$this->acckey/$time/$this->expiration/".implode(';', $signheaders)."/$signature";
         return $sendheaders;
     }
