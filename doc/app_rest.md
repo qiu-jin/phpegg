@@ -67,23 +67,23 @@ rest模式下支持默认调度 资源调度 路由调度的自由排列组合�
 
 1 默认调度
 
-rest模式下的默认调度与standard模式区别是，前者只从url_path中匹配控制器类，而控制器方法则按HTTP method来匹配，因为HTTP method有限，所以默认调度下控制器方法只支持get put post delete等
+rest模式下的默认调度与standard模式区别是，前者只从`url_path`中匹配控制器类，而控制器方法则按`HTTP method`来匹配，因为`HTTP method`有限，所以默认调度下控制器方法只支持`get put post delete`等
 
->如请求 DELETE /User/1，会默认调度app\controller\User::delete('1')
+>如请求 `DELETE /User/1`，会默认调度`app\controller\User::delete('1')`
 
 2 路由调度
 
-rest模式支持route_dispatch_routes与route_dispatch_action_route。
+rest模式支持`route_dispatch_routes`与`route_dispatch_action_route`。
 
-rest模式下的路由调度与standard模式区别是，前者支持HTTP method级的路由规则表。
+rest模式下的路由调度与standard模式区别是，前者支持`HTTP method`级的路由规则表。
 
-> 如'User/*' => ['GET' => 'User::getUser($1)', 'DELETE' => 'User:: deleteUser($1)']规则。
+> 如`'User/*' => ['GET' => 'User::getUser($1)', 'DELETE' => 'User:: deleteUser($1)']`规则。
 > 
-> 请求 DELETE /User/1，会调度app\controller\User::deleteUser('1')
+> 请求 `DELETE /User/1`，会调度`app\controller\User::deleteUser('1')`
 
 3 资源调度
 
-资源调度类似于rails和laravel等框架的resource路由，相当于定义一套默认route_dispatch_action_route规则，与route_dispatch_action_route类似也是先从url_path中匹配控制器类，然后使用resource_dispatch_routes规则表匹配剩余部分。
+资源调度类似于rails和laravel等框架的resource路由，相当于定义一套默认`route_dispatch_action_route`规则，与`route_dispatch_action_route`类似也是先从`url_path`中匹配控制器类，然后使用`resource_dispatch_routes`规则表匹配剩余部分。
 
 ```php
 //资源调度规则表
@@ -94,25 +94,25 @@ rest模式下的路由调度与standard模式区别是，前者支持HTTP method
         '*/edit'=> ['GET' => 'edit']
     ]
 ```
-> 请求 GET /User/1，会调度app\controller\User::show('1')
+> 请求 `GET /User/1`，会调度`app\controller\User::show('1')`
 > 
-> 请求 DELETE /User/1，会调度app\controller\User::destroy('1')
+> 请求 `DELETE /User/1`，会调度`app\controller\User::destroy('1')`
 
 参数
 ----
-rest模式也有3种参数模式设置，基本与standard模式一致，但是不支持missing_params_to_null配置（对API类型应用要求较高，不考虑过多兼容）
+rest模式也有3种参数模式设置，基本与standard模式一致，但是不支持`missing_params_to_null`配置（对API类型应用要求较高，不考虑过多兼容）
 
-另外rest模式下默认会把application/json application/xml类型的请求数据绑定Resquset post，使用时可以用Resquset::post()方法获取
+另外rest模式下默认会把`application/json` `application/xml`类型的请求数据绑定`Resquset post`，使用时可以用`Resquset::post()`方法获取
 
 响应
 ----
-json_encode(['result' => $return])
+`json_encode(['result' => $return])`
 
-默认不支持html视图输出，但是可以自己实现return_handler处理器来支持html输出。
+默认不支持html视图输出，但是可以自己实现`return_handler`处理器来支持html输出。
 
 错误
 ----
-json_encode(['error' => ['code' => $code, 'message' => $message])
+`json_encode(['error' => ['code' => $code, 'message' => $message])`
 
 
 

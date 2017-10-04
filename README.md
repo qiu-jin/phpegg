@@ -25,9 +25,9 @@
 - Cli
 > 命令行模式（未开始）
 - 自定义模式
-> 用户可以自己实现和使用一个继承framework\App基类，并实现dispatch call error response等方法的应用模式类。
+> 用户可以自己实现和使用一个继承`framework\App`基类，并实现`dispatch` `call` `error` `response`等方法的应用模式类。
 - 无应用模式
-> 不使用任何应用模式，只需调用framework\App::boot()初始化环境，就可以编写代码。
+> 不使用任何应用模式，只需调用`framework\App::boot()`初始化环境，就可以编写代码。
 
 核心
 ----
@@ -65,7 +65,7 @@
 驱动
 ----
 驱动实例统一由容器类管理，有2种调用方式。
-> 1 使用辅助函数 db() cache() storage() rpc() email() sms() driver()
+> 1 使用辅助函数 `db()` `cache()` `storage()` `rpc()` `email()` `sms()` `driver()`
 
 ```php
 // 辅助函数参数为空，会默认取驱动配置的第一个实例
@@ -75,7 +75,7 @@ email('smtp')->send($mail, $subject, $content);
 // geoip等驱动没有同名的辅助函数，但可以使用driver函数调用。
 driver('geoip', 'ipip')->locate($ip);
 ```
-> 2 使用trait Getter，继承其魔术方法__get
+> 2 使用`trait Getter`，继承其魔术方法`__get`
 
 ```php
 class Demo

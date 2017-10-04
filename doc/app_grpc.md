@@ -47,13 +47,13 @@ framework\App::start('Grpc', [
 
 调度
 ----
-grpc应用调度规则较简单，仍以url_path来匹配控制类和方法，当grpc client发送一个请求时，它会向/namespace.namespace.Class/method形式的url_path发送一个protobuf message请求，此url_path的请求就会默认调用app\controller\namespace\namespace\Class::method()方法。
+grpc应用调度规则较简单，仍以url_path来匹配控制类和方法，当grpc client发送一个请求时，它会向`/namespace.namespace.Class/method`形式的`url_path`发送一个protobuf message请求，此`url_path`的请求就会默认调用`app\controller\namespace\namespace\Class::method()`方法。
 
 参数
 ----
 支持2种参数模式
 
-service_schemes配置定义grpc应用所需要服务描述文件（protoc自动生成的PHP文件）的加载方式。
+`service_schemes`配置定义grpc应用所需要服务描述文件（protoc自动生成的PHP文件）的加载方式。
 
 > ./protoc --proto_path=./  --php_out=./ --grpc_out=./  --plugin=protoc-gen-grpc=./grpc_php_plugin ./User.proto
 
@@ -105,7 +105,7 @@ message UserCreateResponse {
 
 1 键值参数模式
 
-在键值参数模式下，request_scheme_format和response_scheme_format配置定义了request message scheme和response message scheme类名的格式，并将请求的protobuf数据绑定到request message类实例，然后从request message类实例抽取field值，以键值对形式传给控制器方法（比较讨厌protobuf官方php扩展实现的getXXX和 setXXX获取设置数据的方法，但是目前也没能力自己去实现一个，只好以这个种较别扭方式处理）。
+在键值参数模式下，`request_scheme_format`和`response_scheme_format`配置定义了`request message scheme`和`response message scheme`类名的格式，并将请求的protobuf数据绑定到r`equest message`类实例，然后从`request message`类实例抽取`field`值，以键值对形式传给控制器方法（比较讨厌protobuf官方php扩展实现的getXXX和 setXXX获取设置数据的方法，但是目前也没能力自己去实现一个，只好以这个种较别扭方式处理）。
 
 > 如request_scheme_format为{service}{method}Request时
 > 
@@ -127,7 +127,7 @@ public function get ($id)
 
 2 request response参数模式
 
-在此参数模式下，控制器方法接收2个参数，参数分别为request message类实例和response message类实例，调用器会使用反射来获取request message和response message类名，然后实例化传给控制器方法，方法return返回response message类实例。
+在此参数模式下，控制器方法接收2个参数，参数分别为`request message`类实例和`response message`类实例，调用器会使用反射来获取`request message`和`response message`类名，然后实例化传给控制器方法，方法`return`返回`response message`类实例。
 
 ```php
 public function get (\TestGrpc\UserGetRequest $request, \TestGrpc\UserGetResponse $response)
@@ -151,7 +151,7 @@ public function get (\TestGrpc\UserGetRequest $request, \TestGrpc\UserGetRespons
 
 错误
 ----
-按照grpc协议把错误码$code通过grpc-status header头，错误信息$message通过grpc-message header头发送给请求者，body为空。
+按照grpc协议把错误码`$code`通过grpc-status header头，错误信息`$message`通过grpc-message header头发送给请求者，body为空。
 
 
 

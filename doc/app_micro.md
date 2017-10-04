@@ -1,7 +1,7 @@
 
 说明
 ----
-micro模式以微框架形式来开发组织应用代码，没有设置任何默认调度处理，也不默认处理return响应，这些都需要用户自己实现。
+micro模式以微框架形式来开发组织应用代码，没有设置任何默认调度处理，也不默认处理`return`响应，这些都需要用户自己实现。
 
 入口
 ----
@@ -44,13 +44,13 @@ $app->run('dd');
 调度
 ----
 
-micro模式没有默认调度规则，需要用户使用route方法和default方法自行设置绑定。
+micro模式没有默认调度规则，需要用户使用`route`方法和`default`方法自行设置绑定。
 
-route和default的优先执行顺序由dispatch_mode配置设置。
+`route`和`default`的优先执行顺序由`dispatch_mode`配置设置。
 
 1 route方法
 
-route方法接收3个参数，第1个参数是匹配的url，第2个参数是要调用的callable，第3个参数是要匹配的HTTP method（默认为空，匹配所有HTTP method）。
+`route`方法接收3个参数，第1个参数是匹配的`url`，第2个参数是要调用的`callable`，第3个参数是要匹配的`HTTP method`（默认为空，匹配所有`HTTP method`）。
 
 ```php
 // 访问 /users，调用对应的匿名函数
@@ -67,14 +67,14 @@ $app->route('user/*', function ($id) {
 
 2 default方法
 
-default方法接收3个参数，第一个参数是调用控制器类，第2个参数是要调用的控制器方法，第3个参数是控制器方法的参数（默认为空）。
+`default`方法接收3个参数，第一个参数是调用控制器类，第2个参数是要调用的控制器方法，第3个参数是控制器方法的参数（默认为空）。
 
 ```php
 if (isset($_GET['controller']) && isset($_GET['action'])) {
     $app->default($_GET['controller'], $_GET['action']);
 }
 ```
-> 访问 /?controller=User&action=get，会调用app\controller\User::get()
+> 访问 `/?controller=User&action=get`，会调用`app\controller\User::get()`
 
 响应
 ----
@@ -100,6 +100,6 @@ $app->run(function ($return) {
 
 错误
 ----
-默认支持简陋的错误信息打印 var_export($message)。
+默认支持简陋的错误信息打印 `var_export($message)`。
 
-用户可以调用setErrorHandler实现自定义的错误响应处理。
+用户可以调用`setErrorHandler`实现自定义的错误响应处理。
