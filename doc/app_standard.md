@@ -87,8 +87,8 @@ standard模式下支持默认调度与路由调度组合调度。
 >
 >`controller_depth`为2时，请求`/foo/bar/baz`会默认调度`app\controller\foo\Bar::baz()`。
 
-controller_suffix配置（默认为空），为了防止一些类命名冲突，可以使用controller_suffix配置给控制器类加上默认后缀
->例如controller_suffix为Controller时，请求/Foo/bar会默认调度app\controller\FooController::bar()
+`controller_suffix`配置（默认为空），为了防止一些类命名冲突，可以使用`controller_suffix`配置给控制器类加上默认后缀
+>例如`controller_suffix`为`Controller`时，请求`/Foo/bar`会默认调度`app\controller\FooController::bar()`
 
 `default_dispatch_index`配置（默认为空）,当直接访问域名时也就是`url_path`为空时，可以指定`default_dispatch_index`值作为其调度的方法。
 
@@ -154,11 +154,11 @@ class User
 > 如请求`/User/getNames/1/2/3/4`，会调度`app\controller\User::getNames('1', '2', '3', '4')`
 
 路由调度下，路由表规则必须是list参数形式。
-> 如路由规则 `'user/names/\*/\*/\*/*'=> 'User::getNames($1, $2, $3, $4)'`，请求`/User/getNames/1/2/3/4`，会调度`app\controller\User::getNames('1', '2', '3', '4')`
+> 如路由规则 `'user/names/*/*/*/*'=> 'User::getNames($1, $2, $3, $4)'`，请求`/User/getNames/1/2/3/4`，会调度`app\controller\User::getNames('1', '2', '3', '4')`
 
 3 键值kv参数模式
 
-默认调度下，匹配完控制器类与方法后剩余url_path单元会解析成键值对作为kv参数传给控制器方法。
+默认调度下，匹配完控制器类与方法后剩余`url_path`单元会解析成键值对作为kv参数传给控制器方法。
 > 如请求`/Foo/bar/param1/1/param2/2`，会调度`app\controller\Foo:: bar('1', '2')`
 
 ```php
@@ -175,7 +175,7 @@ class Foo
 ```
 
 路由调度下，路由表规则必须是kv参数形式。
-> 如路由规则 `'foo/bar/\*/*'=> 'Foo::bar(param1 = $1, param2 = $2)'`，如请求`/Foo/bar/1/2`，会调度`app\controller\Foo:: bar('1', '2')`
+> 如路由规则 `'foo/bar/*/*'=> 'Foo::bar(param1 = $1, param2 = $2)'`，如请求`/Foo/bar/1/2`，会调度`app\controller\Foo:: bar('1', '2')`
 
 
 bind_request_params配置（默认为空），支持将request get post等作为kv参数传给到控制器方法
