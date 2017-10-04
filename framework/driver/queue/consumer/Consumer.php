@@ -7,7 +7,12 @@ abstract class Consumer
     protected $serialize = 'serialize';
     protected $unserialize = 'unserialize';
     
-    abstract public function pop();
+    abstract public function pull();
+    
+    public function setTimeout($timeout)
+    {
+        $this->timeout = $timeout;
+    }
 
     protected function serialize($data)
     {

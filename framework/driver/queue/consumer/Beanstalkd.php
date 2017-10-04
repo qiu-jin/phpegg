@@ -19,7 +19,7 @@ class Beanstalkd extends Consumer
         return $data;
     }
 
-    public function pop()
+    public function pull()
     {
         return $this->queue->reserve();
     }

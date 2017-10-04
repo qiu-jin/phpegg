@@ -10,7 +10,7 @@ class Kafka extends Consumer
         $this->queue = $link->newTopic($job); 
     }
     
-    public function pop()
+    public function pull()
     {
         return $this->queue->consume(RD_KAFKA_PARTITION_UA, $this->timeout); 
     }

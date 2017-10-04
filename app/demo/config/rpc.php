@@ -2,29 +2,29 @@
 
 return [
     
+    'standard'=> [
+        'driver'    => 'http',
+        
+        'host'      => 'http://standard.example.com',
+
+        'response_decode' => 'json'
+    ],
+    
+    'rest'=> [
+        'driver'    => 'rest',
+        
+        'host'      => 'http://rest.example.com',
+
+        'response_decode' => 'json'
+    ],
+    
     'jsonrpc'=> [
         'driver'    => 'jsonrpc',
         
-        'host'      => 'http://jsonrpc.test.u',
+        'host'      => 'http://jsonrpc.example.com',
 
-        //'requset_encode' => 'msgpack_serialize',
-        //'response_decode' => 'msgpack_unserialize',
-    ],
-    
-    'thrift' => [
-        'driver'    => 'thrift',
-        
-        'host'      => '127.0.0.1',
-        'port'      =>  9090,
-        'prefix'    => 'pingpong_thrift',
-        'service_schemes'  => [
-            'prefix'    => [
-                'pingpong_thrift' => APP_DIR.'resource/thrift/pingpong_thrift/'
-            ],
-            'files'       => [
-                APP_DIR.'resource/thrift/pingpong_thrift/Types'
-            ]
-        ]
+        //'requset_serialize' => 'msgpack_serialize',
+        //'response_unserialize' => 'msgpack_unserialize',
     ],
     
     'grpc' => [
@@ -44,11 +44,20 @@ return [
         ]
     ],
     
-    'test'=> [
-        'driver'    => 'http',
+    'thrift' => [
+        'driver'    => 'thrift',
         
-        'host'      => 'http://test.u',
-        'response_decode' => 'json'
+        'host'      => '127.0.0.1',
+        'port'      =>  9090,
+        'prefix'    => 'pingpong_thrift',
+        'service_schemes'  => [
+            'prefix'    => [
+                'pingpong_thrift' => APP_DIR.'resource/thrift/pingpong_thrift/'
+            ],
+            'files'       => [
+                APP_DIR.'resource/thrift/pingpong_thrift/Types'
+            ]
+        ]
     ],
     
     'zhihu'=> [

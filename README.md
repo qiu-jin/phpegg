@@ -1,7 +1,11 @@
 
 应用
 ----
-框架目前支持Standard Rest Inline Jsonrpc Micro Grpc等多种应用模式，用户也可以实现自己的应用模式和不使用应用模式，以适应不同需求的应用开发（Rest Jsonrpc Grpc用于接口应用，Standard Inline Micro即可用于接口应用也可用于视图应用，View只能用于视图应用），另外为了实现不同模式应用之间的相互调用，框架在rpc driver中实现了一套rpc client driver来远程调用服务。
+框架目前支持Standard Rest Inline Jsonrpc Micro Grpc等多种应用模式
+
+用户也可以实现自己的应用模式和不使用应用模式，以适应不同需求的应用开发（Rest Jsonrpc Grpc用于接口应用，Standard Inline Micro即可用于接口应用也可用于视图应用，View只能用于视图应用）
+
+另外为了实现不同模式应用之间的相互调用，框架在rpc driver中实现了一套rpc client driver来远程调用服务。
 
 - [Standard](doc/app_standard.md)
 > 默认推荐的标准模式
@@ -71,7 +75,7 @@ email('smtp')->send($mail, $subject, $content);
 // geoip等驱动没有同名的辅助函数，但可以使用driver函数调用。
 driver('geoip', 'ipip')->locate($ip);
 ```
-> 2 trait Getter，继承其魔术方法__get
+> 2 使用trait Getter，继承其魔术方法__get
 
 ```php
 class Demo
@@ -109,8 +113,8 @@ $db->user->get(1);
 // SELECT * FROM `user` WHERE `id` = '1' LIMIT 1
 
 // 组合查询
-$db->good->select('name')->where('id', '>', 2)->limit(2)->order('id')->find();
-// SELECT `name` FROM `good` WHERE `id` > '2' ORDER BY `id` LIMIT 2
+$db->good->select('id', 'name')->where('id', '>', 2)->limit(2)->order('id')->find();
+// SELECT `id`, `name` FROM `good` WHERE `id` > '2' ORDER BY `id` LIMIT 2
 
 // 聚合查询，查询用户1的最大订单金额
 $db->orders->where('user_id', 1)->max('amount');
@@ -147,7 +151,7 @@ $this->db->good->relate('user')->on('user_good')->find();
 // SELECT `good_id`, `user_id` FROM `user_good` WHERE `good_id` IN ('1','3')
 // SELECT * FROM `user` WHERE `id` IN ('1')
 
-// 子查询连表查询，子查询只作为主表查询过滤条件
+// sub子查询连表查询，子查询只作为主表查询的过滤条件
 $db->user->sub('orders')->where('good_id', 1)->find();
 // SELECT * FROM `user` WHERE `id` IN (SELECT `user_id` FROM `orders` WHERE `good_id` = '1') 
 
@@ -355,6 +359,7 @@ $sms->send('1520000000', 'register', ['code' => rand(1000, 9999)]);
 | ----|----
 |Alidayu | 阿里大于短信服务
 |Aliyun | 阿里云短信服务
+|Baidu | 百度云短信服务（暂无企业账户，未测试）
 |Qcloud | 腾讯云短信服务
 |Yuntongxun | 容联云通讯短信服务
 

@@ -58,7 +58,7 @@ class Rest extends App
     protected $method;
     protected $ref_method;
     
-    protected function call()
+    protected function dispatch()
     {
         $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
         $this->method = Request::method();
@@ -72,7 +72,7 @@ class Rest extends App
         return false;
     }
 
-    protected function handle()
+    protected function call()
     {
         $this->setPostParams();
         extract($this->dispatch, EXTR_SKIP);
@@ -88,7 +88,7 @@ class Rest extends App
                 }
                 $params = ReflectionMethod::bindKvParams($ref_method, $params);
             }
-            if ($params === false) self::abort(500, 'Missing argument')
+            if ($params === false) self::abort(500, 'Missing argument');
         }
         return $controller->$action(...$params);
     }

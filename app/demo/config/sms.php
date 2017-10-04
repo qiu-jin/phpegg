@@ -23,6 +23,20 @@ return [
         ],
     ],
     
+    'baidu' => [
+        'driver'    => 'baidu',
+        
+        'acckey'    => 'your_acckey',
+        'seckey'    => 'your_seckey',
+        'template'  => [
+            'register'  => 'service_template_id'
+        ],
+        //（可选配置）服务域名
+        'host'      => 'sms.bj.baidubce.com', //默认
+        //（可选配置）签名有效期（秒）
+        'expiration'=> 180 //默认
+    ],
+    
     'qcloud' => [
         'driver'    => 'qcloud',
         

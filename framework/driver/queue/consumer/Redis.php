@@ -17,7 +17,7 @@ class Redis extends Consumer
         return $this->queue->rpoplpush($this->job, $this->timeout);
     }
 
-    public function pop()
+    public function pull()
     {
         return $this->queue->brPop($this->job, $this->timeout);
     }

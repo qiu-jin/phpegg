@@ -15,7 +15,7 @@ class Amqp extends Consumer
         return $envelope ? [$this->unserialize($envelope->getBody())] : null;
     }
     
-    public function pop()
+    public function pull()
     {   
         $envelope = $this->queue->get(AMQP_AUTOACK);
         return $envelope ? $this->unserialize($envelope->getBody()) : null;
