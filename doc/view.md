@@ -13,10 +13,10 @@
 
 ```php
 // 使用view()辅助函数
-view('/home.index', $vars);
+view('/home/index', $vars);
 
 // 使用response
-Response::view('/home.index', $vars);
+Response::view('/home/index', $vars);
 
 // 使用视图魔术方法，下面会说明
 View::success();

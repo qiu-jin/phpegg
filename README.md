@@ -24,7 +24,7 @@
 > 视图驱动模式（未完成）
 - Cli
 > 命令行模式（未开始）
-- 自定义应用模式
+- 自定义模式
 > 用户可以自己实现和使用一个继承framework\App基类，并实现dispatch call error response等方法的应用模式类。
 - 无应用模式
 > 不使用任何应用模式，只需调用framework\App::boot()初始化环境，就可以编写代码。
