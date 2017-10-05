@@ -132,7 +132,7 @@ public function get ($id)
 ```php
 public function get (\TestGrpc\UserGetRequest $request, \TestGrpc\UserGetResponse $response)
 {
-	$id = request->getId();
+	$id = $request->getId();
 	$user = $this->db->user->get($id);
 	$response->setId($id);
 	$response->setName($user['name']);

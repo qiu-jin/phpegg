@@ -178,8 +178,8 @@ class Foo
 > 如路由规则 `'foo/bar/*/*'=> 'Foo::bar(param1 = $1, param2 = $2)'`，如请求`/Foo/bar/1/2`，会调度`app\controller\Foo:: bar('1', '2')`
 
 
-bind_request_params配置（默认为空），支持将request get post等作为kv参数传给到控制器方法
-> 如bind_request_params为['get']时，请求/User/getName?id=1，app\controller\User::getName('1')
+`bind_request_params`配置（默认为空），支持将request get post等作为kv参数传给到控制器方法
+> 如`bind_request_params`为`['get']`时，请求`/User/getName?id=1`，`app\controller\User::getName('1')`
 
 `missing_params_to_null`配置（默认为`false`），当调用控制器方法时如果缺少参数，应用默认会返回一个错误响应，为了避免错误可以将其设为true，此时会默认将缺少的参数赋予null值传给控制器方法。
 
@@ -188,7 +188,7 @@ bind_request_params配置（默认为空），支持将request get post等作为
 ----
 standard模式支持视图，但是默认情况下没有开启，开启需要将`enable_view`配置设为true。
 
-`template_to_snake`配置（默认为false），由于standard模式下对视图文件和模版文件查找是根据控制器类与方法名，但是制器类与方法名一般是使用驼峰风格，而视图文件和模版文件一般是使用小写下划线，所以把`emplate_to_snake`设为true会将驼峰风格的控制器类与方法名映射到小写下划线风格视图和模版文件
+`template_to_snake`配置（默认为false），由于standard模式下对视图文件和模版文件查找是根据控制器类与方法名，但是制器类与方法名一般是使用驼峰风格，而视图文件和模版文件一般是使用小写下划线，所以把`template_to_snake`设为true会将驼峰风格的控制器类与方法名映射到小写下划线风格视图和模版文件
 
 >当`emplate_to_snake`为true时，请求`/User/getUser`会调用名为`user/get_user`的视图和模版文件
 
