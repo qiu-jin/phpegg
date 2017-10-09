@@ -102,6 +102,9 @@ class Demo
 
 - [db 数据库](doc/db.md)（[配置](app/demo/config/db.php)）
 
+[临时文档](https://qiu-jin.gitbooks.io/docs-phpegg-com/shu-ju-ku/lian-biao-cha-xun.html)，以后会合并。
+
+
 ```php
 // 执行一条SQL并返回结果
 $db->exec("SELECT * FROM user WHERE id = ?", [1]);
