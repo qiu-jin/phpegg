@@ -8,7 +8,7 @@ user 用户表
 |email | 用户邮箱
 |time | 注册时间
 
-accout 积分帐号表
+account 积分帐号表
 
 | 字段 | 描述         
 | ----|----

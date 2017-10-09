@@ -18,14 +18,14 @@ abstract class QueryChain
         $this->init(...$params);
     }
     
-    public function with($table, $alias = null, $optimize = null)
+    public function with($table, $alias = null)
     {
-        return new With($this->db, $this->table, $this, $table, $alias, $optimize);
+        return new With($this->db, $this->table, $this, $table, $alias);
     }
     
-    public function relate($table, $alias = null, $optimize = null)
+    public function relate($table, $alias = null)
     {
-        return new Relate($this->db, $this->table, $this, $table, $alias, $optimize);
+        return new Relate($this->db, $this->table, $this, $table, $alias);
     }
     
     public function select(...$fields)
