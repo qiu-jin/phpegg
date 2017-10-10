@@ -1,3 +1,6 @@
+简介
+----
+phpegg是一个轻量级php框架，但是功能丰富，支持Standard Rest Inline Jsonrpc Micro Grpc等多种应用模式，并集成多种功能驱动，包含了数据库 缓存 存储 邮件 短信 RPC等，并且框架本身耦合度低，各应用模式之间无依赖关系，功能驱动之间也少有依赖，框架初始化时只加载了少量的核心php文件，用户完全可以根据自己的需求定制框架，灵活 高性能 并且功能丰富。
 
 应用
 ----
@@ -8,18 +11,19 @@
 另外为了实现不同模式应用之间的相互调用，框架在rpc driver中实现了一套rpc client driver来远程调用服务。
 
 - [Standard](doc/app_standard.md)
-> 默认推荐的标准模式
+> 默认推荐的标准MVC应用模式，适用于网站页面开发，同时也适用于少量接口开发。
 
 - [Rest](doc/app_rest.md)
-> RESTful风格模式
+> RESTful风格模式，适用于开发RESTful风格的API接口，常用于对外的服务。
 - [Inline](doc/app_inline.md)
-> 引用控制器文件代码
+> 调用过程式控制器代码，适用于开发简单应用，即可用于网站页面开发也可用于接口开发。
 - [Jsonrpc](doc/app_jsonrpc.md)
-> jsonrpc协议模式
+> jsonrpc协议模式，常用于开发对内的服务接口，相较于Rest灵活高效。
 - [Micro](doc/app_micro.md)
-> 微框架模式
+> 微框架模式，高度灵活，自由组合功能，适用于开发一些小应用。
 - [Grpc](doc/app_grpc.md)
-> grpc协议模式（实验性）
+> grpc协议模式（实验性），适用于开发使用protobuf scheme规范的接口。
+
 - View
 > 视图驱动模式（未完成）
 - Cli
