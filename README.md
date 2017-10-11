@@ -1,6 +1,6 @@
 文档
 ---
-http://phpegg.com
+http://www.phpegg.com
 
 简介
 ----
