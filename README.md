@@ -1,6 +1,6 @@
 文档
 ---
-http://www.phpegg.com
+http://phpegg.com
 
 简介
 ----
@@ -16,11 +16,11 @@ phpegg是一个轻量级php框架，但是功能丰富，支持Standard Rest Inl
 > RESTful风格模式，适用于开发RESTful风格的API接口，常用于对外的服务。
 - Inline
 > 调用过程式控制器代码，适用于开发简单应用，即可用于网站页面开发也可用于接口开发。
-- [Jsonrpc](doc/app_jsonrpc.md)
+- Jsonrpc
 > jsonrpc协议模式，常用于开发对内的服务接口，相较于Rest灵活高效。
-- [Micro](doc/app_micro.md)
+- Micro
 > 微框架模式，高度灵活，自由组合功能，适用于开发一些小应用。
-- [Grpc](doc/app_grpc.md)
+- Grpc
 > grpc协议模式（实验性），适用于开发使用protobuf scheme规范的接口。
 
 - View
