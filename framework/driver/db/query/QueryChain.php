@@ -47,7 +47,8 @@ abstract class QueryChain
     
     public function  whereOr(...$where)
     {
-        $this->option['where']['OR#'.count($this->option['where'])] = $this->setWhere($where);
+        $key = isset($this->option['where']['OR']) ? 'OR#'.count($this->option['where']) : 'OR';
+        $this->option['where'][$key] = $this->setWhere($where);
         return $this;
     }
     
