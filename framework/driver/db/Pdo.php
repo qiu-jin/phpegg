@@ -14,6 +14,11 @@ abstract class Pdo extends Db
     protected function connect($config)
     {
         $link = new \PDO($this->dsn($config), $config['username'], $config['password'], $config['options'] ?? null);
+        if (isset($config['attributes'])) {
+            foreach ($config['attributes'] as $attribute => $value) {
+                $link->setAttribute($attribute, $value);
+            }
+        }
         if (isset($this->commands)) {
             foreach ($this->commands as $command) {
                 $link->exec($command);
