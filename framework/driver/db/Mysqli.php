@@ -7,6 +7,7 @@ class Mysqli extends Db
 {
     protected function connect($config)
     {
+        
         $link = new \mysqli($config['host'], 
                             $config['username'], 
                             $config['password'], 
@@ -19,6 +20,11 @@ class Mysqli extends Db
         }
         if (isset($config['charset'])) {
             $link->set_charset($config['charset']);
+        }
+        if (isset($config['options'])) {
+            foreach ($config['options'] as $option => $value) {
+                $link->options($option, $value);
+            }
         }
         $link->query("SET sql_mode=''");
         return $link;

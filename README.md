@@ -5,7 +5,7 @@ http://www.phpegg.com
 
 简介
 ----
-phpegg是一个轻量但功能丰富的php框架，支持`Standard` `Rest` `Inline` `Jsonrpc` `Micro` `Grpc`等多种应用模式，包含`配置` `类加载` `事件` `容器` `路由` `日志` `错误处理`等核心功能，并集成了`数据库` `缓存` `存储 ` `RPC` `邮件` `短信`等多种功能驱动，而且框架耦合度低，各应用模式之间无依赖关系，功能驱动之间也少有依赖，框架初始化时只加载了少量的核心php文件，用户完全可以根据自己的需求定制一个灵活 高性能 并且功能丰富的应用框架。
+PHPEGG是一个轻量但功能丰富的php框架，支持`Standard` `Rest` `Micro` `Inline` `Jsonrpc` `Grpc`等多种应用模式，包含`配置` `类加载` `事件` `容器` `路由` `日志` `错误处理`等核心功能，并集成了`数据库` `缓存` `存储 ` `RPC` `邮件` `短信`等多种功能驱动，而且框架耦合度低，各模块之间依赖低，框架初始化时只加载了少量的核心php文件，用户完全可以根据自己的需求定制一个灵活 高性能 并且功能丰富的应用框架。
 
 应用模式
 ----
@@ -26,12 +26,12 @@ phpegg是一个轻量但功能丰富的php框架，支持`Standard` `Rest` `Inli
 
 - `Cli ` 命令行模式（未完成）
 
-- `自定义模式` 用户可以自己实现和使用一个继承`framework\App`基类，并实现`dispatch` `call` `error` `response`等方法的应用模式类。
+- `自定义模式` 用户可以继承`framework\App`基类，实现`dispatch` `call` `error` `response`等接口方法，创建一个自定义应用模式。
 
-- `无应用模式` 不使用任何应用模式，只需调用`framework\App::boot()`初始化环境，就可以编写代码。
+- `无应用模式` 不使用任何应用模式，只需调用`App::boot()`初始化环境，就可以开始编写应用代码。
 
 
-另外为了实现不同模式应用之间的相互调用，框架在rpc driver中实现了一套rpc client driver来远程调用服务。
+另外为了实现不同模式应用之间的相互调用，框架在`rpc`驱动中实现了一套`rpc client`来远程调用服务。
 
 核心功能
 ----
@@ -59,7 +59,7 @@ phpegg是一个轻量但功能丰富的php框架，支持`Standard` `Rest` `Inli
 - `Http`
 	- `Client` HTTP请求客户端
 	- `Request` HTTP请求信息
-	- `Response` HTTP响应
+	- `Response` HTTP响应处理
 	- `Cookie`
 	- `Session`
 	- `Uploaded`
@@ -107,7 +107,7 @@ phpegg是一个轻量但功能丰富的php框架，支持`Standard` `Rest` `Inli
 
 | 驱动 | 描述         
 | ----|----
-|Console | 日志发送到浏览器控制台，Firefox可直接使用Chrome需安装chromelogger插件
+|WebConsole | 日志发送到浏览器控制台，Firefox可直接使用Chrome需安装chromelogger插件
 |Email | 日志发送到邮件
 |File | 日志写入文件
 |Queue | 日志发送到队列（坑）
