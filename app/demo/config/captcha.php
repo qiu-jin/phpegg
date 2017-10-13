@@ -1,7 +1,6 @@
 <?php
 
 return [
-    
     'image' => [
         'driver'	=> 'image',
         
