@@ -9,16 +9,25 @@ use framework\core\http\Response;
 
 class MyApp extends App
 {
-    protected $ns = 'app\controller\\';
+    protected $config = [
+        // 控制器namespace
+        'controller_ns' => 'controller',
+    ];
+    protected $con = 'app\controller\\';
     
     protected function dispatch()
     {
-        $action = Request::get('action');
-        $controller = Request::get('controller');
-        if ($action && $controller && $action[0] !== '_' && Loader::importPrefixClass($this->ns.$controller)) {
-            $instance = new $this->ns.$controller;
-            if (is_callable([$instance, $action])) {
-                return compact('action', 'controller', 'instance');
+        // 从Url Query中获取请求控制器类与方法名
+        $action = Request::get('a', 'index');
+        $controller = Request::get('c', 'Home');
+        $class = 'app\\'.$this->config['controller_ns'].'\\'.$controller;
+        
+        // 检查控制器类与方法是否合法
+        if (substr($action, 0, 1) !== '_' && Loader::importPrefixClass($class)) {
+            $controller_instance = new $class;
+            // 检查控制器方法是否可用
+            if (is_callable([$controller_instance, $action])) {
+                return compact('action', 'controller', 'controller_instance');
             }
         }
         return false;
@@ -26,16 +35,19 @@ class MyApp extends App
     
     protected function call()
     {
-        return $this->dispatch['instance']->{$this->dispatch['action']}();
+        // 执行控制器方法
+        return $this->dispatch['controller_instance']->{$this->dispatch['action']}();
     }
     
     protected function error($code = 500, $message = null)
     {
-        View::error($code, $message);
+        // 输出视图error页面
+        Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
     }
     
     protected function response($return)
     {
+        // 输出视图页面
         Response::view('/'.$this->dispatch['controller'].'/'.$this->dispatch['action'], $return);
     }
 }
