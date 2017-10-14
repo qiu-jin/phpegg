@@ -86,11 +86,11 @@ abstract class App
         defined('APP_DEBUG')|| define('APP_DEBUG', false);
         defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
         defined('APP_DIR')  || define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
-        require(FW_DIR.'common.php');
-        require(FW_DIR.'core/Config.php');
-        require(FW_DIR.'core/Loader.php');
-        require(FW_DIR.'core/Error.php');
-        require(FW_DIR.'core/Hook.php');
+        require FW_DIR.'common.php';
+        require FW_DIR.'core/Config.php';
+        require FW_DIR.'core/Loader.php';
+        require FW_DIR.'core/Error.php';
+        require FW_DIR.'core/Hook.php';
         register_shutdown_function(function () {
             self::$app = null;
             Hook::listen('exit');

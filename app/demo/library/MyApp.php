@@ -13,13 +13,12 @@ class MyApp extends App
         // 控制器namespace
         'controller_ns' => 'controller',
     ];
-    protected $con = 'app\controller\\';
     
     protected function dispatch()
     {
         // 从Url Query中获取请求控制器类与方法名
         $action = Request::get('a', 'index');
-        $controller = Request::get('c', 'Home');
+        $controller = Request::get('c', 'home');
         $class = 'app\\'.$this->config['controller_ns'].'\\'.$controller;
         
         // 检查控制器类与方法是否合法
