@@ -16,7 +16,7 @@ class Response
     {
         if (self::$response) return;
         self::$response = new \stdClass();
-        Hook::add('exit', __CLASS__.'::flush', null, 1);
+        Hook::add('exit', __CLASS__.'::flush', 1);
     }
     
     /*

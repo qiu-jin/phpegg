@@ -28,7 +28,10 @@ class Hook
      */
     public static function add($name, $call, $priority = 10)
     {
-        self::$hooks[$name][$priority][] = $call;
+        if (empty(self::$hooks[$name])) {
+            self::$hooks[$name] = new \SplPriorityQueue();
+        }
+        self::$hooks[$name]->insert($call, (int) $priority);
     }
 
     /*
@@ -39,12 +42,9 @@ class Hook
         if (isset(self::$hooks[$name])) {
             $stop = false;
             $params[] =& $stop;
-            krsort(self::$hooks[$name]);
-            foreach (self::$hooks[$name] as $priority => $calls) {
-                foreach ($calls as $call) {
-                    $call(...$params);
-                    if ($stop) break 2;
-                }
+            while (self::$hooks[$name]->valid()) {
+                (self::$hooks[$name]->extract())(...$params);
+                if ($stop) break;
             }
             unset(self::$hooks[$name]);
         }
