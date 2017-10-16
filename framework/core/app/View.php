@@ -6,6 +6,7 @@ use framework\core\Config;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\core\View as CoreView;
+use framework\extend\view\ViewModel;
 
 class View extends App
 {
