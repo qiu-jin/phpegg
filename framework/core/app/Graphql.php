@@ -24,4 +24,9 @@ class Graphql extends App
     {
 
     }
+    
+    protected function parser($query)
+    {
+        
+    }
 }
