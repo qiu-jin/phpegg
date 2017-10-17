@@ -246,32 +246,9 @@ class Client
         return false;
     }
     
-    /*
-     * 底层curl方法封装
-     */
     public static function send($method, $url, $body = null,  array $headers = null, array $curlopt = null, array $curlinfo = null, $debug = false)
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        if (stripos($url, 'https://') === 0) {
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        }
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
-        if ($method === 'HEAD') {
-            curl_setopt($ch, CURLOPT_NOBODY, 1);
-        }
-        if ($body){
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        }
-        if ($headers) {
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        }
-        if ($curlopt){
-            curl_setopt_array($ch, $curlopt);
-        }
-        $result = curl_exec($ch);
+        $result = curl_exec(self::build($method, $url, $body, $headers, $curlopt));
         if ($curlinfo) {
             foreach (array_unique($curlinfo) as $name) {
                 $return[$name] = curl_getinfo($ch, constant('CURLINFO_'.strtoupper($name)));
@@ -301,6 +278,34 @@ class Client
             return $return;
         }
         return $result;
+    }
+    
+    /*
+     * build
+     */
+    public static function build($method, $url, $body, $headers, $curlopt)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        if (stripos($url, 'https://') === 0) {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        }
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
+        if ($method === 'HEAD') {
+            curl_setopt($ch, CURLOPT_NOBODY, 1);
+        }
+        if ($body){
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        }
+        if ($headers) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        }
+        if ($curlopt){
+            curl_setopt_array($ch, $curlopt);
+        }
+        return $ch;
     }
     
     /*
