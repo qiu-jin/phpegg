@@ -35,17 +35,16 @@ class Grpc extends App
     protected function dispatch()
     {
         $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
-        $path = Request::pathArr();
+        $path_array = Request::pathArr();
         if (count($path) === 2) {
-            list($class, $action) = $path;
-            $class = $this->ns.strtr($class, '.', '\\').$this->config['controller_suffix'];
+            $class = $this->ns.strtr($path_array[0], '.', '\\').$this->config['controller_suffix'];
             if (Loader::importPrefixClass($class)) {
-                $controller = new $class();
-                if (is_callable([$controller, $action])) {
+                $controller_instance = new $class();
+                if (is_callable([$controller_instance, $path_array[1]])) {
                     return [
-                        'controller'    => $controller,
-                        'action'        => $action,
-                        'params'        => $this->readParams()
+                        'controller_instance'   => $controller_instance,
+                        'action'                => $path_array[1],
+                        'params'                => $this->readParams()
                     ];
                 }
             }
@@ -61,7 +60,7 @@ class Grpc extends App
             }
         }
         extract($this->dispatch, EXTR_SKIP);
-        $parameters = (new \ReflectionMethod($controller, $action))->getParameters();
+        $parameters = (new \ReflectionMethod($controller_instance, $action))->getParameters();
         if ($this->config['param_mode']) {
             if (count($parameters) === 2) {
                 list($request, $response) = $parameters;
@@ -70,7 +69,7 @@ class Grpc extends App
                 if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
                     $request_object = new $request_class;
                     $request_object->mergeFromString($params);
-                    $return = $controller->$action($request_object, new $response_class);
+                    $return = $controller_instance->$action($request_object, new $response_class);
                     if ($return instanceof $response_class) {
                         return $return;
                     }
@@ -93,7 +92,7 @@ class Grpc extends App
                     $new_params[] = $param;
                 }
             }
-            $return = $controller->$action(...$new_params);
+            $return = $controller_instance->$action(...$new_params);
             if ($return) {
                 $responset_object = new $response_class;
                 foreach ($return as $key => $value) {

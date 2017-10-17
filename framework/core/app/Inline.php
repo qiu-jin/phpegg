@@ -46,7 +46,7 @@ class Inline extends App
     
     protected function call()
     {
-        $file = $this->dispatch['file'];
+        $file = $this->dispatch['controller_file'];
         $params = $this->dispatch['params'] ?? [];
         if ($this->config['enable_getter']) {
             $return = (new class() {
@@ -76,26 +76,31 @@ class Inline extends App
     
     protected function response($return = null)
     {
-        $this->config['enable_view'] ? Response::view($this->getTemplate(), $return, false) : Response::json($return, false);
-    }
-    
-    protected function getTemplate()
-    {
-         return '/'.strtr(basename($this->dispatch['file'], '.php'), $this->dir, '');
+        if (empty($this->config['enable_view'])) {
+            Response::json($return, false);
+        } else {
+            Response::view('/'.$this->dispatch['controller'], $return, false);
+        }
     }
     
     protected function defaultDispatch($path) 
     {
         if ($path) {
-            $path = strtr($path, '-', '_');
-            if (preg_match('/^(\w+)(\/\w+)*$/', $path)) {
-                $file = $this->dir.$path.'.php';
-                if (is_php_file($file)) {
-                    return ['file' => $file];
+            $controller = strtr($path, '-', '_');
+            if (preg_match('/^(\w+)(\/\w+)*$/', $controller)) {
+                $controller_file = $this->dir.$controller.'.php';
+                if (is_php_file($controller_file)) {
+                    return [
+                        'controller' => $controller,
+                        'controller_file' => $controller_file
+                    ];
                 }
             }
         } elseif (isset($this->config['default_dispatch_index'])) {
-            return ['file' => $this->dir.$this->config['default_dispatch_index'].'.php'];
+            return [
+                'controller' => $this->config['default_dispatch_index'],
+                'controller_file' => $this->dir.$this->config['default_dispatch_index'].'.php'
+            ];
         }
         return false;
     }
@@ -107,7 +112,11 @@ class Inline extends App
             $path = empty($path) ? null : explode('/', $path);
             $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes));
             if ($dispatch) {
-                return ['file' => $this->dir.$dispatch[0], 'params' => $dispatch[1]];
+                return [
+                    'controller' => $dispatch[0],
+                    'controller_file' => $this->dir.$dispatch[0].'.php',
+                    'params' => $dispatch[1]
+                ];
             }
         }
         return false;

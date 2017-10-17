@@ -126,10 +126,10 @@ class Jsonrpc extends App
             if ($params === false) {
                 return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
             }
-            return ['result' => $controller->$action(...$params)];
+            return ['result' => $controller_instance->$action(...$params)];
         }
         Request::set('post', $params);
-        return ['result' => $controller->$action()];
+        return ['result' => $controller_instance->$action()];
     }
     
     protected function error($code = null, $message = null)
@@ -181,17 +181,17 @@ class Jsonrpc extends App
     {
         $id = $item['id'] ?? null;
         if (isset($item['method'])) {
-            $method = explode('.', $item['method']);
-            if (count($method) > 1) {
-                $action = array_pop($method);
+            $method_array = explode('.', $item['method']);
+            if (count($method_array) > 1) {
+                $action = array_pop($method_array);
                 if ($action[0] !== '_' ) {
-                    $controller = $this->makeController($method);
+                    $controller_instance = $this->makeControllerInstance($method_array);
                     if (!empty($controller) && is_callable([$controller, $action])) {
                         return [
-                            'id'            => $id,
-                            'controller'    => $controller,
-                            'action'        => $action,
-                            'params'        => $item['params'] ?? []
+                            'id'                    => $id,
+                            'controller_instance'   => $controller_instance,
+                            'action'                => $action,
+                            'params'                => $item['params'] ?? []
                         ];
                     }
                 }
@@ -207,9 +207,9 @@ class Jsonrpc extends App
         ];
     }
     
-    protected function makeController($path)
+    protected function makeControllerInstance($controller_array)
     {
-        $class = 'app\\'.$this->config['controller_ns'].'\\'.implode('\\', $path).$this->config['controller_suffix'];
+        $class = 'app\\'.$this->config['controller_ns'].'\\'.implode('\\', $controller_array).$this->config['controller_suffix'];
         if (!$this->is_batch_call) {
             return Loader::importPrefixClass($class) ? new $class() : false;
         }
