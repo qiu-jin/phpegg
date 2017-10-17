@@ -250,7 +250,8 @@ class Standard extends App
                     throw new \Exception('If enable action route, must controller_depth > 0');
                 }
                 if (count($path) >= $depth) {
-                    return $this->actionRouteDispatch($param_mode, implode('\\', array_slice($path, 0, $depth)), array_slice($path, $depth));
+                    $controller = implode('\\', array_slice($path, 0, $depth));
+                    return $this->actionRouteDispatch($param_mode, $controller, array_slice($path, $depth));
                 }
             }
         }
