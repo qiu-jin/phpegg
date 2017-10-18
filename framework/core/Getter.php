@@ -1,13 +1,13 @@
 <?php
 namespace framework\core;
 
-defined('APP\ENV\PROVIDERS_NAME') || define('APP\ENV\PROVIDERS_NAME', 'providers');
+defined('app\env\PROVIDERS_NAME') || define('app\env\PROVIDERS_NAME', 'providers');
 
 trait Getter
 {
     public function __get($name)
     {
-        $providers = \APP\ENV\PROVIDERS_NAME;
+        $providers = \app\env\PROVIDERS_NAME;
         if (isset($this->$providers) && isset($this->$providers[$name])) {
             $value = $this->$providers[$name];
             if (is_string($value)) {

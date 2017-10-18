@@ -1,5 +1,5 @@
 <?php
-namespace APP\ENV;
+namespace app\env;
 
 //开启严格错误模式
 const STRICT_ERROR_MODE = true;

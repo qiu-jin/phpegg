@@ -31,7 +31,7 @@ class Config
      */
     public static function env($name, $default = null)
     {
-        $const = 'APP\ENV\\'.$name;
+        $const = "app\\env\\$name";
         return defined($const) ? constant($const) : $default;
     }
     
