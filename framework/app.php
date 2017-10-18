@@ -119,8 +119,8 @@ abstract class App
         }
         self::$app = new $app($config ?? Config::get('app'));
         self::$app->dispatch = self::$app->dispatch();
+        Hook::listen('start', self::$app->dispatch);
         if (self::$app->dispatch) {
-            Hook::listen('start', self::$app->dispatch);
             return self::$app;
         }
         self::abort(404);

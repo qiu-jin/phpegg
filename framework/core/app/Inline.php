@@ -26,6 +26,8 @@ class Inline extends App
         
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
+        // 默认调度时URL path中划线转成下划线
+        'default_dispatch_hyphen_to_underscore' => false,
         
         // 路由调度的路由表
         'route_dispatch_routes' => null,
@@ -86,8 +88,12 @@ class Inline extends App
     protected function defaultDispatch($path) 
     {
         if ($path) {
-            $controller = strtr($path, '-', '_');
-            if (preg_match('/^(\w+)(\/\w+)*$/', $controller)) {
+            if ($this->config['default_dispatch_hyphen_to_underscore']) {
+                $controller = strtr($path, '-', '_');
+            } else {
+                $controller = $path;
+            }
+            if (preg_match('/^([\w\-]+)(\/[\w\-]+)*$/', $controller)) {
                 $controller_file = $this->dir.$controller.'.php';
                 if (is_php_file($controller_file)) {
                     return [
