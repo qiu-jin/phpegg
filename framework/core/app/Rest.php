@@ -52,8 +52,8 @@ class Rest extends App
         'route_dispatch_param_mode' => 1,
         // 路由调度的路由表
         'route_dispatch_routes' => null,
-        // 路由调启是否用动作路由
-        'route_dispatch_action_route' => false,
+        // 设置动作路由属性名，为null则不启用动作路由
+        'route_dispatch_action_route' => null,
     ];
     protected $method;
     protected $ref_method;
@@ -234,9 +234,10 @@ class Rest extends App
     
     protected function actionRouteDispatch($param_mode, $controller, $path)
     {
+        $property = $this->config['route_dispatch_action_route'];
         $class = $this->ns.$controller.$this->config['controller_suffix'];
-        if (property_exists($class, 'routes')) {
-            $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'] ?? null;
+        if (property_exists($class, $property)) {
+            $routes = (new \ReflectionClass($class))->getDefaultProperties()[$property] ?? null;
             if ($routes) {
                 $dispatch = Router::dispatch($path, $routes, $param_mode, $this->method);
                 if ($dispatch) {

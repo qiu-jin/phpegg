@@ -1,12 +1,15 @@
 <?php
 namespace framework\core;
 
+defined('APP\ENV\PROVIDERS_NAME') || define('APP\ENV\PROVIDERS_NAME', 'providers');
+
 trait Getter
 {
     public function __get($name)
     {
-        if (isset($this->providers) && isset($this->providers[$name])) {
-            $value = $this->providers[$name];
+        $providers = \APP\ENV\PROVIDERS_NAME;
+        if (isset($this->$providers) && isset($this->$providers[$name])) {
+            $value = $this->$providers[$name];
             if (is_string($value)) {
                 return $this->$name = Container::make($value);
             } elseif (is_array($value)) {

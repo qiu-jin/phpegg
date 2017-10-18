@@ -55,8 +55,8 @@ class Standard extends App
         'route_dispatch_param_mode' => 1,
         // 路由调度的路由表，如果值为字符串则作为PHP文件include
         'route_dispatch_routes' => null,
-        // 路由调启是否用动作路由
-        'route_dispatch_action_route' => false,
+        // 设置动作路由属性名，为null则不启用动作路由
+        'route_dispatch_action_route' => null,
     ];
     protected $ref_method;
     
@@ -222,7 +222,7 @@ class Standard extends App
     protected function routeDispatch($path) 
     {
         $param_mode = $this->config['route_dispatch_param_mode'];
-        if ($this->config['route_dispatch_routes']) {
+        if (isset($this->config['route_dispatch_routes'])) {
             $routes = $this->config['route_dispatch_routes'];
             $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes), $param_mode);
             if ($dispatch) {
@@ -241,7 +241,7 @@ class Standard extends App
                 $this->dispatch = ['route' => $dispatch];
             }
         }
-        if ($this->config['route_dispatch_action_route']) {
+        if (isset($this->config['route_dispatch_action_route'])) {
             if (isset($this->dispatch['route'])) {
                 return $this->actionRouteDispatch($param_mode, ...$this->dispatch['route']);
             } else {
@@ -260,9 +260,10 @@ class Standard extends App
     
     protected function actionRouteDispatch($param_mode, $controller, $path)
     {
+        $property = $this->config['route_dispatch_action_route'];
         $class = $this->ns.$controller.$this->config['controller_suffix'];
-        if (property_exists($class, 'routes')) {
-            $routes = (new \ReflectionClass($class))->getDefaultProperties()['routes'] ?? null;
+        if (property_exists($class, $property)) {
+            $routes = (new \ReflectionClass($class))->getDefaultProperties()[$property] ?? null;
             if ($routes) {
                 $dispatch = Router::dispatch($path, $routes, $param_mode);
                 if ($dispatch) {
