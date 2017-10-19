@@ -68,18 +68,16 @@ class Router
             $count = count($path);
             foreach ($ruotes as $rule => $call) {
                 $rule = explode('/', $rule);
-                if ($count === count($rule)) {
-                    $macth = self::macth($path, $rule);
-                    if ($macth !== false) {
-                        if (is_array($call)) {
-                            if (isset($call[$method])) {
-                                $call = $call[$method];
-                            } else {
-                                return false;
-                            }
+                $macth = self::macth($path, $rule);
+                if ($macth !== false) {
+                    if (is_array($call)) {
+                        if (isset($call[$method])) {
+                            $call = $call[$method];
+                        } else {
+                            return false;
                         }
-                        return [$call, $macth];
                     }
+                    return [$call, $macth];
                 }
             }
         }
@@ -126,8 +124,7 @@ class Router
                     return false;
                 case '~':
                     if ($unit === '~') {
-                        $macth[] = array_slice($path, $i);
-                        return $macth;
+                        return array_merge($macth, array_slice($path, $i));
                     }
                     return false;
                 default:

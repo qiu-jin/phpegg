@@ -157,7 +157,8 @@ class Standard extends App
                     }
                     $action = $this->config['default_dispatch_default_action'];
                 } else {
-                    $action = $this->dispatch['route'][1];
+                    $action = array_shift($this->dispatch['route'][1]);
+                    $params = $this->dispatch['route'][1];
                 }
                 if (isset($this->config['default_dispatch_to_camel'])) {
                     $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
@@ -201,7 +202,7 @@ class Standard extends App
             }
         }
         $class = $this->ns.$controller.$this->config['controller_suffix'];
-        if (Loader::importPrefixClass($class)) {
+        if (class_exists($class, false) || Loader::importPrefixClass($class)) {
             $controller_instance = new $class();
             if (is_callable([$controller_instance, $action])) {
                 return [

@@ -144,7 +144,7 @@ class Rest extends App
             $controller = implode('\\', $controller_array);
         }
         $class = $this->ns.$controller.$this->config['controller_suffix'];
-        if (Loader::importPrefixClass($class)) {
+        if (class_exists($class, false) || Loader::importPrefixClass($class)) {
             $ccontroller_instance = new $class();
             if (is_callable([$ccontroller_instance, $this->method])) {
                 return [
@@ -177,7 +177,7 @@ class Rest extends App
         $dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method);
         if ($dispatch) {
             $class = $this->ns.$controller.$this->config['controller_suffix'];
-            if (Loader::importPrefixClass($class)) {
+            if (class_exists($class, false) || Loader::importPrefixClass($class)) {
                 $ccontroller_instance = new $class();
                 if (is_callable([$ccontroller_instance, $dispatch[0]])) {
                     return [
