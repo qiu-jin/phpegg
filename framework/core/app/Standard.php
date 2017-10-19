@@ -55,6 +55,8 @@ class Standard extends App
         'route_dispatch_param_mode' => 1,
         // 路由调度的路由表，如果值为字符串则作为PHP文件include
         'route_dispatch_routes' => null,
+        // 路由调度是否允许访问受保护的方法
+        'route_dispatch_protected_access' => false,
         // 设置动作路由属性名，为null则不启用动作路由
         'route_dispatch_action_route' => null,
     ];
@@ -230,7 +232,9 @@ class Standard extends App
                 if (strpos('::', $dispatch[0])) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->ns.$controller.$this->config['controller_suffix'];
-                    $this->checkMethodAccessible($class, $action);
+                    if ($this->config['route_dispatch_protected_access']) {
+                        $this->checkMethodAccessible($class, $action);
+                    }
                     return [
                         'controller'            => $controller,
                         'controller_instance'   => new $class,
@@ -268,7 +272,9 @@ class Standard extends App
             if ($routes) {
                 $dispatch = Router::dispatch($path, $routes, $param_mode);
                 if ($dispatch) {
-                    $this->checkMethodAccessible($class, $dispatch[0]);
+                    if ($this->config['route_dispatch_protected_access']) {
+                        $this->checkMethodAccessible($class, $dispatch[0]);
+                    }
                     return [
                         'controller'            => $controller,
                         'controller_instance'   => new $class,
