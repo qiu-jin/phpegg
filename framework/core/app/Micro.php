@@ -23,9 +23,24 @@ class Micro extends App
         'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/]
     ];
     
-    public function default($controller, $action, array $params = [])
+    public function get($role, $call)
     {
-        $this->dispatch['default'] = [$controller, $action, $params];
+        $this->route($role, $call, 'GET');
+    }
+    
+    public function put($role, $call)
+    {
+        $this->route($role, $call, 'PUT');
+    }
+    
+    public function post($role, $call)
+    {
+        $this->route($role, $call, 'POST');
+    }
+    
+    public function delete($role, $call)
+    {
+        $this->route($role, $call, 'DELETE');
     }
     
     public function route($role, callable $call, $method = null)
@@ -35,6 +50,11 @@ class Micro extends App
         } elseif (in_array($method, $this->config['route_dispatch_http_methods'], true)) {
             $this->dispatch['route'][$role][$method] = $call;
         }
+    }
+    
+    public function default($controller, $action, array $params = [])
+    {
+        $this->dispatch['default'] = [$controller, $action, $params];
     }
     
     protected function dispatch()
