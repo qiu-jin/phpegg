@@ -3,7 +3,7 @@ namespace framework\driver\db\query;
 
 class Query extends QueryChain
 {
-	protected function init($table)
+    protected function init($table)
     {
         $this->table = $table;
     }

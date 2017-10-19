@@ -8,7 +8,7 @@ class Union extends QueryChain
     private $fields;
     private $options = [];
     
-	protected function init($table, $option, $union, $all = true)
+    protected function init($table, $option, $union, $all = true)
     {
         $this->all = $all;
         $this->table = $table;

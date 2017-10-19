@@ -8,7 +8,7 @@ class Relate extends QueryChain
     protected $query;
     protected $optimize;
 
-	protected function init($table, $query, $with, $alias = null)
+    protected function init($table, $query, $with, $alias = null)
     {
         $this->with = $with;
         $this->table = $table;

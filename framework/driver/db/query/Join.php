@@ -9,7 +9,7 @@ class Join extends QueryChain
     protected $options = [];
     protected static $join_type = ['INNER', 'LEFT', 'RIGHT'];
 
-	protected function init($table, $option, $join, $type = 'LEFT', $prefix = true)
+    protected function init($table, $option, $join, $type = 'LEFT', $prefix = true)
     {
         if (!in_array($type, self::$join_type, true)) {
             throw new \Exception('Join Type Error: '.var_export($type, true));

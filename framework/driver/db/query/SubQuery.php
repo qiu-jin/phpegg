@@ -9,7 +9,7 @@ class SubQuery extends QueryChain
     protected static $sub_exp = ['=', '>', '<', '>=', '<=', '<>', 'ANY', 'IN', 'SOME', 'ALL', 'EXISTS'];
     protected static $sub_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
     
-	protected function init($table, $option, $sub, $exp, $logic)
+    protected function init($table, $option, $sub, $exp, $logic)
     {
         $this->checkExpLogic($exp, $logic);
         $this->cur = $sub;
