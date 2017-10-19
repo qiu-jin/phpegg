@@ -87,10 +87,21 @@ class Router
     /*
      * 路由规则匹配
      */
-    public static function macth( $path, $rule)
+    public static function macth($path, $rule)
     {
         $macth = [];
         foreach ($rule as $i => $unit) {
+            if ($unit[0] === '[') {
+                if (isset($path[$i])) {
+                    $unit = substr($unit, 1, -1);
+                } else {
+                    break;
+                }
+            } else {
+                if (!isset($path[$i])) {
+                    return false;
+                }
+            }
             switch ($unit[0]) {
                 case '*':
                     if ($unit === '*') {
