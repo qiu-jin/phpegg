@@ -2,7 +2,6 @@
 namespace framework;
 
 use framework\core\Hook;
-use framework\core\Logger;
 use framework\core\Config;
 use framework\core\Exception;
 
@@ -137,9 +136,6 @@ abstract class App
         } elseif ($status === 1) {
             if (!self::$exit) {
                 self::$exit = 1;
-                if (self::$boot && APP_DEBUG) {
-                    Logger::write(Logger::DEBUG, 'user exit');
-                }
                 exit;
             }
         } else {
