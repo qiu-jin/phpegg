@@ -200,7 +200,7 @@ class Rest extends App
             $routes = $this->config['route_dispatch_routes'];
             $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes), $param_mode, $this->method);
             if ($dispatch) {
-                if (strpos('::', $dispatch[0])) {
+                if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $controller_instance = (new $this->ns.$controller.$this->config['controller_suffix']);
                     return [

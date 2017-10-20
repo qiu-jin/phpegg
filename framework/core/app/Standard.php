@@ -119,7 +119,11 @@ class Standard extends App
      */
     protected function response($return = [])
     {
-        $this->config['enable_view'] ? Response::view($this->getTemplate(), $return, false) : Response::json($return, false);
+        if ($this->config['enable_view']) {
+            Response::view($this->getTemplate(), $return, false);
+        } else {
+            Response::json($return, false);
+        }
     }
     
     /*
@@ -229,7 +233,7 @@ class Standard extends App
             $routes = $this->config['route_dispatch_routes'];
             $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes), $param_mode);
             if ($dispatch) {
-                if (strpos('::', $dispatch[0])) {
+                if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->ns.$controller.$this->config['controller_suffix'];
                     if ($this->config['route_dispatch_protected_access']) {
