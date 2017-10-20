@@ -59,6 +59,47 @@ class Error
         }
     }
     
+    public static function set($message, $code = self::ERROR, $limit = 1)
+    {
+        $file = null;
+        $line = null;
+        $type = null;
+        $class = null;
+        $function = null;
+        $level = self::getErrorLevelInfo($code)[0];
+        $traces = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        if (isset($traces[$limit])) {
+            extract($traces[$limit]);
+            $message = "$class$type$function() $message";
+        }
+        if (Config::env('STRICT_ERROR_MODE')) {
+            throw new \ErrorException($message, $code, $code, $file, $line);
+        } else {
+            self::record('error.user', $level, $code, $message, $file, $line);
+        }
+    }
+    
+    /*
+     * set_error_handler 错误处理器
+     */
+    public static function errorHandler($code, $message, $file = null, $line = null)
+    {
+        if (error_reporting() & $code) {
+            if (Config::env('STRICT_ERROR_MODE')) {
+                throw new \ErrorException($message, $code, $code, $file, $line);
+            } else {
+                list($level, $prefix) = self::getErrorLevelInfo($code);
+                $message = $prefix.': '.$message;
+                self::record('error.error', $level, $code, $message, $file, $line);
+                if ($level === Logger::CRITICAL || $level === Logger::ALERT || $level === Logger::ERROR ) {
+                    App::exit(3);
+                    self::response();
+                    return false;
+                }
+            }
+        }
+    }
+    
     /*
      * set_exception_handler 异常处理器
      */
@@ -87,7 +128,6 @@ class Error
                 self::response();
     		} else {
                 self::record('error.fatal', Logger::WARNING, 0, 'Unknown exit', null, null);
-    		    // Logger::write(Logger::WARNING, 'Illegal exit');
     		}
         }
         self::$error = null;
