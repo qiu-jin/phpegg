@@ -23,32 +23,34 @@ class Micro extends App
         'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/]
     ];
     
-    public function get($role, $call)
+    public function get($role, callable $call)
     {
-        $this->route($role, $call, 'GET');
+        $this->dispatch['route'][$role]['GET'] = $call;
     }
     
-    public function put($role, $call)
+    public function put($role, callable $call)
     {
-        $this->route($role, $call, 'PUT');
+        $this->dispatch['route'][$role]['PUT'] = $call;
     }
     
-    public function post($role, $call)
+    public function post($role, callable $call)
     {
-        $this->route($role, $call, 'POST');
+        $this->dispatch['route'][$role]['POST'] = $call;
     }
     
-    public function delete($role, $call)
+    public function delete($role, callable $call)
     {
-        $this->route($role, $call, 'DELETE');
+        $this->dispatch['route'][$role]['DELETE'] = $call;
     }
     
-    public function route($role, callable $call, $method = null)
+    public function route($role, callable $call, $methods = null)
     {
         if ($method === null) {
             $this->dispatch['route'][$role] = $call;
-        } elseif (in_array($method, $this->config['route_dispatch_http_methods'], true)) {
-            $this->dispatch['route'][$role][$method] = $call;
+        } else{
+            foreach ((array) $methods as $method) {
+                $this->dispatch['route'][$role][$method] = $call;
+            }
         }
     }
     
@@ -65,9 +67,11 @@ class Micro extends App
     protected function call()
     {
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
-            $dispatch = $this->{$mode.'Dispatch'}();
-            if ($dispatch) {
-                return $dispatch[0](...$dispatch[1]);
+            if (isset($this->dispatch[$mode])) {
+                $dispatch = $this->{$mode.'Dispatch'}();
+                if ($dispatch) {
+                    return $dispatch[0](...$dispatch[1]);
+                }
             }
         }
         self::abort(404);
@@ -85,14 +89,12 @@ class Micro extends App
     
     protected function defaultDispatch()
     {
-        if ($this->dispatch['default']) {
-            list($controller, $action, $params) = $this->dispatch['default'];
-            $class = 'app\\'.$this->config['controller_ns'].'\\'.$controller.$this->config['controller_suffix'];
-            if ($action[0] !== '_' && Loader::importPrefixClass($class)) {
-                $call = [new $class, $action];
-                if (is_callable($call)) {
-                    return [$call, $params];
-                }
+        list($controller, $action, $params) = $this->dispatch['default'];
+        $class = 'app\\'.$this->config['controller_ns'].'\\'.$controller.$this->config['controller_suffix'];
+        if ($action[0] !== '_' && Loader::importPrefixClass($class)) {
+            $call = [new $class, $action];
+            if (is_callable($call)) {
+                return [$call, $params];
             }
         }
         return false;
@@ -100,8 +102,9 @@ class Micro extends App
     
     protected function routeDispatch()
     {
-        if ($this->dispatch['route']) {
-            $result = Router::route(Request::pathArr(), $this->dispatch['route'], Request::method());
+        $method = Request::method();
+        if (in_array($method, $this->config['route_dispatch_http_methods'], true)) {
+            $result = Router::route(Request::pathArr(), $this->dispatch['route'], $method);
             if ($result) {
                 if ($this->config['route_dispatch_enable_getter']) {
                     return [\Closure::bind($result[0], new class () {
