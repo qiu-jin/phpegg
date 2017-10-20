@@ -39,7 +39,7 @@ class Error
     /*
      * 设置错误信息
      */
-    public static function set($message, $code = E_USER_ERROR, $limit = 1)
+    public static function set($message, $code = self::ERROR, $limit = 1)
     {
         $file = null;
         $line = null;
@@ -55,29 +55,36 @@ class Error
         if (Config::env('STRICT_ERROR_MODE')) {
             throw new \ErrorException($message, $code, $code, $file, $line);
         } else {
-            self::record('error.user', $level, $message, $file, $line);
+            self::record('error.user', $level, $code, $message, $file, $line);
+        }
+    }
+    
+    public static function set($message, $code = self::ERROR, $limit = 1)
+    {
+        $file = null;
+        $line = null;
+        $type = null;
+        $class = null;
+        $function = null;
+        $level = self::getErrorLevelInfo($code)[0];
+        $traces = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        if (isset($traces[$limit])) {
+            extract($traces[$limit]);
+            $message = "$class$type$function() $message";
+        }
+        if (Config::env('STRICT_ERROR_MODE')) {
+            throw new \ErrorException($message, $code, $code, $file, $line);
+        } else {
+            self::record('error.user', $level, $code, $message, $file, $line);
         }
     }
     
     /*
-     * set_error_handler 错误处理器
+     * 
      */
-    public static function errorHandler($code, $message, $file = null, $line = null)
+    public static function backtrace($limit = 1)
     {
-        if (error_reporting() & $code) {
-            if (Config::env('STRICT_ERROR_MODE')) {
-                throw new \ErrorException($message, $code, $code, $file, $line);
-            } else {
-                list($level, $prefix) = self::getErrorLevelInfo($code);
-                $message = $prefix.': '.$message;
-                self::record('error.error', $level, $message, $file, $line);
-                if ($level === Logger::CRITICAL || $level === Logger::ALERT || $level === Logger::ERROR ) {
-                    App::exit(3);
-                    self::response();
-                    return false;
-                }
-            }
-        }
+        return debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)[$limit] ?? null;
     }
     
     /*
@@ -89,7 +96,7 @@ class Error
         $level = Logger::ERROR;
         $name  = $e instanceof Exception ? ($e->getClass() ?? 'CoreException') : get_class($e);
         $message = 'Uncaught '.$name.': '.$e->getMessage();
-        self::record('error.exception', $level, $message, $e->getFile(), $e->getLine());
+        self::record('error.exception', $level,  $e->getCode(), $message, $e->getFile(), $e->getLine());
         self::response();
     }
     
@@ -104,25 +111,14 @@ class Error
                 App::exit(5);
                 list($level, $prefix) = self::getErrorLevelInfo($last_error['type']);
                 $message = 'Fatal Error '.$prefix.': '.$last_error['message'];
-                self::record('error.fatal', $level, $message, $last_error['file'], $last_error['line']);
+                self::record('error.fatal', $level, $last_error['type'], $message, $last_error['file'], $last_error['line']);
                 self::response();
     		} else {
+                self::record('error.fatal', Logger::WARNING, 0, 'Unknown exit', null, null);
     		    // Logger::write(Logger::WARNING, 'Illegal exit');
     		}
         }
         self::$error = null;
-    }
-    
-    /*
-     * 记录错误
-     */
-    private static function record($type, $level, $message, $file, $line, $trace = null)
-    {
-        if ($type) {
-           Hook::listen($type, $level, $message, $file, $line, $trace);
-        }
-        self::$error[] = compact('level', 'message', 'file', 'line', 'trace');
-        Logger::write($level, $message, ['file' => $file, 'line' => $line]);
     }
     
     /*
@@ -131,6 +127,18 @@ class Error
     private static function response()
     {
         App::abort(500, APP_DEBUG ? self::$error : null);
+    }
+    
+    /*
+     * 记录错误
+     */
+    private static function record($type, $level, $code, $message, $file, $line, $trace = null)
+    {
+        if ($type) {
+           Hook::listen($type, $level, $code, $message, $file, $line, $trace);
+        }
+        self::$error[] = compact('level', 'code', 'message', 'file', 'line', 'trace');
+        Logger::write($level, $message, ['file' => $file, 'line' => $line]);
     }
     
     /*

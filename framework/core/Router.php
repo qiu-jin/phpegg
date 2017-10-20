@@ -4,24 +4,33 @@ namespace framework\core;
 class Router
 {
     private static $init;
-    
-    private static $cache;
     // 过滤器
-    private static $filters = [
+    private static $regex_filters;
+    private static $callable_filters = [
         'id' => 'Validator::id',
         'hash' => 'Validator::hash',
         'email' => 'Validator::email',
         'mobile' => 'Validator::mobile',
     ];
-    private static $replace_call = false;
+    private static $enable_dynamic_call = false;
     
+    /*
+     * 初始方法
+     */
     public static function init()
     {
         if (self::$init) return;
         self::$init = true;
-        $config = Config::get('router');
-        if (isset($config['filters'])) {
-            self::$filters = array_merge(self::$filters, $config['filters']);
+        if ($config = Config::get('router')) {
+            if (isset($config['regex_filters'])) {
+                self::$regex_filters = $config['regex_filters'];
+            }
+            if (isset($config['callable_filters'])) {
+                self::$callable_filters = array_merge(self::$callable_filters, $config['callable_filters']);
+            }
+            if (isset($config['enable_dynamic_call'])) {
+                self::$enable_dynamic_call = $config['enable_dynamic_call'];
+            }
         }
     }
     
@@ -33,23 +42,32 @@ class Router
         $result = self::route($path, $ruotes, $method);
         if ($result) {
             list($call_role, $macth) = $result;
-            if (preg_match('/^(.+?)(\((.*?)\))?$/', $call_role, $call_match)) {
-                $call = self::$replace_call ? self::replaceCall($call_match[1], $macth) : $call_match[1];
-                if (!$param_mode || empty($call_match[3])) {
-                    $params = $macth;
-                } else {
-                    $param_method = $param_mode === 2 ? 'parseKvParams' : 'parseListParams';
-                    $params = self::{$param_method}($call_match[3], $macth);
-                }
-                return [$call, $params];
+            if (!preg_match('/^(.+?)(\((.*?)\))?$/', $call_role, $call_match)) {
+                throw new Exception("Illegal route call role $call_role");
             }
-            throw new Exception('Illegal start call');
+            $call = $call_match[1];
+            if (self::$enable_dynamic_call && strpos('$', $call) !== false) {
+                $call = self::getDynamicCall($call, $macth);
+            }
+            if (!$param_mode || empty($call_match[3])) {
+                $params = $macth;
+            } else {
+                $param_method = $param_mode === 2 ? 'parseKvParams' : 'parseListParams';
+                $params = self::{$param_method}($call_match[3], $macth);
+            }
+            return [$call, $params];
         }
         return false;
     }
-
+    
+    /*
+     * 路由处理
+     */
     public static function route($path, $ruotes, $method = null)
     {
+        if (empty($ruotes)) {
+            return false;
+        }
         if (isset($ruotes['/'])) {
             $index_ruote = $ruotes['/'];
             unset($ruotes['/']);
@@ -64,28 +82,26 @@ class Router
             }
             return false;
         }
-        if ($ruotes) {
-            $count = count($path);
-            foreach ($ruotes as $rule => $call) {
-                $rule = explode('/', $rule);
-                $macth = self::macth($path, $rule);
-                if ($macth !== false) {
-                    if (is_array($call)) {
-                        if (isset($call[$method])) {
-                            $call = $call[$method];
-                        } else {
-                            return false;
-                        }
+        $count = count($path);
+        foreach ($ruotes as $rule => $call) {
+            $rule = explode('/', $rule);
+            $macth = self::macth($path, $rule);
+            if ($macth !== false) {
+                if (is_array($call)) {
+                    if (isset($call[$method])) {
+                        $call = $call[$method];
+                    } else {
+                        return false;
                     }
-                    return [$call, $macth];
                 }
+                return [$call, $macth];
             }
         }
         return false;
     }
     
     /*
-     * 路由规则匹配
+     * 路由匹配
      */
     public static function macth($path, $rule)
     {
@@ -110,8 +126,17 @@ class Router
                     }
                     return false;
                 case ':':
-                    if ($name = substr($unit,1)) {
-                        if (isset($this->filters[$name]) && call_user_func($this->filters[$name], $path[$i])) {
+                    if ($name = substr($unit, 1)) {
+                        if (isset(self::$callable_filters[$name]) && call_user_func(self::$callable_filters[$name], $path[$i])) {
+                            $macth[] = $path[$i];
+                            break;
+                        }
+                    }
+                    return false;
+                case '{':
+                    if (substr($unit, -1) === '}') {
+                        $name = substr($unit, 1, -1);
+                        if (isset(self::$regex_filters[$name]) && preg_match('/^'.self::$regex_filters[$name].'$/i', $path[$i], $matchs)) {
                             $macth[] = $path[$i];
                             break;
                         }
@@ -119,8 +144,8 @@ class Router
                     return false;
                 case '(':
                     if (substr($unit, -1) === ')') {
-                        $reg = substr($unit, 1, -1);
-                        if ($reg && preg_match('/^'.$reg.'$/i', $path[$i], $matchs)) {
+                        $regex = substr($unit, 1, -1);
+                        if ($regex && preg_match('/^'.$regex.'$/i', $path[$i], $matchs)) {
                             $count = count($matchs);
                             if ($count > 1) {
                                 for ($j = 1; $j < $count; $j++) {
@@ -147,23 +172,37 @@ class Router
     }
     
     /*
-     * 添加过滤器
+     * 添加正则过滤器
      */
-    public static function addFilter($name, $filter)
+    public static function addRegexFilter($name, $regex)
     {
-        self::$filters[$name] = $filter;
+        self::$regex_filters[$name] = $regex;
     }
     
-    protected static function replaceCall($call, $macth)
+    /*
+     * 添加函数方法过滤器
+     */
+    public static function addCallableFilter($name, callable $call)
+    {
+        self::$callable_filters[$name] = $call;
+    }
+    
+    /*
+     * 获取动态调用
+     */
+    protected static function getDynamicCall($call, $macth)
     {
         return preg_replace_callback('/\$(\d)/', $call, function ($macthes) use ($macth) {
             if (isset($macth[$macthes[1]])) {
                 return $macth[$macthes[1]];
             }
-            throw new Exception('Illegal start call');
+            throw new Exception('Illegal Dynamic Call');
         });
     }
     
+    /*
+     * 解析list参数
+     */
     protected static function parseListParams($rules, $macth)
     {
         $params = [];
@@ -179,6 +218,9 @@ class Router
         return $params;
     }
     
+    /*
+     * 解析kv参数
+     */
     protected static function parseKvParams($rules, $macth)
     {
         $params = [];
