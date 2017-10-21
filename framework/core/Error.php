@@ -146,9 +146,7 @@ class Error
      */
     private static function record($type, $level, $code, $message, $file, $line, $trace = null)
     {
-        if ($type) {
-           Hook::listen($type, $level, $code, $message, $file, $line, $trace);
-        }
+        Hook::listen($type, $level, $code, $message, $file, $line, $trace);
         self::$error[] = compact('level', 'code', 'message', 'file', 'line', 'trace');
         Logger::write($level, $message, ['file' => $file, 'line' => $line]);
     }
