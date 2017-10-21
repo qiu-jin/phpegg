@@ -115,8 +115,11 @@ class Inline extends App
     {
         if ($this->config['route_dispatch_routes']) {
             $routes = $this->config['route_dispatch_routes'];
+            if (is_string($routes)) {
+                $routes = __include($routes);
+            }
             $path = empty($path) ? null : explode('/', $path);
-            $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes));
+            $dispatch = Router::dispatch($path, $routes);
             if ($dispatch) {
                 return [
                     'controller' => $dispatch[0],

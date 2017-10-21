@@ -52,22 +52,17 @@ class View
      */
     public static function render($tpl, $vars = null)
     {
-        $phpfile = self::file(trim($tpl));
-        if ($phpfile) {
-            if (isset(self::$view->vars)) {
-                extract(self::$view->vars, EXTR_SKIP);
-                self::$view->vars = null;
-            }
-            if (is_array($vars)) {
-                extract($vars, EXTR_SKIP);
-                unset($vars);
-            }
-            ob_start();
-            include $phpfile;
-            return ob_get_clean();
-        } else {
-            return self::error('404', 'Not found template: '.$tpl);
+        if (isset(self::$view->vars)) {
+            extract(self::$view->vars, EXTR_SKIP);
+            self::$view->vars = null;
         }
+        if (is_array($vars)) {
+            extract($vars, EXTR_SKIP);
+            unset($vars);
+        }
+        ob_start();
+        include self::file(trim($tpl));
+        return ob_get_clean();
     }
     
     /*
@@ -81,18 +76,19 @@ class View
             return $phpfile;
         }
         $tplfile = self::getTemplateFile($path);
-        if (is_file($phpfile)) {
-            if (is_file($tplfile)) {
-                if (filemtime($phpfile) >= filemtime($tplfile)) {
-                    return $phpfile;
-                } else {
-                    return self::complie($tplfile, $phpfile);
-                }
+        if (is_file($tplfile)) {
+            if (is_file($phpfile) && filemtime($phpfile) >= filemtime($tplfile)) {
+                return $phpfile;
             }
-        } elseif (is_file($tplfile)) {
             return self::complie($tplfile, $phpfile);
         }
-        throw new Exception("Not find template file: $tplfile");
+        throw new Exception("Not found template: $tplfile");
+    }
+    
+    public static function exists($tpl)
+    {
+        $path = self::$config['dir'].$tpl;
+        return isset(self::$config['template']) ? is_file(self::getTemplateFile($path)) : is_php_file("$path.php");
     }
 
     public static function layout($tpl, $file)
@@ -100,7 +96,7 @@ class View
         if (!isset(self::$config['template'])) {
             return;
         }
-        $path = $tpl{0} === '/' ? $tpl : dirname($file).'/'.$tpl;
+        $path = $tpl[0] === '/' ? $tpl : dirname($file).'/'.$tpl;
         $phpfile = $path.'.php';
         $tplfile = self::getTemplateFile($path);
         if (file_exists($tplfile) && (!file_exists($file) || filemtime($tplfile) > filemtime($file))) {
@@ -131,14 +127,14 @@ class View
     public static function error($code, $message = null)
     {   
         if (isset(self::$config['error'][$code])) {
-            $phpfile = self::file(self::$config['error'][$code]);
-            if ($phpfile) {
-                ob_start();
-                include $phpfile;
-                return ob_get_clean();
-            }
+            ob_start();
+            include self::file(self::$config['error'][$code]);
+            return ob_get_clean();
+        } elseif ($code === 404) {
+            return ViewError::render404($message)
+        } else {
+            return ViewError::renderError($message);
         }
-        return $code === 404 ? ViewError::render404($message) : ViewError::renderError($message);
     }
     
     /*

@@ -12,12 +12,14 @@ class View extends App
 {
     protected $config = [
         // 调度模式，支持default route组合
-        'dispatch_mode'     => 'default',
+        'dispatch_mode'     => ['default'],
 
         'view_model_ns'     => 'viewmodel',
 
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
+        // 默认调度时URL path中划线转成下划线
+        'default_dispatch_hyphen_to_underscore' => false,
         
         // 路由调度的路由表
         'route_dispatch_routes' => null,
@@ -26,7 +28,7 @@ class View extends App
     protected function dispatch()
     {
         $path = trim(Request::path(), '/');
-        foreach ((array) $this->config['dispatch_mode'] as $mode) {
+        foreach ($this->config['dispatch_mode'] as $mode) {
             $dispatch = $this->{$mode.'Dispatch'}($path);
             if ($dispatch) {
                 return $dispatch;
@@ -38,13 +40,7 @@ class View extends App
     protected function call()
     {
         ob_start();
-        (new class() {
-            use Getter;
-            public function __invoke($__file)
-            {
-                return require($__file);
-            }
-        })(CoreView::file($this->dispatch['view']));
+        CoreView::render($tpl, $vars = null);
         return ob_get_clean();
     }
     
@@ -61,29 +57,31 @@ class View extends App
     protected function defaultDispatch($path) 
     {
         if ($path) {
-            $path = strtr($path, '-', '_');
-            if (preg_match('/^(\w+)(\/\w+)*$/', $path)) {
-                $config = Config::get('view');
-                $phpfile = $config['dir']."$path.php";
-                if (is_php_file($phpfile) || 
-                    (isset($config['template']) && is_file(($config['template']['dir'] ?? $config['dir'])."$path.html"))) {
-                    return ['view' => $phpfile];
+            if ($this->config['default_dispatch_hyphen_to_underscore']) {
+                $path = strtr($path, '-', '_');
+            }
+            if (preg_match('/^([\w\-]+)(\/[\w\-]+)*$/', $path)) {
+                if (CoreView::exists($path)) {
+                    return ['view_path' => $path];
                 }
             }
         } elseif (isset($this->config['default_dispatch_index'])) {
-            return ['view' => $this->config['default_dispatch_index']];
+            return ['view_path' => $this->config['default_dispatch_index']];
         }
         return false;
     }
     
     protected function routeDispatch($path)
     {
-        if ($this->config['route_dispatch_routes']) {
+        if (isset($this->config['route_dispatch_routes'])) {
             $routes = $this->config['route_dispatch_routes'];
+            if (is_string($routes)) {
+                $routes = __include($routes);
+            }
             $path = empty($path) ? null : explode('/', $path);
-            $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes));
+            $dispatch = Router::dispatch($path, $routes);
             if ($dispatch) {
-                return ['view' => $dispatch[0], 'params' => $dispatch[1]];
+                return ['view_path' => $dispatch[0], 'params' => $dispatch[1]];
             }
         }
         return false;
