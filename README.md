@@ -10,67 +10,64 @@ PHPEGG是一个轻量但功能丰富的PHP框架，支持`Standard` `Rest` `Micr
 应用模式
 ----
 
-- **Standard** 默认推荐的标准`MVC`应用模式，适用于网站页面开发，同时也适用于少量接口开发。
+- **Standard** 默认推荐的标准`MVC`应用模式，适用于网页和接口开发。
 
-- **Rest** `RESTful`风格模式，适用于开发`RESTful`风格的`API`接口，常用于对外的服务。
+- **Rest** `RESTful`风格模式，适用于开发`RESTful`风格的`API`接口。
 
-- **Inline** 调用过程式控制器代码，适用于开发简单应用，即可用于网站页面开发也可用于接口开发。
+- **Inline** 内联调用控制器文件面向过程代码，快捷高效。
 
-- **Jsonrpc** `jsonrpc`协议模式，常用于开发对内的服务接口，相较于`Rest`灵活高效。
+- **Micro** 微框架模式，提供基本接口方法，灵活高效。
 
-- **Micro** 微框架模式，高度灵活，自由组合功能，适用于开发一些小应用。
+- **Jsonrpc** 基于`jsonrpc`协议的无`scheme`RPC应用。
 
-- **Grpc** `grpc`协议模式（实验性），适用于开发使用`protobuf scheme`规范的接口。
+- **Grpc** 基于`grpc`协议的有`scheme`（使用`protobuf`定义）RPC应用。
 
-- **View** 视图驱动模式（未完成）
+- **View** 视图驱动`View<->ViewModel<->Model`模式（未完成）。
 
-- **Cli** 命令行模式（未完成）
+- **Cli** 命令行模式，用于命令行工具 计划任务 守护进程等（未完成）。
 
-- **自定义应用** 继承`framework\App`基类，实现`dispatch` `call` `error` `response`等接口方法，创建一个自定义应用模式。
+- **自定义应用** 继承`App`基类，实现约定接口方法，自建应用模式类。
 
-- **无模式应用** 不使用任何应用模式，只需调用`App::boot()`初始化环境，就可以开始编写应用代码。
+- **无模式应用** 不使用任何应用模式，使用原生多入口方式开发应用。
 
 >另外为了实现不同模式应用之间的相互调用，框架在`rpc`驱动中实现了一套`rpc client`来远程调用服务。
 
 核心功能
 ----
 
-- `Config` 配置处理
+- **Config** 配置处理
 
-- `Loader` 类加载处理
+- **Loader** 类加载处理
 
-- `Hook` 事件处理
+- **Hook** 事件处理
 
-- `Error` 错误处理
+- **Error** 错误处理
 
-- `Logger` 日志处理
+- **Logger** 日志处理
 
-- `Router` 路由处理
+- **Router** 路由处理
 
-- `Container` 容器
+- **Container** 容器
 
-- `View` 视图处理
+- **View** 视图
 
-- `Validator` 验证器
+- **Template** 模版
 
-- `Auth` 认证处理
+- **Validator** 验证器
+
+- **Auth** 认证处理
 
 HTTP层
 ----
 
-- `Client` HTTP请求客户端
+- **Client** HTTP请求客户端
 
-- `Request` HTTP请求信息
+- **Request** HTTP请求信息
 
-- `Response` HTTP响应处理
+- **Response** HTTP响应处理
 
-- `Cookie`
+- **Cookie & Session**
 
-- `Session`
-
-- `Uploaded`
-
-- `UserAgent`
 
 功能驱动
 ----
