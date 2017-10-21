@@ -50,18 +50,13 @@ class View
     /*
      * 渲染页面
      */
-    public static function render($tpl, $vars = null)
+    public static function render($tpl, $vars = [])
     {
-        if (isset(self::$view->vars)) {
-            extract(self::$view->vars, EXTR_SKIP);
-            self::$view->vars = null;
-        }
-        if (is_array($vars)) {
-            extract($vars, EXTR_SKIP);
-            unset($vars);
+        if (self::$view->vars) {
+            $vars = array_merge($view->vars, $vars);
         }
         ob_start();
-        include self::file(trim($tpl));
+        __include_view(self::file($tpl), $vars);
         return ob_get_clean();
     }
     
@@ -128,10 +123,10 @@ class View
     {   
         if (isset(self::$config['error'][$code])) {
             ob_start();
-            include self::file(self::$config['error'][$code]);
+            __include_view(self::file(self::$config['error'][$code]), compact('code', 'message'));
             return ob_get_clean();
         } elseif ($code === 404) {
-            return ViewError::render404($message)
+            return ViewError::render404($message);
         } else {
             return ViewError::renderError($message);
         }
@@ -191,3 +186,9 @@ class View
     }
 }
 View::init();
+
+function __include_view($__view_file, $__view_vars)
+{
+    extract($__view_vars, EXTR_SKIP);
+    include $__view_file;
+}

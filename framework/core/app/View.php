@@ -40,7 +40,12 @@ class View extends App
     protected function call()
     {
         ob_start();
-        CoreView::render($tpl, $vars = null);
+        (new class() {
+            public function __invoke($file)
+            {
+                return require($file);
+            }
+        })(CoreView::file($this->dispatch['view_path']));
         return ob_get_clean();
     }
     
