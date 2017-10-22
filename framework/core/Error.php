@@ -59,26 +59,6 @@ class Error
         }
     }
     
-    public static function set($message, $code = self::ERROR, $limit = 1)
-    {
-        $file = null;
-        $line = null;
-        $type = null;
-        $class = null;
-        $function = null;
-        $level = self::getErrorLevelInfo($code)[0];
-        $traces = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-        if (isset($traces[$limit])) {
-            extract($traces[$limit]);
-            $message = "$class$type$function() $message";
-        }
-        if (Config::env('STRICT_ERROR_MODE')) {
-            throw new \ErrorException($message, $code, $code, $file, $line);
-        } else {
-            self::record('error.user', $level, $code, $message, $file, $line);
-        }
-    }
-    
     /*
      * set_error_handler 错误处理器
      */

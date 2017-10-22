@@ -1,6 +1,8 @@
 <?php
 namespace framework\core;
 
+use framework\core\http\Request;
+
 class Template
 {
     private static $init;
@@ -16,16 +18,15 @@ class Template
     ];
     
     protected static $structure = [
-        'eq', 'if', 'elseif', 'else', 'switch', 'case', 'default', 'each', 'for', 'import', 'layout'
+        'set', 'if', 'elseif', 'else', 'switch', 'case', 'default', 'each', 'for', 'block', 'import', 'layout'
     ];
     
     protected static $var_alias = [
-        'get'       => '_GET',
-        'post'      => '_POST',
-        'cookie'    => '_COOKIE',
-        'seesion'   => '_SEESION',
-        'server'    => '_SERVER',
-        'request'   => '_REQUEST'
+        'GET'       => '_GET',
+        'POST'      => '_POST',
+        'COOKIE'    => '_COOKIE',
+        'SEESION'   => '_SEESION',
+        'SERVER'    => '_SERVER',
     ];
     
     protected static $function_alias = [
@@ -683,11 +684,7 @@ class Template
      */
     protected static function replaceVar($var)
     {
-        if (isset(self::$var_alias[$var])) {
-            return '$'.self::$var_alias[$var];
-        } else {
-            return '$'.$var;
-        }
+        return self::$var_alias[$var] ?? '$'.$var;
     }
     
     /*
