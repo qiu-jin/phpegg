@@ -77,10 +77,16 @@ class View
         }
         $tplfile = self::getTemplateFile($path, $is_relative_path);
         if (is_file($tplfile)) {
-            if (is_file($phpfile) && filemtime($phpfile) >= filemtime($tplfile)) {
-                return $phpfile;
+            if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
+                $dir = dirname($phpfile);
+                if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
+                    throw new Exception("View dir create fail: $dir");
+                }
+                if (!file_put_contents($phpfile, Template::complie(file_get_contents($tplfile)))) {
+                    throw new Exception("View file write fail: $phpfile");
+                }
             }
-            return self::complie($tplfile, $phpfile);
+            return $phpfile;
         }
         throw new Exception("Not found template: $tplfile");
     }
@@ -118,6 +124,9 @@ class View
         $path = self::$config['dir'].$tpl;
         $prefix = self::$config['template']['layout_prefix'] ?? '_layout_';
         $phpfile = dirname($path)."/$prefix".basename($path).'.php';
+        if (!isset(self::$config['template'])) {
+            return $phpfile;
+        }
         $tplfile = self::getTemplateFile($path);
         if (is_file($tplfile)) {
             if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {

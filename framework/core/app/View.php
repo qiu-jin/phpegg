@@ -13,7 +13,9 @@ class View extends App
     protected $config = [
         // 调度模式，支持default route组合
         'dispatch_mode'     => ['default'],
-
+        // 
+        'enable_pjax'       => false,
+        // 
         'view_model_ns'     => 'viewmodel',
 
         // 默认调度的缺省调度
@@ -40,12 +42,17 @@ class View extends App
     protected function call()
     {
         ob_start();
+        if ($this->config['enable_pjax'] && Response::isPjax()) {
+            $file = CoreView::layoutFile($this->dispatch['view_path']);
+        } else {
+            $file = CoreView::file($this->dispatch['view_path']);
+        }
         (new class() {
-            public function __invoke($file)
+            public function __invoke($__file)
             {
-                return require($file);
+                return require($__file);
             }
-        })(CoreView::file($this->dispatch['view_path']));
+        })($file);
         return ob_get_clean();
     }
     
