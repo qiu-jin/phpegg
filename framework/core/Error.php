@@ -53,7 +53,7 @@ class Error
             $message = "$class$type$function() $message";
         }
         if (Config::env('STRICT_ERROR_MODE')) {
-            throw new \ErrorException($message, $code, $code, $file, $line);
+            self::exceptionHandler(new \ErrorException($message, $code, $code, $file, $line));
         } else {
             self::record('error.user', $level, $code, $message, $file, $line);
         }
