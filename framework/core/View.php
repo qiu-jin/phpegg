@@ -84,6 +84,50 @@ class View
         }
         throw new Exception("Not found template: $tplfile");
     }
+
+    public static function layout($tpl, $file)
+    {
+        if (!isset(self::$config['template'])) {
+            return;
+        }
+        if ($tpl[0] === '/') {
+            $path = self::$config['dir'].$tpl;
+        } else {
+            $path = dirname($file).'/'.$tpl;
+        }
+        $layoutfile = self::getTemplateFile($path, $tpl[0] !== '/');
+        if (!is_file($layoutfile)) {
+            throw new Exception("Not found template: $layoutfile");
+        }
+        if (filemtime($file) < filemtime($layoutfile)) {
+            $tplfile = self::getTemplateFile(substr($file, 0, -4));
+            $content = Template::complie(file_get_contents($tplfile), file_get_contents($layoutfile));
+            if (file_put_contents($file, $content)) {
+                if (extension_loaded('opcache')) {
+                    opcache_compile_file($file);
+                }
+                include $file;
+                return true;
+            }
+            throw new Exception("View file write fail: $file");
+        }
+    }
+    
+    private static function layoutFile($tpl)
+    {
+        $path = self::$config['dir'].$tpl;
+        $prefix = self::$config['template']['layout_prefix'] ?? '_layout_';
+        $phpfile = dirname($path)."/$prefix".basename($path).'.php';
+        $tplfile = self::getTemplateFile($path);
+        if (is_file($tplfile)) {
+            if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
+                $content = Template::complie($tplfile);
+                file_put_contents($layoutfile, $content);
+            }
+            return $phpfile;
+        }
+        throw new Exception("Not found template: $tplfile");
+    }
     
     public static function exists($tpl)
     {
@@ -94,36 +138,6 @@ class View
         return is_php_file("$path.php");
     }
 
-    public static function layout($tpl, $file)
-    {
-        if (!isset(self::$config['template'])) {
-            return;
-        }
-        $path = $tpl[0] === '/' ? $tpl : dirname($file).'/'.$tpl;
-        $phpfile = $path.'.php';
-        $tplfile = self::getTemplateFile($path);
-        if (file_exists($tplfile) && (!file_exists($file) || filemtime($tplfile) > filemtime($file))) {
-            $php_content = file_get_contents($file);
-            $complie_content = "<?php View::layout('$tpl', __FILE__); ?>".PHP_EOL;
-            $complie_content .= Template::complie(file_get_contents($tplfile), $php_content);
-            if (file_put_contents($file, $complie_content)) {
-                if (!empty(self::$config['template']['layout'])) {
-                    $dir = dirname($file).'/.layout/';
-                    if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
-                        return false;
-                    }
-                    file_put_contents($dir.basename($file), $content);
-                }
-                if (extension_loaded('opcache')) {
-                    opcache_compile_file($file);
-                }
-                include $file;
-                return true;
-            } 
-        }
-        return false;
-    }
-    
     /*
      * 错误页面，404 500页面等
      */
@@ -166,7 +180,7 @@ class View
             throw new Exception("Not create view dir: $dir");
         }
         if (!file_put_contents($phpfile, Template::complie(file_get_contents($tplfile)))) {
-            throw new Exception("View file write failure: $phpfile");
+            throw new Exception("View file write fail: $phpfile");
         }
         return $phpfile;
     }

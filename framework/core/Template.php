@@ -386,11 +386,11 @@ class Template
                 break;
             case 'import':
                 $argument = self::readArgument($ret['code'], $ret['vars']);
-                $code = 'include View::file('.$argument['value'].', __DIR__);';
+                $code = 'include '.View::class.'::file('.$argument['value'].', __DIR__);';
                 break;
             case 'layout':
                 $argument = self::readArgument($ret['code'], $ret['vars']);
-                $code = 'return View::layout('.$argument['value'].', __FILE__);';
+                $code = 'if ('.View::class.'::layout('.$argument['value'].', __FILE__)) return;';
                 break;    
             default:
                 throw new \Exception('read_structure error: '.$structure);
