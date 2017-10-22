@@ -58,7 +58,7 @@ class View extends App
     
     protected function error($code = null, $message = null)
     {
-        CoreView::error($code, $message);
+        Response::send(CoreView::error($code, $message), 'text/html; charset=UTF-8');
     }
     
     protected function response($return)

@@ -200,7 +200,6 @@ class View
     {
         self::$view = null;
         self::$config = null;
-        self::$template = null;
     }
 }
 View::init();
