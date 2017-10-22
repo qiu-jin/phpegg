@@ -53,7 +53,7 @@ class Error
             $message = "$class$type$function() $message";
         }
         if (Config::env('STRICT_ERROR_MODE')) {
-            self::exceptionHandler(new \ErrorException($message, $code, $code, $file, $line));
+            throw new \ErrorException($message, $code, $code, $file, $line);
         } else {
             self::record('error.user', $level, $code, $message, $file, $line);
         }
@@ -66,7 +66,7 @@ class Error
     {
         if (error_reporting() & $code) {
             if (Config::env('STRICT_ERROR_MODE')) {
-                self::exceptionHandler(new \ErrorException($message, $code, $code, $file, $line));
+                throw new \ErrorException($message, $code, $code, $file, $line);
             } else {
                 list($level, $prefix) = self::getErrorLevelInfo($code);
                 $message = $prefix.': '.$message;
