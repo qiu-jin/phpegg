@@ -83,9 +83,12 @@ class Template
         } else {
             $template = self::ebpParser(self::tagParser($template));
         }
-        return $layout ? self::layoutMerge($template, $layout) : $template;
+        return $layout ? self::mergeLayout($template, $layout) : $template;
     }
 
+    /*
+     * 模版语法解析
+     */
     protected static function ebpParser($str)
     {
         $i = 1;
@@ -119,6 +122,9 @@ class Template
         return $tpl;
     }
     
+    /*
+     * 模版语法解析
+     */
     protected static function sbpParser($str)
     {
         $reg = "/".preg_quote(self::$sbp[0])."(".implode('|', self::$structure).").+/";
@@ -146,6 +152,9 @@ class Template
         throw new \Exception('sbp_parser error: '.$str);
     }
     
+    /*
+     * 模版标签语法解析
+     */
     protected static function tagParser($str)
     {
         $reg = "/<([a-z]+)[ \t]+".self::$tag_attr_prefix."(".implode('|', self::$structure).").+/";
@@ -184,7 +193,10 @@ class Template
         return $str;
     }
     
-    protected static function layoutMerge($str1, $str2)
+    /*
+     * 合并布局模版
+     */
+    protected static function mergeLayout($str1, $str2)
     {
         if (isset(self::$sbp)) {
             $start_re = '/'.self::$sbp[0].'block (\w+)'.self::$sbp[1].'/';
@@ -239,6 +251,9 @@ class Template
         return $code; 
     }
     
+    /*
+     * 合并完成模版标签闭合
+     */
     protected static function completeEndTag($str, &$end_tags, &$skip_num, $blank = null)
     {
         $code = '';
@@ -279,6 +294,9 @@ class Template
         return $code;
     }
     
+    /*
+     * 读取模版标签
+     */
     protected static function readTag($tag, $vars)
     {
         $end = false;
@@ -314,6 +332,9 @@ class Template
         return array('html'=>$html, 'code'=>$code, 'end'=>$end);
     }
     
+    /*
+     * 读取语句结构
+     */
     protected static function readStructure($structure, $val = null)
     {
         $end = false;
@@ -398,6 +419,10 @@ class Template
         return array('code'=>$code, 'end'=>$end);
     }
     
+    
+    /*
+     * 读取语句单元
+     */
     protected static function readUnit($str, $vars)
     {
         $i = 0;
@@ -480,7 +505,9 @@ class Template
         return $code;
     }
     
-    
+    /*
+     * 读取JSON
+     */
     protected static function readJson($str)
     {
         $quote = null;
@@ -527,6 +554,9 @@ class Template
         return false;
     }
     
+    /*
+     * 读取表达式
+     */
     protected static function readExp($str, $vars, $exp)
     {
         $exp = array_map(function ($v) {
@@ -553,6 +583,9 @@ class Template
         return self::readArgument($str, $vars)['value'];
     }
     
+    /*
+     * 读取关键字
+     */
     protected static function readWord($str)
     {
         $code = '';
@@ -576,6 +609,9 @@ class Template
         return array('code'=> $code, 'seek'=>$len, 'end'=>'');
     }
     
+    /*
+     * 读取参数
+     */
     protected static function readArgument($str, $vars)
     {
         $str = trim($str);
@@ -592,6 +628,9 @@ class Template
         }
     }
     
+    /*
+     * 读取空白符
+     */
     protected static function readBlank($str)
     {
         $lpos = $rpos = 0;
@@ -620,6 +659,9 @@ class Template
         }
     }
     
+    /*
+     * 读取左边空白符
+     */
     protected static function readLeftBlank($str)
     {
         $blank = '';
@@ -636,6 +678,9 @@ class Template
         }
     }
     
+    /*
+     * 替换变量
+     */
     protected static function replaceVar($var)
     {
         if (isset(self::$var_alias[$var])) {
@@ -645,6 +690,9 @@ class Template
         }
     }
     
+    /*
+     * 替换函数
+     */
     protected static function replaceFunction($name, $args)
     {
         if (isset(self::$function_alias[$name])) {
@@ -662,6 +710,9 @@ class Template
         }
     }
     
+    /*
+     * 替换字符串变量
+     */
     protected static function replaceStrvars($str , $start = null, $end = null, $continue = null)
     {
         $pos = 0;
@@ -739,6 +790,9 @@ class Template
         }
     }
     
+    /*
+     * 还原变量
+     */ 
     protected static function restoreStrvars($code, $vars)
     {
         $replace_pairs = array();
@@ -748,6 +802,9 @@ class Template
         return strtr($code, $replace_pairs);
     }
     
+    /*
+     * 寻找语句结束符位置
+     */ 
     protected static function findEndPos($str, $start, $end)
     {
         $num = 0;
@@ -765,34 +822,49 @@ class Template
         }
         throw new \Exception('find_end_pos: '.$str);
     }
-     
+    
+    /*
+     * 是否引号字符
+     */  
     protected static function isQuoteChar($char)
     {
         return $char === '"' || $char === "'";
     }    
     
+    /*
+     * 是否空白字符
+     */ 
     protected static function isBlankChar($char)
     {
         return $char === ' ' || $char === "\t";
     }
     
+    /*
+     * 是否换行字符
+     */ 
     protected static function isNewlineChar($char)
     {
         return $char === "\r" || $char === "\n";
     }
     
+    /*
+     * 是否变量名字符
+     */ 
     protected static function isVarnameChar($char)
     {
         $ascii = ord($char);
         return ($ascii === 95 || ($ascii > 47 && $ascii < 58) || ($ascii > 64 && $ascii < 91) || ($ascii > 96 && $ascii < 123));
     }
     
+    /*
+     * 是否变量名字符串
+     */ 
     protected static function isVarnameChars($str)
     {
         $len = strlen($str);
-        if($len > 0 && self::isVarnameChar($str{0}) && !is_numeric($str{0})) {
-            for ($i=1; $i<$len; $i++) {
-                if (!self::isVarnameChar($str{$i})) return false;
+        if($len > 0 && self::isVarnameChar($str[0]) && !is_numeric($str[0])) {
+            for ($i = 1; $i < $len; $i++) {
+                if (!self::isVarnameChar($str[$i])) return false;
             }
             return true;
         }

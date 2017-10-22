@@ -182,18 +182,6 @@ class View
         throw new Exception('Call to undefined method '.__CLASS__.'::'.$method);
     }
     
-    private static function complie($tplfile, $phpfile)
-    {
-        $dir = dirname($phpfile);
-        if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
-            throw new Exception("Not create view dir: $dir");
-        }
-        if (!file_put_contents($phpfile, Template::complie(file_get_contents($tplfile)))) {
-            throw new Exception("View file write fail: $phpfile");
-        }
-        return $phpfile;
-    }
-    
     private static function getTemplateFile($path, $is_relative_path = false)
     {
         $ext = self::$config['template']['ext'] ?? '.htm';
