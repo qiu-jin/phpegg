@@ -18,7 +18,7 @@ class Template
     ];
     
     protected static $structure = [
-        'set', 'if', 'elseif', 'else', 'switch', 'case', 'default', 'each', 'for', 'block', 'import', 'layout'
+        'set', 'if', 'elseif', 'else', 'switch', 'case', 'default', 'each', 'for'/*, 'block'*/, 'import', 'layout'
     ];
     
     protected static $var_alias = [
@@ -79,12 +79,16 @@ class Template
     
     public static function complie($template, $layout = null)
     {
+        if ($layout) {
+            $template = self::mergeLayout($template, $layout);
+            dd($template);
+        }
         if (isset(self::$sbp)) {
             $template = self::ebpParser(self::sbpParser($template));
         } else {
             $template = self::ebpParser(self::tagParser($template));
         }
-        return $layout ? self::mergeLayout($template, $layout) : $template;
+        dd($template);
     }
 
     /*
@@ -265,9 +269,9 @@ class Template
             if (preg_match_all('/('.$start_tag.'|'.$end_tag.')/', $str, $matchs, PREG_OFFSET_CAPTURE)) {
                 $start_pos = 0;
                 foreach ($matchs[0] as $match) {                    
-                    $tmp = substr($str, $start_pos, $match[1]-$start_pos);
+                    $tmp = substr($str, $start_pos, $match[1] - $start_pos);
                     $code .= $tmp;
-                    $start_pos = strlen($match[0])+$match[1];
+                    $start_pos = strlen($match[0]) + $match[1];
                     if ($match[0] === $start_tag) {
                         $code .= $match[0];
                         $skip_num[$i]++;
@@ -308,7 +312,7 @@ class Template
         if (preg_match_all($reg, $tag, $matchs, PREG_OFFSET_CAPTURE)) {
             $start_pos = 0;
             foreach ($matchs[1] as $i => $attr) {
-                $tmp = trim(substr($tag, $start_pos, $matchs[0][$i][1]-$start_pos));
+                $tmp = trim(substr($tag, $start_pos, $matchs[0][$i][1] - $start_pos));
                 if (!empty($tmp)) $html .= $tmp;
                 if ($attr[0] !== 'as') {
                     if ($has_noas_attr) throw new \Exception('read_tag error: '.$tag);
@@ -320,7 +324,7 @@ class Template
                     if (empty($matchs[2][$i][0])) {
                         throw new \Exception('read_tag error: '.$tag);
                     }
-                    $val = substr(trim($vars[$matchs[2][$i][0]{2}-1]), 1, -1);
+                    $val = substr(trim($vars[$matchs[2][$i][0][2]-1]), 1, -1);
                 }
                 $attr_ret = self::readStructure($attr[0], $val);
                 $code[] = '<?php '.$attr_ret['code'].' ?>';
@@ -330,7 +334,9 @@ class Template
             $html .= substr($tag, $start_pos);
         }
         if ($vars) $html = self::restoreStrvars($html, $vars);
-        return array('html'=>$html, 'code'=>$code, 'end'=>$end);
+        return [
+            'html' => $html, 'code' => $code, 'end' => $end
+        ];
     }
     
     /*
@@ -342,7 +348,7 @@ class Template
         $code = '';
         if ($val) $ret = self::replaceStrvars($val);
         switch ($structure) {
-            case 'eq':
+            case 'set':
                 $pairs = explode(';', $ret['code']);
                 foreach ($pairs as $pair) {
                     $item = explode('=', trim($pair));
@@ -417,7 +423,7 @@ class Template
             default:
                 throw new \Exception('read_structure error: '.$structure);
         }
-        return array('code'=>$code, 'end'=>$end);
+        return ['code' => $code, 'end' => $end];
     }
     
     
@@ -433,6 +439,9 @@ class Template
         while ($i < $len) {
             $unit = self::readWord(substr($str, $i));
             $i += $unit['seek'];
+            if (empty($unit['end'])) {
+                //continue;
+            }
             switch ($unit['end']) {
                 case '?':
                     $arr = explode(':', substr($str, $i));
@@ -607,7 +616,7 @@ class Template
                 }
             }
         }
-        return array('code'=> $code, 'seek'=>$len, 'end'=>'');
+        return ['code' => $code, 'seek' => $len, 'end '=> ''];
     }
     
     /*
