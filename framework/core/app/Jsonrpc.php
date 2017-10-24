@@ -13,6 +13,9 @@ use framework\extend\misc\ReflectionMethod;
 
 class Jsonrpc extends App
 {
+    const VERSION = '2.0';
+    
+    protected $ns;
     protected $config = [
         // 控制器namespace
         'controller_ns' => 'controller',
@@ -44,21 +47,20 @@ class Jsonrpc extends App
         // Response content type header
         'response_content_type' => null
     ];
-    // 保存返回值
-    protected $return;
     // 核心错误
     protected $core_errors = [
         404 => [-32601, 'Method not found'],
         500 => [-32000, 'Server error']
     ];
+    // 返回值
+    protected $return;
     // 当前请求是否为批请求
     protected $is_batch_call = false;
     // 批请求控制器实例缓存
     protected $controller_instances;
     // 批请求控制器方法反射实例缓存
-    protected $controller_ref_methods;
+    protected $controller_refmethods;
     
-    const VERSION = '2.0';
     
     protected function dispatch()
     {
@@ -66,6 +68,7 @@ class Jsonrpc extends App
         if (!$data) {
             $this->abort(-32700, 'Parse error');
         }
+        $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
         $batch_max_num = $this->config['batch_max_num'];
         if ($batch_max_num !== 1 && !Arr::isAssoc($data)) {
             if ($batch_max_num !== 0 && count($data) > $batch_max_num) {
@@ -186,7 +189,7 @@ class Jsonrpc extends App
                 $action = array_pop($method_array);
                 if ($action[0] !== '_' ) {
                     $controller_instance = $this->makeControllerInstance($method_array);
-                    if (!empty($controller) && is_callable([$controller, $action])) {
+                    if (!empty($controller_instance) && is_callable([$controller_instance, $action])) {
                         return [
                             'id'                    => $id,
                             'controller_instance'   => $controller_instance,
@@ -209,7 +212,7 @@ class Jsonrpc extends App
     
     protected function makeControllerInstance($controller_array)
     {
-        $class = 'app\\'.$this->config['controller_ns'].'\\'.implode('\\', $controller_array).$this->config['controller_suffix'];
+        $class = $this->ns.implode('\\', $controller_array).$this->config['controller_suffix'];
         if (!$this->is_batch_call) {
             return Loader::importPrefixClass($class) ? new $class() : false;
         }
@@ -228,10 +231,10 @@ class Jsonrpc extends App
     {
         if ($this->is_batch_call) {
             $class = get_class($controller);
-            if (isset($this->controller_ref_methods[$class][$action])) {
-                return $this->controller_ref_methods[$class][$action];
+            if (isset($this->controller_refmethods[$class][$action])) {
+                return $this->controller_refmethods[$class][$action];
             }
-            return $this->controller_ref_methods[$class][$action] = new \ReflectionMethod($controller, $action);
+            return $this->controller_refmethods[$class][$action] = new \ReflectionMethod($controller, $action);
         }
         return new \ReflectionMethod($controller, $action);
     }
