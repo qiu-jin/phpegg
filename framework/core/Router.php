@@ -47,7 +47,7 @@ class Router
             }
             $call = $call_match[1];
             if (self::$enable_dynamic_call && strpos('$', $call) !== false) {
-                $call = self::getDynamicCall($call, $macth);
+                $call = self::replaceDynamicCall($call, $macth);
             }
             if (!$param_mode || empty($call_match[3])) {
                 $params = $macth;
@@ -69,32 +69,21 @@ class Router
             return false;
         }
         if (isset($ruotes['/'])) {
-            $index_ruote = $ruotes['/'];
-            unset($ruotes['/']);
-        } 
-        if (empty($path)) {
-            if (isset($index_ruote)) {
-                if (is_array($index_ruote)) {
-                    return isset($index_ruote[$method]) ? [$index_ruote[$method], []] : false;
-                } else {
-                    return [$index_ruote, []];
+            if (empty($path)) {
+                $call = self::getCall($method, $ruotes['/']);
+                if ($call) {
+                    return [$call, []];
                 }
             }
-            return false;
+            unset($ruotes['/']);
         }
         $count = count($path);
-        foreach ($ruotes as $rule => $call) {
+        foreach ($ruotes as $rule => $calls) {
             $rule = explode('/', $rule);
             $macth = self::macth($path, $rule);
             if ($macth !== false) {
-                if (is_array($call)) {
-                    if (isset($call[$method])) {
-                        $call = $call[$method];
-                    } else {
-                        return false;
-                    }
-                }
-                return [$call, $macth];
+                $call = self::getCall($method, $calls);
+                return $call ? [$call, $macth] : false;
             }
         }
         return false;
@@ -188,9 +177,22 @@ class Router
     }
     
     /*
+     * 获取调用
+     */
+    protected static function getCall($method, $calls)
+    {
+        if ($method === null || !is_array($calls)) {
+            return $calls;
+        } elseif(isset($calls[$method])) {
+            return $calls[$method];
+        }
+        return false;
+    }
+    
+    /*
      * 获取动态调用
      */
-    protected static function getDynamicCall($call, $macth)
+    protected static function replaceDynamicCall($call, $macth)
     {
         return preg_replace_callback('/\$(\d)/', $call, function ($macthes) use ($macth) {
             if (isset($macth[$macthes[1]])) {
