@@ -9,24 +9,8 @@ class Error
     const ERROR    = E_USER_ERROR;
     const WARNING  = E_USER_WARNING;
     const NOTICE   = E_USER_NOTICE;
-    
-    // 标示init方法是否已执行，防止重复执行
-    private static $init;
     // 保存错误信息
     private static $error;
-    
-    /*
-     * 类加载时调用此初始方法
-     */
-    public static function init()
-    {
-        if (self::$init) return;
-        self::$init = true;
-        error_reporting(-1);
-        set_error_handler(__CLASS__.'::errorHandler');
-        set_exception_handler(__CLASS__.'::exceptionHandler');
-        register_shutdown_function(__CLASS__.'::fatalHandler');
-    }
     
     /*
      * 获取错误信息
@@ -98,19 +82,16 @@ class Error
      */
     public static function fatalHandler()
     {
-        if (!App::exit(0)) {
-    		$last_error = error_get_last();
-    		if ($last_error && ($last_error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR))) {
-                App::exit(5);
-                list($level, $prefix) = self::getErrorLevelInfo($last_error['type']);
-                $message = 'Fatal Error '.$prefix.': '.$last_error['message'];
-                self::record('error.fatal', $level, $last_error['type'], $message, $last_error['file'], $last_error['line']);
-                self::response();
-    		} else {
-                self::record('error.fatal', Logger::WARNING, 0, 'Unknown exit', null, null);
-    		}
-        }
-        self::$error = null;
+		$last_error = error_get_last();
+		if ($last_error && ($last_error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR))) {
+            App::exit(5);
+            list($level, $prefix) = self::getErrorLevelInfo($last_error['type']);
+            $message = 'Fatal Error '.$prefix.': '.$last_error['message'];
+            self::record('error.fatal', $level, $last_error['type'], $message, $last_error['file'], $last_error['line']);
+            self::response();
+		} else {
+            self::record('error.fatal', Logger::WARNING, 0, 'Unknown exit', null, null);
+		}
     }
     
     /*
@@ -172,4 +153,3 @@ class Error
         }
     }
 }
-Error::init();

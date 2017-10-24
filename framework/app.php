@@ -2,11 +2,12 @@
 namespace framework;
 
 use framework\core\Hook;
+use framework\core\Error;
 use framework\core\Config;
-use framework\core\Exception;
 
 abstract class App
 {
+    const VERSION = '1.0.0';
     // 应用实例容器
     private static $app;
     // 标示boot方法是否已执行，防止重复执行
@@ -64,7 +65,7 @@ abstract class App
     public function run(callable $return_handler = null)
     {
         if (self::$runing) {
-            throw new Exception('App is runing');
+            throw new \RuntimeException('App is runing');
         }
         self::$runing = true;
         $return = $this->call();
@@ -88,10 +89,18 @@ abstract class App
         require FW_DIR.'common.php';
         require FW_DIR.'core/Config.php';
         require FW_DIR.'core/Loader.php';
-        require FW_DIR.'core/Error.php';
         require FW_DIR.'core/Hook.php';
+        set_error_handler(function (...$e) {
+            Error::errorHandler(...$e);
+        });
+        set_exception_handler(function ($e) {
+            Error::exceptionHandler($e);
+        });
         register_shutdown_function(function () {
             self::$app = null;
+            if (!self::$exit) {
+                Error::fatalHandler();
+            }
             Hook::listen('exit');
             if (function_exists('fastcgi_finish_request')) {
                 fastcgi_finish_request();
@@ -109,14 +118,19 @@ abstract class App
         if (self::$app) return;
         self::boot();
         if (static::class !== __CLASS__) {
-            throw new Exception('Illegal start call');
+            throw new \RuntimeException('Illegal start call');
         }
         if (in_array($app, ['Standard', 'Inline', 'Micro', 'Rest', 'Jsonrpc', 'Grpc', 'View', 'Graphql', 'Cli'], true)) {
             $app = 'framework\core\app\\'.$app;
         } elseif (!is_subclass_of($app, __CLASS__)) {
-            throw new Exception('Illegal app class: '.$app);
+            throw new \RuntimeException('Illegal app class: '.$app);
         }
-        self::$app = new $app($config ?? Config::get('app'));
+        if ($config === null) {
+            $config = Config::get('app');
+        } else {
+            Config::set('app', $config);
+        }
+        self::$app = new $app($config);
         self::$app->dispatch = self::$app->dispatch();
         Hook::listen('start', self::$app->dispatch);
         if (self::$app->dispatch) {
