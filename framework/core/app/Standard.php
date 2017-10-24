@@ -58,7 +58,7 @@ class Standard extends App
         // 路由调度是否允许访问受保护的方法
         'route_dispatch_protected_access' => false,
         // 设置动作路由属性名，为null则不启用动作路由
-        'route_dispatch_action_route' => null,
+        'route_dispatch_action_routes' => null,
     ];
     protected $ref_method;
     
@@ -250,7 +250,7 @@ class Standard extends App
                 $this->dispatch = ['route' => $dispatch];
             }
         }
-        if (isset($this->config['route_dispatch_action_route'])) {
+        if (isset($this->config['route_dispatch_action_routes'])) {
             if (isset($this->dispatch['route'])) {
                 return $this->actionRouteDispatch($param_mode, ...$this->dispatch['route']);
             } else {
@@ -269,7 +269,7 @@ class Standard extends App
     
     protected function actionRouteDispatch($param_mode, $controller, $path)
     {
-        $property = $this->config['route_dispatch_action_route'];
+        $property = $this->config['route_dispatch_action_routes'];
         $class = $this->ns.$controller.$this->config['controller_suffix'];
         if (property_exists($class, $property)) {
             $routes = (new \ReflectionClass($class))->getDefaultProperties()[$property] ?? null;
