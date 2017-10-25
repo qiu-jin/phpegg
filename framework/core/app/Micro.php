@@ -106,7 +106,7 @@ class Micro extends App
         if (in_array($method, $this->config['route_dispatch_http_methods'], true)) {
             $result = Router::route(Request::pathArr(), $this->dispatch['route'], $method);
             if ($result) {
-                if ($this->config['route_dispatch_enable_getter']) {
+                if ($this->config['route_dispatch_enable_getter'] && $result[0] instanceof \Closure) {
                     return [\Closure::bind($result[0], new class () {
                         use Getter;
                     }), $result[1]];

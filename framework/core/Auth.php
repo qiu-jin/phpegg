@@ -31,7 +31,7 @@ abstract class Auth
     abstract public function check();
     
     // 用户认证失败处理
-    abstract public function faildo();
+    abstract public function fallback();
     
     // 登记用户信息
     abstract public function login();
@@ -42,10 +42,7 @@ abstract class Auth
     // 运行认证处理，检查用户是否认证成功，否则失败处理并退出
     public function run()
     {
-        if (!$this->check()) {
-            $this->faildo();
-            App::exit();
-        }
+        $this->check() || $this->fallback() || App::exit();
     }
     
     // 获取运行认证实例

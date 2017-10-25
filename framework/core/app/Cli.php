@@ -5,9 +5,40 @@ use framework\App;
 
 class Cli extends App
 {
-    protected function dispatch()
+    protected $config = [
+        // 控制器namespace
+        'controller_ns' => 'command',
+        // 控制器类名后缀
+        'controller_suffix' => null,
+        // 路由模式下是否启用Getter魔术方法
+        'route_dispatch_enable_getter' => true,
+    ];
+    // 核心错误
+    protected $core_errors = [
+        404 => '',
+        500 => ''
+    ];
+    
+    public function input()
     {
 
+    }
+    
+    public function output()
+    {
+
+    }
+    
+    public function command($name, callback $call)
+    {
+        $this->dispatch[$name] = $call;
+    }
+    
+    protected function dispatch()
+    {
+        if (PHP_SAPI !== 'cli') {
+            throw new \RuntimeException('NO CLI SAPI');
+        }
     }
     
     protected function call()
@@ -17,7 +48,7 @@ class Cli extends App
     
     protected function error($code = null, $message = null)
     {
-
+        
     }
     
     protected function response($return)
