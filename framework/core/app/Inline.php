@@ -37,7 +37,7 @@ class Inline extends App
     {
         $this->dir = APP_DIR.'/'.$this->config['controller_path'].'/';
         $path = trim(Request::path(), '/');
-        foreach ((array) $this->config['dispatch_mode'] as $mode) {
+        foreach ($this->config['dispatch_mode'] as $mode) {
             $dispatch = $this->{$mode.'Dispatch'}($path);
             if ($dispatch) {
                 return $dispatch;

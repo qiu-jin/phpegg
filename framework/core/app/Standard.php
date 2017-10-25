@@ -69,7 +69,7 @@ class Standard extends App
     {
         $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
         $path = Request::pathArr();
-        foreach ((array) $this->config['dispatch_mode'] as $mode) {
+        foreach ($this->config['dispatch_mode'] as $mode) {
             $dispatch = $this->{$mode.'Dispatch'}($path);
             if ($dispatch) {
                 return $dispatch;
