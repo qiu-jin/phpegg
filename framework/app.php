@@ -120,7 +120,7 @@ abstract class App
         if (static::class !== __CLASS__) {
             throw new \RuntimeException('Illegal start call');
         }
-        if (in_array($app, ['Standard', 'Inline', 'Micro', 'Rest', 'Jsonrpc', 'Grpc', 'View', 'Graphql', 'Cli'], true)) {
+        if (in_array($app, ['Standard', 'Rest', 'Inline', 'View', 'Micro', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'], true)) {
             $app = 'framework\core\app\\'.$app;
         } elseif (!is_subclass_of($app, __CLASS__)) {
             throw new \RuntimeException('Illegal app class: '.$app);

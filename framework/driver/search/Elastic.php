@@ -33,13 +33,8 @@ class Elastic
         return new query\Elastic("$this->host:$this->port/$name/$this->default_type");
     }
     
-    public function bulk($query)
+    public function multi()
     {
-        return Client::post("$this->host:$this->port")->json($query)->json;
-    }
-    
-    public function getMulti($query)
-    {
-        return Client::get("$this->host:$this->port/_mget")->json($query)->json;
+        return new query\ElasticMulti("$this->host:$this->port", $this->default_type);
     }
 }

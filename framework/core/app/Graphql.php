@@ -25,7 +25,7 @@ class Graphql extends App
 
     }
     
-    protected function parser($query)
+    protected function parseQuery($query)
     {
         
     }

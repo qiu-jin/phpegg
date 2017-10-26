@@ -32,6 +32,10 @@ class Cli extends App
     public function command($name, callback $call)
     {
         $this->dispatch[$name] = $call;
+        
+        $app->command($name, function () {
+            
+        })
     }
     
     protected function dispatch()
