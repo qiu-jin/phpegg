@@ -68,7 +68,7 @@ class Http
         return $status ? error($status) : error(var_export($client->error, true));
     }
     
-    protected function convertUrlStyle()
+    protected function convertUrlStyle($path)
     {
         switch ($this->config['url_style']) {
             case 'snake_to_spinal':

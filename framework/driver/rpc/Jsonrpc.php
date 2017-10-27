@@ -5,12 +5,13 @@ use framework\core\http\Client;
 
 class Jsonrpc
 {
+    // 协议版本
     const VERSION = '2.0'; 
-    
+    // 支持的HTTP CLIENT方法
     const ALLOW_CLIENT_METHODS = [
         'header', 'timeout', 'debug'
     ];
-    
+    // 默认配置
     protected $config = [
         'id_method' => 'id',
         'call_method' => 'call',
