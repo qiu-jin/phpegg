@@ -11,30 +11,22 @@ class Elastic
 {
     protected $host;
     protected $port;
-    protected $indexes;
-    protected $default_type = 'doc';
+    protected $type;
     
     public function __construct($config)
     {
         $this->host = $config['host'];
         $this->port = $config['port'] ?? 9200;
-        if (isset($config['default_type'])) {
-            $this->default_type = $default_type;
-        }
+        $this->type = $config['type'] ?? 'doc';
     }
-    
-    public function ns($ns)
-    {
-        return new query\Elastic("$this->host:$this->port/$ns");
-    }
-    
+
     public function __get($name)
     {
-        return new query\Elastic("$this->host:$this->port/$name/$this->default_type");
+        return new query\Elastic("$this->host:$this->port", $this->type, $name);
     }
     
-    public function multi()
+    public function batch()
     {
-        return new query\ElasticMulti("$this->host:$this->port", $this->default_type);
+        return new query\ElasticBatch("$this->host:$this->port", $this->type);
     }
 }

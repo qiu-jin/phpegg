@@ -7,16 +7,15 @@ class ElasticBatch
 {
     protected $ns;
     protected $url;
-    protected $queries;
-    protected $default_type;
-    protected static $allow_methods = [
-        'get', 'put', 'index', 'update', 'delete'
-    ];
+    protected $type;
+    protected $prev;
+    protected $mget;
+    protected $bulk;
     
-    public function __construct($url, $default_type)
+    public function __construct($url, $type)
     {
         $this->url = $url;
-        $this->default_type = $default_type;
+        $this->type = $type;
     }
     
     public function __get($name)
@@ -25,20 +24,92 @@ class ElasticBatch
         return $this;
     }
     
-    public function __call($method, $params)
+    public function get($id, $options = null)
     {
-        if (in_array($method, self::$allow_methods, true)) {
-            $this->ns = null;
-            $this->queries[$ns][] = [$method, $params];
-            return $this;
+        $query = $this->getIndexType();
+        $query['_id'] = $id;
+        if (isset($options)) {
+            $query = array_merge($options, $query);
         }
-        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
+        $this->mget[] = $query;
+        return $this;
     }
     
-    protected function call()
+    public function index(...$params)
     {
-        if (!$this->queries) {
+        $query = $this->getIndexType();
+        $count = count($params);
+        if ($count === 1) {
+            $data = $params[0];
+        } elseif ($count === 2) {
+            $query['_id'] = $params[0];
+            $data = $params[1];
+        } else {
+            throw new \Exception('Params error');
+        }
+        $this->bulk[] = json_encode(['update' => $query]);
+        $this->bulk[] = json_encode($data);
+        return $this;
+    }
+    
+    public function update($id, $data)
+    {
+        $query = $this->getIndexType();
+        $query['_id'] = $id;
+        $this->bulk[] = json_encode(['update' => $query]);
+        $this->bulk[] = json_encode($data);
+        return $this;
+    }
+    
+    public function delete($id)
+    {
+        $query = $this->getIndexType();
+        $query['_id'] = $id;
+        $this->bulk[] = json_encode(['delete' => $query]);
+        return $this;
+    }
+    
+    protected function call($return_raw_result = false)
+    {
+        if (isset($this->bulk)) {
+            if (isset($this->mget)) {
+                throw new \Exception('No support mix get and other');
+            }
+            $method = '_bulk';
+            $body = implode("\r\n", $this->bulk);
+        } elseif (isset($this->mget)) {
+            if (isset($this->bulk)) {
+                throw new \Exception('No support mix get and other');
+            }
+            $method = '_mget';
+            $body = json_encode(['docs' => $this->mget]);
+        } else {
             throw new \Exception('No query');
         }
+        $client = Client::post("$this->url/$method");
+        $client->body($body);
+        $result = $client->json;
+        if ($return_raw_result) {
+            return $result;
+        }
+        if ($method === '_bulk') {
+            return $result['items'] ?? false;
+        }
+    }
+    
+    protected function getIndexType()
+    {
+        if (!isset($this->prev)) {
+            $count = count($this->ns);
+            if ($count === 1) {
+                $this->prev = ['_index' => $this->ns[0], '_type' => $this->ns[1]];
+            } elseif ($count === 2) {
+                $this->prev = ['_index' => $this->ns[0], '_type' => $this->$type];
+            } else {
+                throw new \Exception('Ns error');
+            }
+            $this->ns = null;
+        }
+        return $this->prev;
     }
 }

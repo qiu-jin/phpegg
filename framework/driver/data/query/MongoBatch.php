@@ -1,18 +1,15 @@
 <?php
 namespace framework\driver\data\query;
 
-use MongoDB\Driver\Query;
 use MongoDB\Driver\BulkWrite;
 
 class MongoBatch
 {
     protected $ns;
+    protected $prev;
     protected $dbname;
     protected $manager;
     protected $queries;
-    protected static $allow_methods = [
-        'insert', 'update', 'delete'
-    ];
 
     public function __construct($manager, $dbname)
     {
@@ -25,26 +22,40 @@ class MongoBatch
         $this->ns[] = $name;
         return $this;
     }
-
-    public function __call($method, $params)
+    
+    public function create(...$params)
     {
-        if (in_array($method, self::$allow_methods, true)) {
-            $count = count($this->ns);
-            if ($count === 1) {
-                $ns = $this->dbname.'.'.$this->ns[0];
-            } elseif ($count === 2) {
-                $ns = implode('.', $this->ns);
-            } else {
-                throw new \Exception('Ns error');
-            }
-            $this->ns = null;
-            $this->queries[$ns][] = [$method, $params];
-            return $this;
+        $count = count($params);
+        if ($count === 1) {
+            $this->queries[$this->getNs()][] = ['create', [$params[0]]];
+        } elseif ($count === 2) {
+            $params[1]['_id'] = $params[0];
+            $this->queries[$this->getNs()][] = ['create', [$params[1]]];
+        } else {
+            throw new \Exception('Params error');
         }
-        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
+        return $this;
+    }
+    
+    public function update($id, $data, $options = null)
+    {
+        if (!is_array($id)) {
+            $id = ['_id' => $id];
+        }
+        $this->queries[$this->getNs()] = ['update', [$id, $data, $options]];
+        return $this;
+    }
+    
+    public function delete($id, $options = null)
+    {
+        if (!is_array($id)) {
+            $id = ['_id' => $id];
+        }
+        $this->queries[$this->getNs()] = ['delete', [$id, $options]];
+        return $this;
     }
 
-    public function call($return_result = false)
+    public function call($return_raw_result = false)
     {
         if (!$this->queries) {
             throw new \Exception('No query');
@@ -56,8 +67,24 @@ class MongoBatch
             }
             $result[$ns] = $this->manager->executeBulkWrite($ns, $bulk);
         }
-        if ($return_result) {
+        if ($return_raw_result) {
             return count($result) > 0 ? $result : current($result);
         }
+    }
+    
+    protected function getNs()
+    {
+        if (!isset($this->prev)) {
+            $count = count($this->ns);
+            if ($count === 1) {
+                $this->prev = $this->dbname.'.'.$this->ns[0];
+            } elseif ($count === 2) {
+                $this->prev = implode('.', $this->ns);
+            } else {
+                throw new \Exception('Ns error');
+            }
+            $this->ns = null;
+        }
+        return $this->prev;
     }
 }

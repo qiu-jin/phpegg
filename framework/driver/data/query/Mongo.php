@@ -7,12 +7,23 @@ use MongoDB\Driver\BulkWrite;
 class Mongo
 {
     protected $ns;
+    protected $dbname;
     protected $manager;
     
-    public function __construct($manager, $ns)
+    public function __construct($manager, $dbname, $name)
     {
-        $this->ns = $ns;
+        $this->ns[] = $name;
+        $this->dbname = $dbname;
         $this->manager = $manager;
+    }
+    
+    public function __get($name)
+    {
+        if (count($this->ns) === 1 ) {
+            $this->ns[] = $name;
+            return $this;
+        }
+        throw new \Exception('Ns error');
     }
     
     public function get($id)
@@ -56,32 +67,42 @@ class Mongo
 
     public function getRaw($id)
     {
-        return $this->manager->executeQuery($this->ns, new Query(['_id' => $id]));
+        return $this->manager->executeQuery($this->getNs(), new Query(['_id' => $id]));
     }
     
     public function findRaw($filter = [], $options = [])
     {
-        return $this->manager->executeQuery($this->ns, new Query($filter, $options));
+        return $this->manager->executeQuery($this->getNs(), new Query($filter, $options));
     }
 
     public function insertRaw($data)
     {
         $bulk = new BulkWrite;
         $bulk->insert($data);
-        return $this->manager->executeBulkWrite($this->ns, $bulk);
+        return $this->manager->executeBulkWrite($this->getNs(), $bulk);
     }
     
     public function updateRaw($data, $filter = [], $options = [])
     {
         $bulk = new BulkWrite;
         $bulk->update($data, $filter, $options);
-        return $this->manager->executeBulkWrite($this->ns, $bulk);
+        return $this->manager->executeBulkWrite($this->getNs(), $bulk);
     }
     
     public function deleteRaw($filter = [], $options = [])
     {
         $bulk = new BulkWrite;
         $bulk->delete($filter, $options);
-        return $this->manager->executeBulkWrite($this->ns, $bulk);
+        return $this->manager->executeBulkWrite($this->getNs(), $bulk);
+    }
+    
+    public function getNs()
+    {
+        if (count($this->ns) === 2) {
+            return "$this->ns[0].$this->ns[1]";
+        } elseif (isset($this->dbname)) {
+            return "$this->dbname.$this->ns[0]";
+        }
+        
     }
 }
