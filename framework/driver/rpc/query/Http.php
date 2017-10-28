@@ -6,19 +6,16 @@ class Http
     protected $ns;
     protected $rpc;
     protected $filters;
-    protected $ns_method;
-    protected $filter_method;
+    protected $options;
     protected $client_methods;
     
-    public function __construct($rpc, $name, $ns_method, $filter_method, $client_methods = null)
+    public function __construct($rpc, $options, $name = null)
     {
         $this->rpc = $rpc;
-        if ($name) {
+        if (isset($name)) {
             $this->ns[] = $name;
         }
-        $this->ns_method = $ns_method;
-        $this->filter_method = $filter_method;
-        $this->client_methods = $client_methods;
+        $this->options = $options;
     }
 
     public function __get($name)
@@ -35,10 +32,30 @@ class Http
         } elseif ($this->filter_method === $method) {
             $this->filter($params);
             return $this;
+        } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
+            $this->client_methods[] = [$method, $params];
         }
+        return $this->call($method, $params);
+    }
+    
+    protected function call($method, $params)
+    {
         $this->ns[] = $method;
-        $body = $params ? $this->setParams($params) : null;
-        return $this->rpc->call(isset($params) ? 'POST' : 'GET', implode('/', $this->ns), $this->filter, $body, $this->client_methods);
+        if ($params) {
+            $m = 'POST';
+            $body = $this->setParams($params);
+        } else {
+            $m = 'GET';
+        }
+        $client = $this->rpc->makeClient($m, implode('/', $this->ns), $this->filter, $this->client_methods);
+        if (isset($body)) {
+            $client->{$this->options['requset_encode']}($body);
+        }
+        $status = $client->status;
+        if ($status >= 200 && $status < 300) {
+            return $client->{$this->options['response_decode']};
+        }
+        return $status ? error($status) : error(var_export($client->error, true));
     }
     
     protected function filter($params)

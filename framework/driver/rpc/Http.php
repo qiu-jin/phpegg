@@ -6,14 +6,23 @@ use framework\core\http\Client;
 
 class Http
 {
+    const ALLOW_CLIENT_METHODS = [
+        'filter', 'body', 'json', 'form', 'file', 'buffer', 'stream', 
+        'header', 'headers', 'timeout', 'curlopt', 'curlinfo', 'debug'
+    ];
+    
     protected $config = [
         'ext' => null,
         'url_style' => null,
+        'method_alias' => [
+            'ns'  => 'ns',
+            'call'  => 'call',
+            'query' => 'query',
+            'batch' => 'batch',
+            'makeClient'=> 'makeClient'
+        ],
         'requset_encode' => 'body',
         'response_decode' => 'body',
-    ];
-    const ALLOW_CLIENT_METHODS = [
-        'filter', 'body', 'json', 'form', 'file', 'buffer', 'stream', 'header', 'headers', 'timeout', 'curlopt', 'curlinfo', 'debug'
     ];
 
     public function __construct($config)
@@ -23,17 +32,35 @@ class Http
     
     public function __get($name)
     {
-        return $this->query($name);
-    }
-
-    public function query($name, $client_methods = null)
-    {
-        $ns_method = $this->config['ns_method'] ?? 'ns';
-        $filter_method = $this->config['filter_method'] ?? 'filter';
-        return new query\Http($this, $name, $ns_method, $filter_method,$client_methods);
+        return $this->ns($name);
     }
     
-    public function call($method, $path, $filters, $body, $client_methods)
+    public function __call($method, $params)
+    {
+        if (isset($this->config['method_alias'][$method])) {
+            return $this->{$this->config['method_alias'][$method]}(...$params);
+        }
+        return $this->ns()->$method(...$params);
+    }
+    
+    protected function ns($name)
+    {
+        return new query\Http($this, $this->getOptions(), $name);
+    }
+    
+    protected function call($method, $path, $filters, $body, $client_methods)
+    {
+        if ($body) {
+            $client->{$this->config['requset_encode']}($body);
+        }
+        $status = $client->status;
+        if ($status >= 200 && $status < 300) {
+            return $client->{$this->config['response_decode']};
+        }
+        return $status ? error($status) : error(var_export($client->error, true));
+    }
+    
+    protected function makeClient($method, $path, $filters, $client_methods)
     {
         if (isset($this->config['url_style'])) {
             $path = $this->convertUrlStyle($path);
@@ -58,14 +85,18 @@ class Http
                 }
             }
         }
-        if ($body) {
-            $client->{$this->config['requset_encode']}($body);
-        }
-        $status = $client->status;
-        if ($status >= 200 && $status < 300) {
-            return $client->{$this->config['response_decode']};
-        }
-        return $status ? error($status) : error(var_export($client->error, true));
+        return $client;
+    }
+    
+    protected function getOptions()
+    {
+        return [
+            'ns_method' => array_search('ns', $this->config['method_alias'], true),
+            'call_method' => array_search('call', $this->config['method_alias'], true),
+            'filter_method' => array_search('filter', $this->config['method_alias'], true),
+            'requset_encode' => $this->config['requset_encode'],
+            'response_decode' => $this->config['response_decode'],
+        ];
     }
     
     protected function convertUrlStyle($path)

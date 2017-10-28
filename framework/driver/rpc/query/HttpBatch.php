@@ -1,21 +1,19 @@
 <?php
 namespace framework\driver\rpc\query;
 
+use framework\core\http\Client;
+use framework\driver\rpc\Http as RPC;
+
 class HttpBatch
 {
     protected $ns;
-    protected $rpc;
     protected $queries;
-    protected $ns_method;
-    protected $call_method;
+    protected $options;
     protected $client_methods;
     
-    public function __construct($rpc, $ns_method, $call_method, $client_methods = null)
+    public function __construct($options)
     {
-        $this->rpc = $rpc;
-        $this->ns_method = $ns_method;
-        $this->call_method = $call_method;
-        $this->client_methods = $client_methods;
+        $this->options = $options;
     }
 
     public function __get($name)
@@ -33,11 +31,12 @@ class HttpBatch
                 $this->ns[] = $params[0];
                 return $this;
             default:
-                if (in_array($method, $this->$client_methods, true)) {
-                    
+                if (in_array($method, Http::ALLOW_CLIENT_METHODS, true)) {
+                    $this->client_methods[] = [$method, $params];
                 } else {
-                    $this->queries = [$this->ns, $method, $params];
+                    $this->queries[] = [$this->ns, $method, $params, $this->client_methods];
                     $this->ns = null;
+                    $this->client_methods = null;
                 }
                 return $this;
         }
@@ -45,6 +44,7 @@ class HttpBatch
     
     protected function call()
     {
+        $mh = curl_multi_init();
         
     }
 }
