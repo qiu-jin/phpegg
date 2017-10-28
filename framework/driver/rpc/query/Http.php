@@ -26,11 +26,11 @@ class Http
     
     public function __call($method, $params)
     {
-        if ($this->ns_method === $method) {
+        if ($this->options['ns_method'] === $method) {
             $this->ns[] = $method;
             return $this;
-        } elseif ($this->filter_method === $method) {
-            $this->filter($params);
+        } elseif ($this->options['filter_method'] === $method) {
+            $this->filters = array_merge($this->filters, $this->rpc->filter($params));
             return $this;
         } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
             $this->client_methods[] = [$method, $params];
@@ -43,7 +43,7 @@ class Http
         $this->ns[] = $method;
         if ($params) {
             $m = 'POST';
-            $body = $this->setParams($params);
+            $body = $this->rpc->setParams($this->ns, $params);
         } else {
             $m = 'GET';
         }
@@ -56,24 +56,5 @@ class Http
             return $client->{$this->options['response_decode']};
         }
         return $status ? error($status) : error(var_export($client->error, true));
-    }
-    
-    protected function filter($params)
-    {
-        $num = func_num_args();
-        if ($num === 1) {
-            $this->filters = array_merge($this->filters, $params);
-        } elseif ($num === 2) {
-            $this->filters[$params[0]] = $params[1];
-        }
-    }
-    
-    protected function setParams($params)
-    {
-        $return = is_array(end($params)) ? array_pop($params) : null;
-        if ($params) {
-            $this->ns = array_merge($this->ns, $params);
-        }
-        return $return;
     }
 }

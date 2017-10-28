@@ -1,18 +1,18 @@
 <?php
 namespace framework\driver\rpc\query;
 
-use framework\core\http\Client;
-use framework\driver\rpc\Http as RPC;
-
 class HttpBatch
 {
     protected $ns;
+    protected $rpc;
+    protected $filters;
     protected $queries;
     protected $options;
     protected $client_methods;
     
-    public function __construct($options)
+    public function __construct($rpc, $options)
     {
+        $this->rpc = $rpc;
         $this->options = $options;
     }
 
@@ -25,17 +25,22 @@ class HttpBatch
     public function __call($method, $params)
     {
         switch ($method) {
-            case $this->call_method:
-                return $this->call();
-            case $this->ns_method:
+            case $this->options['call_method']:
+                return $this->call($method, $params);
+            case $this->options['filter_method']:
+                $this->filters = array_merge($this->filters, $this->rpc->filter($params));
+                return $this;
+            case $this->options['ns_method']:
                 $this->ns[] = $params[0];
                 return $this;
             default:
-                if (in_array($method, Http::ALLOW_CLIENT_METHODS, true)) {
+                if (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
                     $this->client_methods[] = [$method, $params];
                 } else {
-                    $this->queries[] = [$this->ns, $method, $params, $this->client_methods];
+                    $this->ns[] = $method;
+                    $this->queries[] = $this->buildQuery($this->ns, $params, $this->filters, $this->client_methods);
                     $this->ns = null;
+                    $this->filters = null;
                     $this->client_methods = null;
                 }
                 return $this;
@@ -44,7 +49,25 @@ class HttpBatch
     
     protected function call()
     {
-        $mh = curl_multi_init();
-        
+        $multi_client = curl_multi_init();
+        foreach ($this->queries as $query) {
+            curl_multi_add_handle($multi_client, $query);
+        }
     }
+    
+    protected function buildQuery($ns, $params, $filters, $client_methods)
+    {
+        if ($params) {
+            $m = 'POST';
+            $body = $this->rpc->setParams($ns, $params);
+        } else {
+            $m = 'GET';
+        }
+        $client = $this->rpc->makeClient($m, implode('/', $ns), $filter, $client_methods);
+        if (isset($body)) {
+            $client->{$this->options['requset_encode']}($body);
+        }
+        return $client->build();
+    }
+    
 }

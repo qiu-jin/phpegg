@@ -14,15 +14,17 @@ class Http
     protected $config = [
         'ext' => null,
         'url_style' => null,
+        'requset_encode' => 'body',
+        'response_decode' => 'body',
         'method_alias' => [
             'ns'  => 'ns',
             'call'  => 'call',
             'query' => 'query',
             'batch' => 'batch',
+            'setfilter' => 'setfilter',
+            'setParams' => 'setParams',
             'makeClient'=> 'makeClient'
         ],
-        'requset_encode' => 'body',
-        'response_decode' => 'body',
     ];
 
     public function __construct($config)
@@ -48,16 +50,28 @@ class Http
         return new query\Http($this, $this->getOptions(), $name);
     }
     
-    protected function call($method, $path, $filters, $body, $client_methods)
+    protected function batch()
     {
-        if ($body) {
-            $client->{$this->config['requset_encode']}($body);
+        return new query\HttpBatch($this, $this->getOptions());
+    }
+    
+    protected function setfilter($params)
+    {
+        $num = func_num_args();
+        if ($num === 1) {
+            return $params;
+        } elseif ($num === 2) {
+            return [$params[0], $params[1]];
         }
-        $status = $client->status;
-        if ($status >= 200 && $status < 300) {
-            return $client->{$this->config['response_decode']};
+    }
+    
+    protected function setParams(&$ns, $params)
+    {
+        $return = is_array(end($params)) ? array_pop($params) : null;
+        if ($params) {
+            $ns = array_merge($ns, $params);
         }
-        return $status ? error($status) : error(var_export($client->error, true));
+        return $return;
     }
     
     protected function makeClient($method, $path, $filters, $client_methods)

@@ -32,12 +32,7 @@ class Rest
     
     public function filter($params)
     {
-        $num = func_num_args();
-        if ($num === 1) {
-            $this->filters = array_merge($this->filters, $params);
-        } elseif ($num === 2) {
-            $this->filters[$params[0]] = $params[1];
-        }
+        $this->filter = array_merge($this->filter, $this->rpc->filter($params));
     }
     
     public function __call($method, $params)
@@ -54,11 +49,10 @@ class Rest
     
     protected function call($method, $params)
     {
-        $body = $params ? $this->setParams($params) : null;
         $path = $this->ns ? implode('/', $this->ns) : null;
         $client = $this->rpc->makeClient($method, $path, $this->filter, $this->client_methods);
-        if (isset($body)) {
-            $client->{$this->options['requset_encode']}($body);
+        if ($params) {
+            $client->{$this->options['requset_encode']}($this->rpc->setParams($params));
         }
         $status = $client->status;
         if ($status >= 200 && $status < 300) {

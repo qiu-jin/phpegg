@@ -86,9 +86,9 @@ class Client
     public function file($name, $content, $filename = null, $mimetype = null)
     {
         if (substr($name, -2) === '[]') {
-            $this->body[substr($name, 0, -2)][] = self::curlFile($content, $filename, $mimetype);
+            $this->body[substr($name, 0, -2)][] = $this->curlFile($content, $filename, $mimetype);
         } else {
-            $this->body[$name] = self::curlFile($content, $filename, $mimetype);
+            $this->body[$name] = $this->curlFile($content, $filename, $mimetype);
         }
         return $this;
     }
@@ -116,7 +116,7 @@ class Client
         } else {
             $this->body = substr($this->body, 0, -strlen("--$this->boundary--".self::EOL));
         }
-        $this->body .= self::multipartFile($this->boundary, $name, $content, $filename, $mimetype);
+        $this->body .= $this->multipartFile($name, $content, $filename, $mimetype);
         return $this;
     }
     
@@ -200,12 +200,7 @@ class Client
     public function result($name = null)
     {
         if (!$this->result) {
-            if ($this->debug) {
-                $this->curlopt[CURLOPT_HEADER] = true;
-                $this->curlopt[CURLINFO_HEADER_OUT] = true;
-                $this->curlinfo[] = 'header_out';
-            }
-            $this->result = self::send($this->method, $this->url, $this->body, $this->headers, $this->curlopt, $this->curlinfo, $this->debug);
+            $this->result = self::send();
         }
         if ($name === null) {
             return $this->result;
@@ -237,7 +232,7 @@ class Client
             $fp = fopen($path, 'w+');
             if ($fp) {
                 $this->curlopt[CURLOPT_FILE] = $fp;
-                $this->result = $this->result();
+                $this->result = self::send();
                 fclose($fp);
                 return $this->result['status'] === 200 && $this->result['body'] === true;
             }
@@ -246,9 +241,14 @@ class Client
         return false;
     }
     
-    public static function send($method, $url, $body = null,  array $headers = null, array $curlopt = null, array $curlinfo = null, $debug = false)
+    public function send()
     {
-        $result = curl_exec(self::build($method, $url, $body, $headers, $curlopt));
+        if ($this->debug) {
+            $this->curlopt[CURLOPT_HEADER] = true;
+            $this->curlopt[CURLINFO_HEADER_OUT] = true;
+            $this->curlinfo[] = 'header_out';
+        }
+        $ch = curl_exec($this->build());
         if ($curlinfo) {
             foreach (array_unique($curlinfo) as $name) {
                 $return[$name] = curl_getinfo($ch, constant('CURLINFO_'.strtoupper($name)));
@@ -283,27 +283,27 @@ class Client
     /*
      * build
      */
-    public static function build($method, $url, $body, $headers, $curlopt)
-    {
+    public function build()
+    {   
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_URL, $this->url);
         if (stripos($url, 'https://') === 0) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         }
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
-        if ($method === 'HEAD') {
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($this->method));
+        if ($this->method === 'HEAD') {
             curl_setopt($ch, CURLOPT_NOBODY, 1);
         }
-        if ($body){
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        if ($this->body){
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $this->body);
         }
-        if ($headers) {
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        if ($this->headers) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
         }
-        if ($curlopt){
-            curl_setopt_array($ch, $curlopt);
+        if ($this->curlopt){
+            curl_setopt_array($ch, $this->curlopt);
         }
         return $ch;
     }
@@ -327,7 +327,7 @@ class Client
     /*
      * 设置curl文件上传
      */
-    protected static function curlFile($filepath, $filename, $mimetype)
+    protected function curlFile($filepath, $filename, $mimetype)
     {
         $file = new \CURLFile(realpath($filepath));
         if (isset($mimetype)) {
@@ -342,7 +342,7 @@ class Client
     /*
      * 设置multipart协议上传
      */
-    protected static function multipartFile($boundary, $name, $content, $filename, $mimetype)
+    protected function multipartFile($name, $content, $filename, $mimetype)
     {
         if (empty($filename)) {
             $filename = $name;
@@ -351,7 +351,7 @@ class Client
             $mimetype = 'application/octet-stream';
         }
         return implode(self::EOL, [
-            "--$boundary",
+            "--$this->boundary",
             "Content-Disposition: form-data; name=\"$name\"; filename=\"$filename\"",
             "Content-Type: $mimetype",
             "Content-Transfer-Encoding: binary",
