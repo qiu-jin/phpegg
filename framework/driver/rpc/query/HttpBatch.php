@@ -9,11 +9,13 @@ class HttpBatch
     protected $queries;
     protected $options;
     protected $client_methods;
+    protected $common_client_methods;
     
-    public function __construct($rpc, $options)
+    public function __construct($rpc, $options, $common_client_methods = null)
     {
         $this->rpc = $rpc;
         $this->options = $options;
+        $this->common_client_methods = $common_client_methods;
     }
 
     public function __get($name)
@@ -35,10 +37,10 @@ class HttpBatch
                 return $this;
             default:
                 if (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
-                    $this->client_methods[] = [$method, $params];
+                    $this->client_methods[$method] = $params;
                 } else {
                     $this->ns[] = $method;
-                    $this->queries[] = $this->buildQuery($this->ns, $params, $this->filters, $this->client_methods);
+                    $this->queries[] = $this->buildQuery($params);
                     $this->ns = null;
                     $this->filters = null;
                     $this->client_methods = null;
@@ -55,15 +57,16 @@ class HttpBatch
         }
     }
     
-    protected function buildQuery($ns, $params, $filters, $client_methods)
+    protected function buildQuery($params)
     {
         if ($params) {
             $m = 'POST';
-            $body = $this->rpc->setParams($ns, $params);
+            $body = $this->rpc->setParams($this->ns, $params);
         } else {
             $m = 'GET';
         }
-        $client = $this->rpc->makeClient($m, implode('/', $ns), $filter, $client_methods);
+        $client_methods = array_merge($this->common_client_methods, $this->client_methods);
+        $client = $this->rpc->makeClient($m, implode('/', $this->ns), $this->filter, $client_methods);
         if (isset($body)) {
             $client->{$this->options['requset_encode']}($body);
         }

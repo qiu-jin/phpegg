@@ -12,16 +12,15 @@ class Rest
     public function __construct($rpc, $options, $name = null)
     {
         $this->rpc = $rpc;
+        $this->options = $options;
         if (isset($name)) {
             $this->ns[] = $name;
         }
-        $this->options = $options;
     }
 
     public function __get($name)
     {
-        $this->ns[] = $name;
-        return $this;
+        return $this->ns($name);
     }
     
     public function ns($name)
@@ -32,7 +31,7 @@ class Rest
     
     public function filter($params)
     {
-        $this->filter = array_merge($this->filter, $this->rpc->filter($params));
+        $this->filters = array_merge($this->filters, $this->rpc->filter($params));
     }
     
     public function __call($method, $params)
