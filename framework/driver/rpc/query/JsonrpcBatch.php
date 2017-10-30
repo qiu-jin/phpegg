@@ -10,13 +10,15 @@ class JsonrpcBatch
     protected $client;
     protected $options;
     protected $queries;
-    protected $client_methods;
+    protected $common_ns;
+    protected $common_client_methods;
     
-    public function __construct($client, $options, $client_methods = null)
+    public function __construct($client, $options, array $common_ns = null, array $common_client_methods = null)
     {
         $this->client = $client;
         $this->options = $options;
         $this->client_methods = $client_methods;
+        $this->ns = $this->common_ns = $common_ns;
     }
 
     public function __get($name)
@@ -38,16 +40,16 @@ class JsonrpcBatch
                 'params'    => $params,
                 'id'        => $this->id ?? 0
             ];
-            $this->ns = null;
             $this->id = null;
+            $this->ns = $this->common_ns;
         }
         return $this;
     }
 
     protected function call()
     {
-        if ($this->client_methods) {
-            foreach ($this->client_methods as $method) {
+        if ($this->common_client_methods) {
+            foreach ($this->common_client_methods as $method) {
                 if (in_array($method[0], RPC::ALLOW_CLIENT_METHODS, true)) {
                     $this->client->{$method[0]}(...$method[1]);
                 }

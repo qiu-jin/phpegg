@@ -47,12 +47,9 @@ class RestBatch
         return $this;
     }
     
-    public function call()
+    public function call(callable $handle = null)
     {
-        $multi_client = curl_multi_init();
-        foreach ($this->queries as $query) {
-            curl_multi_add_handle($multi_client, $query);
-        }
+        
     }
     
     protected function buildQuery($method, $params)
