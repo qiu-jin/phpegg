@@ -28,6 +28,6 @@ class Qcloud extends Sms
         if (isset($data['result']) && $data['result'] === 0) {
             return true;
         }
-        return error($data['errmsg'] ?? $client->getError());
+        return error($data['errmsg'] ?? $client->getErrorInfo());
     }
 }

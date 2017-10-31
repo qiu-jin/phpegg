@@ -32,6 +32,6 @@ class Alidayu extends Sms
         if (isset($data['alibaba_aliqin_fc_sms_num_send_response']['result'])) {
             return true;
         }
-        return error($data['error_response']['sub_msg'] ?? $client->getError());
+        return error($data['error_response']['sub_msg'] ?? $client->getErrorInfo());
     }
 }

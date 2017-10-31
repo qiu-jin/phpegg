@@ -65,7 +65,7 @@ class Ipip extends Geoip
                 return error($result['msg']);
             }
         }
-        return error($client->getError());
+        return error($client->getErrorInfo());
     }
     
     public function __destruct()

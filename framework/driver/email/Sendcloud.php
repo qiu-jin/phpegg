@@ -68,7 +68,7 @@ class Sendcloud extends Email
         }
         $data = $client->getJson();
         if (empty($data['result'])) {
-            return error($data['message'] ?? $client->getError());
+            return error($data['message'] ?? $client->getErrorInfo());
         }
         return true;
     }

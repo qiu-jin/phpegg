@@ -129,7 +129,7 @@ class Webdav extends Storage
         if ($status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
             return false;
         }
-        return error($status ?? $client->getError(), 2);
+        return error($status ?? $client->getErrorInfo(), 2);
     }
     
     protected function uri($path)

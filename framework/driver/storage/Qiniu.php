@@ -113,7 +113,7 @@ class Qiniu extends Storage
             return false;
         }
         $data = $client->getJson();
-        return error($data['error'] ?? $client->getError(), 2);
+        return error($data['error'] ?? $client->getErrorInfo(), 2);
     }
 
     protected function path($str)

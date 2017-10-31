@@ -48,7 +48,7 @@ class Mailgun extends Email
         }
         $result = $client->getJson();
         if (empty($result['id'])) {
-            return error($result['message'] ?? $client->getError());
+            return error($result['message'] ?? $client->getErrorInfo());
         }
         return true;
     }

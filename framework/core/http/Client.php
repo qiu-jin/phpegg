@@ -215,16 +215,25 @@ class Client
         return $this->result['headers'][$name] ?? $default;
     }
     
-    public function getError()
-    {
-        isset($this->result) || $this->send();
-        return [curl_errno($ch), curl_error($ch)];
-    }
-    
     public function getInfo($name)
     {
         isset($this->result) || $this->send();
         return curl_getinfo($this->ch, constant('CURLINFO_'.strtoupper($name)));
+    }
+    
+    public function getError()
+    {   
+        isset($this->result) || $this->send();
+        return [curl_errno($ch), curl_error($ch)];
+    }
+    
+    public function getErrorInfo()
+    {   
+        $error = $this->getError();
+        if ($error[0] === 0) {
+            return "Unknown HTTP Error $this->url";
+        }
+        return "HTTP Error [$error[0]]$error[1]  $this->url";  
     }
     
     /*
@@ -232,17 +241,16 @@ class Client
      */
     public function save($path)
     {
-        if (!isset($this->result)) {
-            $fp = fopen($path, 'w+');
-            if ($fp) {
-                $this->curlopt[CURLOPT_FILE] = $fp;
-                $this->send();
-                fclose($fp);
-                return $this->getInfo('status') === 200 && $this->result['body'] === true;
-            }
-            $this->result = false;
+        if (isset($this->result)) {
+            return false;
         }
-        return false;
+        if ($fp = fopen($path, 'w+')) {
+            $this->curlopt[CURLOPT_FILE] = $fp;
+            $this->send();
+            fclose($fp);
+            return $this->getStatus() === 200 && $this->result['body'] === true;
+        }
+        return $this->result = false;
     }
     
     public static function multi($queries, callable $handle = null, $select_timeout = 0.5)
@@ -331,13 +339,12 @@ class Client
      */
     protected static function parseWithHeaders($str)
     {
-        // 忽略 HTTP/1.1 100 continue
+        // 跳过HTTP/1.1 100 continue
         if (substr($str, 9, 3) === '100') {
             list(, $header, $body) = explode(self::EOL.self::EOL, $str, 3);
         } else {
             list($header, $body) = explode(self::EOL.self::EOL, $str, 2);
         }
-        $headers = [];
         $arr = explode(self::EOL, $header);
         foreach ($arr as $v) {
             $line = explode(":", $v, 2);
@@ -355,7 +362,7 @@ class Client
                 }
             }
         }
-        return [$headers, $body];
+        return [$headers ?? null, $body];
     }
     
     /*

@@ -29,6 +29,6 @@ class Aliyun extends Sms
             return true;
         }
         $data = $client->getJson();
-        return error($data['Message'] ?? $client->getError());
+        return error($data['Message'] ?? $client->getErrorInfo());
     }
 }

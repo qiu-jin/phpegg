@@ -33,7 +33,7 @@ class Baidu extends Sms
             if (isset($data['code']) && $data['code'] === '1000') {
                 return true;
             }
-            return error($data['message'] ?? $client->getError());
+            return error($data['message'] ?? $client->getErrorInfo());
         }
         return error('Template not exists');
     }
