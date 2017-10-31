@@ -29,10 +29,10 @@ class Yuntongxun extends Sms
             'Accept:application/json',
             'Authorization:'.base64_encode("$this->acckey:$date")
         ]); 
-        $data = $client->json;
+        $data = $client->getJson();
         if (isset($data['statusCode']) && $data['statusCode'] === '000000') {
             return true;
         }
-        return error($data['statusMsg'] ?? $client->error);
+        return error($data['statusMsg'] ?? $client->getError());
     }
 }

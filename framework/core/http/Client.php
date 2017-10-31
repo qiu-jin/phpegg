@@ -376,10 +376,13 @@ class Client
     /*
      * 设置multipart协议上传
      */
-    protected function multipartFile($name, $content, $filename = null, $mimetype = 'application/octet-stream')
+    protected function multipartFile($name, $content, $filename, $mimetype)
     {
         if (empty($filename)) {
             $filename = $name;
+        }
+        if (empty($mimetype)) {
+            $mimetype = 'application/octet-stream';
         }
         return implode(self::EOL, [
             "--$this->boundary",

@@ -29,11 +29,11 @@ class Baidu extends Sms
                 'contentVar'        => $data
             ]);
             $client = Client::post("http://$this->host$path")->headers($this->buildHeaders($path, $body))->body($body);
-            $data = $client->json;
+            $data = $client->getJson();
             if (isset($data['code']) && $data['code'] === '1000') {
                 return true;
             }
-            return error($data['message'] ?? $client->error);
+            return error($data['message'] ?? $client->getError());
         }
         return error('Template not exists');
     }

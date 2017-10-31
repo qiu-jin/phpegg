@@ -105,6 +105,6 @@ class Elastic
         if ($data) {
             $client->json($data);
         }
-        return $client->json;
+        return $client->getJson();
     }
 }

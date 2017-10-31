@@ -56,7 +56,7 @@ class JsonrpcBatch
             }
         }
         $this->client->body($this->config['response_unserialize']($this->queries));
-        $data = $this->config['response_unserialize']($this->client->body);
+        $data = $this->config['response_unserialize']($this->client->getBody());
         if ($data) {
             if (!isset($handle)) {
                 return $data;
@@ -66,7 +66,7 @@ class JsonrpcBatch
             }
             return;
         }
-        if ($clierr = $this->client->error) {
+        if ($clierr = $this->client->getError()) {
             error("-32000: Internet error [$clierr[0]] $clierr[1]");
         } else {
             error('-32603: nvalid JSON-RPC response');

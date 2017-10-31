@@ -28,10 +28,10 @@ class Alidayu extends Sms
         }
         $form['sign'] = strtoupper(md5($this->seckey.$str.$this->seckey));
         $client = Client::post(self::$host)->form($form);
-        $data = $client->json;
+        $data = $client->getJson();
         if (isset($data['alibaba_aliqin_fc_sms_num_send_response']['result'])) {
             return true;
         }
-        return error($data['error_response']['sub_msg'] ?? $client->error);
+        return error($data['error_response']['sub_msg'] ?? $client->getError());
     }
 }

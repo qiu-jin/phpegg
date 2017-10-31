@@ -24,10 +24,10 @@ class Qcloud extends Sms
             'extend'=> '',
             'ext'   => '',
         ]);
-        $data = $client->json;
+        $data = $client->getJson();
         if (isset($data['result']) && $data['result'] === 0) {
             return true;
         }
-        return error($data['errmsg'] ?? $client->error);
+        return error($data['errmsg'] ?? $client->getError());
     }
 }

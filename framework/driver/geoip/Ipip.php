@@ -56,7 +56,7 @@ class Ipip extends Geoip
     public function apiHandle($ip, $raw = false)
     {
         $client = Client::get('http://ipapi.ipip.net/find/?addr='.$ip)->header('Token', $this->token);
-        $result = $client->json;
+        $result = $client->getJson();
         if (isset($result['ret'])) {
             if ($result['ret'] === 'ok') {
                 $result = $result['data'];
@@ -65,7 +65,7 @@ class Ipip extends Geoip
                 return error($result['msg']);
             }
         }
-        return error($client->error);
+        return error($client->getError());
     }
     
     public function __destruct()

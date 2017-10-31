@@ -107,11 +107,11 @@ class Webdav extends Storage
         if ($headers) {
             $client->headers($headers);
         }
-        $status = $client->status;
+        $status = $client->gerStatus();
         if ($status >= 200 && $status < 300) {
             switch ($method) {
                 case 'GET':
-                    return $client->body;
+                    return $client->getBody();
                 case 'PUT':
                     return true;
                 case 'HEAD':
@@ -129,7 +129,7 @@ class Webdav extends Storage
         if ($status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
             return false;
         }
-        return error($status ?? $client->error, 2);
+        return error($status ?? $client->getError(), 2);
     }
     
     protected function uri($path)

@@ -64,12 +64,12 @@ class Geetest
                 'sdk'       => '',
                 'json_format' => '1'
             ]));
-            $data = $client->json;
+            $data = $client->getJson();
             return $data;
             if (isset($data['seccode']) && $data['seccode'] === md5($value['seccode'])) {
                 return true;
             }
         }
-        return error($data['error'] ?? $client->error);
+        return error($data['error'] ?? $client->getError());
     }
 }

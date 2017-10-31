@@ -66,9 +66,9 @@ class Sendcloud extends Email
                 $client->buffer('attachments', ...end($options['attach']));
             }
         }
-        $data = $client->json;
+        $data = $client->getJson();
         if (empty($data['result'])) {
-            return error($data['message'] ?? $client->error);
+            return error($data['message'] ?? $client->getError());
         }
         return true;
     }

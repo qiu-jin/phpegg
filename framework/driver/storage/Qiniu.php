@@ -105,15 +105,15 @@ class Qiniu extends Storage
         if ($path) {
             $client->header('Authorization', 'QBox '.$this->sign($path."\n"));
         }
-        $status = $client->status;
+        $status = $client->getStatus();
         if ($status === 200) {
-            return $method === 'GET' ? $client->body : true;
+            return $method === 'GET' ? $client->getBody() : true;
         }
         if ($status === 404 && strtok($path, '/') === 'stat') {
             return false;
         }
-        $data = $client->json;
-        return error($data['error'] ?? $client->error, 2);
+        $data = $client->getJson();
+        return error($data['error'] ?? $client->getError(), 2);
     }
 
     protected function path($str)

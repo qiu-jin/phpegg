@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\storage;
 
+use framework\util\Xml;
 use framework\util\File;
 use framework\core\http\Client;
 
@@ -99,7 +100,7 @@ class S3 extends Storage
         if ($auth) {
             $client->headers($this->setHeaders($method, $path, $headers));
         }
-        $status = $client->status;
+        $status = $client->getStatus();
         if ($status >= 200 && $status < 300) {
             switch ($method) {
                 case 'GET':
@@ -115,8 +116,8 @@ class S3 extends Storage
         if ($status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
             return false;
         }
-        $data = $client->xml;
-        return error($data['Message'] ?? $client->error, 2);
+        $data = Xml::decode($client->getBody());
+        return error($data['Message'] ?? $client->getError(), 2);
     }
     
     protected function setHeaders($method, $path, $headers)

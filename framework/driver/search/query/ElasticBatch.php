@@ -88,7 +88,7 @@ class ElasticBatch
         }
         $client = Client::post("$this->url/$method");
         $client->body($body);
-        $result = $client->json;
+        $result = $client->getJson();
         if ($return_raw_result) {
             return $result;
         }
