@@ -7,7 +7,12 @@ class HttpBatch
     protected $rpc;
     protected $filters;
     protected $queries;
-    protected $options;
+    protected $options = [
+        'select_timeout'    => 0.5,
+        'ns_method'         => 'ns',
+        'call_method'       => 'call',
+        'filter_method'     => 'filter',
+    ];
     protected $client_methods;
     protected $common_client_methods;
     
@@ -49,12 +54,9 @@ class HttpBatch
         }
     }
     
-    protected function call()
+    protected function call(callable $handle = null)
     {
-        $multi_client = curl_multi_init();
-        foreach ($this->queries as $query) {
-            curl_multi_add_handle($multi_client, $query);
-        }
+        return Client::multi($this->queries, $handle, $this->options['select_timeout']);
     }
     
     protected function buildQuery($params)
@@ -70,7 +72,7 @@ class HttpBatch
         if (isset($body)) {
             $client->{$this->options['requset_encode']}($body);
         }
-        return $client->build();
+        return $client;
     }
     
 }

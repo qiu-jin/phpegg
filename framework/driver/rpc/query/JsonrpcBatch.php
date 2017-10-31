@@ -46,7 +46,7 @@ class JsonrpcBatch
         return $this;
     }
 
-    protected function call()
+    protected function call(callable $handle = null)
     {
         if ($this->common_client_methods) {
             foreach ($this->common_client_methods as $method) {
@@ -58,7 +58,13 @@ class JsonrpcBatch
         $this->client->body($this->config['response_unserialize']($this->queries));
         $data = $this->config['response_unserialize']($this->client->body);
         if ($data) {
-            return $data;
+            if (!isset($handle)) {
+                return $data;
+            }
+            foreach ($data as $item) {
+                $handle($item);
+            }
+            return;
         }
         if ($clierr = $this->client->error) {
             error("-32000: Internet error [$clierr[0]] $clierr[1]");

@@ -1,14 +1,14 @@
 <?php
 namespace framework\core\http;
 
-use framework\util\Xml;
-use framework\extend\debug\HttpClient as HttpClientDebug;
-
 define('CURLINFO_STATUS', CURLINFO_HTTP_CODE);
 
 //Curl
 class Client
 {
+    const EOL = "\r\n";
+    
+    private $ch;
     private $url;
     private $body;
     private $debug;
@@ -17,9 +17,6 @@ class Client
     private $headers = [];
     private $boundary;
     private $curlopt = [CURLOPT_TIMEOUT => 30];
-    private $curlinfo = ['status'];
-    
-    const EOL = "\r\n";
     
     public function __construct($method, $url)
     {
@@ -166,15 +163,6 @@ class Client
         $this->curlopt[$name] = $value;
         return $this;
     }
-    
-    /*
-     * 设置底层curl参数
-     */
-    public function curlinfo($name)
-    {
-        $this->curlinfo[] = $name;
-        return $this;
-    }
 
     /*
      * 设置是否获取并解析请求响应的headers数据
@@ -195,32 +183,48 @@ class Client
     }
     
     /*
-     * 获取请求结果
-     */
-    public function result($name = null)
-    {
-        if (!$this->result) {
-            $this->result = self::send();
-        }
-        if ($name === null) {
-            return $this->result;
-        }
-        return $this->result[$name] ?? null;
-    }
-    
-    /*
      * 获取请求结果魔术方法
      */
     public function __get($name)
     {
-        switch ($name) {
-            case 'json':
-                return jsondecode($this->result('body'));
-            case 'xml':
-                return Xml::decode($this->result('body'));
-            default:
-                return $this->result($name);
+        return $this->{'get'.ucfirst($name)}();
+    }
+    
+    public function getStatus()
+    {
+        return $this->getInfo('status');
+    }
+    
+    public function getBody()
+    {
+        isset($this->result) || $this->send();
+        return $this->result['body'] ?? null;
+    }
+    
+    public function getJson()
+    {
+        return jsondecode($this->getBody('body'));
+    }
+    
+    public function getHeader($name = null, $default = null)
+    {
+        isset($this->result) || $this->send();
+        if ($name === null) {
+            return $this->result['headers'] ?? null;
         }
+        return $this->result['headers'][$name] ?? $default;
+    }
+    
+    public function getError()
+    {
+        isset($this->result) || $this->send();
+        return [curl_errno($ch), curl_error($ch)];
+    }
+    
+    public function getInfo($name)
+    {
+        isset($this->result) || $this->send();
+        return curl_getinfo($this->ch, constant('CURLINFO_'.strtoupper($name)));
     }
     
     /*
@@ -232,62 +236,76 @@ class Client
             $fp = fopen($path, 'w+');
             if ($fp) {
                 $this->curlopt[CURLOPT_FILE] = $fp;
-                $this->result = self::send();
+                $this->send();
                 fclose($fp);
-                return $this->result['status'] === 200 && $this->result['body'] === true;
+                return $this->getInfo('status') === 200 && $this->result['body'] === true;
             }
             $this->result = false;
         }
         return false;
     }
     
-    public function send()
+    public static function multi($queries, callable $handle = null, $select_timeout = 0.5)
+    {
+        $mh = curl_multi_init();
+        foreach ($queries as $i => $query) {
+            $ch = $query->build();
+            $indices[strval($ch)] = $i;
+            curl_multi_add_handle($mh, $ch);
+        }
+        do{
+            if (($status = curl_multi_exec($mh, $active)) !== CURLM_CALL_MULTI_PERFORM) {
+                if ($status !== CURLM_OK) {
+                    break;
+                }
+                while ($done = curl_multi_info_read($mh)) {
+                    $ch = $done['handle'];
+                    $index = $indices[strval($ch)];
+                    $query = $queries[$index];
+                    $result = curl_multi_getcontent($ch);
+                    if (isset($query->curlopt[CURLOPT_HEADER])) {
+                        list($result, $headers) = $query->parseWithHeaders($result);
+                        $query->result['headers'] = $headers;
+                    }
+                    $query->result['body'] = $result;
+                    if (isset($handle)) {
+                        $return[$index] = $handle($query);
+                    } else {
+                        $return[$index] = $query;
+                    }
+                    curl_multi_remove_handle($mh, $ch);
+                    if ($active > 0) {
+                        curl_multi_select($mh, $select_timeout);
+                    }
+                }
+            }
+        } while ($active > 0);
+        curl_multi_close($mh);
+        return $return ?? null;
+    }
+    
+    protected function send()
     {
         if ($this->debug) {
             $this->curlopt[CURLOPT_HEADER] = true;
             $this->curlopt[CURLINFO_HEADER_OUT] = true;
-            $this->curlinfo[] = 'header_out';
         }
-        $ch = curl_exec($this->build());
-        if ($curlinfo) {
-            foreach (array_unique($curlinfo) as $name) {
-                $return[$name] = curl_getinfo($ch, constant('CURLINFO_'.strtoupper($name)));
-            }
+        $result = curl_exec($this->build());
+        if (isset($this->curlopt[CURLOPT_HEADER])) {
+            list($headers, $result) = self::parseWithHeaders($result);
+            $this->result['headers'] = $headers;
         }
-        if (!empty($curlopt[CURLOPT_HEADER])) {
-            if ($result) {
-                //忽略 HTTP/1.1 100 continue
-                if (substr($result, 9, 3) === '100') {
-                    list(, $header, $result) = explode(self::EOL.self::EOL, $result, 3);
-                } else {
-                    list($header, $result) = explode(self::EOL.self::EOL, $result, 2);
-                }
-                $return['headers'] = self::parseHeaders($header);
-            } else {
-                $return['headers'] = null;
-            }
+        $this->result['body'] = $result;
+        if ($this->debug) {
+            //\framework\extend\debug\HttpClient::write($this->body, $this);
         }
-        if (isset($return)) {
-            if ($result === false) {
-                $return['error'] = curl_errno($ch).': '.curl_error($ch);
-            }
-            $return['body'] = $result;
-            if ($debug) {
-                HttpClientDebug::write($body, $return);
-            }
-            return $return;
-        }
-        return $result;
     }
     
-    /*
-     * build
-     */
-    public function build()
+    protected function build()
     {   
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->url);
-        if (stripos($url, 'https://') === 0) {
+        if (stripos($this->url, 'https://') === 0) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         }
@@ -305,23 +323,39 @@ class Client
         if ($this->curlopt){
             curl_setopt_array($ch, $this->curlopt);
         }
-        return $ch;
+        return $this->ch = $ch;
     }
     
     /*
      * 解析headers
      */
-    public static function parseHeaders($str)
+    protected static function parseWithHeaders($str)
     {
+        // 忽略 HTTP/1.1 100 continue
+        if (substr($str, 9, 3) === '100') {
+            list(, $header, $body) = explode(self::EOL.self::EOL, $str, 3);
+        } else {
+            list($header, $body) = explode(self::EOL.self::EOL, $str, 2);
+        }
         $headers = [];
-        $arr = explode(self::EOL, $str);
+        $arr = explode(self::EOL, $header);
         foreach ($arr as $v) {
             $line = explode(":", $v, 2);
             if(count($line) === 2) {
-                $headers[trim($line[0])] = trim($line[1]);
+                $k = trim($line[0]);
+                $v = trim($line[1]);
+                if (isset($headers[$k])) {
+                    if (count($headers[$k]) === 1) {
+                        $headers[$k] = [$headers[$k], $v];
+                    } else {
+                        $headers[$k][] = $v;
+                    }
+                } else {
+                    $headers[$k] = $v;
+                }
             }
         }
-        return $headers;
+        return [$headers, $body];
     }
     
     /*
@@ -342,13 +376,10 @@ class Client
     /*
      * 设置multipart协议上传
      */
-    protected function multipartFile($name, $content, $filename, $mimetype)
+    protected function multipartFile($name, $content, $filename = null, $mimetype = 'application/octet-stream')
     {
         if (empty($filename)) {
             $filename = $name;
-        }
-        if (empty($mimetype)) {
-            $mimetype = 'application/octet-stream';
         }
         return implode(self::EOL, [
             "--$this->boundary",
@@ -360,5 +391,10 @@ class Client
             "--$this->boundary--",
             ''
         ]);
+    }
+    
+    public function __destruct()
+    {
+        isset($this->ch) && curl_close($this->ch);
     }
 }

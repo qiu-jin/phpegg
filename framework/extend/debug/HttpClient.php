@@ -6,9 +6,9 @@ use framework\core\http\Client;
 
 class HttpClient
 {
-    public static function write($body, $return)
+    public static function write($body, $client)
     {
-        $header_out = explode(Client::EOL, $return['header_out'], 2);
+        $header_out = explode(Client::EOL, $client->getInfo('header_out'), 2);
         $log['Request'] = [
             'query'     => $header_out[0],
             'headers'   => Client::parseHeaders($header_out[1]),

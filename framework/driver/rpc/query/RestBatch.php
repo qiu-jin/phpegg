@@ -1,13 +1,18 @@
 <?php
 namespace framework\driver\rpc\query;
 
+use framework\core\http\Client;
+
 class RestBatch
 {
     protected $ns;
     protected $rpc;
-    protected $filters;
+    protected $indices;
     protected $queries;
-    protected $options;
+    protected $filters;
+    protected $options = [
+        'select_timeout' = 0.5
+    ];
     protected $client_methods;
     protected $common_client_methods;
     
@@ -39,7 +44,10 @@ class RestBatch
         if (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
             $this->client_methods[$method] = $params;
         } else {
-            $this->queries[] = $this->buildQuery($method, $params);
+            $ch = $this->buildQuery($method, $params);
+            $index = strval($ch);
+            $this->queries[] = $ch;
+            $this->indices[$i] = count($this->queries)-1;
             $this->ns = null;
             $this->filters = null;
             $this->client_methods = null;
@@ -49,7 +57,14 @@ class RestBatch
     
     public function call(callable $handle = null)
     {
-        
+        return Client::multi($this->queries, $handle, $this->options['select_timeout']);
+    }
+    
+    protected function getResult($ch)
+    {
+        $info = curl_getinfo($ch);
+        $error = curl_error($ch;
+        $result = curl_multi_getcontent($ch);
     }
     
     protected function buildQuery($method, $params)
@@ -60,7 +75,7 @@ class RestBatch
         if ($params) {
             $client->{$this->options['requset_encode']}($this->rpc->setParams($params));
         }
-        return $client->build();
+        return $client;
     }
     
 }
