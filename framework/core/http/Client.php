@@ -1,9 +1,6 @@
 <?php
 namespace framework\core\http;
 
-define('CURLINFO_STATUS', CURLINFO_HTTP_CODE);
-
-//Curl
 class Client
 {
     const EOL = "\r\n";
@@ -192,7 +189,7 @@ class Client
     
     public function getStatus()
     {
-        return $this->getInfo('status');
+        return $this->getInfo('HTTP_CODE');
     }
     
     public function getBody()
@@ -253,7 +250,7 @@ class Client
         return $this->result = false;
     }
     
-    public static function multi($queries, callable $handle = null, $select_timeout = 0.5)
+    public static function multi($queries, callable $handle = null, $select_timeout = 0.1)
     {
         $mh = curl_multi_init();
         foreach ($queries as $i => $query) {

@@ -8,19 +8,24 @@ class HttpBatch
     protected $filters;
     protected $queries;
     protected $options = [
-        'select_timeout'    => 0.5,
-        'ns_method'         => 'ns',
-        'call_method'       => 'call',
-        'filter_method'     => 'filter',
+        'select_timeout'        => 0.1,
+        'ns_method_alias'       => 'with',
+        'call_method_alias'     => 'call',
+        'filter_method_alias'   => 'filter',
+        'client_methods_alias'  => null
     ];
     protected $client_methods;
+    protected $common_ns;
     protected $common_client_methods;
     
-    public function __construct($rpc, $options, $common_client_methods = null)
+    public function __construct($rpc, $common_ns, $common_client_methods, $options)
     {
         $this->rpc = $rpc;
-        $this->options = $options;
+        $this->ns = $this->common_ns = $common_ns;
         $this->common_client_methods = $common_client_methods;
+        if (isset($options)) {
+            $this->options = array_merge($this->options, $options);
+        }
     }
 
     public function __get($name)
@@ -32,23 +37,24 @@ class HttpBatch
     public function __call($method, $params)
     {
         switch ($method) {
-            case $this->options['call_method']:
-                return $this->call($method, $params);
-            case $this->options['filter_method']:
-                $this->filters = array_merge($this->filters, $this->rpc->filter($params));
+            case $this->options['call_method_alias']:
+                return $this->call(...$params);
+            case $this->options['filter_method_alias']:
+                $this->filters[] = $params;
                 return $this;
-            case $this->options['ns_method']:
+            case $this->options['ns_method_alias']:
                 $this->ns[] = $params[0];
                 return $this;
             default:
-                if (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
+                if (isset($this->options['client_methods_alias'][$method])) {
+                    $this->client_methods[$this->options['client_methods_alias'][$method]] = $params;
+                } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
                     $this->client_methods[$method] = $params;
                 } else {
                     $this->ns[] = $method;
                     $this->queries[] = $this->buildQuery($params);
-                    $this->ns = null;
-                    $this->filters = null;
-                    $this->client_methods = null;
+                    $this->ns = $this->common_ns;
+                    $this->filters = $this->client_methods = null;
                 }
                 return $this;
         }
@@ -56,23 +62,21 @@ class HttpBatch
     
     protected function call(callable $handle = null)
     {
-        return Client::multi($this->queries, $handle, $this->options['select_timeout']);
+        $result = Client::multi($this->queries, $handle, $this->options['select_timeout']);
+        if (isset($handle)) {
+            return $result;
+        }
+        foreach ($result as $i => $item) {
+            $return[$i] = $this->rpc->responseHandle($item);
+        }
+        return $return; 
     }
     
     protected function buildQuery($params)
     {
-        if ($params) {
-            $m = 'POST';
-            $body = $this->rpc->setParams($this->ns, $params);
-        } else {
-            $m = 'GET';
-        }
+        $method = $params && is_array(end($params)) ? 'POST' : 'GET';
         $client_methods = array_merge($this->common_client_methods, $this->client_methods);
-        $client = $this->rpc->makeClient($m, implode('/', $this->ns), $this->filter, $client_methods);
-        if (isset($body)) {
-            $client->{$this->options['requset_encode']}($body);
-        }
-        return $client;
+        return $this->rpc->requsetHandle($method, $this->ns ?? [], $this->filter, $params, $client_methods);
     }
     
 }

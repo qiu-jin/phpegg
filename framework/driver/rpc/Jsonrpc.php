@@ -8,14 +8,9 @@ class Jsonrpc
     // 协议版本
     const VERSION = '2.0'; 
     // 支持的HTTP CLIENT方法
-    const ALLOW_CLIENT_METHODS = [
-        'header', 'timeout', 'debug'
-    ];
+    const ALLOW_CLIENT_METHODS = ['header', 'timeout', 'debug'];
     // 默认配置
     protected $config = [
-        'id_method' => 'id',
-        'call_method' => 'call',
-        'batch_method' => 'batch',
         'requset_serialize' => 'jsonencode',
         'response_unserialize' => 'jsondecode',
     ];
@@ -27,19 +22,25 @@ class Jsonrpc
     
     public function __get($name)
     {
-        return new query\Jsonrpc($this->makeClient(), $this->getOptions());
+        return $this->query($name)
     }
-    
+
     public function __call($method, $params)
     {
-        if ($method === $this->config['batch_method']) {
-            return new query\JsonrpcBatch($this->makeClient(), $this->getOptions(), ...$params);
-        } else {
-            return (new query\Jsonrpc($this->makeClient(), $this->getOptions()))->{$method}(...$params);
-        }
+        return $this->query()->$method(...$params);
     }
     
-    protected function makeClient()
+    public function query($name = null, $options = null)
+    {
+        return new query\Jsonrpc($this, $name, $options);
+    }
+    
+    public function batch(($common_ns = null, $common_client_methods = null, $options = null)
+    {
+        return new query\JsonrpcBatch();
+    }
+    
+    public function getResult($body, $client_methods)
     {
         $client = Client::post($this->config['host']);
         if (isset($this->config['headers'])) {
@@ -48,16 +49,20 @@ class Jsonrpc
         if (isset($this->config['curlopt'])) {
             $client->curlopt($this->config['curlopt']);
         }
-        return $client;
-    }
-    
-    protected function getOptions()
-    {
-        return [
-            'id_method' => $this->config['id_method'],
-            'call_method' => $this->config['call_method'],
-            'requset_serialize' => $this->config['requset_serialize'],
-            'response_unserialize' => $this->config['response_unserialize'],
-        ];
+        if ($client_methods) {
+            foreach ($client_methods as $method) {
+                $client->{$method[0]}(...$method[1]);
+            }
+        }
+        $client->body($this->config['response_unserialize']($body));
+        $result = $this->config['response_unserialize']($client->getBody());
+        if ($result) {
+            return $result;
+        }
+        if ($clierr = $client->getError()) {
+            error("-32000: Internet error [$clierr[0]]$clierr[1]");
+        } else {
+            error('-32603: nvalid JSON-RPC response');
+        }
     }
 }

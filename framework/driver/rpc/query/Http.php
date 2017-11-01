@@ -6,16 +6,24 @@ class Http
     protected $ns;
     protected $rpc;
     protected $filters;
-    protected $options;
+    protected $callback;
+    protected $options = [
+        'ns_method_alias'       => 'with',
+        'filter_method_alias'   => 'filter',
+        'callback_method_alias' => 'callback',
+        'client_methods_alias'  => null
+    ];
     protected $client_methods;
     
-    public function __construct($rpc, $options, $name = null)
+    public function __construct($rpc, $name , $options)
     {
         $this->rpc = $rpc;
         if (isset($name)) {
             $this->ns[] = $name;
         }
-        $this->options = $options;
+        if (isset($options)) {
+            $this->options = array_merge($this->options, $options);
+        }
     }
 
     public function __get($name)
@@ -26,35 +34,36 @@ class Http
     
     public function __call($method, $params)
     {
-        if ($this->options['ns_method'] === $method) {
-            $this->ns[] = $method;
-            return $this;
-        } elseif ($this->options['filter_method'] === $method) {
-            $this->filters = array_merge($this->filters, $this->rpc->filter($params));
-            return $this;
-        } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
-            $this->client_methods[] = [$method, $params];
+        switch ($method) {
+            case $this->options['filter_method_alias']:
+                $this->filters[] = $params;
+                return $this;
+            case $this->options['ns_method_alias']:
+                $this->ns[] = $params[0];
+                return $this;
+            case $this->options['callback_method_alias']:
+                $this->callback = $params[0];
+                return $this;
+            default:
+                if (isset($this->options['client_methods_alias'][$method]) {
+                    $this->client_methods[$this->options['client_methods_alias'][$method]] = $params;
+                    return $this;
+                } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
+                    $this->client_methods[$method] = $params;
+                    return $this;
+                }
+                return $this->call($params);
         }
-        return $this->call($method, $params);
     }
     
-    protected function call($method, $params)
+    protected function call($params)
     {
-        $this->ns[] = $method;
-        if ($params) {
-            $m = 'POST';
-            $body = $this->rpc->setParams($this->ns, $params);
+        $method = isset($body) ? 'POST' : 'GET';
+        $client = $this->rpc->requsetHandle($method, $this->ns ?? [], $this->filter, $params, $this->client_methods);
+        if (isset($this->callback)) {
+            return $$this->callback($client);
         } else {
-            $m = 'GET';
+            return $this->rpc->responseHandle($client);
         }
-        $client = $this->rpc->makeClient($m, implode('/', $this->ns), $this->filter, $this->client_methods);
-        if (isset($body)) {
-            $client->{$this->options['requset_encode']}($body);
-        }
-        $status = $client->status;
-        if ($status >= 200 && $status < 300) {
-            return $client->{$this->options['response_decode']};
-        }
-        return $status ? error($status) : error(var_export($client->error, true));
     }
 }

@@ -1,20 +1,26 @@
 <?php
 namespace framework\driver\rpc\query;
 
-use framework\driver\rpc\Jsonrpc as RPC;
-
 class Jsonrpc
 {
     protected $id;
     protected $ns;
-    protected $client;
-    protected $options;
+    protected $rpc;
+    protected $options = [
+        'id_method_alias' => 'id',
+        'client_methods_alias'  => null
+    ];
     protected $client_methods;
     
-    public function __construct($client, $options)
+    public function __construct($rpc, $name, $options)
     {
-        $this->client = $client;
-        $this->options = $options;
+        $this->rpc = $rpc;
+        if (isset($name)) {
+            $this->ns[] = $name;
+        }
+        if (isset($options)) {
+            $this->options = array_merge($this->options, $options);
+        }
     }
 
     public function __get($name)
@@ -25,40 +31,32 @@ class Jsonrpc
     
     public function __call($method, $params)
     {
-        if ($method === $this->options['id_method']) {
+        if ($method === $this->options['id_method_alias']) {
             $this->id = $params[0];
             return $this;
-        } elseif (in_array($method, RPC::ALLOW_CLIENT_METHODS, true)) {
+        } elseif (isset($this->options['client_methods_alias'][$method]) {
+            $this->client_methods[$this->options['client_methods_alias'][$method]] = $params;
+            return $this;
+        } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
             $this->client_methods[] = [$method, $params];
             return $this;
         }
-        return $this->call($method, $params);
+        $this->ns[] = $method;
+        return $this->call($params);
     }
     
-    protected function call($method, $params)
+    protected function call($params)
     {
-        if ($this->client_methods) {
-            foreach ($this->client_methods as $method) {
-                $this->client->{$method[0]}(...$method[1]);
-            }
-        }
-        $this->client->body($this->config['response_unserialize']([
-            'jsonrpc'   => RPC::VERSION,
-            'method'    => ($ns ? implode('.', $ns).'.' : '').$method,
+        $body = [
+            'jsonrpc'   => $this->rpc::VERSION,
+            'method'    => implode('.', $this->ns),
             'params'    => $params,
             'id'        => $this->id ?? 0
-        ]));
-        $data = $this->config['response_unserialize']($this->client->body);
-        if ($data) {
-            if (isset($data['result'])) {
-                return $data['result'];
-            }
-            error($data['error']['code'].': '.$data['error']['message']);
+        ];
+        $result = $this->rpc->getResult($body, $this->client_methods);
+        if (isset($result['result'])) {
+            return $result['result'];
         }
-        if ($clierr = $this->client->error) {
-            error("-32000: Internet error [$clierr[0]] $clierr[1]");
-        } else {
-            error('-32603: nvalid JSON-RPC response');
-        }
+        error($data['error']['code'].': '.$data['error']['message']);
     }
 }

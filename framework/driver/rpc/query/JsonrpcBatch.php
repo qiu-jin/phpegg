@@ -1,24 +1,27 @@
 <?php
 namespace framework\driver\rpc\query;
 
-use framework\driver\rpc\Jsonrpc as RPC;
-
 class JsonrpcBatch
 {
     protected $id;
     protected $ns;
-    protected $client;
-    protected $options;
+    protected $rpc;
     protected $queries;
+    protected $options = [
+        'id_method_alias' => 'id',
+        'call_method_alias'     => 'call',
+    ];
     protected $common_ns;
     protected $common_client_methods;
     
-    public function __construct($client, $options, array $common_ns = null, array $common_client_methods = null)
+    public function __construct($rpc, $common_ns, $common_client_methods, $options)
     {
-        $this->client = $client;
-        $this->options = $options;
+        $this->rpc = $rpc;
         $this->client_methods = $client_methods;
         $this->ns = $this->common_ns = $common_ns;
+        if (isset($options)) {
+            $this->options = array_merge($this->options, $options);
+        }
     }
 
     public function __get($name)
@@ -29,16 +32,17 @@ class JsonrpcBatch
     
     public function __call($method, $params)
     {
-        if ($method === $this->options['call_method']) {
-            return $this->call();
-        } elseif ($method === $this->options['id_method']) {
+        if ($method === $this->options['id_method_alias']) {
+            return $this->call(...$params);
+        } elseif ($method === $this->options['id_method_alias']) {
             $this->id = $params[0];
         } else {
+            $this->ns[] = $method;
             $this->queries[] = [
-                'jsonrpc'   => RPC::VERSION,
-                'method'    => ($this->ns ? implode('.', $this->ns).'.' : '').$method,
+                'jsonrpc'   => $this->rpc::VERSION,
+                'method'    => implode('.', $this->ns),
                 'params'    => $params,
-                'id'        => $this->id ?? 0
+                'id'        => $this->id ?? count($this->queries)
             ];
             $this->id = null;
             $this->ns = $this->common_ns;
@@ -48,28 +52,13 @@ class JsonrpcBatch
 
     protected function call(callable $handle = null)
     {
-        if ($this->common_client_methods) {
-            foreach ($this->common_client_methods as $method) {
-                if (in_array($method[0], RPC::ALLOW_CLIENT_METHODS, true)) {
-                    $this->client->{$method[0]}(...$method[1]);
-                }
-            }
+        $result = $this->rpc->getResult($this->queries, $this->client_methods);
+        if (!isset($handle)) {
+            return $result;
         }
-        $this->client->body($this->config['response_unserialize']($this->queries));
-        $data = $this->config['response_unserialize']($this->client->getBody());
-        if ($data) {
-            if (!isset($handle)) {
-                return $data;
-            }
-            foreach ($data as $item) {
-                $handle($item);
-            }
-            return;
+        foreach ($result as $item) {
+            $return[] = $handle($item);
         }
-        if ($clierr = $this->client->getError()) {
-            error("-32000: Internet error [$clierr[0]] $clierr[1]");
-        } else {
-            error('-32603: nvalid JSON-RPC response');
-        }
+        return $return;
     }
 }

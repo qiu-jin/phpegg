@@ -7,24 +7,14 @@ use framework\core\http\Client;
 class Http
 {
     const ALLOW_CLIENT_METHODS = [
-        'filter', 'body', 'json', 'form', 'file', 'buffer', 'stream', 
-        'header', 'headers', 'timeout', 'curlopt', 'curlinfo', 'debug'
+        'body', 'json', 'form', 'file', 'buffer', 'stream', 'header', 'headers', 'timeout', 'curlopt', 'debug'
     ];
     
     protected $config = [
         'ext' => null,
         'url_style' => null,
-        'requset_encode' => 'body',
-        'response_decode' => 'body',
-        'method_alias' => [
-            'ns'  => 'ns',
-            'call'  => 'call',
-            'query' => 'query',
-            'batch' => 'batch',
-            'setfilter' => 'setfilter',
-            'setParams' => 'setParams',
-            'makeClient'=> 'makeClient'
-        ],
+        'requset_encode' => null,
+        'response_decode' => null,
     ];
 
     public function __construct($config)
@@ -34,54 +24,36 @@ class Http
     
     public function __get($name)
     {
-        return $this->ns($name);
+        return $this->query($name);
     }
     
     public function __call($method, $params)
     {
-        if (isset($this->config['method_alias'][$method])) {
-            return $this->{$this->config['method_alias'][$method]}(...$params);
-        }
-        return $this->ns()->$method(...$params);
+        return $this->query()->$method(...$params);
     }
     
-    protected function ns($name)
+    public function query($name = null, $options = null)
     {
-        return new query\Http($this, $this->getOptions(), $name);
+        return new query\Http($this, $name, $options);
     }
     
-    protected function batch()
+    public function batch($common_ns = null, $common_client_methods = null, $options = null)
     {
-        return new query\HttpBatch($this, $this->getOptions());
+        return new query\HttpBatch($this, $common_ns, $common_client_methods, $options);
     }
     
-    protected function setfilter($params)
+    public function requsetHandle($method, $ns, $filters, $params, $client_methods)
     {
-        $num = func_num_args();
-        if ($num === 1) {
-            return $params;
-        } elseif ($num === 2) {
-            return [$params[0], $params[1]];
-        }
-    }
-    
-    protected function setParams(&$ns, $params)
-    {
-        $return = is_array(end($params)) ? array_pop($params) : null;
         if ($params) {
-            $ns = array_merge($ns, $params);
+            $body = $this->setParams($ns, $params);
         }
-        return $return;
-    }
-    
-    protected function makeClient($method, $path, $filters, $client_methods)
-    {
+        $path = implode('/', $ns);
         if (isset($this->config['url_style'])) {
             $path = $this->convertUrlStyle($path);
         }
         $url = $this->config['host'].'/'.$path.$this->config['ext'];
         if ($filters) {
-            $url .= '?'.http_build_query($filters);
+            $url .= (strpos($url, '?') ? '&' : '?').$this->setfilter($filters);
         }
         $client = new Client($method, $url);
         if (isset($this->config['headers'])) {
@@ -99,18 +71,46 @@ class Http
                 }
             }
         }
+        if (isset($body)) {
+            if (isset($this->config['requset_encode'])) {
+                $body = $this->config['requset_encode']($body);
+            }
+            $client->body($body);
+        }
         return $client;
     }
     
-    protected function getOptions()
+    public function responseHandle($client)
     {
-        return [
-            'ns_method' => array_search('ns', $this->config['method_alias'], true),
-            'call_method' => array_search('call', $this->config['method_alias'], true),
-            'filter_method' => array_search('filter', $this->config['method_alias'], true),
-            'requset_encode' => $this->config['requset_encode'],
-            'response_decode' => $this->config['response_decode'],
-        ];
+        $status = $client->getStatus();
+        if ($status >= 200 && $status < 300) {
+            $body = $client->getBody();
+            return isset($this->config['response_decode']) ? $this->config['response_decode']($body) : $body;
+        }
+        return error($status ?: $client->getErrorInfo());
+    }
+    
+    protected function setfilter($filters)
+    {
+        $arr = [];
+        foreach ($filters as $filter) {
+            $count = count($filter);
+            if ($count === 1) {
+                $arr = array_merge($arr, $filter[0]);
+            } elseif ($count === 2) {
+                $arr[$filter[0]] = $filter[1];
+            }
+        }
+        return http_build_query($arr);
+    }
+    
+    protected function setParams(&$ns, $params)
+    {
+        $return = is_array(end($params)) ? array_pop($params) : null;
+        if ($params) {
+            $ns = array_merge($ns, $params);
+        }
+        return $return;
     }
     
     protected function convertUrlStyle($path)
