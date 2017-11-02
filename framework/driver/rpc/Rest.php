@@ -7,13 +7,13 @@ class Rest extends Http
         'get', 'put', 'post', 'delete', 'patch'/*, 'option', 'head'*/
     ];
     
-    public function query($name = null)
+    public function query($name = null, $options = null)
     {
-        return new query\Http($this, $name);
+        return new query\Rest($this, $name);
     }
     
     public function batch($common_ns = null, $common_client_methods = null, $options = null)
     {
-        return new query\HttpBatch($this, $common_ns, $common_client_methods, $options);
+        return new query\RestBatch($this, $common_ns, $common_client_methods, $options);
     }
 }

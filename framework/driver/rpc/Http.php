@@ -42,16 +42,19 @@ class Http
         return new query\HttpBatch($this, $common_ns, $common_client_methods, $options);
     }
     
-    public function requsetHandle($method, $ns, $filters, $params, $client_methods)
+    public function requestHandle($method, $ns, $filters, $params, $client_methods)
     {
         if ($params) {
-            $body = $this->setParams($ns, $params);
+            list($ns, $body) = $this->parseParams($ns, $params);
         }
         $path = implode('/', $ns);
         if (isset($this->config['url_style'])) {
             $path = $this->convertUrlStyle($path);
         }
-        $url = $this->config['host'].'/'.$path.$this->config['ext'];
+        $url = $this->config['host'].'/'.$path;
+        if (isset($this->config['ext'])) {
+            $url .= $this->config['ext'];
+        }
         if ($filters) {
             $url .= (strpos($url, '?') ? '&' : '?').$this->setfilter($filters);
         }
@@ -80,14 +83,17 @@ class Http
         return $client;
     }
     
-    public function responseHandle($client)
+    public function responseHandle($client, $ignore_error = true)
     {
         $status = $client->getStatus();
         if ($status >= 200 && $status < 300) {
             $body = $client->getBody();
             return isset($this->config['response_decode']) ? $this->config['response_decode']($body) : $body;
         }
-        return error($status ?: $client->getErrorInfo());
+        if ($ignore_error) {
+            return false;
+        }
+        return error($status ?: $client->getErrorInfo(), 2);
     }
     
     protected function setfilter($filters)
@@ -104,13 +110,13 @@ class Http
         return http_build_query($arr);
     }
     
-    protected function setParams(&$ns, $params)
+    protected function parseParams($ns, $params)
     {
-        $return = is_array(end($params)) ? array_pop($params) : null;
+        $body = is_array(end($params)) ? array_pop($params) : null;
         if ($params) {
             $ns = array_merge($ns, $params);
         }
-        return $return;
+        return [$ns, $body];
     }
     
     protected function convertUrlStyle($path)

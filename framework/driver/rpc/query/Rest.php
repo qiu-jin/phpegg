@@ -19,7 +19,7 @@ class Rest
 
     public function __get($name)
     {
-        return $this->ns($name);
+        return $this->with($name);
     }
     
     public function with($name)
@@ -43,7 +43,7 @@ class Rest
     public function __call($method, $params)
     {
         if (in_array($method, $this->rpc::ALLOW_HTTP_METHODS, true)) {
-            return $this->call($method, $params)
+            return $this->call($method, $params);
         }
         if (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
             $this->client_methods[$method][] = $params;
@@ -54,10 +54,11 @@ class Rest
     
     protected function call($method, $params)
     {
-        $client = $this->rpc->requsetHandle($method, $this->ns ?? [], $this->filter, $params, $this->client_methods);
+        $client = $this->rpc->requestHandle($method, $this->ns ?? [], $this->filters, $params, $this->client_methods);
         if (isset($this->callback)) {
             return $$this->callback($client);
         } else {
-            return $this->rpc->responseHandle($client);
+            return $this->rpc->responseHandle($client, false);
         }
+    }
 }

@@ -221,7 +221,7 @@ class Client
     public function getError()
     {   
         isset($this->result) || $this->send();
-        return [curl_errno($ch), curl_error($ch)];
+        return [curl_errno($this->ch), curl_error($this->ch)];
     }
     
     public function getErrorInfo()

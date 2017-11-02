@@ -120,7 +120,7 @@ class Jsonrpc extends App
     {
         extract($dispatch, EXTR_SKIP);
         if ($this->config['param_mode']) {
-            $ref_method = $this->getRefMethod($controller, $action);
+            $ref_method = $this->getRefMethod($controller_instance, $action);
             if ($this->config['param_mode'] === 1) {
                 $params = ReflectionMethod::bindListParams($ref_method, $params);
             } elseif ($this->config['param_mode'] === 2) {

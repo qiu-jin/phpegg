@@ -10,7 +10,7 @@ class RestBatch
     protected $queries;
     protected $filters;
     protected $options = [
-        'select_timeout' = 0.1
+        'select_timeout' => 0.1
     ];
     protected $client_methods;
     protected $common_ns;
@@ -19,8 +19,8 @@ class RestBatch
     public function __construct($rpc, $common_ns, $common_client_methods, $options)
     {
         $this->rpc = $rpc;
-        $this->ns = $this->common_ns = $common_ns;
-        $this->common_client_methods = $common_client_methods;
+        $this->ns[] = $this->common_ns[] = $common_ns;
+        $this->client_methods = $this->common_client_methods = $common_client_methods;
         if (isset($options)) {
             $this->options = array_merge($this->options, $options);
         }
@@ -28,7 +28,7 @@ class RestBatch
 
     public function __get($name)
     {
-        return $this->ns($name);
+        return $this->with($name);
     }
     
     public function with($name)
@@ -47,7 +47,8 @@ class RestBatch
         if (in_array($method, $this->rpc::ALLOW_HTTP_METHODS, true)) {
             $this->queries[] = $this->buildQuery($method, $params);
             $this->ns = $this->common_ns;
-            $this->filters = $this->client_methods = null;
+            $this->client_methods = $this->common_client_methods;
+            $this->filters = null;
         } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
             $this->client_methods[$method][] = $params;
         } else {
@@ -58,19 +59,11 @@ class RestBatch
     
     public function call(callable $handle = null)
     {
-        $result = Client::multi($this->queries, $handle, $this->options['select_timeout']);
-        if (isset($handle)) {
-            return $result;
-        }
-        foreach ($result as $i => $item) {
-            $return[$i] => $this->rpc->responseHandle($item);
-        }
-        return $return; 
+        return Client::multi($this->queries, $handle ?? [$this->rpc, 'responseHandle'], $this->options['select_timeout']);
     }
     
     protected function buildQuery($method, $params)
     {
-        $client_methods = array_merge($this->common_client_methods, $client_methods);
-        return $this->rpc->requsetHandle($method, $this->ns ?? [], $this->filter, $params, $this->client_methods);
+        return $this->rpc->requestHandle($method, $this->ns ?? [], $this->filters, $params, $this->client_methods);
     }
 }

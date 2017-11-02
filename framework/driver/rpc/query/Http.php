@@ -45,25 +45,26 @@ class Http
                 $this->callback = $params[0];
                 return $this;
             default:
-                if (isset($this->options['client_methods_alias'][$method]) {
+                if (isset($this->options['client_methods_alias'][$method])) {
                     $this->client_methods[$this->options['client_methods_alias'][$method]] = $params;
                     return $this;
                 } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
                     $this->client_methods[$method] = $params;
                     return $this;
                 }
+                $this->ns[] = $method;
                 return $this->call($params);
         }
     }
     
     protected function call($params)
     {
-        $method = isset($body) ? 'POST' : 'GET';
-        $client = $this->rpc->requsetHandle($method, $this->ns ?? [], $this->filter, $params, $this->client_methods);
+        $method = $params && is_array(end($params)) ? 'POST' : 'GET';
+        $client = $this->rpc->requestHandle($method, $this->ns ?? [], $this->filters, $params, $this->client_methods);
         if (isset($this->callback)) {
             return $$this->callback($client);
         } else {
-            return $this->rpc->responseHandle($client);
+            return $this->rpc->responseHandle($client, false);
         }
     }
 }

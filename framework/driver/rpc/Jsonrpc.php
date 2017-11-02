@@ -22,7 +22,7 @@ class Jsonrpc
     
     public function __get($name)
     {
-        return $this->query($name)
+        return $this->query($name);
     }
 
     public function __call($method, $params)
@@ -35,9 +35,9 @@ class Jsonrpc
         return new query\Jsonrpc($this, $name, $options);
     }
     
-    public function batch(($common_ns = null, $common_client_methods = null, $options = null)
+    public function batch($common_ns = null, $common_client_methods = null, $options = null)
     {
-        return new query\JsonrpcBatch();
+        return new query\JsonrpcBatch($this, $common_ns, $common_client_methods, $options);
     }
     
     public function getResult($body, $client_methods)
@@ -54,7 +54,7 @@ class Jsonrpc
                 $client->{$method[0]}(...$method[1]);
             }
         }
-        $client->body($this->config['response_unserialize']($body));
+        $client->body($this->config['requset_serialize']($body));
         $result = $this->config['response_unserialize']($client->getBody());
         if ($result) {
             return $result;

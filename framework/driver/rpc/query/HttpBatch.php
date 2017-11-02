@@ -1,6 +1,8 @@
 <?php
 namespace framework\driver\rpc\query;
 
+use framework\core\http\Client;
+
 class HttpBatch
 {
     protected $ns;
@@ -21,8 +23,8 @@ class HttpBatch
     public function __construct($rpc, $common_ns, $common_client_methods, $options)
     {
         $this->rpc = $rpc;
-        $this->ns = $this->common_ns = $common_ns;
-        $this->common_client_methods = $common_client_methods;
+        $this->ns[] = $this->common_ns[] = $common_ns;
+        $this->client_methods = $this->common_client_methods = $common_client_methods;
         if (isset($options)) {
             $this->options = array_merge($this->options, $options);
         }
@@ -54,7 +56,8 @@ class HttpBatch
                     $this->ns[] = $method;
                     $this->queries[] = $this->buildQuery($params);
                     $this->ns = $this->common_ns;
-                    $this->filters = $this->client_methods = null;
+                    $this->client_methods = $this->common_client_methods;
+                    $this->filters = null;
                 }
                 return $this;
         }
@@ -62,21 +65,13 @@ class HttpBatch
     
     protected function call(callable $handle = null)
     {
-        $result = Client::multi($this->queries, $handle, $this->options['select_timeout']);
-        if (isset($handle)) {
-            return $result;
-        }
-        foreach ($result as $i => $item) {
-            $return[$i] = $this->rpc->responseHandle($item);
-        }
-        return $return; 
+        return Client::multi($this->queries, $handle ?? [$this->rpc, 'responseHandle'], $this->options['select_timeout']);
     }
     
     protected function buildQuery($params)
     {
         $method = $params && is_array(end($params)) ? 'POST' : 'GET';
-        $client_methods = array_merge($this->common_client_methods, $this->client_methods);
-        return $this->rpc->requsetHandle($method, $this->ns ?? [], $this->filter, $params, $client_methods);
+        return $this->rpc->requestHandle($method, $this->ns ?? [], $this->filters, $params, $this->client_methods);
     }
     
 }

@@ -17,8 +17,8 @@ class JsonrpcBatch
     public function __construct($rpc, $common_ns, $common_client_methods, $options)
     {
         $this->rpc = $rpc;
-        $this->client_methods = $client_methods;
-        $this->ns = $this->common_ns = $common_ns;
+        $this->ns[] = $this->common_ns[] = $common_ns;
+        $this->common_client_methods = $common_client_methods;
         if (isset($options)) {
             $this->options = array_merge($this->options, $options);
         }
@@ -32,7 +32,7 @@ class JsonrpcBatch
     
     public function __call($method, $params)
     {
-        if ($method === $this->options['id_method_alias']) {
+        if ($method === $this->options['call_method_alias']) {
             return $this->call(...$params);
         } elseif ($method === $this->options['id_method_alias']) {
             $this->id = $params[0];
@@ -52,7 +52,7 @@ class JsonrpcBatch
 
     protected function call(callable $handle = null)
     {
-        $result = $this->rpc->getResult($this->queries, $this->client_methods);
+        $result = $this->rpc->getResult($this->queries, $this->common_client_methods);
         if (!isset($handle)) {
             return $result;
         }

@@ -15,7 +15,8 @@ class Grpc
     protected $prefix;
     protected $request_classes;
     protected $auto_bind_param = false;
-    protected $request_scheme_format;//'{service}{method}Request'
+    // {service}{method}Request
+    protected $request_scheme_format;
     
     public function __construct($config)
     {

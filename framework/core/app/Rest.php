@@ -32,7 +32,7 @@ class Rest extends App
          * 1 顺序参数
          * 2 键值参数
          */
-        'default_dispatch_param_mode' => 0,
+        'default_dispatch_param_mode' => 1,
         // 默认调度下允许的HTTP方法
         'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/],
         

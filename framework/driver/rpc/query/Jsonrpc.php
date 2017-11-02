@@ -34,7 +34,7 @@ class Jsonrpc
         if ($method === $this->options['id_method_alias']) {
             $this->id = $params[0];
             return $this;
-        } elseif (isset($this->options['client_methods_alias'][$method]) {
+        } elseif (isset($this->options['client_methods_alias'][$method])) {
             $this->client_methods[$this->options['client_methods_alias'][$method]] = $params;
             return $this;
         } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
@@ -57,6 +57,6 @@ class Jsonrpc
         if (isset($result['result'])) {
             return $result['result'];
         }
-        error($data['error']['code'].': '.$data['error']['message']);
+        error($result['error']['code'].': '.$result['error']['message']);
     }
 }
