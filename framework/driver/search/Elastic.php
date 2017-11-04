@@ -1,12 +1,9 @@
 <?php
 namespace framework\driver\search;
 
-use framework\core\http\Client;
-
 /*
  * https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html
  */
-
 class Elastic
 {
     protected $host;
@@ -22,11 +19,11 @@ class Elastic
 
     public function __get($name)
     {
-        return new query\Elastic("$this->host:$this->port", $this->type, $name);
+        return new query\Elastic("$this->host:$this->port", $name, $this->type);
     }
     
-    public function batch()
+    public function batch($name = null)
     {
-        return new query\ElasticBatch("$this->host:$this->port", $this->type);
+        return new query\ElasticBatch("$this->host:$this->port", $name, $this->type);
     }
 }

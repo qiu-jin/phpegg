@@ -5,22 +5,28 @@ use framework\core\http\Client;
 
 class ElasticBatch
 {
-    protected $ns;
     protected $url;
     protected $type;
-    protected $prev;
     protected $mget;
     protected $bulk;
+    protected $index;
+    protected $common_index;
     
-    public function __construct($url, $type)
+    public function __construct($url, $index, $type)
     {
         $this->url = $url;
         $this->type = $type;
+        if (isset($index)) {
+            $this->common_index = $index; 
+        }
     }
     
     public function __get($name)
     {
-        $this->ns[] = $name;
+        if (isset($this->index)) {
+            throw new \Exception('Ns error');
+        }
+        $this->index = $name;
         return $this;
     }
     
@@ -47,7 +53,7 @@ class ElasticBatch
         } else {
             throw new \Exception('Params error');
         }
-        $this->bulk[] = json_encode(['update' => $query]);
+        $this->bulk[] = json_encode(['index' => $query]);
         $this->bulk[] = json_encode($data);
         return $this;
     }
@@ -69,14 +75,14 @@ class ElasticBatch
         return $this;
     }
     
-    protected function call($return_raw_result = false)
+    public function call($return_raw_result = false)
     {
         if (isset($this->bulk)) {
             if (isset($this->mget)) {
                 throw new \Exception('No support mix get and other');
             }
             $method = '_bulk';
-            $body = implode("\r\n", $this->bulk);
+            $body = implode("\n", $this->bulk)."\n";
         } elseif (isset($this->mget)) {
             if (isset($this->bulk)) {
                 throw new \Exception('No support mix get and other');
@@ -89,6 +95,7 @@ class ElasticBatch
         $client = Client::post("$this->url/$method");
         $client->body($body);
         $result = $client->getJson();
+        return $result;
         if ($return_raw_result) {
             return $result;
         }
@@ -99,17 +106,13 @@ class ElasticBatch
     
     protected function getIndexType()
     {
-        if (!isset($this->prev)) {
-            $count = count($this->ns);
-            if ($count === 1) {
-                $this->prev = ['_index' => $this->ns[0], '_type' => $this->ns[1]];
-            } elseif ($count === 2) {
-                $this->prev = ['_index' => $this->ns[0], '_type' => $this->$type];
-            } else {
-                throw new \Exception('Ns error');
-            }
-            $this->ns = null;
+        if ($this->index) {
+            $index = $this->index;
+            $this->index = null;
+            return ['_index' => $index, '_type' => $this->type];
+        } elseif ($this->common_index) {
+            return ['_index' => $this->common_index, '_type' => $this->type];
         }
-        return $this->prev;
+        throw new \Exception('Ns error');
     }
 }

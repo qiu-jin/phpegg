@@ -5,24 +5,11 @@ use framework\core\http\Client;
 
 class Elastic
 {
-    protected $ns;
-    protected $url;
-    protected $type;
+    protected $endpoint;
     
-	public function __construct($url, $type, $name)
+	public function __construct($url, $index, $type)
     {
-        $this->url = $url;
-        $this->type = $type;
-        $this->ns[] = $name;
-    }
-    
-    public function __get($name)
-    {
-        if (count($this->ns) === 1) {
-            $this->ns[] = $name;
-            return $this;
-        }
-        throw new \Exception('Ns error');
+        $this->endpoint = "$url/$index/$type";
     }
     
     public function get($id)
@@ -35,12 +22,7 @@ class Elastic
         $result = $this->searchRaw($query);
         return isset($result['hits']['hits']) ? array_column($result['hits']['hits'], '_source') : null;
     }
-    
-    public function put($id, $data)
-    {
-        return $this->putRaw(...$params)['created'] ?? false;
-    }
-    
+
     public function index(...$params)
     {
         return $this->indexRaw(...$params)['created'] ?? false;
@@ -70,14 +52,14 @@ class Elastic
         }
     }
     
-    public function putRaw($id, $data)
+    public function indexRaw(...$params)
     {
-        return $this->call('PUT', $id, $data);
-    }
-    
-    public function indexRaw($data)
-    {
-        return $this->call('POST', null, $data);
+        $count = count($params);
+        if ($count === 1) {
+            return $this->call('POST', null, $params[0]);
+        } elseif ($count === 2) {
+            return $this->call('PUT', $params[0], $params[1]);
+        }
     }
     
     public function updateRaw($query, $data)
@@ -91,13 +73,12 @@ class Elastic
     
     public function deleteRaw($query)
     {
-        return is_array($query) ? $this->call('POST', '_delete_by_query', ['query' => $query]) : $this->send('DELETE', $query);
+        return is_array($query) ? $this->call('POST', '_delete_by_query', ['query' => $query]) : $this->call('DELETE', $query);
     }
 
     protected function call($method, $query = null, $data = null)
     {
-        $url = "$this->url/$this->ns[0]/";
-        $url .= count($this->ns) === 1 ? $this->type : $this->ns[1];
+        $url = $this->endpoint;
         if ($query) {
             $url .= "/$query";
         }

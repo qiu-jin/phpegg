@@ -21,9 +21,9 @@ class Mongo
         return new query\Mongo($this->manager, $this->dbname, $name);
     }
     
-    public function batch()
+    public function batch($name)
     {
-        return new query\MongoBatch($this->manager, $this->dbname);
+        return new query\MongoBatch($this->manager, $this->dbname, $name);
     }
 }
 

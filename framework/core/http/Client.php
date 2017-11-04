@@ -157,7 +157,7 @@ class Client
      */
     public function curlopt($name, $value)
     {
-        $this->curlopt[$name] = $value;
+        $this->curlopt[constant('CURLOPT_'.strtoupper($name))] = $value;
         return $this;
     }
 
@@ -224,13 +224,13 @@ class Client
         return [curl_errno($this->ch), curl_error($this->ch)];
     }
     
-    public function getErrorInfo()
+    public function getErrorInfo($default = 'Unknown HTTP Error')
     {   
         $error = $this->getError();
         if ($error[0] === 0) {
-            return "Unknown HTTP Error $this->url";
+            return "$default: $this->url";
         }
-        return "HTTP Error [$error[0]]$error[1]  $this->url";  
+        return "HTTP Error [$error[0]]$error[1]: $this->url";  
     }
     
     /*
@@ -274,7 +274,7 @@ class Client
                     }
                     $query->result['body'] = $result;
                     if (isset($handle)) {
-                        $return[$index] = $handle($query);
+                        $return[$index] = $handle($query, $index);
                     } else {
                         $return[$index] = $query;
                     }

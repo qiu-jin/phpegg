@@ -93,7 +93,7 @@ class Http
         if ($ignore_error) {
             return false;
         }
-        return error($status ?: $client->getErrorInfo(), 2);
+        return error($client->getErrorInfo($status), 2);
     }
     
     protected function setfilter($filters)
