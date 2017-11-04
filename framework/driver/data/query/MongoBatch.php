@@ -6,85 +6,53 @@ use MongoDB\Driver\BulkWrite;
 class MongoBatch
 {
     protected $ns;
-    protected $prev;
-    protected $dbname;
+    protected $bulk;
     protected $manager;
-    protected $queries;
-
-    public function __construct($manager, $dbname)
+    
+    public function __construct($manager, $db, $collection)
     {
-        $this->dbname = $dbname;
         $this->manager = $manager;
-    }
-
-    public function __get($name)
-    {
-        $this->ns[] = $name;
-        return $this;
+        if (!isset($db) || !isset($collection)) {
+            throw new \Exception('db and collection not null');
+        }
+        $this->ns = "$db.$collection";
+        $this->bulk = new BulkWrite;
     }
     
-    public function create(...$params)
+    public function insert(...$params)
     {
         $count = count($params);
         if ($count === 1) {
-            $this->queries[$this->getNs()][] = ['create', [$params[0]]];
+            $this->bulk->insert($params[0]);
         } elseif ($count === 2) {
             $params[1]['_id'] = $params[0];
-            $this->queries[$this->getNs()][] = ['create', [$params[1]]];
+            $this->bulk->insert($params[1]);
         } else {
             throw new \Exception('Params error');
         }
         return $this;
     }
     
-    public function update($id, $data, $options = null)
+    public function update($filter, $data, $options = null)
     {
-        if (!is_array($id)) {
-            $id = ['_id' => $id];
+        if (!is_array($filter)) {
+            $filter = ['_id' => $filter];
         }
-        $this->queries[$this->getNs()] = ['update', [$id, $data, $options]];
+        $this->bulk->update($filter, $data, $options);
         return $this;
     }
     
-    public function delete($id, $options = null)
+    public function delete($filter, $options = null)
     {
-        if (!is_array($id)) {
-            $id = ['_id' => $id];
+        if (!is_array($filter)) {
+            $filter = ['_id' => $filter];
         }
-        $this->queries[$this->getNs()] = ['delete', [$id, $options]];
+        $this->bulk->delete($filter, $options);
         return $this;
     }
 
-    public function call($return_raw_result = false)
+    public function call()
     {
-        if (!$this->queries) {
-            throw new \Exception('No query');
-        }
-        foreach ($this->queries as $ns => $queries) {
-            $bulk = new BulkWrite;
-            foreach ($queries as $ns => $query) {
-                $bulk->{$query[0]}(...$query[1]);
-            }
-            $result[$ns] = $this->manager->executeBulkWrite($ns, $bulk);
-        }
-        if ($return_raw_result) {
-            return count($result) > 0 ? $result : current($result);
-        }
-    }
-    
-    protected function getNs()
-    {
-        if (!isset($this->prev)) {
-            $count = count($this->ns);
-            if ($count === 1) {
-                $this->prev = $this->dbname.'.'.$this->ns[0];
-            } elseif ($count === 2) {
-                $this->prev = implode('.', $this->ns);
-            } else {
-                throw new \Exception('Ns error');
-            }
-            $this->ns = null;
-        }
-        return $this->prev;
+        return $this->manager->executeBulkWrite($this->ns, $this->bulk);
     }
 }

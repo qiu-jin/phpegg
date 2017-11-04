@@ -7,23 +7,21 @@ use MongoDB\Driver\BulkWrite;
 class Mongo
 {
     protected $ns;
-    protected $dbname;
     protected $manager;
     
     public function __construct($manager, $dbname, $name)
     {
-        $this->ns[] = $name;
-        $this->dbname = $dbname;
         $this->manager = $manager;
+        if (isset($dbname)) {
+            $this->ns[] = $dbname;
+        }
+        $this->ns[] = $name;
     }
     
     public function __get($name)
     {
-        if (count($this->ns) === 1 ) {
-            $this->ns[] = $name;
-            return $this;
-        }
-        throw new \Exception('Ns error');
+        $this->ns[] = $name;
+        return $this;
     }
     
     public function get($id)
@@ -31,67 +29,65 @@ class Mongo
         return $this->getRaw($id)->toArray();
     }
     
-    public function find($filter = [], $options = [])
+    public function find($filter, $options = null)
     {
         return $this->findRaw($filter, $options)->toArray();
     }
-    
-    public function count($filter = [], $options = [])
-    {
-        return count($this->findRaw($filter, $options));
-    }
 
-    public function insert($data)
+    public function insert(...$params)
     {
-        return $this->insertRaw($data)->getInsertedCount();
+        return $this->insertRaw(...$params)->getInsertedCount();
     }
     
-    public function upsert($id, $data)
-    {
-        $update = $this->updateRaw(['_id' => $id], $data, ['upsert' => true]);
-        return $update->getUpsertedCount() ?: $update->getModifiedCount();
-    }
-    
-    public function update($data, $filter = [], $options = [])
+    public function update($filter, $data, $options = null)
     {
         return $this->updateRaw($data, $filter, $options)->getModifiedCount();
     }
     
-    public function delete($filter, $options = [])
+    public function delete($filter, $options = null)
     {
-        if (!is_array($filter)) {
-            $filter = ['_id' => $filter];
-        }
         return $this->deleteRaw($filter, $options)->getDeletedCount();
     }
 
     public function getRaw($id)
     {
-        return $this->manager->executeQuery($this->getNs(), new Query(['_id' => $id]));
+        return $this->findRaw(['_id' => $id]);
     }
     
-    public function findRaw($filter = [], $options = [])
+    public function findRaw($filter, $options = null)
     {
         return $this->manager->executeQuery($this->getNs(), new Query($filter, $options));
     }
 
-    public function insertRaw($data)
+    public function insertRaw(...$params)
     {
         $bulk = new BulkWrite;
-        $bulk->insert($data);
+        $count = count($params);
+        if ($count === 1) {
+            $bulk->insert($params[0]);
+        } elseif ($count === 2) {
+            $params[1]['_id'] = $params[0];
+            $bulk->insert($params[1]);
+        }
         return $this->manager->executeBulkWrite($this->getNs(), $bulk);
     }
     
-    public function updateRaw($data, $filter = [], $options = [])
+    public function updateRaw($filter, $data, $options = null)
     {
         $bulk = new BulkWrite;
-        $bulk->update($data, $filter, $options);
+        if (!is_array($filter)) {
+            $filter = ['_id' => $filter];
+        }
+        $bulk->update($filter, $data, $options);
         return $this->manager->executeBulkWrite($this->getNs(), $bulk);
     }
     
-    public function deleteRaw($filter = [], $options = [])
+    public function deleteRaw($filter, $options = null)
     {
         $bulk = new BulkWrite;
+        if (!is_array($filter)) {
+            $filter = ['_id' => $filter];
+        }
         $bulk->delete($filter, $options);
         return $this->manager->executeBulkWrite($this->getNs(), $bulk);
     }
@@ -99,10 +95,8 @@ class Mongo
     public function getNs()
     {
         if (count($this->ns) === 2) {
-            return "$this->ns[0].$this->ns[1]";
-        } elseif (isset($this->dbname)) {
-            return "$this->dbname.$this->ns[0]";
+            return implode('.', $this->ns);
         }
-        
+        throw new \Exception('Ns error');
     }
 }
