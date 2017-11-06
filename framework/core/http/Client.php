@@ -4,7 +4,6 @@ namespace framework\core\http;
 class Client
 {
     const EOL = "\r\n";
-    
     private $ch;
     private $url;
     private $body;
@@ -157,7 +156,7 @@ class Client
      */
     public function curlopt($name, $value)
     {
-        $this->curlopt[constant('CURLOPT_'.strtoupper($name))] = $value;
+        $this->curlopt[$name] = $value;
         return $this;
     }
 

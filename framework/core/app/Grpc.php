@@ -9,7 +9,6 @@ use framework\core\http\Response;
 /*
  * https://github.com/google/protobuf
  */
-
 use Google\Protobuf\Internal\Message;
 
 class Grpc extends App
@@ -44,7 +43,6 @@ class Grpc extends App
                     return [
                         'controller_instance'   => $controller_instance,
                         'action'                => $path_array[1],
-                        'params'                => $this->readParams()
                     ];
                 }
             }
@@ -59,51 +57,11 @@ class Grpc extends App
                 Loader::add($scheme, $type);
             }
         }
-        extract($this->dispatch, EXTR_SKIP);
-        $parameters = (new \ReflectionMethod($controller_instance, $action))->getParameters();
+        $parameters = (new \ReflectionMethod($this->dispatch['controller_instance'], $this->dispatch['action']))->getParameters();
         if ($this->config['param_mode']) {
-            if (count($parameters) === 2) {
-                list($request, $response) = $parameters;
-                $request_class = (string) $request->getType();
-                $response_class = (string) $response->getType();
-                if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
-                    $request_object = new $request_class;
-                    $request_object->mergeFromString($params);
-                    $return = $controller_instance->$action($request_object, new $response_class);
-                    if ($return instanceof $response_class) {
-                        return $return;
-                    }
-                }
-            }
-            self::abort(500, 'Illegal message scheme class');
+            return $this->callWithKvParams($parameters);
         } else {
-            $new_params = [];
-            $class = str_replace($this->ns, '', get_class($controller));
-            $replace = ['{service}' => $class, '{method}' => ucfirst($action)];
-            $request_class = strtr($this->config['request_scheme_format'], $replace);
-            $response_class =  strtr($this->config['response_scheme_format'], $replace);
-            $request_object = new $request_class;
-            $request_object->mergeFromString($params);
-            foreach ($parameters as $parameter) {
-                $param = $request_object->{'get'.ucfirst($parameter->name)}();
-                if ($param === '' && $parameter->isDefaultValueAvailable()) {
-                    $new_params[] = $parameter->getdefaultvalue();
-                } else {
-                    $new_params[] = $param;
-                }
-            }
-            $return = $controller_instance->$action(...$new_params);
-            if ($return) {
-                $responset_object = new $response_class;
-                foreach ($return as $key => $value) {
-                    $method = 'set'.ucfirst($key);
-                    if (method_exists($responset_object, $method)) {
-                        $responset_object->$method($value);
-                    }
-                }
-                return $responset_object;
-            }
-            self::abort(500, 'Invalid return value');
+            return $this->callWithReqResParams($parameters);
         }
     }
     
@@ -129,5 +87,59 @@ class Grpc extends App
             }
         }
         self::abort(500, 'Invalid params');
+    }
+    
+    protected function callWithKvParams($parameters)
+    {
+        $params = [];
+        $replace = [
+            '{service}' => str_replace($this->ns, '', get_class($this->dispatch['controller_instance'])),
+            '{method}' => ucfirst($action)
+        ];
+        $request_class = strtr($this->config['request_scheme_format'], $replace);
+        $response_class =  strtr($this->config['response_scheme_format'], $replace);
+        
+        $request_object = new $request_class;
+        $request_object->mergeFromString($this->readParams());
+        foreach ($parameters as $parameter) {
+            $param = $request_object->{'get'.ucfirst($parameter->name)}();
+            if ($param === '' && $parameter->isDefaultValueAvailable()) {
+                $params[] = $parameter->getdefaultvalue();
+            } else {
+                $params[] = $param;
+            }
+        }
+        $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}(...$params);
+        if (count($return) > 0) {
+            $responset_object = new $response_class;
+            foreach ($return as $key => $value) {
+                $method = 'set'.ucfirst($key);
+                if (method_exists($responset_object, $method)) {
+                    $responset_object->$method($value);
+                }
+            }
+            return $responset_object;
+        }
+        self::abort(500, 'Invalid return value');
+    }
+    
+    protected function callWithReqResParams($parameters)
+    {
+        if (count($parameters) === 2) {
+            list($request, $response) = $parameters;
+            $request_class = (string) $request->getType();
+            $response_class = (string) $response->getType();
+            
+            if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
+                $request_object = new $request_class;
+                $request_object->mergeFromString($this->readParams());
+                
+                $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}($request_object, new $response_class);
+                if ($return instanceof $response_class) {
+                    return $return;
+                }
+            }
+        }
+        self::abort(500, 'Illegal message scheme class');
     }
 }
