@@ -3,15 +3,14 @@ namespace framework\driver\rpc;
 
 use framework\core\Loader;
 
-use Thrift\Transport\TSocket;
-use Thrift\Transport\TBufferedTransport;
-use Thrift\Protocol\TBinaryProtocol;
-use Thrift\Protocol\TMultiplexedProtocol;
-
 /* 
  * composer require apache/thrift
  * https://github.com/apache/thrift
  */
+use Thrift\Transport\TSocket;
+use Thrift\Transport\TBufferedTransport;
+use Thrift\Protocol\TBinaryProtocol;
+use Thrift\Protocol\TMultiplexedProtocol;
 
 class Thrift
 {
@@ -19,8 +18,8 @@ class Thrift
     protected $prefix;
     protected $protocol;
     protected $transport;
-    protected $tmultiplexed = false;
-    protected $auto_bind_param = false;
+    protected $tmultiplexed;
+    protected $auto_bind_param;
     protected $service_method_params;
     
     public function __construct($config)
@@ -38,8 +37,9 @@ class Thrift
         foreach ($config['service_schemes'] as $type => $scheme) {
             Loader::add($scheme, $type);
         }
-        isset($config['prefix']) && $this->prefix = $config['prefix'];
-        isset($config['tmultiplexed']) && $this->tmultiplexed = $config['tmultiplexed'];
+        $this->prefix = $config['prefix'] ?? null;
+        $this->tmultiplexed = $config['tmultiplexed'] ?? false;
+        $this->auto_bind_param = $config['auto_bind_param'] ?? false;
     }
 
     public function __get($name)
@@ -47,22 +47,25 @@ class Thrift
         return $this->query($name);
     }
 
-    public function __call($method, $params = [])
+    public function __call($method, $params)
     {
-        return $this->call(null, $method, $params);
+        return $this->query()->$method(...$params);
     }
     
-    public function query($name, $client_methods = null)
+    public function query($name = null, $client_methods = null)
     {
         return new query\Query($this, $name, $client_methods);
     }
     
     public function call($ns, $method, $params, $client_methods)
     {
-        $class = $this->prefix;
-        if ($ns) {
-            $class .= '\\'.implode('\\', $ns);
+        if (isset($this->prefix)) {
+            array_unshift($ns, $this->prefix);
         }
+        if (!$ns) {
+            throw new \Exception('service is empty');
+        }
+        $class = implode('\\', $ns);
         if (!isset($this->rpc[$class])) {
             if ($this->tmultiplexed) {
                 $name = substr(strrchr($class, '\\'), 1);

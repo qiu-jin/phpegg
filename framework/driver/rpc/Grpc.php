@@ -14,7 +14,7 @@ class Grpc
     protected $port;
     protected $prefix;
     protected $request_classes;
-    protected $auto_bind_param = false;
+    protected $auto_bind_param;
     // {service}{method}Request
     protected $request_scheme_format;
     
@@ -25,9 +25,9 @@ class Grpc
         foreach ($config['service_schemes'] as $type => $scheme) {
             Loader::add($scheme, $type);
         }
-        isset($config['prefix']) && $this->prefix = $config['prefix'];
-        isset($config['auto_bind_param']) && $this->auto_bind_param = $config['auto_bind_param'];
-        isset($config['request_scheme_format']) && $this->request_scheme_format = $config['request_scheme_format'];
+        $this->prefix = $config['prefix'] ?? null;
+        $this->auto_bind_param = $config['auto_bind_param'] ?? false;
+        $this->request_scheme_format = $config['request_scheme_format'] ?? null;
     }
     
     public function __get($name)
@@ -35,29 +35,37 @@ class Grpc
         return $this->query($name);
     }
 
-    public function __call($method, $params = [])
+    public function __call($method, $params)
     {
-        return $this->call(null, $method, $params);
+        return $this->query()->$method(...$params);
     }
     
-    public function query($name, $client_methods = null)
+    public function query($name = null, $client_methods = null)
     {
         return new query\Query($this, $name, $client_methods);
     }
     
     public function call($ns, $method, $params, $client_methods)
     {
-        $class = $this->prefix;
-        if ($ns) {
-            $class .= '\\'.implode('\\', $ns);
+        if (isset($this->prefix)) {
+            array_unshift($ns, $this->prefix);
         }
+        if (!$ns) {
+            throw new \Exception('service is empty');
+        }
+        $class = implode('\\', $ns);
         if (!isset($this->rpc[$class])) {
             $client = $class.'Client';
-            $this->rpc[$class] = new $client("$this->host:$this->port", ['credentials' => \Grpc\ChannelCredentials::createInsecure()]);
+            $this->rpc[$class] = new $client("$this->host:$this->port", [
+                'credentials' => \Grpc\ChannelCredentials::createInsecure()
+            ]);
         }
         if ($this->auto_bind_param) {
             if ($this->request_scheme_format) {
-                $request_class = strtr($this->request_scheme_format, ['{service}' => $class, '{method}' => ucfirst($method)]);
+                $request_class = strtr($this->request_scheme_format, [
+                    '{service}' => $class,
+                    '{method}'  => ucfirst($method)
+                ]);
             } else {
                 $request_class = $this->getRequestClass($client, $method);
             }
