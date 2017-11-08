@@ -3,7 +3,7 @@ namespace framework\util;
 
 class Arr
 {
-    public static function pull(array &$array, $key)
+    public static function pull(array &$array, $key, $default)
     {
         if (isset($array[$key])) {
             $value =  $array[$key];

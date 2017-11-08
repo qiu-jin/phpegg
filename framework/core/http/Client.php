@@ -12,7 +12,7 @@ class Client
     private $method;
     private $headers = [];
     private $boundary;
-    private $curlopt = [CURLOPT_TIMEOUT => 30];
+    private $curlopts = [CURLOPT_TIMEOUT => 30];
     
     public function __construct($method, $url)
     {
@@ -118,9 +118,9 @@ class Client
      */
     public function stream($fp)
     {
-        $this->curlopt[CURLOPT_PUT] = 1;
-        $this->curlopt[CURLOPT_INFILE] = $fp;
-        $this->curlopt[CURLOPT_INFILESIZE] = fstat($fp)['size'];
+        $this->curlopts[CURLOPT_PUT] = 1;
+        $this->curlopts[CURLOPT_INFILE] = $fp;
+        $this->curlopts[CURLOPT_INFILESIZE] = fstat($fp)['size'];
         return $this;
     }
 
@@ -147,7 +147,7 @@ class Client
      */
     public function timeout($timeout)
     {
-        $this->curlopt[CURLOPT_TIMEOUT] = (int) $timeout;
+        $this->curlopts[CURLOPT_TIMEOUT] = (int) $timeout;
         return $this;
     }
     
@@ -156,7 +156,16 @@ class Client
      */
     public function curlopt($name, $value)
     {
-        $this->curlopt[$name] = $value;
+        $this->curlopts[$name] = $value;
+        return $this;
+    }
+    
+    /*
+     * 设置底层curl参数
+     */
+    public function curlopts(array $values)
+    {
+        $this->curlopts = array_merge($this->curlopts, $values);
         return $this;
     }
 
@@ -165,7 +174,7 @@ class Client
      */
     public function returnHeaders($bool = true)
     {
-        $this->curlopt[CURLOPT_HEADER] = (bool) $bool;
+        $this->curlopts[CURLOPT_HEADER] = (bool) $bool;
         return $this;
     }
     
@@ -204,7 +213,10 @@ class Client
     
     public function getHeader($name = null, $default = null)
     {
-        isset($this->result) || $this->send();
+        if (!isset($this->result)) {
+            $this->curlopts[CURLOPT_HEADER] = true;
+            $this->send();
+        }
         if ($name === null) {
             return $this->result['headers'] ?? null;
         }
@@ -241,7 +253,7 @@ class Client
             return false;
         }
         if ($fp = fopen($path, 'w+')) {
-            $this->curlopt[CURLOPT_FILE] = $fp;
+            $this->curlopts[CURLOPT_FILE] = $fp;
             $this->send();
             fclose($fp);
             return $this->getStatus() === 200 && $this->result['body'] === true;
@@ -291,11 +303,11 @@ class Client
     protected function send()
     {
         if ($this->debug) {
-            $this->curlopt[CURLOPT_HEADER] = true;
-            $this->curlopt[CURLINFO_HEADER_OUT] = true;
+            $this->curlopts[CURLOPT_HEADER] = true;
+            $this->curlopts[CURLINFO_HEADER_OUT] = true;
         }
         $result = curl_exec($this->build());
-        if (isset($this->curlopt[CURLOPT_HEADER])) {
+        if (isset($this->curlopts[CURLOPT_HEADER])) {
             list($headers, $result) = self::parseWithHeaders($result);
             $this->result['headers'] = $headers;
         }
@@ -324,8 +336,8 @@ class Client
         if ($this->headers) {
             curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
         }
-        if ($this->curlopt){
-            curl_setopt_array($ch, $this->curlopt);
+        if ($this->curlopts){
+            curl_setopt_array($ch, $this->curlopts);
         }
         return $this->ch = $ch;
     }

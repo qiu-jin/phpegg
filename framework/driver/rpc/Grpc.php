@@ -1,33 +1,42 @@
 <?php
 namespace framework\driver\rpc;
 
+use framework\util\Arr;
 use framework\core\Loader;
 
-/* 
- * https://grpc.io/docs/quickstart/php.html
- */
 
 class Grpc
 {
-    protected $rpc;
-    protected $host;
-    protected $port;
-    protected $prefix;
+    protected $config = [
+        // 服务端点
+        'endpoint'      => null,
+        // service类名前缀
+        'prefix'        => null,
+        // 是否启用HTTP2
+        'enable_http2'  => false,
+        // 是否启用HTTP2
+        'headers'  => null,
+        // 是否启用HTTP2
+        'curlopts'  => null,
+        // 
+        'auto_bind_param' => true,
+        // 请求参数协议类格式
+        'request_scheme_format' => '{service}{method}Request',
+        // 
+        'response_scheme_format' => '{service}{method}Response',
+    ];
+    
+    protected $simple_mode;
+    
     protected $request_classes;
-    protected $auto_bind_param;
-    // {service}{method}Request
-    protected $request_scheme_format;
     
     public function __construct($config)
     {
-        $this->host = $config['host'];
-        $this->port = $config['port'];
-        foreach ($config['service_schemes'] as $type => $scheme) {
+        $this->simple_mode = Arr::pull($config, 'simple_mode');
+        foreach (Arr::pull($config, 'service_schemes') as $type => $scheme) {
             Loader::add($scheme, $type);
         }
-        $this->prefix = $config['prefix'] ?? null;
-        $this->auto_bind_param = $config['auto_bind_param'] ?? false;
-        $this->request_scheme_format = $config['request_scheme_format'] ?? null;
+        $this->config = array_merge($this->config, $config);
     }
     
     public function __get($name)
@@ -40,46 +49,34 @@ class Grpc
         return $this->query()->$method(...$params);
     }
     
-    public function query($name = null, $client_methods = null)
+    public function query($name = null)
     {
-        return new query\Query($this, $name, $client_methods);
-    }
-    
-    public function call($ns, $method, $params, $client_methods)
-    {
+        $ns = [];
         if (isset($this->prefix)) {
-            array_unshift($ns, $this->prefix);
+            $ns[] = $this->prefix;
         }
-        if (!$ns) {
-            throw new \Exception('service is empty');
+        if (isset($ns)) {
+            $ns[] = $ns;
         }
-        $class = implode('\\', $ns);
-        if (!isset($this->rpc[$class])) {
-            $client = $class.'Client';
-            $this->rpc[$class] = new $client("$this->host:$this->port", [
-                'credentials' => \Grpc\ChannelCredentials::createInsecure()
-            ]);
+        if ($this->simple_mode) {
+            return return new query\GrpcSimple($this, $ns, $this->config);
         }
-        if ($this->auto_bind_param) {
-            if ($this->request_scheme_format) {
-                $request_class = strtr($this->request_scheme_format, [
-                    '{service}' => $class,
-                    '{method}'  => ucfirst($method)
-                ]);
-            } else {
-                $request_class = $this->getRequestClass($client, $method);
-            }
-            $params = $this->bindParams($request_class, $params);
-        }
-        list($reply, $status) = $this->rpc[$class]->$method($params)->wait();
-        if ($status->code === 0) {
-            return $reply;
-        }
-        error("$status->code: $status->details");
+        return return new query\Grpc($this, $ns, $this->config);
     }
     
-    protected function bindParams($request_class, $params)
+    public function bindParams($request_class, $params)
     {
+        if ($this->request_scheme_format) {
+            $request_class = strtr($this->request_scheme_format, [
+                '{service}' => $class,
+                '{method}'  => ucfirst($method)
+            ]);
+        } else {
+            if (!isset($this->request_classes[$class][$method])) {
+                $this->request_classes[$class][$method] = (string) (new \ReflectionMethod($class, $method))->getParameters()[0]->getType();
+            }
+            $request_class = $this->request_classes[$class][$method];
+        }
         $i = 0;
         $request_object = new $request_class;
         foreach (get_class_methods($request_class) as $method) {
@@ -92,13 +89,5 @@ class Grpc
             }
         }
         return $request_object;
-    }
-    
-    protected function getRequestClass($class, $method)
-    {
-        if (!isset($this->request_classes[$class][$method])) {
-            $this->request_classes[$class][$method] = (string) (new \ReflectionMethod($class, $method))->getParameters()[0]->getType();
-        }
-        return $this->request_classes[$class][$method];
     }
 }

@@ -51,7 +51,7 @@ class Http
         if (isset($this->config['url_style'])) {
             $path = $this->convertUrlStyle($path);
         }
-        $url = $this->config['host'].'/'.$path;
+        $url = $this->config['endpoint'].'/'.$path;
         if (isset($this->config['ext'])) {
             $url .= $this->config['ext'];
         }
@@ -62,8 +62,8 @@ class Http
         if (isset($this->config['headers'])) {
             $client->headers($this->config['headers']);
         }
-        if (isset($this->config['curlopt'])) {
-            $client->curlopt($this->config['curlopt']);
+        if (isset($this->config['curlopts'])) {
+            $client->curlopts($this->config['curlopts']);
         }
         if ($client_methods) {
             foreach ($client_methods as $name=> $values) {

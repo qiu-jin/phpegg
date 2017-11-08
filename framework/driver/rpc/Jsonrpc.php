@@ -42,12 +42,12 @@ class Jsonrpc
     
     public function getResult($body, $client_methods)
     {
-        $client = Client::post($this->config['host']);
+        $client = Client::post($this->config['endpoint']);
         if (isset($this->config['headers'])) {
             $client->headers($this->config['headers']);
         }
-        if (isset($this->config['curlopt'])) {
-            $client->curlopt($this->config['curlopt']);
+        if (isset($this->config['curlopts'])) {
+            $client->curlopts($this->config['curlopts']);
         }
         if ($client_methods) {
             foreach ($client_methods as $method) {
