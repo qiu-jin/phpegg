@@ -11,10 +11,20 @@ class Http
     ];
     
     protected $config = [
-        'ext' => null,
-        'url_style' => null,
-        'requset_encode' => null,
-        'response_decode' => null,
+        // 服务端点
+        //'endpoint'          => null,
+        // URL后缀名
+        //'suffix'            => null,
+        // URL风格转换
+        //'url_style'         => null,
+        // 请求公共headers
+        //'headers'           => null,
+        // 请求公共curlopts
+        //'curlopts'          => null,
+        // 请求内容编码
+        //'requset_encode'    => null,
+        // 响应内容解码
+        //'response_decode'   => null,
     ];
 
     public function __construct($config)
@@ -52,8 +62,8 @@ class Http
             $path = $this->convertUrlStyle($path);
         }
         $url = $this->config['endpoint'].'/'.$path;
-        if (isset($this->config['ext'])) {
-            $url .= $this->config['ext'];
+        if (isset($this->config['suffix'])) {
+            $url .= $this->config['suffix'];
         }
         if ($filters) {
             $url .= (strpos($url, '?') ? '&' : '?').$this->setfilter($filters);

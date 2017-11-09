@@ -4,26 +4,25 @@ namespace framework\driver\rpc;
 use framework\util\Arr;
 use framework\core\Loader;
 
-
 class Grpc
 {
     protected $config = [
         // 服务端点
-        'endpoint'      => null,
+        //'endpoint'      => null,
         // service类名前缀
-        'prefix'        => null,
+        //'prefix'        => null,
         // 是否启用HTTP2
-        'enable_http2'  => false,
+        //'enable_http2'  => false,
         // 是否启用HTTP2
-        'headers'  => null,
+        //'headers'  => null,
         // 是否启用HTTP2
-        'curlopts'  => null,
+        //'curlopts'  => null,
         // 
         'auto_bind_param' => true,
         // 请求参数协议类格式
-        'request_scheme_format' => '{service}{method}Request',
+        //'request_scheme_format' => '{service}{method}Request',
         // 
-        'response_scheme_format' => '{service}{method}Response',
+        //'response_scheme_format' => '{service}{method}Response',
     ];
     
     protected $simple_mode;

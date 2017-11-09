@@ -11,7 +11,15 @@ class Jsonrpc
     const ALLOW_CLIENT_METHODS = ['header', 'timeout', 'debug'];
     // 默认配置
     protected $config = [
+        // 服务端点
+        //'endpoint'          => null,
+        // 请求公共headers
+        //'headers'           => null,
+        // 请求公共curlopts
+        //'curlopts'          => null,
+        // 请求内容序列化
         'requset_serialize' => 'jsonencode',
+        // 响应内容反序列化
         'response_unserialize' => 'jsondecode',
     ];
     

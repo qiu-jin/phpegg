@@ -4,21 +4,22 @@ namespace framework\core\http;
 class Client
 {
     const EOL = "\r\n";
+    // cURL句柄
     private $ch;
-    private $url;
-    private $body;
+    // 是否启用调试
     private $debug;
-    private $result;
-    private $method;
-    private $headers = [];
-    private $boundary;
-    private $curlopts = [CURLOPT_TIMEOUT => 30];
+    // 请求设置
+    private $request = [
+        'curlopts' => [CURLOPT_TIMEOUT => 10]
+    ];
+    // 响应内容
+    private $response;
+    
     
     public function __construct($method, $url)
     {
-        $this->url = $url;
         $this->debug = APP_DEBUG;
-        $this->method = $method;
+        $this->request = ['url' => $url, 'method' => $method];
     }
 
     /*
@@ -36,231 +37,10 @@ class Client
     {
         return new self('POST', $url);
     }
-
-    /*
-     * 设置请求的body内容
-     */
-    public function body($body, $type = null)
-    {
-        $this->body = $body;
-        if ($type) {
-            $this->headers[] = 'Content-Type: '.$type;
-        }
-        return $this;
-    }
     
     /*
-     * 设置请求的body内容为数组被json_encode后的字符串
+     * 批量请求
      */
-    public function json(array $data)
-    {
-        $this->body = jsonencode($data);
-        $this->headers[] = 'Content-Type: application/json; charset=UTF-8';
-        return $this;
-    }
-
-    /*
-     * 设置表单数据，数据默认为multipart/form-data格式否则为application/x-www-form-urlencoded
-     */
-    public function form(array $data, $x_www_form_urlencoded = false)
-    {
-        if ($x_www_form_urlencoded) {
-            $this->body = http_build_query($data);
-            $this->headers[] = 'Content-Type: application/x-www-form-urlencoded';
-        } else {
-            $this->body = $data;
-        }
-        return $this;
-    }
-
-    /*
-     * 本地文件上传请求，只支持post方法，通常在form方法后调用
-     */
-    public function file($name, $content, $filename = null, $mimetype = null)
-    {
-        if (substr($name, -2) === '[]') {
-            $this->body[substr($name, 0, -2)][] = $this->curlFile($content, $filename, $mimetype);
-        } else {
-            $this->body[$name] = $this->curlFile($content, $filename, $mimetype);
-        }
-        return $this;
-    }
-    
-    /*
-     * 变量内容上传，与file方法相似
-     */
-    public function buffer($name, $content, $filename = null, $mimetype = null)
-    {
-        if (!$this->boundary) {
-            $this->boundary = uniqid();
-            $this->headers[] = 'Content-Type: multipart/form-data; boundary='.$this->boundary;
-            if (is_array($this->body)) {
-                foreach ($this->body as $pk => $pv) {
-                    $body[] = "--$this->boundary";
-                    $body[] = "Content-Disposition: form-data; name=\"$pk\"";
-                    $body[] = '';
-                    $body[] = $pv;
-                }
-                $body[] = '';
-                $this->body = implode(self::EOL, $body);
-            } else {
-                $this->body = null;
-            }
-        } else {
-            $this->body = substr($this->body, 0, -strlen("--$this->boundary--".self::EOL));
-        }
-        $this->body .= $this->multipartFile($name, $content, $filename, $mimetype);
-        return $this;
-    }
-    
-    /*
-     * 发送一个流，只支持put方法，在put大文件时使用节约内存
-     */
-    public function stream($fp)
-    {
-        $this->curlopts[CURLOPT_PUT] = 1;
-        $this->curlopts[CURLOPT_INFILE] = $fp;
-        $this->curlopts[CURLOPT_INFILESIZE] = fstat($fp)['size'];
-        return $this;
-    }
-
-    /*
-     * 设置单个header
-     */
-    public function header($name, $value)
-    {
-        $this->headers[] = $name.': '.$value;
-        return $this;
-    }
-    
-    /*
-     * 设置多个header
-     */
-    public function headers(array $headers)
-    {
-        $this->headers = array_merge($this->headers, $headers);
-        return $this;
-    }
-    
-    /*
-     * 设置请求超时时间
-     */
-    public function timeout($timeout)
-    {
-        $this->curlopts[CURLOPT_TIMEOUT] = (int) $timeout;
-        return $this;
-    }
-    
-    /*
-     * 设置底层curl参数
-     */
-    public function curlopt($name, $value)
-    {
-        $this->curlopts[$name] = $value;
-        return $this;
-    }
-    
-    /*
-     * 设置底层curl参数
-     */
-    public function curlopts(array $values)
-    {
-        $this->curlopts = array_merge($this->curlopts, $values);
-        return $this;
-    }
-
-    /*
-     * 设置是否获取并解析请求响应的headers数据
-     */
-    public function returnHeaders($bool = true)
-    {
-        $this->curlopts[CURLOPT_HEADER] = (bool) $bool;
-        return $this;
-    }
-    
-    /*
-     * 
-     */
-    public function debug(bool $bool)
-    {
-        $this->debug = $bool;
-        return $this;
-    }
-    
-    /*
-     * 获取请求结果魔术方法
-     */
-    public function __get($name)
-    {
-        return $this->{'get'.ucfirst($name)}();
-    }
-    
-    public function getStatus()
-    {
-        return $this->getInfo('HTTP_CODE');
-    }
-    
-    public function getBody()
-    {
-        isset($this->result) || $this->send();
-        return $this->result['body'] ?? null;
-    }
-    
-    public function getJson()
-    {
-        return jsondecode($this->getBody('body'));
-    }
-    
-    public function getHeader($name = null, $default = null)
-    {
-        if (!isset($this->result)) {
-            $this->curlopts[CURLOPT_HEADER] = true;
-            $this->send();
-        }
-        if ($name === null) {
-            return $this->result['headers'] ?? null;
-        }
-        return $this->result['headers'][$name] ?? $default;
-    }
-    
-    public function getInfo($name)
-    {
-        isset($this->result) || $this->send();
-        return curl_getinfo($this->ch, constant('CURLINFO_'.strtoupper($name)));
-    }
-    
-    public function getError()
-    {   
-        isset($this->result) || $this->send();
-        return [curl_errno($this->ch), curl_error($this->ch)];
-    }
-    
-    public function getErrorInfo($default = 'Unknown HTTP Error')
-    {   
-        $error = $this->getError();
-        if ($error[0] === 0) {
-            return "$default: $this->url";
-        }
-        return "HTTP Error [$error[0]]$error[1]: $this->url";  
-    }
-    
-    /*
-     * 将请求的获得的body数据直接写入到本地文件，在body内容过大时可节约内存
-     */
-    public function save($path)
-    {
-        if (isset($this->result)) {
-            return false;
-        }
-        if ($fp = fopen($path, 'w+')) {
-            $this->curlopts[CURLOPT_FILE] = $fp;
-            $this->send();
-            fclose($fp);
-            return $this->getStatus() === 200 && $this->result['body'] === true;
-        }
-        return $this->result = false;
-    }
-    
     public static function multi($queries, callable $handle = null, $select_timeout = 0.1)
     {
         $mh = curl_multi_init();
@@ -278,12 +58,7 @@ class Client
                     $ch = $done['handle'];
                     $index = $indices[strval($ch)];
                     $query = $queries[$index];
-                    $result = curl_multi_getcontent($ch);
-                    if (isset($query->curlopt[CURLOPT_HEADER])) {
-                        list($result, $headers) = $query->parseWithHeaders($result);
-                        $query->result['headers'] = $headers;
-                    }
-                    $query->result['body'] = $result;
+                    $query->response(curl_multi_getcontent($ch));
                     if (isset($handle)) {
                         $return[$index] = $handle($query, $index);
                     } else {
@@ -299,59 +74,249 @@ class Client
         curl_multi_close($mh);
         return $return ?? null;
     }
+
+    /*
+     * 设置请求的body内容
+     */
+    public function body($body, $type = null)
+    {
+        $this->request['body'] = $body;
+        if ($type) {
+             $this->request['headers'][] = 'Content-Type: '.$type;
+        }
+        return $this;
+    }
+    
+    /*
+     * 设置请求的body内容为数组被json_encode后的字符串
+     */
+    public function json(array $data)
+    {
+        $this->request['body'] = jsonencode($data);
+        $this->request['headers'][] = 'Content-Type: application/json; charset=UTF-8';
+        return $this;
+    }
+
+    /*
+     * 设置表单数据，数据默认为multipart/form-data格式否则为application/x-www-form-urlencoded
+     */
+    public function form(array $data, $x_www_form_urlencoded = false)
+    {
+        if ($x_www_form_urlencoded) {
+            $this->request['body'] = http_build_query($data);
+            $this->request['headers'][] = 'Content-Type: application/x-www-form-urlencoded';
+        } else {
+            $this->request['body'] = $data;
+        }
+        return $this;
+    }
+
+    /*
+     * 本地文件上传请求，只支持post方法，通常在form方法后调用
+     */
+    public function file($name, $content, $filename = null, $mimetype = null)
+    {
+        if (substr($name, -2) === '[]') {
+            $this->request['body'][substr($name, 0, -2)][] = $this->curlFile($content, $filename, $mimetype);
+        } else {
+            $this->request['body'][$name] = $this->curlFile($content, $filename, $mimetype);
+        }
+        return $this;
+    }
+    
+    /*
+     * 变量内容上传，与file方法相似
+     */
+    public function buffer($name, $content, $filename = null, $mimetype = null)
+    {
+        if (empty($this->request['boundary'])) {
+            $this->request['boundary'] = uniqid();
+            $this->request['headers'][] = 'Content-Type: multipart/form-data; boundary='.$this->request['boundary'];
+            if (is_array($this->request['body'])) {
+                foreach ($this->request['body'] as $pk => $pv) {
+                    $body[] = "--$this->request['boundary']";
+                    $body[] = "Content-Disposition: form-data; name=\"$pk\"";
+                    $body[] = '';
+                    $body[] = $pv;
+                }
+                $body[] = '';
+                $this->request['body'] = implode(self::EOL, $body);
+            } else {
+                $this->request['body'] = null;
+            }
+        } else {
+            $this->request['body'] = substr($this->body, 0, -strlen("--$this->request['boundary']--".self::EOL));
+        }
+        $this->request['body'] .= $this->multipartFile($name, $content, $filename, $mimetype);
+        return $this;
+    }
+    
+    /*
+     * 发送一个流，只支持put方法，在put大文件时使用节约内存
+     */
+    public function stream($fp)
+    {
+        $this->request['curlopts'][CURLOPT_PUT] = 1;
+        $this->request['curlopts'][CURLOPT_INFILE] = $fp;
+        $this->request['curlopts'][CURLOPT_INFILESIZE] = fstat($fp)['size'];
+        return $this;
+    }
+
+    /*
+     * 设置单个header
+     */
+    public function header($name, $value)
+    {
+        $this->request['headers'][] = $name.': '.$value;
+        return $this;
+    }
+    
+    /*
+     * 设置多个header
+     */
+    public function headers(array $headers)
+    {
+        $this->request['headers'] = array_merge($this->request['headers'] ?? [], $headers);
+        return $this;
+    }
+    
+    /*
+     * 设置请求超时时间
+     */
+    public function timeout($timeout)
+    {
+        $this->request['curlopts'][CURLOPT_TIMEOUT] = (int) $timeout;
+        return $this;
+    }
+    
+    /*
+     * 设置底层curl参数
+     */
+    public function curlopt($name, $value)
+    {
+        $this->request['curlopts'][$name] = $value;
+        return $this;
+    }
+    
+    /*
+     * 设置底层curl参数
+     */
+    public function curlopts(array $values)
+    {
+        $this->request['curlopts'] = array_merge($this->request['curlopts'], $values);
+        return $this;
+    }
+
+    /*
+     * 设置是否获取并解析请求响应的headers数据
+     */
+    public function returnHeaders($bool = true)
+    {
+        $this->request['curlopts'][CURLOPT_HEADER] = (bool) $bool;
+        return $this;
+    }
+    
+    /*
+     * 
+     */
+    public function debug(bool $bool)
+    {
+        $this->debug = $bool;
+        return $this;
+    }
+    
+    public function __get($name)
+    {
+        isset($this->response) || $this->send();
+        switch ($name) {
+            case 'status':
+                return $this->response['status'] ?? null;
+            case 'headers':
+                return $this->response['headers'] ?? null;
+            case 'body':
+                return $this->response['body'] ?? null;
+            case 'json':
+                return jsondecode($this->response['body']);
+            case 'error':
+                return [curl_errno($this->ch), curl_error($this->ch)];
+            case 'response':
+                return $this->response;
+        }
+    }
+    
+    /*
+     * 将请求的获得的body数据直接写入到本地文件，在body内容过大时可节约内存
+     */
+    public function save($path)
+    {
+        if (isset($this->response)) {
+            return false;
+        }
+        if ($fp = fopen($path, 'w+')) {
+            $this->request['curlopts'][CURLOPT_FILE] = $fp;
+            $this->send();
+            fclose($fp);
+            return $this->getStatus() === 200 && $this->response['body'] === true;
+        }
+        return $this->response = false;
+    }
+    
+    public function getCurlInfo($name)
+    {
+        isset($this->response) || $this->send();
+        return curl_getinfo($this->ch, $name);
+    }
     
     protected function send()
     {
         if ($this->debug) {
-            $this->curlopts[CURLOPT_HEADER] = true;
-            $this->curlopts[CURLINFO_HEADER_OUT] = true;
+            $this->request['curlopts'][CURLOPT_HEADER] = true;
+            $this->request['curlopts'][CURLINFO_HEADER_OUT] = true;
         }
-        $result = curl_exec($this->build());
-        if (isset($this->curlopts[CURLOPT_HEADER])) {
-            list($headers, $result) = self::parseWithHeaders($result);
-            $this->result['headers'] = $headers;
-        }
-        $this->result['body'] = $result;
-        if ($this->debug) {
-            //\framework\extend\debug\HttpClient::write($this->body, $this);
-        }
+        $this->response(curl_exec($this->build()));
     }
     
     protected function build()
     {   
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->url);
-        if (stripos($this->url, 'https://') === 0) {
+        extract($this->request);
+        curl_setopt($ch, CURLOPT_URL, $url);
+        if (stripos($url, 'https://') === 0) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         }
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($this->method));
-        if ($this->method === 'HEAD') {
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
+        if ($method === 'HEAD') {
             curl_setopt($ch, CURLOPT_NOBODY, 1);
         }
-        if ($this->body){
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $this->body);
+        if (isset($body)){
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         }
-        if ($this->headers) {
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
+        if (isset($headers)) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         }
-        if ($this->curlopts){
-            curl_setopt_array($ch, $this->curlopts);
-        }
+        curl_setopt_array($ch, $curlopts);
         return $this->ch = $ch;
     }
     
-    /*
-     * 解析headers
-     */
-    protected static function parseWithHeaders($str)
+    protected function response($content)
+    {
+        if (empty($this->request['curlopts'][CURLOPT_HEADER])) {
+            $this->response['body'] = $content;
+        } else {
+            $this->responseWithHeaders($content);
+        }
+        $this->response['status'] = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
+    }
+    
+    protected function responseWithHeaders($str)
     {
         // 跳过HTTP/1.1 100 continue
         if (substr($str, 9, 3) === '100') {
-            list(, $header, $body) = explode(self::EOL.self::EOL, $str, 3);
+            list(, $header, $this->response['body']) = explode(self::EOL.self::EOL, $str, 3);
         } else {
-            list($header, $body) = explode(self::EOL.self::EOL, $str, 2);
+            list($header, $this->response['body']) = explode(self::EOL.self::EOL, $str, 2);
         }
         $arr = explode(self::EOL, $header);
         foreach ($arr as $v) {
@@ -370,7 +335,7 @@ class Client
                 }
             }
         }
-        return [$headers ?? null, $body];
+        $this->response['headers'] = $headers;
     }
     
     /*
@@ -406,7 +371,7 @@ class Client
             "Content-Transfer-Encoding: binary",
             '',
             (string) $content,
-            "--$this->boundary--",
+            "--$this->request['boundary']--",
             ''
         ]);
     }

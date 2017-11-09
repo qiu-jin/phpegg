@@ -36,17 +36,17 @@ class GrpcSimple
     protected function call($method, $params)
     {
         if (!$this->ns) {
-            
+            throw new \Exception('NS is empty');
         }
-        if ($params) {
-            if (count($params) )
+        if (empty($this->options['auto_bind_param'])) {
+            if (count($params) !== 1 || !is_subclass_of($params[0], Message::class)) {
+                throw new \Exception('Invalid params');
+            } 
+            $param = $params[0];
+        } else {
+            $param = $this->buildParams(implode('\\', $this->ns), $method, $params);
         }
-        $params = $this->buildParams(implode('\\', $this->ns), $method, $params);
-        
         $client = Client::post($this->options['endpoint'])->body($params->serializeToString());
-        
-        
-        
 
         error("$status->code: $status->details");
     }
