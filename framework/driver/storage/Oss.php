@@ -97,24 +97,24 @@ class Oss extends Storage
         if ($auth) {
             $client->headers($this->setHeaders($method, $path, $headers));
         }
-        $status = $client->getStatus();
-        if ($status >= 200 && $status < 300) {
+        $response = $client->response;
+        if ($response->status >= 200 && $response->status < 300) {
             switch ($method) {
                 case 'GET':
-                    return $client->body;
+                    return $response->body;
                 case 'PUT':
                     return true;
                 case 'HEAD':
-                    return isset($client_methods['returnHeaders']) ? $client->headers : true;
+                    return isset($client_methods['returnHeaders']) ? $response->headers : true;
                 case 'DELETE':
                     return true;
             }
         }
-        if ($status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
+        if ($response->status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
             return false;
         }
-        $data = Xml::decode($client->getBody());
-        return error($data['Message'] ?? $client->getErrorInfo(), 2);
+        $result = Xml::decode($response->body);
+        return error($result['Message'] ?? $client->error, 2);
     }
 
     protected function setHeaders($method, $path, $headers)

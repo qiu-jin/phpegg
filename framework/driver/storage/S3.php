@@ -11,8 +11,8 @@ class S3 extends Storage
     protected $region;
     protected $acckey;
     protected $seckey;
+    protected $endpoint = 'https://s3.amazonaws.com';
     protected $public_read = false;
-    protected static $host = 's3.amazonaws.com';
     
     public function __construct($config)
     {
@@ -20,10 +20,12 @@ class S3 extends Storage
         $this->acckey = $config['acckey'];
         $this->seckey = $config['seckey'];
         $this->region = $config['region'];
+        $this->endpoint = $config['endpoint'] ?? 'https://s3.amazonaws.com';
+        $this->public_read = $config['public_read'] ?? false;
         if (isset($config['domain'])) {
             $this->domain = $config['domain'];
         } else {
-            $this->domain = "https://".self::$host."/$this->bucket";
+            $this->domain = "$this->endpoint/$this->bucket";
         }
     }
     
@@ -91,7 +93,7 @@ class S3 extends Storage
     protected function send($method, $path, $headers = [], $client_methods = [], $auth = true)
     {
         $path = $this->path($path);
-        $client = new Client($method, "https://".self::$host."/$this->bucket$path");
+        $client = new Client($method, "$this->endpoint/$this->bucket$path");
         if ($client_methods) {
             foreach ($client_methods as $client_method => $params) {
                 $client->$client_method(... (array) $params);
@@ -100,29 +102,29 @@ class S3 extends Storage
         if ($auth) {
             $client->headers($this->setHeaders($method, $path, $headers));
         }
-        $status = $client->getStatus();
-        if ($status >= 200 && $status < 300) {
+        $response = $client->response;
+        if ($response->status >= 200 && $response->status < 300) {
             switch ($method) {
                 case 'GET':
-                    return $client->body;
+                    return $response->body;
                 case 'PUT':
                     return true;
                 case 'HEAD':
-                    return isset($client_methods['returnHeaders']) ? $client->headers : true;
+                    return isset($client_methods['returnHeaders']) ? $response->headers : true;
                 case 'DELETE':
                     return true;
             }
         }
-        if ($status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
+        if ($response->status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
             return false;
         }
-        $data = Xml::decode($client->getBody());
-        return error($data['Message'] ?? $client->getErrorInfo(), 2);
+        $result = Xml::decode($response->body);
+        return error($result['Message'] ?? $client->error, 2);
     }
     
     protected function setHeaders($method, $path, $headers)
     {
-        $headers['Host'] = self::$host;
+        $headers['Host'] = parse_url($this->endpoint, PHP_URL_HOST);
         $headers['X-Amz-Date'] = gmdate('Ymd\THis\Z');
         if (empty($headers['X-Amz-Content-Sha256'])) {
             $headers['X-Amz-Content-Sha256'] = hash('sha256', '');

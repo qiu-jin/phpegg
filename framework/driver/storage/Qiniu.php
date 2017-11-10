@@ -10,7 +10,7 @@ class Qiniu extends Storage
     protected $acckey;
     protected $seckey;
     protected $public_read = false;
-    protected static $host = 'https://rs.qbox.me';
+    protected static $endpoint = 'https://rs.qbox.me';
     
     public function __construct($config)
     {
@@ -38,7 +38,7 @@ class Qiniu extends Storage
     
     public function has($from)
     {
-        return (bool) $this->send(self::$host, '/stat/'.$this->path($from), null, 'GET');
+        return (bool) $this->send(self::$endpoint, '/stat/'.$this->path($from), null, 'GET');
     }
 
     public function put($from, $to, $is_buffer = false)
@@ -58,7 +58,7 @@ class Qiniu extends Storage
     
     public function stat($from)
     {
-        $stat = $this->send(self::$host, '/stat/'.$this->path($from), null, 'GET');
+        $stat = $this->send(self::$endpoint, '/stat/'.$this->path($from), null, 'GET');
         if ($stat) {
             $stat = jsondecode($stat);
             return [
@@ -72,17 +72,17 @@ class Qiniu extends Storage
 
     public function move($from, $to)
     {
-        return $this->send(self::$host, '/move/'.$this->path($from).'/'.$this->path($to));
+        return $this->send(self::$endpoint, '/move/'.$this->path($from).'/'.$this->path($to));
     }
     
     public function copy($from, $to)
     {
-        return $this->send(self::$host, '/copy/'.$this->path($from).'/'.$this->path($to));
+        return $this->send(self::$endpoint, '/copy/'.$this->path($from).'/'.$this->path($to));
     }
     
     public function delete($from)
     {
-        return $this->send(self::$host, '/delete/'.$this->path($from));
+        return $this->send(self::$endpoint, '/delete/'.$this->path($from));
     }
     
     public function fetch($from, $to)
@@ -105,15 +105,15 @@ class Qiniu extends Storage
         if ($path) {
             $client->header('Authorization', 'QBox '.$this->sign($path."\n"));
         }
-        $status = $client->getStatus();
-        if ($status === 200) {
+        $response = $client->response;
+        if ($response->status === 200) {
             return $method === 'GET' ? $client->getBody() : true;
         }
-        if ($status === 404 && strtok($path, '/') === 'stat') {
+        if ($response->status === 404 && strtok($path, '/') === 'stat') {
             return false;
         }
-        $data = $client->getJson();
-        return error($data['error'] ?? $client->getErrorInfo(), 2);
+        $result = $response->json();
+        return error($result['error'] ?? $client->error, 2);
     }
 
     protected function path($str)

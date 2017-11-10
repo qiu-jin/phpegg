@@ -20,22 +20,19 @@ class Baidu extends Sms
 
     protected function handle($to, $template, $data)
     {
-        if (isset($this->template[$template])) {
-            $path = '/bce/v2/message';
-            $body = json_encode([
-                'invoke'            => uniqid(),
-                'phoneNumber'       => $to,
-                'TemplateCode'      => $this->template[$template],
-                'contentVar'        => $data
-            ]);
-            $client = Client::post("http://$this->host$path")->headers($this->buildHeaders($path, $body))->body($body);
-            $data = $client->getJson();
-            if (isset($data['code']) && $data['code'] === '1000') {
-                return true;
-            }
-            return error($data['message'] ?? $client->getErrorInfo());
+        $path = '/bce/v2/message';
+        $body = json_encode([
+            'invoke'            => uniqid(),
+            'phoneNumber'       => $to,
+            'TemplateCode'      => $this->template[$template],
+            'contentVar'        => $data
+        ]);
+        $client = Client::post("http://$this->host$path")->headers($this->buildHeaders($path, $body))->body($body);
+        $result = $client->response->json();
+        if (isset($result['code']) && $result['code'] === '1000') {
+            return true;
         }
-        return error('Template not exists');
+        return error($result['message'] ?? $client->error);
     }
     
     protected function buildHeaders($path, $body)

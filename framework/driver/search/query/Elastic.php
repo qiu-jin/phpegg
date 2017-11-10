@@ -86,6 +86,9 @@ class Elastic
         if ($data) {
             $client->json($data);
         }
-        return $client->getJson();
+        if ($result = $client->response->json()) {
+            return $result;
+        }
+        error($client->error);
     }
 }

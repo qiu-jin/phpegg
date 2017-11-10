@@ -56,16 +56,16 @@ class Ipip extends Geoip
     public function apiHandle($ip, $raw = false)
     {
         $client = Client::get('http://ipapi.ipip.net/find/?addr='.$ip)->header('Token', $this->token);
-        $result = $client->getJson();
+        $result = $client->response->json();
         if (isset($result['ret'])) {
             if ($result['ret'] === 'ok') {
-                $result = $result['data'];
-                return $raw ? $result : ['country' => $result[0], 'state' => $result[1], 'city' => $result[2]];
+                $data = $result['data'];
+                return $raw ? $data : ['country' => $data[0], 'state' => $data[1], 'city' => $data[2]];
             } elseif ($result['ret'] === 'err') {
                 return error($result['msg']);
             }
         }
-        return error($client->getErrorInfo());
+        return error($client->error);
     }
     
     public function __destruct()

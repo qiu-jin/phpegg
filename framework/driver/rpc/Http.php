@@ -95,15 +95,15 @@ class Http
     
     public function responseHandle($client, $ignore_error = true)
     {
-        $status = $client->getStatus();
-        if ($status >= 200 && $status < 300) {
-            $body = $client->getBody();
+        $response = $client->response;
+        if ($response->status >= 200 && $response->status < 300) {
+            $body = $response->body;
             return isset($this->config['response_decode']) ? $this->config['response_decode']($body) : $body;
         }
         if ($ignore_error) {
             return false;
         }
-        return error($client->getErrorInfo($status), 2);
+        return error($client->error, 2);
     }
     
     protected function setfilter($filters)

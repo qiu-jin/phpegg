@@ -4,14 +4,74 @@ namespace framework\core\http;
 class Client
 {
     const EOL = "\r\n";
+    const HTTP_STATUS = [
+        100 => 'Continue',
+        101 => 'Switching Protocols',
+        102 => 'Processing',
+        200 => 'OK',
+        201 => 'Created',
+        202 => 'Accepted',
+        203 => 'Non-Authoritative Information',
+        204 => 'No Content',
+        205 => 'Reset Content',
+        206 => 'Partial Content',
+        207 => 'Multi-status',
+        208 => 'Already Reported',
+        300 => 'Multiple Choices',
+        301 => 'Moved Permanently',
+        302 => 'Found',
+        303 => 'See Other',
+        304 => 'Not Modified',
+        305 => 'Use Proxy',
+        306 => 'Switch Proxy',
+        307 => 'Temporary Redirect',
+        400 => 'Bad Request',
+        401 => 'Unauthorized',
+        402 => 'Payment Required',
+        403 => 'Forbidden',
+        404 => 'Not Found',
+        405 => 'Method Not Allowed',
+        406 => 'Not Acceptable',
+        407 => 'Proxy Authentication Required',
+        408 => 'Request Time-out',
+        409 => 'Conflict',
+        410 => 'Gone',
+        411 => 'Length Required',
+        412 => 'Precondition Failed',
+        413 => 'Request Entity Too Large',
+        414 => 'Request-URI Too Large',
+        415 => 'Unsupported Media Type',
+        416 => 'Requested range not satisfiable',
+        417 => 'Expectation Failed',
+        418 => 'I\'m a teapot',
+        422 => 'Unprocessable Entity',
+        423 => 'Locked',
+        424 => 'Failed Dependency',
+        425 => 'Unordered Collection',
+        426 => 'Upgrade Required',
+        428 => 'Precondition Required',
+        429 => 'Too Many Requests',
+        431 => 'Request Header Fields Too Large',
+        451 => 'Unavailable For Legal Reasons',
+        500 => 'Internal Server Error',
+        501 => 'Not Implemented',
+        502 => 'Bad Gateway',
+        503 => 'Service Unavailable',
+        504 => 'Gateway Time-out',
+        505 => 'HTTP Version not supported',
+        506 => 'Variant Also Negotiates',
+        507 => 'Insufficient Storage',
+        508 => 'Loop Detected',
+        511 => 'Network Authentication Required',
+    ];
     // cURL句柄
     private $ch;
-    // 是否启用调试
+    // 启用调试
     private $debug;
+    // 错误信息
+    private $error;
     // 请求设置
-    private $request = [
-        'curlopts' => [CURLOPT_TIMEOUT => 10]
-    ];
+    private $request;
     // 响应内容
     private $response;
     
@@ -19,7 +79,7 @@ class Client
     public function __construct($method, $url)
     {
         $this->debug = APP_DEBUG;
-        $this->request = ['url' => $url, 'method' => $method];
+        $this->request = (object) compact('url', 'method');
     }
 
     /*
@@ -80,9 +140,9 @@ class Client
      */
     public function body($body, $type = null)
     {
-        $this->request['body'] = $body;
+        $this->request->body = $body;
         if ($type) {
-             $this->request['headers'][] = 'Content-Type: '.$type;
+             $this->request->headers[] = 'Content-Type: '.$type;
         }
         return $this;
     }
@@ -92,8 +152,8 @@ class Client
      */
     public function json(array $data)
     {
-        $this->request['body'] = jsonencode($data);
-        $this->request['headers'][] = 'Content-Type: application/json; charset=UTF-8';
+        $this->request->body = jsonencode($data);
+        $this->request->headers[] = 'Content-Type: application/json; charset=UTF-8';
         return $this;
     }
 
@@ -103,10 +163,10 @@ class Client
     public function form(array $data, $x_www_form_urlencoded = false)
     {
         if ($x_www_form_urlencoded) {
-            $this->request['body'] = http_build_query($data);
-            $this->request['headers'][] = 'Content-Type: application/x-www-form-urlencoded';
+            $this->request->body = http_build_query($data);
+            $this->request->headers[] = 'Content-Type: application/x-www-form-urlencoded';
         } else {
-            $this->request['body'] = $data;
+            $this->request->body = $data;
         }
         return $this;
     }
@@ -117,9 +177,9 @@ class Client
     public function file($name, $content, $filename = null, $mimetype = null)
     {
         if (substr($name, -2) === '[]') {
-            $this->request['body'][substr($name, 0, -2)][] = $this->curlFile($content, $filename, $mimetype);
+            $this->request->body[substr($name, 0, -2)][] = $this->curlFile($content, $filename, $mimetype);
         } else {
-            $this->request['body'][$name] = $this->curlFile($content, $filename, $mimetype);
+            $this->request->body[$name] = $this->curlFile($content, $filename, $mimetype);
         }
         return $this;
     }
@@ -129,25 +189,25 @@ class Client
      */
     public function buffer($name, $content, $filename = null, $mimetype = null)
     {
-        if (empty($this->request['boundary'])) {
-            $this->request['boundary'] = uniqid();
-            $this->request['headers'][] = 'Content-Type: multipart/form-data; boundary='.$this->request['boundary'];
-            if (is_array($this->request['body'])) {
-                foreach ($this->request['body'] as $pk => $pv) {
+        if (empty($this->request->boundary)) {
+            $this->request->boundary = uniqid();
+            $this->request->headers[] = 'Content-Type: multipart/form-data; boundary='.$this->request->boundary;
+            if (is_array($this->requestt->body)) {
+                foreach ($this->requestt->body as $pk => $pv) {
                     $body[] = "--$this->request['boundary']";
                     $body[] = "Content-Disposition: form-data; name=\"$pk\"";
                     $body[] = '';
                     $body[] = $pv;
                 }
                 $body[] = '';
-                $this->request['body'] = implode(self::EOL, $body);
+                $this->request->body = implode(self::EOL, $body);
             } else {
-                $this->request['body'] = null;
+                $this->request->body = null;
             }
         } else {
-            $this->request['body'] = substr($this->body, 0, -strlen("--$this->request['boundary']--".self::EOL));
+            $this->request->body = substr($this->body, 0, -strlen("--{$this->request->boundary}--".self::EOL));
         }
-        $this->request['body'] .= $this->multipartFile($name, $content, $filename, $mimetype);
+        $this->request->body .= $this->multipartFile($name, $content, $filename, $mimetype);
         return $this;
     }
     
@@ -156,9 +216,9 @@ class Client
      */
     public function stream($fp)
     {
-        $this->request['curlopts'][CURLOPT_PUT] = 1;
-        $this->request['curlopts'][CURLOPT_INFILE] = $fp;
-        $this->request['curlopts'][CURLOPT_INFILESIZE] = fstat($fp)['size'];
+        $this->request->curlopts[CURLOPT_PUT] = 1;
+        $this->request->curlopts[CURLOPT_INFILE] = $fp;
+        $this->request->curlopts[CURLOPT_INFILESIZE] = fstat($fp)['size'];
         return $this;
     }
 
@@ -167,7 +227,7 @@ class Client
      */
     public function header($name, $value)
     {
-        $this->request['headers'][] = $name.': '.$value;
+        $this->request->headers[] = $name.': '.$value;
         return $this;
     }
     
@@ -176,7 +236,7 @@ class Client
      */
     public function headers(array $headers)
     {
-        $this->request['headers'] = array_merge($this->request['headers'] ?? [], $headers);
+        $this->request->headers = array_merge($this->request->headers ?? [], $headers);
         return $this;
     }
     
@@ -185,7 +245,7 @@ class Client
      */
     public function timeout($timeout)
     {
-        $this->request['curlopts'][CURLOPT_TIMEOUT] = (int) $timeout;
+        $this->request->curlopts[CURLOPT_TIMEOUT] = (int) $timeout;
         return $this;
     }
     
@@ -194,7 +254,7 @@ class Client
      */
     public function curlopt($name, $value)
     {
-        $this->request['curlopts'][$name] = $value;
+        $this->request->curlopts[$name] = $value;
         return $this;
     }
     
@@ -203,7 +263,7 @@ class Client
      */
     public function curlopts(array $values)
     {
-        $this->request['curlopts'] = array_merge($this->request['curlopts'], $values);
+        $this->request->curlopts = array_merge($this->request->curlopts ?? [], $values);
         return $this;
     }
 
@@ -212,7 +272,7 @@ class Client
      */
     public function returnHeaders($bool = true)
     {
-        $this->request['curlopts'][CURLOPT_HEADER] = (bool) $bool;
+        $this->request->curlopts[CURLOPT_HEADER] = (bool) $bool;
         return $this;
     }
     
@@ -227,20 +287,14 @@ class Client
     
     public function __get($name)
     {
-        isset($this->response) || $this->send();
         switch ($name) {
-            case 'status':
-                return $this->response['status'] ?? null;
-            case 'headers':
-                return $this->response['headers'] ?? null;
-            case 'body':
-                return $this->response['body'] ?? null;
-            case 'json':
-                return jsondecode($this->response['body']);
-            case 'error':
-                return [curl_errno($this->ch), curl_error($this->ch)];
+            case 'request':
+                return $this->request;
             case 'response':
+                isset($this->response) || $this->send();
                 return $this->response;
+            case 'error':
+                return $this->error;
         }
     }
     
@@ -270,53 +324,74 @@ class Client
     protected function send()
     {
         if ($this->debug) {
-            $this->request['curlopts'][CURLOPT_HEADER] = true;
-            $this->request['curlopts'][CURLINFO_HEADER_OUT] = true;
+            $this->request->curlopts[CURLOPT_HEADER] = true;
+            $this->request->curlopts[CURLINFO_HEADER_OUT] = true;
         }
         $this->response(curl_exec($this->build()));
     }
     
     protected function build()
-    {   
-        $ch = curl_init();
-        extract($this->request);
-        curl_setopt($ch, CURLOPT_URL, $url);
-        if (stripos($url, 'https://') === 0) {
+    {
+        $ch = curl_init($this->request->url);
+        if (stripos($this->request->url, 'https://') === 0) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         }
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
-        if ($method === 'HEAD') {
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($this->request->method));
+        if ($this->request->method === 'HEAD') {
             curl_setopt($ch, CURLOPT_NOBODY, 1);
         }
-        if (isset($body)){
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        if (isset($this->request->body)){
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $this->request->body);
         }
-        if (isset($headers)) {
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        if (isset($this->request->headers)) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $this->request->headers);
         }
-        curl_setopt_array($ch, $curlopts);
+        if (isset($this->request->curlopts)) {
+            curl_setopt_array($ch, $this->request->curlopts);
+        }
         return $this->ch = $ch;
+    }
+    
+    protected function error($code, $message)
+    {
+        $this->error = new class ($code, $message) {
+            public function __construct($code, $message) {
+                $this->code = $code;
+                $this->message = $message;
+            }
+            public function __toString() {
+                return ($this->code ? "[$this->code]$this->message" : 'unknown http error');
+            }
+        };
     }
     
     protected function response($content)
     {
-        if (empty($this->request['curlopts'][CURLOPT_HEADER])) {
-            $this->response['body'] = $content;
+        $this->response = new class () {
+            public function json() {
+                return $this->body ? jsondecode($this->body) : false;
+            }
+        };
+        if (empty($this->request->curlopts[CURLOPT_HEADER])) {
+            $this->response->body = $content;
         } else {
             $this->responseWithHeaders($content);
         }
-        $this->response['status'] = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
+        $this->response->status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
+        if (!$this->response->status) {
+            $this->error(curl_errno($this->ch), curl_errno($this->ch));
+        }
     }
     
     protected function responseWithHeaders($str)
     {
         // 跳过HTTP/1.1 100 continue
         if (substr($str, 9, 3) === '100') {
-            list(, $header, $this->response['body']) = explode(self::EOL.self::EOL, $str, 3);
+            list(, $header, $this->response->body) = explode(self::EOL.self::EOL, $str, 3);
         } else {
-            list($header, $this->response['body']) = explode(self::EOL.self::EOL, $str, 2);
+            list($header, $this->response->body) = explode(self::EOL.self::EOL, $str, 2);
         }
         $arr = explode(self::EOL, $header);
         foreach ($arr as $v) {
@@ -335,7 +410,7 @@ class Client
                 }
             }
         }
-        $this->response['headers'] = $headers;
+        $this->response->headers = $headers;
     }
     
     /*

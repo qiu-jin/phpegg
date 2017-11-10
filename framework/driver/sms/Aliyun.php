@@ -25,10 +25,10 @@ class Aliyun extends Sms
         ]);
         $query .= '&Signature='.hash_hmac('SHA1', rawurlencode("GET&$query"), "$this->seckey&");
         $client = Client::get(self::$host."/?$query");
-        if ($client->status === 200) {
+        $response = $client->response;
+        if ($response->status === 200) {
             return true;
         }
-        $data = $client->getJson();
-        return error($data['Message'] ?? $client->getErrorInfo());
+        return error($response->json()['Message'] ?? $client->error);
     }
 }

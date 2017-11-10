@@ -92,16 +92,16 @@ class ElasticBatch
         } else {
             throw new \Exception('No query');
         }
-        $client = Client::post("$this->url/$method");
-        $client->body($body);
-        $result = $client->getJson();
-        return $result;
-        if ($return_raw_result) {
-            return $result;
+        $client = Client::post("$this->url/$method")->body($body);
+        if ($result = $client->response->json()) {
+            if ($return_raw_result) {
+                return $result;
+            }
+            if ($method === '_bulk') {
+                return $result['items'] ?? false;
+            }
         }
-        if ($method === '_bulk') {
-            return $result['items'] ?? false;
-        }
+        error($client->error);
     }
     
     protected function getIndexType()

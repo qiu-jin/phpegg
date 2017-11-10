@@ -63,12 +63,12 @@ class Jsonrpc
             }
         }
         $client->body($this->config['requset_serialize']($body));
-        $result = $this->config['response_unserialize']($client->getBody());
+        $result = $this->config['response_unserialize']($client->response->body);
         if ($result) {
             return $result;
         }
-        if ($clierr = $client->getError()) {
-            error("-32000: Internet error [$clierr[0]]$clierr[1]");
+        if ($error = $client->error)) {
+            error("-32000: Internet error [$error->code]$error->message");
         } else {
             error('-32603: nvalid JSON-RPC response');
         }

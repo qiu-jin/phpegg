@@ -15,7 +15,7 @@ use framework\core\http\Client;
 
 class Webdav extends Storage
 {
-    protected $host;
+    protected $endpoint;
     protected $username;
     protected $password;
     protected $public_read = false;
@@ -23,13 +23,13 @@ class Webdav extends Storage
     
     public function __construct($config)
     {
-        $this->host = $config['host'];
+        $this->endpoint = $config['endpoint'];
         $this->username = $config['username'];
         $this->password = $config['password'];
         if (isset($config['auto_create_dir'])) {
             $this->auto_create_dir = (bool) $config['auto_create_dir'];
         }
-        $this->domain = $config['domain'] ?? $config['host'];
+        $this->domain = $config['domain'] ?? $this->endpoint;
     }
     
     public function get($from, $to = null)
@@ -107,15 +107,15 @@ class Webdav extends Storage
         if ($headers) {
             $client->headers($headers);
         }
-        $status = $client->gerStatus();
-        if ($status >= 200 && $status < 300) {
+        $response = $client->response;
+        if ($response->status >= 200 && $response->status < 300) {
             switch ($method) {
                 case 'GET':
-                    return $client->getBody();
+                    return $response->body;
                 case 'PUT':
                     return true;
                 case 'HEAD':
-                    return isset($client_methods['returnHeaders']) ? $client->headers : true;
+                    return isset($client_methods['returnHeaders']) ? $response->headers : true;
                 case 'COPY':
                     return true;
                 case 'MOVE':
@@ -126,15 +126,15 @@ class Webdav extends Storage
                     return true;
             }
         }
-        if ($status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
+        if ($response->status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
             return false;
         }
-        return error($status ?? $client->getErrorInfo(), 2);
+        return error($response->status ?: $client->error, 2);
     }
     
     protected function uri($path)
     {
-        return $this->host.'/'.trim(trim($path), '/');
+        return $this->endpoint.'/'.trim(trim($path), '/');
     }
     
     protected function auth()
