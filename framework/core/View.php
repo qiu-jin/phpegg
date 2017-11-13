@@ -51,7 +51,7 @@ class View
      */
     public static function render($tpl, $vars = [])
     {
-        if (self::$view->vars) {
+        if (isset(self::$view->vars)) {
             $vars = array_merge($view->vars, $vars);
         }
         ob_start();
