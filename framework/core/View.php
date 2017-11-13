@@ -206,6 +206,8 @@ View::init();
 
 function __include_view($__view_file, $__view_vars)
 {
-    extract($__view_vars, EXTR_SKIP);
+    if ($__view_vars) {
+        extract($__view_vars, EXTR_SKIP);
+    }
     include $__view_file;
 }
