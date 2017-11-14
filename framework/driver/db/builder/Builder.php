@@ -108,7 +108,7 @@ class Builder
                     throw new \Exception('SQL WHERE ERROR: '.var_export($k, true));
                 }
             }
-            if (count($v) === 3 && in_array($v[1], static::$where_operator, true)) {
+            if (isset($v[1]) && in_array($v[1], static::$where_operator, true)) {
                 if ($prefix !== null) {
                     $sql .= self::keywordEscape($prefix).'.';
                 }
