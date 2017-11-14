@@ -6,8 +6,7 @@ class Builder
     const ORDER_RANDOM = 'RAND()';
     const KEYWORD_ESCAPE_LEFT = '`';
     const KEYWORD_ESCAPE_RIGHT = '`';
-    
-    protected static $order_rand = 'RAND()';
+
     protected static $where_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
     protected static $where_operator = ['=', '!=', '>', '>=', '<', '<=', 'LIKE', 'IN', 'IS', 'BETWEEN'];
 
