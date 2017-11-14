@@ -115,7 +115,7 @@ class Builder
                 $sql .= static::whereItem($params, ...$v);
             } else {
                 $where = static::whereClause($v, $params, $prefix);
-                $sql .=  $sql.'('.$where[0].')';
+                $sql .= '('.$where.')';
             }
             $i++;
         }

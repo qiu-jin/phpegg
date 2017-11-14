@@ -119,7 +119,7 @@ class S3 extends Storage
             return false;
         }
         $result = Xml::decode($response->body);
-        return error($result['Message'] ?? $client->error, 2);
+        return error($result['Message'] ?? $client->error , 2);
     }
     
     protected function setHeaders($method, $path, $headers)

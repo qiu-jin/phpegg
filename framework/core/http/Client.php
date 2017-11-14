@@ -4,6 +4,7 @@ namespace framework\core\http;
 class Client
 {
     const EOL = "\r\n";
+    
     const HTTP_STATUS = [
         100 => 'Continue',
         101 => 'Switching Protocols',
@@ -279,9 +280,9 @@ class Client
     /*
      * 
      */
-    public function debug(bool $bool)
+    public function debug($bool = true)
     {
-        $this->debug = $bool;
+        $this->debug = (bool) $bool;
         return $this;
     }
     
@@ -349,20 +350,30 @@ class Client
             curl_setopt($ch, CURLOPT_HTTPHEADER, $this->request->headers);
         }
         if (isset($this->request->curlopts)) {
+            ksort($this->request->curlopts);
             curl_setopt_array($ch, $this->request->curlopts);
         }
         return $this->ch = $ch;
     }
     
-    protected function error($code, $message)
+    protected function error()
     {
-        $this->error = new class ($code, $message) {
-            public function __construct($code, $message) {
+        if ($this->response->status) {
+            $code = $this->response->status;
+            $message = self::HTTP_STATUS[$code];
+        } else {
+            $code = curl_errno($this->ch);
+            $message = curl_error($this->ch);
+        }
+        $this->error = new class ($code, $message, $this->request) {
+            private $request;
+            public function __construct($code, $message, $request) {
                 $this->code = $code;
                 $this->message = $message;
+                $this->request = $request;
             }
             public function __toString() {
-                return ($this->code ? "[$this->code]$this->message" : 'unknown http error');
+                return ($this->code ? "[$this->code]$this->message" : 'unknown http error').": {$this->request->method} {$this->request->url}";
             }
         };
     }
@@ -380,18 +391,18 @@ class Client
             $this->responseWithHeaders($content);
         }
         $this->response->status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-        if (!$this->response->status) {
-            $this->error(curl_errno($this->ch), curl_errno($this->ch));
+        if (!($this->response->status >= 200 && $this->response->status < 300)) {
+            $this->error();
         }
     }
     
-    protected function responseWithHeaders($str)
+    protected function responseWithHeaders($content)
     {
         // 跳过HTTP/1.1 100 continue
         if (substr($str, 9, 3) === '100') {
-            list(, $header, $this->response->body) = explode(self::EOL.self::EOL, $str, 3);
+            list(, $header, $this->response->body) = explode(self::EOL.self::EOL, $content, 3);
         } else {
-            list($header, $this->response->body) = explode(self::EOL.self::EOL, $str, 2);
+            list($header, $this->response->body) = explode(self::EOL.self::EOL, $content, 2);
         }
         $arr = explode(self::EOL, $header);
         foreach ($arr as $v) {
