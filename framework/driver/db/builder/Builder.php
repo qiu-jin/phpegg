@@ -100,13 +100,10 @@ class Builder
                 }
             } else {
                 $k = strtoupper(strtok($k, '#'));
-                if (in_array($k, static::$where_logic, true)) {
-                    $sql = $sql.' '.$k.' ';
-                } elseif (preg_match('/^('.implode('|', static::$where_logic).')\#.+$/', $k, $match)) {
-                    $sql = $sql.' '.$match[1].' ';
-                } else {
+                if (!in_array($k, static::$where_logic, true)) {
                     throw new \Exception('SQL WHERE ERROR: '.var_export($k, true));
                 }
+                $sql = $sql.' '.$k.' ';
             }
             if (isset($v[1]) && in_array($v[1], static::$where_operator, true)) {
                 if ($prefix !== null) {
