@@ -13,7 +13,7 @@ class Builder
     public static function select($table, array $option)
     {
         $params = [];
-        $sql = static::selectFrom($table, isset($option['fields']) ? $option['fields'] : null);
+        $sql = static::selectFrom($table, $option['fields'] ?? null);
         if (isset($option['where'])) {
             $sql .= ' WHERE '.static::whereClause($option['where'], $params);
         }
