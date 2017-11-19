@@ -5,7 +5,7 @@ return [
     'standard'=> [
         'driver'    => 'http',
         
-        'host'      => 'http://standard.example.com',
+        'endpoint'      => 'http://standard.example.com',
 
         'response_decode' => 'json'
     ],
@@ -21,7 +21,7 @@ return [
     'jsonrpc'=> [
         'driver'    => 'jsonrpc',
         
-        'host'      => 'http://jsonrpc.example.com',
+        'endpoint'      => 'http://jsonrpc.example.com',
 
         //'requset_serialize' => 'msgpack_serialize',
         //'response_unserialize' => 'msgpack_unserialize',
@@ -63,7 +63,7 @@ return [
     'zhihu'=> [
         'driver'    => 'rest',
         
-        'host'      => 'https://www.zhihu.com/api/v4',
+        'endpoint'      => 'https://www.zhihu.com/api/v4',
         'headers'   => [
             'Authorization:oauth your_key'
         ],
@@ -73,7 +73,7 @@ return [
     'github'=> [
         'driver'    => 'rest',
         
-        'host'      => 'https://api.github.com',
+        'endpoint'      => 'https://api.github.com',
         'headers'   => [
             'Accept: application/vnd.github.v3+json',
             'User-Agent: test',

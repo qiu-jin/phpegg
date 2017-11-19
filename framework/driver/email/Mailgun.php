@@ -7,7 +7,7 @@ class Mailgun extends Email
 {
     protected $acckey;
     protected $domain;
-    protected static $host = 'https://api.mailgun.net/v3';
+    protected static $endpoint = 'https://api.mailgun.net/v3';
     
     protected function init($config)
     {

@@ -21,7 +21,7 @@ return [
         'driver'    => 'oss',
         
         'bucket'    => 'your_bucket',
-        'endpoint'  => 'oss-cn-beijing.aliyuncs.com',
+        'endpoint'  => 'http://oss-cn-beijing.aliyuncs.com',
         'acckey'    => 'your_acckey',
         'seckey'    => 'your_seckey',
     ],
@@ -58,7 +58,7 @@ return [
     'webdav' => [
         'driver'    => 'webdav',
         
-        'server'    => 'https://dav.jianguoyun.com/dav',
+        'endpoint'  => 'https://dav.jianguoyun.com/dav',
         'username'  => 'username',
         'password'  => 'password',
     ],

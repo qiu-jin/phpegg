@@ -8,7 +8,7 @@ class Sendcloud extends Email
     protected $acckey;
     protected $seckey;
     protected $templates;
-    protected static $host = 'http://api.sendcloud.net/apiv2/mail';
+    protected static $endpoint = 'http://api.sendcloud.net/apiv2/mail';
     
     protected function init($config)
     {

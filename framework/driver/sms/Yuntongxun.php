@@ -6,7 +6,7 @@ use framework\core\http\Client;
 class Yuntongxun extends Sms
 {
     protected $appkey;
-    protected static $host = 'https://app.cloopen.com:8883/2013-12-26/Accounts/';
+    protected static $endpoint = 'https://app.cloopen.com:8883/2013-12-26/Accounts/';
     
     public function __construct(array $config)
     {
@@ -19,7 +19,7 @@ class Yuntongxun extends Sms
     protected function handle($to, $template, $data)
     {
         $date = date('YmdHis');
-        $url = self::$host."$this->acckey/SMS/TemplateSMS?sig=".strtoupper(md5($this->acckey.$this->seckey.$date));
+        $url = self::$endpoint."$this->acckey/SMS/TemplateSMS?sig=".strtoupper(md5($this->acckey.$this->seckey.$date));
         $client = Client::post($url)->json([
             'to'        => $to,
             'templateId'=> $this->template[$template],

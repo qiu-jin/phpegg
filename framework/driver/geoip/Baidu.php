@@ -6,7 +6,7 @@ use framework\core\http\Client;
 class Baidu extends Geoip
 {
     private $acckey;
-    protected static $host = 'http://api.map.baidu.com/location/ip';
+    protected static $endpoint = 'http://api.map.baidu.com/location/ip';
 
     protected function init($config)
     {
@@ -15,7 +15,7 @@ class Baidu extends Geoip
     
     public function handle($ip, $raw = false)
     {
-        $client = Client::get(self::$host."?ip=$ip&ak=$this->acckey");
+        $client = Client::get(self::$endpoint."?ip=$ip&ak=$this->acckey");
         $result = $client->response->json();
         if (isset($result['status']) && $result['status'] === 0) {
             return $raw ? $result['content'] : [

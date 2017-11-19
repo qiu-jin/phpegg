@@ -9,7 +9,7 @@ class Recaptcha
     protected $acckey;
     protected $seckey;
     protected $script = 'https://www.google.com/recaptcha/api.js';
-    protected static $host = 'https://www.google.com/recaptcha/api/siteverify';
+    protected static $endpoint = 'https://www.google.com/recaptcha/api/siteverify';
     
     public function __construct($config)
     {
@@ -32,7 +32,7 @@ class Recaptcha
     
     public function verify($value = null)
     {
-        $client = Client::post(self::$host)->form([
+        $client = Client::post(self::$endpoint)->form([
             'secret'   => $this->seckey,
             'response' => $value ? $value : Request::post('g-recaptcha-response'),
             'remoteip' => Request::ip()

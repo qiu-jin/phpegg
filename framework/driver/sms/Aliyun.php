@@ -5,7 +5,7 @@ use framework\core\http\Client;
 
 class Aliyun extends Sms
 {
-    protected static $host = 'https://sms.aliyuncs.com';
+    protected static $endpoint = 'https://sms.aliyuncs.com';
 
     protected function handle($to, $template, $data, $signname = null)
     {
@@ -24,7 +24,7 @@ class Aliyun extends Sms
             'Timestamp'         => gmdate('Y-m-d\TH:i:s\Z'),
         ]);
         $query .= '&Signature='.hash_hmac('SHA1', rawurlencode("GET&$query"), "$this->seckey&");
-        $client = Client::get(self::$host."/?$query");
+        $client = Client::get(self::$endpoint."/?$query");
         $response = $client->response;
         if ($response->status === 200) {
             return true;

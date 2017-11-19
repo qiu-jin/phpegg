@@ -5,8 +5,8 @@ use framework\core\http\Client;
 
 class Baidu extends Sms
 {
-    protected $host = 'sms.bj.baidubce.com';
     protected $version = 'bce-auth-v1';
+    protected $endpoint = 'http://sms.bj.baidubce.com';
     protected $expiration = 180;
     
     public function __construct(array $config)
@@ -27,7 +27,7 @@ class Baidu extends Sms
             'TemplateCode'      => $this->template[$template],
             'contentVar'        => $data
         ]);
-        $client = Client::post("http://$this->host$path")->headers($this->buildHeaders($path, $body))->body($body);
+        $client = Client::post("$endpoint$path")->headers($this->buildHeaders($path, $body))->body($body);
         $result = $client->response->json();
         if (isset($result['code']) && $result['code'] === '1000') {
             return true;

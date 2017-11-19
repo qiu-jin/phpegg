@@ -4,6 +4,6 @@ return [
 	'elastic' => [
         'driver'    => 'elastic',
         
-        'host'      => '127.0.0.1'
+        'endpoint'      => 'http://127.0.0.1'
 	]
 ];

@@ -5,7 +5,7 @@ use framework\core\http\Client;
 
 class Alidayu extends Sms
 {
-    protected static $host = 'http://gw.api.taobao.com/router/rest';
+    protected static $endpoint = 'http://gw.api.taobao.com/router/rest';
     
     protected function handle($to, $template, $data, $signname = null)
     {
@@ -27,7 +27,7 @@ class Alidayu extends Sms
             $str .= $k.$v;
         }
         $form['sign'] = strtoupper(md5($this->seckey.$str.$this->seckey));
-        $client = Client::post(self::$host)->form($form);
+        $client = Client::post(self::$endpoint)->form($form);
         $result = $client->response->json();
         if (isset($result['alibaba_aliqin_fc_sms_num_send_response']['result'])) {
             return true;

@@ -14,7 +14,7 @@ class Maxmind extends Geoip
     protected $db;
     protected $api = ['type' => 'country'];
     protected $lang = 'en';
-    protected static $host = 'https://geoip.maxmind.com/geoip/v2.1';
+    protected static $endpoint = 'https://geoip.maxmind.com/geoip/v2.1';
     
     protected function init($config)
     {
@@ -35,7 +35,7 @@ class Maxmind extends Geoip
     
     protected function apiHandle($ip, $raw = false)
     {
-        $url = self::$host.'/'.$this->api['type'].'/'.$ip;
+        $url = self::$endpoint.'/'.$this->api['type'].'/'.$ip;
         $client = Client::get($url)->header('Authorization', 'Basic '.base64_encode($this->api['acckey'].':'.$this->api['seckey']));
         $result = $client->response->json();
         if (isset($result['country'])) {

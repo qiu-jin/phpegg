@@ -5,7 +5,7 @@ use framework\core\http\Client;
 
 class Qcloud extends Sms
 {
-    protected static $host = 'https://yun.tim.qq.com/v5/tlssmssvr/sendsms';
+    protected static $endpoint = 'https://yun.tim.qq.com/v5/tlssmssvr/sendsms';
 
     protected function handle($to, $template, $data, $signname = null)
     {
@@ -15,7 +15,7 @@ class Qcloud extends Sms
         foreach ($data as $k => $v) {
             $replace['{'.$k.'}'] = $v;
         }
-        $client = Client::post(self::$host."?sdkappid=$this->acckey&random=$random")->json([
+        $client = Client::post(self::$endpoint."?sdkappid=$this->acckey&random=$random")->json([
             'tel'   => ['nationcode' => '86', 'mobile' => $to],
             'type'  => 0,
             'msg'   => $signname.strtr($this->template[$template], $replace),

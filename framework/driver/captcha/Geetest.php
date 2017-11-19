@@ -9,7 +9,7 @@ class Geetest
     protected $acckey;
     protected $seckey;
     protected $script = 'https://static.geetest.com/static/tools/gt.js';
-    protected static $host = 'http://api.geetest.com';
+    protected static $endpoint = 'http://api.geetest.com';
     
     public function __construct($config)
     {
@@ -31,7 +31,7 @@ class Geetest
             "gt:'$this->acckey'",
             "new_captcha:true"
         ];
-        $challenge = Client::get(self::$host.'/register.php?'.http_build_query(['gt' => $this->acckey, 'new_captcha' => '1']))->body;
+        $challenge = Client::get(self::$endpoint.'/register.php?'.http_build_query(['gt' => $this->acckey, 'new_captcha' => '1']))->body;
         if (strlen($challenge) == 32) {
             $init_data[] = "offline:false";
             $init_data[] = "challenge:'".md5($challenge.$this->seckey)."'";
