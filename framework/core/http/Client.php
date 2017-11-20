@@ -399,7 +399,7 @@ class Client
     protected function responseWithHeaders($content)
     {
         // 跳过HTTP/1.1 100 continue
-        if (substr($str, 9, 3) === '100') {
+        if (substr($content, 9, 3) === '100') {
             list(, $header, $this->response->body) = explode(self::EOL.self::EOL, $content, 3);
         } else {
             list($header, $this->response->body) = explode(self::EOL.self::EOL, $content, 2);
