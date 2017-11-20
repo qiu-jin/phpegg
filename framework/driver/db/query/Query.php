@@ -84,7 +84,7 @@ class Query extends QueryChain
     public function insert(array $data, $return_id = false)
     {
         $params = $this->builder::insert($this->table, $data);
-        return $return_id ? $this->db->query(...$params) : $this->db->exec(...$params);
+        return $return_id ? $this->db->exec(...$params) : $this->db->query(...$params);
     }
     
     public function replace(array $data)
