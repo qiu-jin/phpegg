@@ -5,30 +5,39 @@ use framework\core\http\Client;
 
 class Aliyun extends Sms
 {
-    protected static $endpoint = 'https://sms.aliyuncs.com';
+    protected $region;
+    protected static $endpoint = 'https://dysmsapi.aliyuncs.com';
+    
+    public function __construct(array $config)
+    {
+        parent::__construct($config);
+        $this->region = $config['region'] ?? 'cn-hangzhou';
+    }
 
     protected function handle($to, $template, $data, $signname = null)
     {
-        $query = http_build_query([
-            'Action'            => 'SingleSendSms',
-            'SignName'          => $signname ?? $this->signname,
-            'TemplateCode'      => $this->template[$template],
-            'RecNum'            => $to,
-            'ParamString'       => json_encode($data),
-            'Format'            => 'JSON',
-            'Version'           => '2016-09-27',
+        $params = [
             'AccessKeyId'       => $this->acckey,
+            'Action'            => 'SendSms',
+            'Format'            => 'JSON',
+            'PhoneNumbers'      => $to,
+            'RegionId'          => $this->region,
+            'SignName'          => $signname ?? $this->signname,
             'SignatureMethod'   => 'HMAC-SHA1',
-            'SignatureVersion'  => '1.0',
             'SignatureNonce'    => uniqid(),
+            'SignatureVersion'  => '1.0',
+            'TemplateCode'      => $this->template[$template],
+            'TemplateParam'     => json_encode($data),
             'Timestamp'         => gmdate('Y-m-d\TH:i:s\Z'),
-        ]);
-        $query .= '&Signature='.hash_hmac('SHA1', rawurlencode("GET&$query"), "$this->seckey&");
-        $client = Client::get(self::$endpoint."/?$query");
-        $response = $client->response;
-        if ($response->status === 200) {
+            'Version'           => '2017-05-25'
+        ];
+        $query  = http_build_query($params, null, '&', PHP_QUERY_RFC3986);
+        $sign   = base64_encode(hash_hmac('sha1', 'GET&%2F&'.urlencode($query), "$this->seckey&", true));
+        $client = Client::get(self::$endpoint."/?Signature=$sign&$query");
+        $result = $client->response->json();
+        if (isset($result['Code']) && $result['Code'] === 'OK') {
             return true;
         }
-        return error($response->json()['Message'] ?? $client->error);
+        return error($result['Message'] ?? $client->error);
     }
 }

@@ -11,8 +11,8 @@ class S3 extends Storage
     protected $region;
     protected $acckey;
     protected $seckey;
-    protected $endpoint = 'https://s3.amazonaws.com';
-    protected $public_read = false;
+    protected $endpoint;
+    protected $public_read;
     
     public function __construct($config)
     {
