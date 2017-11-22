@@ -92,7 +92,7 @@ class Mongo
         return $this->manager->executeBulkWrite($this->getNs(), $bulk);
     }
     
-    public function getNs()
+    protected function getNs()
     {
         if (count($this->ns) === 2) {
             return implode('.', $this->ns);

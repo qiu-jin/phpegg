@@ -38,7 +38,7 @@ abstract class QueryChain
     {
         $data = $this->setWhere($where);
         if (is_array($where[0])) {
-            $this->option['where'] = array_merge((array) $this->option['where'], $data);
+            $this->option['where'] = array_merge($this->option['where'] ?? [], $data);
         } else {
             $this->option['where'][] = $data; 
         }
@@ -47,7 +47,10 @@ abstract class QueryChain
     
     public function  whereOr(...$where)
     {
-        $key = isset($this->option['where']['OR']) ? 'OR#'.count($this->option['where']) : 'OR';
+        $key = 'OR';
+        if (isset($this->option['where']['OR'])) {
+            $key .= '#'.count($this->option['where']);
+        }
         $this->option['where'][$key] = $this->setWhere($where);
         return $this;
     }
@@ -68,11 +71,7 @@ abstract class QueryChain
     {
         $data = $this->setWhere($having);
         if (is_array($having[0])) {
-            if (isset($this->option['having'])) {
-                $this->option['having'] = array_merge($this->option['having'], $data);
-            } else {
-                $this->option['having'] = $data;
-            }
+            $this->option['having'] = array_merge($this->option['having'] ?? [], $data);
         } else {
             $this->option['having'][] = $data; 
         }

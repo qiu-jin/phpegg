@@ -138,8 +138,11 @@ class Query extends QueryChain
             list($dataset, $params) = $this->builder::setData($data);
             $set = $set.','.$dataset;
         }
-        $sql = "UPDATE ".$this->builder::keywordEscape($this->table)." SET ".$set.' WHERE '.$this->builder::whereClause($this->option['where'], $params);
-        return $this->db->exec(isset($this->option['limit']) ? "$sql LIMIT ".$this->option['limit'] : $sql, $params);
+        $sql = "UPDATE ".$this->builder::keywordEscape($this->table)." SET $set WHERE ".$this->builder::whereClause($this->option['where'], $params);
+        if (isset($this->option['limit'])) {
+            $sql = "$sql LIMIT ".$this->option['limit'];
+        }
+        return $this->db->exec($sql, $params);
     }
     
     public function delete($id = null, $pk = 'id')
