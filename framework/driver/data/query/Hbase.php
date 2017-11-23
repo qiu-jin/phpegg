@@ -3,42 +3,42 @@ namespace framework\driver\data\query;
 
 class Hbase
 {
+    protected $rpc;
     protected $table;
-    protected $thrift;
     
-    public function __construct($thrift, $table)
+    public function __construct($rpc, $table)
     {
+        $this->rpc = $rpc;
         $this->table = $table;
-        $this->thrift = $thrift;
     }
     
     public function __call($method, $params)
     {
-        return $this->thrift->$method($this->table, ...$params);
+        return $this->rpc->$method($this->table, ...$params);
     }
     
-    public function get($key, $option = null)
+    public function get($key, $options = null)
     {
-        $option['row'] = $key;
-        return $this->thrift->get($this->table, new \hbase\TGet($option));
+        $options['row'] = $key;
+        return $this->rpc->get($this->table, new \hbase\TGet($options));
     }
     
-    public function scan($key, $option = null)
+    public function scan($key, $options = null)
     {
 
     }
     
-    public function put($key, $value, $option = null)
+    public function put($key, $value, $options = null)
     {
-        $option['row'] = $key;
-        $option['columnValues'] = $value;
-        return $this->thrift->put($this->table, new \hbase\TPut($option));
+        $options['row'] = $key;
+        $options['columnValues'] = $value;
+        return $this->rpc->put($this->table, new \hbase\TPut($options));
     }
     
-    public function delete($key, $option = null)
+    public function delete($key, $options = null)
     {
         $option['row'] = $key;
-        return $this->thrift->deleteSingle($this->table, new \hbase\TDelete($option));
+        return $this->rpc->deleteSingle($this->table, new \hbase\TDelete($options));
     }
 }
 

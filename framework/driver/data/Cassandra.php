@@ -7,44 +7,47 @@ namespace framework\driver\data;
 
 class Cassandra
 {
+    protected $cluster;
     protected $session;
+    protected $sessions;
     
     public function __construct($config)
     {
-        if (isset($config['ssl'])) {
-            $config['ssl'] = $this->initBuild(\Cassandra::ssl(), $config['ssl']);
+        if (isset($config['options']['ssl'])) {
+            $config['options']['ssl'] = $this->initBuild(\Cassandra::ssl(), $config['options']['ssl']);
         }
-        if (isset($config['driver'])) {
-            unset($config['driver']);
+        $this->cluster = $this->initBuild(\Cassandra::cluster(), $config['options']);
+        if (isset($config['keyspace'])) {
+            $this->session = $this->cluster->contect($config['keyspace']);
         }
-        //$keyspace = 
-        $this->session = $this->initBuild(\Cassandra::cluster(), $config)->connect();
     }
     
     public function __get($name)
-    {
-        return $this->table($name);
-    }
-    
-    public function table($name)
     {
         return new query\Cassandra($this, $name);
     }
     
     public function exec($sql, array $params = [])
     {
-        if ($params) {
-            return $this->session->execute($sql, [
-                'arguments' => $params
-            ]);
-        } else {
-            return $this->session->execute($sql);
-        }
+        return $this->session->execute($sql, $params ? ['arguments' => $params] : null);
     }
     
-    protected function initBuild($object, $option)
+    public function keyspace($name)
     {
-        foreach ($option as $key => $value) {
+        if (isset($this->sessions[$name])) {
+            return $this->sessions[$name];
+        }
+        $session = $this->cluster->contect($name);
+        return $this->sessions[$name] = new class ($session) extends Cassandra {
+            public function __construct($session) {
+                $this->session = $session;
+            }
+        };
+    }
+    
+    protected function initBuild($object, $options)
+    {
+        foreach ($options as $key => $value) {
             $ssl->{'with'.ucfirst($key)}(...(array) $value);
         }
         $object->build();

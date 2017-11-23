@@ -9,19 +9,10 @@ class Mongo
     protected $ns;
     protected $manager;
     
-    public function __construct($manager, $dbname, $name)
+    public function __construct($manager, $db, $collection)
     {
         $this->manager = $manager;
-        if (isset($dbname)) {
-            $this->ns[] = $dbname;
-        }
-        $this->ns[] = $name;
-    }
-    
-    public function __get($name)
-    {
-        $this->ns[] = $name;
-        return $this;
+        $this->ns = "$db.$collection";
     }
     
     public function get($id)
@@ -56,7 +47,7 @@ class Mongo
     
     public function findRaw($filter, $options = null)
     {
-        return $this->manager->executeQuery($this->getNs(), new Query($filter, $options));
+        return $this->manager->executeQuery($this->ns, new Query($filter, $options));
     }
 
     public function insertRaw(...$params)
@@ -69,7 +60,7 @@ class Mongo
             $params[1]['_id'] = $params[0];
             $bulk->insert($params[1]);
         }
-        return $this->manager->executeBulkWrite($this->getNs(), $bulk);
+        return $this->manager->executeBulkWrite($this->ns, $bulk);
     }
     
     public function updateRaw($filter, $data, $options = null)
@@ -79,7 +70,7 @@ class Mongo
             $filter = ['_id' => $filter];
         }
         $bulk->update($filter, $data, $options);
-        return $this->manager->executeBulkWrite($this->getNs(), $bulk);
+        return $this->manager->executeBulkWrite($this->ns, $bulk);
     }
     
     public function deleteRaw($filter, $options = null)
@@ -89,14 +80,6 @@ class Mongo
             $filter = ['_id' => $filter];
         }
         $bulk->delete($filter, $options);
-        return $this->manager->executeBulkWrite($this->getNs(), $bulk);
-    }
-    
-    protected function getNs()
-    {
-        if (count($this->ns) === 2) {
-            return implode('.', $this->ns);
-        }
-        throw new \Exception('Ns error');
+        return $this->manager->executeBulkWrite($this->ns, $bulk);
     }
 }

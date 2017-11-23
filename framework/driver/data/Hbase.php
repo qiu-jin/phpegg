@@ -9,13 +9,13 @@ use framework\driver\rpc\Thrift;
 
 class Hbase
 {
-    protected $thrift;
+    protected $rpc;
     
     public function __construct($config)
     {
         $config['prefix'] = 'Hbase\THBaseService';
         $config['bind_params'] = false;
-        $this->thrift = new Thrift($config);
+        $this->rpc = new Thrift($config);
     }
     
     public function __get($name)
@@ -25,11 +25,11 @@ class Hbase
     
     public function table($name)
     {
-        return new query\Hbase($this->thrift, $name);
+        return new query\Hbase($this->rpc, $name);
     }
     
     public function __call($method, $params)
     {
-        return $this->thrift->$method(...$params);
+        return $this->rpc->$method(...$params);
     }
 }

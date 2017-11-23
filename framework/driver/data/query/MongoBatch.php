@@ -12,9 +12,6 @@ class MongoBatch
     public function __construct($manager, $db, $collection)
     {
         $this->manager = $manager;
-        if (!isset($db) || !isset($collection)) {
-            throw new \Exception('db and collection not null');
-        }
         $this->ns = "$db.$collection";
         $this->bulk = new BulkWrite;
     }
