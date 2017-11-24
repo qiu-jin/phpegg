@@ -19,11 +19,16 @@ class Elastic
 
     public function __get($name)
     {
-        return new query\Elastic("$this->host:$this->port", $name, $this->type);
+        return $this->query($name);
     }
     
-    public function batch($name = null)
+    public function query($name, $type = null)
     {
-        return new query\ElasticBatch("$this->host:$this->port", $name, $this->type);
+        return new query\Elastic("$this->host:$this->port", $name, $type ?? $this->type);
+    }
+    
+    public function batch($name = null, $type = null)
+    {
+        return new query\ElasticBatch("$this->host:$this->port", $name, $type ?? $this->type);
     }
 }

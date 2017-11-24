@@ -48,7 +48,7 @@ class Builder
             $sql .= ' WHERE '.static::whereClause($option['where'], $params);
         }
         if (isset($option['limit'])) {
-            $sql .= " LIMIT ".$option['limit'];
+            $sql .= static::limitClause($option['limit']);
         }
         return [$sql, $params];
     }
@@ -61,7 +61,7 @@ class Builder
             $sql .= ' WHERE '.static::whereClause($option['where'], $params);
         }
         if (isset($option['limit'])) {
-            $sql .= " LIMIT ".$option['limit'];
+            $sql .= static::limitClause($option['limit']);
         }
         return [$sql, $params];
     }

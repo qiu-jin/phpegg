@@ -16,18 +16,16 @@ class ElasticBatch
     {
         $this->url = $url;
         $this->type = $type;
-        if (isset($index)) {
-            $this->common_index = $index; 
-        }
+        $this->common_index = $index;
     }
     
     public function __get($name)
     {
-        if (isset($this->index)) {
-            throw new \Exception('Ns error');
+        if (!isset($this->index)) {
+            $this->index = $name;
+            return $this;
         }
-        $this->index = $name;
-        return $this;
+        throw new \Exception('Ns error');
     }
     
     public function get($id, $options = null)

@@ -24,6 +24,11 @@ class Cassandra
     
     public function __get($name)
     {
+        return $this->table($name);
+    }
+    
+    public function table($name)
+    {
         return new query\Cassandra($this, $name);
     }
     

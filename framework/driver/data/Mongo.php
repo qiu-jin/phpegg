@@ -7,6 +7,7 @@ class Mongo
 {
     protected $dbname;
     protected $manager;
+    protected $databases;
     
     public function __construct($config)
     {
@@ -18,17 +19,30 @@ class Mongo
     
     public function __get($name)
     {
+        return $this->collection($name);
+    }
+    
+    public function collection($name)
+    {
         return new query\Mongo($this->manager, $this->dbname, $name);
     }
     
     public function db($name)
     {
-        return new query\Mongo($this->manager, $name, $name);
+        if (isset($this->databases[$name])) {
+            return $this->databases[$name];
+        }
+        return $this->databases[$name] = new class ($this->manager, $name) extends Mongo {
+            public function __construct($manager, $name) {
+                $this->dbname = $name;
+                $this->manager = $manager;
+            }
+        };
     }
     
-    public function batch($collection = null, $dbname = null)
+    public function batch($collection = null)
     {
-        return new query\MongoBatch($this->manager, $dbname ?? $this->dbname, $collection);
+        return new query\MongoBatch($this->manager, $this->dbname, $collection);
     }
 }
 

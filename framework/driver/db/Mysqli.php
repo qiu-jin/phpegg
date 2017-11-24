@@ -7,7 +7,6 @@ class Mysqli extends Db
 {
     protected function connect($config)
     {
-        
         $link = new \mysqli($config['host'], 
                             $config['username'], 
                             $config['password'], 
@@ -33,20 +32,25 @@ class Mysqli extends Db
     public function switch($dbname, callable $call)
     {
         $raw_dbname = $this->dbname;
-        $this->dbname = $dbname;
-        $this->link->select_db($dbname);
         try {
-            $call($this);
-        } catch (\Exception $e) {
-            //
+            if ($this->link->select_db($dbname)) {
+                $this->dbname = $dbname;
+                return $call($this);
+            }
+        } finally {
+            $this->dbname = $raw_dbname;
+            $this->link->select_db($raw_dbname);
         }
-        $this->dbname = $raw_dbname;
-        $this->link->select_db($raw_dbname);
     }
     
-    public function async($sql, array $params = null)
+    public function async($sql)
     {
+        $this->debug && DBDebug::write($sql);
         $query = $this->link->query($sql, MYSQLI_ASYNC);
+        if ($query) {
+            return $query;
+        }
+        throw new \Exception('DB ERROR: ['.$this->link->errno.']'.$this->link->error);
     }
     
     public function exec($sql, array $params = null, $is_assoc = false)
@@ -95,10 +99,10 @@ class Mysqli extends Db
             return $this->prepareExecute($sql, $params, $is_assoc)->get_result();
         } else {
             $query = $this->link->query($sql);
-            if (!$query) {
-                throw new \Exception('DB ERROR: ['.$this->link->errno.']'.$this->link->error);
+            if ($query) {
+                return $query;
             }
-            return $query;
+            throw new \Exception('DB ERROR: ['.$this->link->errno.']'.$this->link->error);
         }
     }
     
