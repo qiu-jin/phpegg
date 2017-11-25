@@ -94,14 +94,15 @@ class Elastic
             $url .= "/$path";
         }
         if ($query) {
-            $url .= "?".http_build_query($options);
+            $url .= "?".http_build_query($query);
         }
         $client = new Client($method, $url);
         if ($data) {
             $client->json($data);
         }
-        if ($result = $client->response->json()) {
-            return $result;
+        $response = $client->response;
+        if ($response->status >= 200 && $response->status < 300) {
+            return $response->json();
         }
         error($client->error);
     }

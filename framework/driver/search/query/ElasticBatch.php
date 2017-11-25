@@ -91,7 +91,9 @@ class ElasticBatch
             throw new \Exception('No query');
         }
         $client = Client::post("$this->url/$method")->body($body);
-        if ($result = $client->response->json()) {
+        $response = $client->response;
+        if ($response->status >= 200 && $response->status < 300) {
+            $result = $response->json();
             if ($return_raw_result) {
                 return $result;
             }
