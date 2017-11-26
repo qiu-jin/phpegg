@@ -9,11 +9,11 @@ class MongoBatch
     protected $bulk;
     protected $manager;
     
-    public function __construct($manager, $db, $collection)
+    public function __construct($manager, $db, $collection, $options = null)
     {
         $this->manager = $manager;
         $this->ns = "$db.$collection";
-        $this->bulk = new BulkWrite;
+        $this->bulk = new BulkWrite($options);
     }
     
     public function set($id, $data)

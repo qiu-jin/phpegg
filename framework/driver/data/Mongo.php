@@ -40,9 +40,14 @@ class Mongo
         };
     }
     
-    public function batch($collection = null)
+    public function batch($collection = null, $options = null)
     {
-        return new query\MongoBatch($this->manager, $this->dbname, $collection);
+        return new query\MongoBatch($this->manager, $this->dbname, $collection, $options);
+    }
+    
+    public function getManager()
+    {
+        return $this->manager;
     }
 }
 
