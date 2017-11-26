@@ -27,7 +27,8 @@ class Mongo
     
     public function set($id, $data)
     {
-        return $this->setRaw($id, $data)->getInsertedCount();
+        $result = $this->setRaw($id, $data);
+        return $result->getUpsertedCount() ?: $result->getModifiedCount();
     }
 
     public function insert($data)
@@ -58,8 +59,7 @@ class Mongo
     public function setRaw($id, $data)
     {
         $bulk = new BulkWrite;
-        $data['_id'] = $id;
-        $bulk->insert($data);
+        $bulk->update(['_id' => $id], $data, ['upsert' => true]);
         return $this->manager->executeBulkWrite($this->ns, $bulk);
     }
 

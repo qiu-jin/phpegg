@@ -18,8 +18,7 @@ class MongoBatch
     
     public function set($id, $data)
     {
-        $data['_id'] = $id;
-        $this->bulk->insert($data);
+        $this->bulk->update(['_id' => $id], $data, ['upsert' => true]);
         return $this;
     }
     
