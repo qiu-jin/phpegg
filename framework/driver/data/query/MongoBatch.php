@@ -16,17 +16,16 @@ class MongoBatch
         $this->bulk = new BulkWrite;
     }
     
-    public function insert(...$params)
+    public function set($id, $data)
     {
-        $count = count($params);
-        if ($count === 1) {
-            $this->bulk->insert($params[0]);
-        } elseif ($count === 2) {
-            $params[1]['_id'] = $params[0];
-            $this->bulk->insert($params[1]);
-        } else {
-            throw new \Exception('Params error');
-        }
+        $data['_id'] = $id;
+        $this->bulk->insert($data);
+        return $this;
+    }
+    
+    public function insert($data)
+    {
+        $this->bulk->insert($data);
         return $this;
     }
     

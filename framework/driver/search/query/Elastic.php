@@ -22,10 +22,15 @@ class Elastic
         $result = $this->searchRaw($query, $options);
         return isset($result['hits']['hits']) ? array_column($result['hits']['hits'], '_source') : null;
     }
-
-    public function index(...$params)
+    
+    public function set($id, $data, $options = null)
     {
-        return $this->indexRaw(...$params)['created'] ?? false;
+        return $this->setRaw($id, $data, $options)['created'] ?? false;
+    }
+
+    public function index($data, $options = null)
+    {
+        return $this->indexRaw($data, $options)['created'] ?? false;
     }
     
     public function update($query, $data, $options = null)
@@ -54,20 +59,14 @@ class Elastic
         }
     }
     
-    public function indexRaw(...$params)
+    public function setRaw($id, $data, $options = null)
     {
-        $count = count($params);
-        if ($count === 1) {
-            return $this->call('POST', null, $params[0]);
-        } elseif ($count === 2) {
-            if (is_array($params[0])) {
-                return $this->call('POST', $params[0], $params[1]);
-            } else {
-                return $this->call('PUT', $params[0], null, $params[1]);
-            }
-        } elseif ($count === 3) {
-            return $this->call('PUT', $params[0], $params[2], $params[1]);
-        }
+        return $this->call('PUT', $id, $options, $data);
+    }
+    
+    public function indexRaw($data, $options = null)
+    {
+        return $this->call('POST', null, $options, $data);
     }
     
     public function updateRaw($query, $data, $options = null)

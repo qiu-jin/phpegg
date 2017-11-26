@@ -24,10 +24,15 @@ class Mongo
     {
         return $this->findRaw($filter, $options)->toArray();
     }
-
-    public function insert(...$params)
+    
+    public function set($id, $data)
     {
-        return $this->insertRaw(...$params)->getInsertedCount();
+        return $this->setRaw($id, $data)->getInsertedCount();
+    }
+
+    public function insert($data)
+    {
+        return $this->insertRaw($data)->getInsertedCount();
     }
     
     public function update($filter, $data, $options = null)
@@ -49,17 +54,19 @@ class Mongo
     {
         return $this->manager->executeQuery($this->ns, new Query($filter, $options));
     }
-
-    public function insertRaw(...$params)
+    
+    public function setRaw($id, $data)
     {
         $bulk = new BulkWrite;
-        $count = count($params);
-        if ($count === 1) {
-            $bulk->insert($params[0]);
-        } elseif ($count === 2) {
-            $params[1]['_id'] = $params[0];
-            $bulk->insert($params[1]);
-        }
+        $data['_id'] = $id;
+        $bulk->insert($data);
+        return $this->manager->executeBulkWrite($this->ns, $bulk);
+    }
+
+    public function insertRaw($data)
+    {
+        $bulk = new BulkWrite;
+        $bulk->insert($data);
         return $this->manager->executeBulkWrite($this->ns, $bulk);
     }
     
