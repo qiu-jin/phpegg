@@ -28,7 +28,7 @@ class Elastic
         return $this->setRaw($id, $data, $options)['created'] ?? false;
     }
 
-    public function index($data, $options = null)
+    public function create($data, $options = null)
     {
         return $this->indexRaw($data, $options)['created'] ?? false;
     }
@@ -64,7 +64,7 @@ class Elastic
         return $this->call('PUT', $id, $options, $data);
     }
     
-    public function indexRaw($data, $options = null)
+    public function createRaw($data, $options = null)
     {
         return $this->call('POST', null, $options, $data);
     }

@@ -5,17 +5,17 @@ use framework\core\http\Client;
 
 class ElasticBatch
 {
-    protected $url;
-    protected $type;
     protected $mget;
     protected $bulk;
+    protected $type;
     protected $index;
+    protected $endpoint;
     protected $common_index;
     
-    public function __construct($url, $index, $type)
+    public function __construct($endpoint, $index, $type)
     {
-        $this->url = $url;
         $this->type = $type;
+        $this->endpoint = $endpoint;
         $this->common_index = $index;
     }
     
@@ -28,52 +28,40 @@ class ElasticBatch
         throw new \Exception('Ns error');
     }
     
-    public function get($id, $options = null)
+    public function get($id, $options = [])
     {
-        $query = $this->getIndexType();
-        $query['_id'] = $id;
-        if (isset($options)) {
-            $query = array_merge($options, $query);
-        }
-        $this->mget[] = $query;
+        $this->mget[] = array_merge($options, $this->getQuery($id));
         return $this;
     }
     
-    public function index(...$params)
+    public function set($id, $data)
     {
-        $query = $this->getIndexType();
-        $count = count($params);
-        if ($count === 1) {
-            $data = $params[0];
-        } elseif ($count === 2) {
-            $query['_id'] = $params[0];
-            $data = $params[1];
-        } else {
-            throw new \Exception('Params error');
-        }
-        $this->bulk[] = json_encode(['index' => $query]);
+        $this->bulk[] = json_encode(['index' => $this->getQuery($id)]);
+        $this->bulk[] = json_encode($data);
+        return $this;
+    }
+    
+    public function create($data)
+    {
+        $this->bulk[] = json_encode(['index' => $this->getQuery()]);
         $this->bulk[] = json_encode($data);
         return $this;
     }
     
     public function update($id, $data)
     {
-        $query = $this->getIndexType();
-        $query['_id'] = $id;
-        $this->bulk[] = json_encode(['update' => $query]);
+        $this->bulk[] = json_encode(['update' => $this->getQuery($id)]);
         $this->bulk[] = json_encode($data);
         return $this;
     }
     
     public function delete($id)
     {
-        $query = $this->getIndexType();
-        $query['_id'] = $id;
-        $this->bulk[] = json_encode(['delete' => $query]);
+        $this->bulk[] = json_encode(['delete' => $this->getQuery($id)]);
         return $this;
     }
     
-    public function call($return_raw_result = false)
+    public function call()
     {
         if (isset($this->bulk)) {
             if (isset($this->mget)) {
@@ -88,31 +76,30 @@ class ElasticBatch
             $method = '_mget';
             $body = json_encode(['docs' => $this->mget]);
         } else {
-            throw new \Exception('No query');
+            throw new \Exception('Query is empty');
         }
-        $client = Client::post("$this->url/$method")->body($body);
+        $client = Client::post("$this->endpoint/$method")->body($body);
         $response = $client->response;
         if ($response->status >= 200 && $response->status < 300) {
-            $result = $response->json();
-            if ($return_raw_result) {
-                return $result;
-            }
-            if ($method === '_bulk') {
-                return $result['items'] ?? false;
-            }
+            return $response->json();
         }
         error($client->error);
     }
     
-    protected function getIndexType()
+    protected function getQuery($id = null)
     {
         if ($this->index) {
             $index = $this->index;
             $this->index = null;
-            return ['_index' => $index, '_type' => $this->type];
+            return $query = ['_index' => $index, '_type' => $this->type];
         } elseif ($this->common_index) {
-            return ['_index' => $this->common_index, '_type' => $this->type];
+            return $query = ['_index' => $this->common_index, '_type' => $this->type];
+        } else {
+            throw new \Exception('Index is empty');
         }
-        throw new \Exception('Ns error');
+        if (isset($id)) {
+            $query['_id'] = $id;
+        }
+        return $query;
     }
 }

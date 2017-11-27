@@ -41,4 +41,3 @@ class Hbase
         return $this->rpc->deleteSingle($this->table, new \hbase\TDelete($options));
     }
 }
-

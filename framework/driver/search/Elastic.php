@@ -6,29 +6,27 @@ namespace framework\driver\search;
  */
 class Elastic
 {
-    protected $host;
-    protected $port;
     protected $type;
+    protected $endpoint;
     
     public function __construct($config)
     {
-        $this->host = $config['host'];
-        $this->port = $config['port'] ?? 9200;
         $this->type = $config['type'] ?? 'doc';
+        $this->endpoint = $config['host'].':'.($config['port'] ?? '9200');
     }
 
     public function __get($name)
     {
-        return $this->query($name);
+        return $this->index($name);
     }
     
-    public function query($name, $type = null)
+    public function index($name, $type = null)
     {
-        return new query\Elastic("$this->host:$this->port", $name, $type ?? $this->type);
+        return new query\Elastic($this->endpoint, $name, $type ?? $this->type);
     }
     
     public function batch($name = null, $type = null)
     {
-        return new query\ElasticBatch("$this->host:$this->port", $name, $type ?? $this->type);
+        return new query\ElasticBatch($this->endpoint, $name, $type ?? $this->type);
     }
 }

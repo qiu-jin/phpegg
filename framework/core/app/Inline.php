@@ -53,8 +53,7 @@ class Inline extends App
         if ($this->config['enable_getter']) {
             $return = (new class() {
                 use Getter;
-                public function __invoke($__file, $_PARAMS)
-                {
+                public function __invoke($__file, $_PARAMS) {
                     return require($__file);
                 }
             })($file, $params);

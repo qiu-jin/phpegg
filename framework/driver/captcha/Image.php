@@ -4,11 +4,11 @@ namespace framework\driver\captcha;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
-use Gregwar\Captcha\CaptchaBuilder;
 /*
  * composer require gregwar/captcha
  * https://github.com/Gregwar/Captcha
  */
+use Gregwar\Captcha\CaptchaBuilder;
 
 class Image
 {

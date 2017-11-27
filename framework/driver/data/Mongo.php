@@ -50,4 +50,3 @@ class Mongo
         return $this->manager;
     }
 }
-

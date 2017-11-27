@@ -58,35 +58,28 @@ class Mongo
     
     public function setRaw($id, $data)
     {
-        $bulk = new BulkWrite;
-        $bulk->update(['_id' => $id], $data, ['upsert' => true]);
-        return $this->manager->executeBulkWrite($this->ns, $bulk);
+        return $this->bulkWrite('update', ['_id' => $id], $data, ['upsert' => true]);
     }
 
     public function insertRaw($data)
     {
-        $bulk = new BulkWrite;
-        $bulk->insert($data);
-        return $this->manager->executeBulkWrite($this->ns, $bulk);
+        return $this->bulkWrite('insert', $data);
     }
     
     public function updateRaw($filter, $data, $options = null)
     {
-        $bulk = new BulkWrite;
-        if (!is_array($filter)) {
-            $filter = ['_id' => $filter];
-        }
-        $bulk->update($filter, $data, $options);
-        return $this->manager->executeBulkWrite($this->ns, $bulk);
+        return $this->bulkWrite('update', is_array($filter) ? $filter : ['_id' => $filter], $data, $options);
     }
     
     public function deleteRaw($filter, $options = null)
     {
+        return $this->bulkWrite('delete', is_array($filter) ? $filter : ['_id' => $filter], $options);
+    }
+    
+    protected function bulkWrite($method, ...$params)
+    {
         $bulk = new BulkWrite;
-        if (!is_array($filter)) {
-            $filter = ['_id' => $filter];
-        }
-        $bulk->delete($filter, $options);
+        $bulk->$method(...$params);
         return $this->manager->executeBulkWrite($this->ns, $bulk);
     }
 }
