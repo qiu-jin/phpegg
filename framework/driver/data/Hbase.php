@@ -4,7 +4,7 @@ namespace framework\driver\data;
 use framework\driver\rpc\Thrift;
 
 /*
- * https://github.com/apache/hbase/blob/master/hbase-thrift/src/main/resources/org/apache/hadoop/hbase/thrift2/hbase.thrift
+ * /blob/master/hbase-thrift/src/main/resources/org/apache/hadoop/hbase/thrift2/hbase.thrift
  */
 
 class Hbase

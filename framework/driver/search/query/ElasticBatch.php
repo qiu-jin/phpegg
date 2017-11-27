@@ -25,7 +25,7 @@ class ElasticBatch
             $this->index = $name;
             return $this;
         }
-        throw new \Exception('Ns error');
+        throw new \Exception('Index has been set');
     }
     
     public function get($id, $options = [])
@@ -65,13 +65,13 @@ class ElasticBatch
     {
         if (isset($this->bulk)) {
             if (isset($this->mget)) {
-                throw new \Exception('No support mix get and other');
+                throw new \Exception('No support read and write mix');
             }
             $method = '_bulk';
             $body = implode("\n", $this->bulk)."\n";
         } elseif (isset($this->mget)) {
             if (isset($this->bulk)) {
-                throw new \Exception('No support mix get and other');
+                throw new \Exception('No support read and write mix');
             }
             $method = '_mget';
             $body = json_encode(['docs' => $this->mget]);
