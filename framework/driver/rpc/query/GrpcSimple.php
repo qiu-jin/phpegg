@@ -39,17 +39,7 @@ class GrpcSimple
             '{method}'  => ucfirst($method)
         ];
         $request_class = strtr($this->options['request_scheme_format'], $replace);
-        $i = 0;
-        $request_object = new $request_class;
-        foreach (get_class_methods($request_class) as $m) {
-            if (strpos($m, 'set') === 0) {
-                if (!isset($params[$i])) {
-                    break;
-                }
-                $request_object->$m($params[$i]);
-                $i++;
-            }
-        }
+        $request_object = $this->rpc->buildeRequest($request_class, $params);
         $url    = $this->options['endpoint'].'/'.implode('.', $this->ns).'/'.$method;
         $size   = $request_object->byteSize();
         $body   = pack('C1N1a'.$size, 0, $size, $request_object->serializeToString());
@@ -66,7 +56,7 @@ class GrpcSimple
         $response = $client->response;
         if (isset($response->headers['grpc-status'])) {
             if ($response->headers['grpc-status'] === '0') {
-                $esponse_class = strtr($this->options['response_scheme_format'], [
+                $response_class = strtr($this->options['response_scheme_format'], [
                     '{service}' => $service,
                     '{method}'  => ucfirst($method)
                 ]);
@@ -74,9 +64,12 @@ class GrpcSimple
                 if ($result['zise'] !== strlen($result['message'])) {
                     error('Invalid input');
                 }
-                $esponse_object = new $esponse_class;
-                $esponse_object->mergeFromString($result['message']);
-                return $esponse_object;
+                $response_object = new $response_class;
+                $response_object->mergeFromString($result['message']);
+                if (empty($this->options['response_to_array'])) {
+                    return $response_object;
+                }
+                return $this->rpc->toArray($response_object);
             }
             error("[$response->headers[grpc-status]]$response->headers[grpc-message]");
         }

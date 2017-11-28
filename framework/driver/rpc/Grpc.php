@@ -21,6 +21,8 @@ class Grpc
         //'simple_mode_curlopts'    => null,
         // 自动绑定参数
         'auto_bind_param'           => true,
+        
+        //'response_to_array'       => true,
         // 请求参数协议类格式
         'request_scheme_format'     => '{service}{method}Request',
         // 响应结构协议类格式
@@ -64,19 +66,13 @@ class Grpc
         return new query\GrpcSimple($this, $ns, $this->config);
     }
     
-    public function bindParams($request_class, $params)
+    public function toArray($esponse)
     {
-        if ($this->request_scheme_format) {
-            $request_class = strtr($this->request_scheme_format, [
-                '{service}' => $class,
-                '{method}'  => ucfirst($method)
-            ]);
-        } else {
-            if (!isset($this->request_classes[$class][$method])) {
-                $this->request_classes[$class][$method] = (string) (new \ReflectionMethod($class, $method))->getParameters()[0]->getType();
-            }
-            $request_class = $this->request_classes[$class][$method];
-        }
+        
+    }
+    
+    public function buildeRequest($request_class, $params)
+    {
         $i = 0;
         $request_object = new $request_class;
         foreach (get_class_methods($request_class) as $method) {

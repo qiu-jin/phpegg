@@ -39,20 +39,20 @@ class Grpc
                 'credentials' => \Grpc\ChannelCredentials::createInsecure()
             ]);
         }
-        if ($this->auto_bind_param) {
-            if ($this->request_scheme_format) {
-                $request_class = strtr($this->request_scheme_format, [
+        if (!empty($this->options['auto_bind_param'])) {
+            if (isset($this->options['request_scheme_format'])) {
+                $request_class = strtr($this->options['request_scheme_format'], [
                     '{service}' => $service,
                     '{method}'  => ucfirst($method)
                 ]);
             } else {
                 $request_class = $this->getRequestClass($class, $method);
             }
-            $params = $this->bindParams($request_class, $params);
+            $params = $this->rpc->buildeRequest($request_class, $params);
         }
-        list($reply, $status) = $this->client->$method($params)->wait();
+        list($response, $status) = $this->clients[$class]->$method($params)->wait();
         if ($status->code === 0) {
-            return $reply;
+            return $response;
         }
         error("[$status->code]$status->details");
     }
