@@ -35,12 +35,14 @@ class Grpc extends App
     {
         $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
         $path_array = Request::pathArr();
-        if (count($path) === 2) {
-            $class = $this->ns.strtr($path_array[0], '.', '\\').$this->config['controller_suffix'];
+        if (count($path_array) === 2) {
+            $controller = strtr($path_array[0], '.', '\\');
+            $class = $this->ns.$controller.$this->config['controller_suffix'];
             if (Loader::importPrefixClass($class)) {
                 $controller_instance = new $class();
                 if (is_callable([$controller_instance, $path_array[1]])) {
                     return [
+                        'controller'            => $controller,
                         'controller_instance'   => $controller_instance,
                         'action'                => $path_array[1],
                     ];
@@ -59,9 +61,9 @@ class Grpc extends App
         }
         $parameters = (new \ReflectionMethod($this->dispatch['controller_instance'], $this->dispatch['action']))->getParameters();
         if ($this->config['param_mode']) {
-            return $this->callWithKvParams($parameters);
-        } else {
             return $this->callWithReqResParams($parameters);
+        } else {
+            return $this->callWithKvParams($parameters);
         }
     }
     
@@ -74,14 +76,14 @@ class Grpc extends App
     {
         $size = $return->byteSize();
         Response::header('grpc-status', '0');
-        Response::send(pack('C1N1Z'.$size, 0, $size, $return->serializeToString()), null, false);
+        Response::send(pack('C1N1a'.$size, 0, $size, $return->serializeToString()), null, false);
     }
     
     protected function readParams()
     {
         $body = Request::body();
         if (strlen($body) > 5) {
-            extract(unpack('Cencode/Nzise/Z*message', $body), EXTR_SKIP);
+            extract(unpack('Cencode/Nzise/a*message', $body), EXTR_SKIP);
             if ($zise === strlen($message)) {
                 return $message;
             }
@@ -91,16 +93,15 @@ class Grpc extends App
     
     protected function callWithKvParams($parameters)
     {
-        $params = [];
         $replace = [
-            '{service}' => str_replace($this->ns, '', get_class($this->dispatch['controller_instance'])),
-            '{method}' => ucfirst($action)
+            '{service}' => $this->dispatch['controller'],
+            '{method}'  => ucfirst($this->dispatch['action'])
         ];
         $request_class = strtr($this->config['request_scheme_format'], $replace);
         $response_class =  strtr($this->config['response_scheme_format'], $replace);
-        
         $request_object = new $request_class;
         $request_object->mergeFromString($this->readParams());
+        $params = [];
         foreach ($parameters as $parameter) {
             $param = $request_object->{'get'.ucfirst($parameter->name)}();
             if ($param === '' && $parameter->isDefaultValueAvailable()) {

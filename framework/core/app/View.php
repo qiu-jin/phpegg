@@ -48,8 +48,7 @@ class View extends App
             $file = CoreView::file($this->dispatch['view_path']);
         }
         (new class() {
-            public function __invoke($__file)
-            {
+            public function __invoke($__file) {
                 return require($__file);
             }
         })($file);

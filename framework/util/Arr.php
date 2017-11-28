@@ -3,14 +3,14 @@ namespace framework\util;
 
 class Arr
 {
-    public static function pull(array &$array, $key, $default)
+    public static function pull(array &$array, $key, $default = null)
     {
         if (isset($array[$key])) {
             $value =  $array[$key];
             unset($array[$key]);
             return $value;
         }
-        return null;
+        return $default;
     }
     
     public static function isAssoc(array $array)

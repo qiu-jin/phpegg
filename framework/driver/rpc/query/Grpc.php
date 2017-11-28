@@ -1,97 +1,60 @@
 <?php
-namespace framework\driver\rpc;
+namespace framework\driver\rpc\query;
 
 use framework\core\Loader;
 
 /* 
  * https://grpc.io/docs/quickstart/php.html
  */
-
 class Grpc
 {
+    protected $ns;
     protected $rpc;
-    protected $host;
-    protected $port;
-    protected $prefix;
+    protected $options;
+    protected $clients;
     protected $request_classes;
-    protected $auto_bind_param;
-    // {service}{method}Request
-    protected $request_scheme_format;
     
-    public function __construct($config)
+    public function __construct($rpc, $ns, $options)
     {
-        $this->host = $config['host'];
-        $this->port = $config['port'];
-        foreach ($config['service_schemes'] as $type => $scheme) {
-            Loader::add($scheme, $type);
-        }
-        $this->prefix = $config['prefix'] ?? null;
-        $this->auto_bind_param = $config['auto_bind_param'] ?? false;
-        $this->request_scheme_format = $config['request_scheme_format'] ?? null;
+        $this->ns = $ns;
+        $this->rpc = $rpc;
+        $this->options = $options;
     }
     
     public function __get($name)
     {
-        return $this->query($name);
+        $this->ns[] = $name;
+        return $this;
     }
-
+    
     public function __call($method, $params)
     {
-        return $this->query()->$method(...$params);
-    }
-    
-    public function query($name = null, $client_methods = null)
-    {
-        return new query\Query($this, $name, $client_methods);
-    }
-    
-    public function call($ns, $method, $params, $client_methods)
-    {
-        if (isset($this->prefix)) {
-            array_unshift($ns, $this->prefix);
+        if (!$this->ns) {
+            throw new \Exception('Service is empty');
         }
-        if (!$ns) {
-            throw new \Exception('service is empty');
-        }
-        $class = implode('\\', $ns);
-        if (!isset($this->rpc[$class])) {
-            $client = $class.'Client';
-            $this->rpc[$class] = new $client("$this->host:$this->port", [
+        $service  = implode('\\', $this->ns);
+        $class = $service.'Client';
+        if (!isset($this->clients[$class])) {
+            $this->clients[$class] = new $class($this->options['endpoint'], [
                 'credentials' => \Grpc\ChannelCredentials::createInsecure()
             ]);
         }
         if ($this->auto_bind_param) {
             if ($this->request_scheme_format) {
                 $request_class = strtr($this->request_scheme_format, [
-                    '{service}' => $class,
+                    '{service}' => $service,
                     '{method}'  => ucfirst($method)
                 ]);
             } else {
-                $request_class = $this->getRequestClass($client, $method);
+                $request_class = $this->getRequestClass($class, $method);
             }
             $params = $this->bindParams($request_class, $params);
         }
-        list($reply, $status) = $this->rpc[$class]->$method($params)->wait();
+        list($reply, $status) = $this->client->$method($params)->wait();
         if ($status->code === 0) {
             return $reply;
         }
-        error("$status->code: $status->details");
-    }
-    
-    protected function bindParams($request_class, $params)
-    {
-        $i = 0;
-        $request_object = new $request_class;
-        foreach (get_class_methods($request_class) as $method) {
-            if (substr($method, 0, 3) === 'set') {
-                if (!isset($params[$i])) {
-                    break;
-                }
-                $request_object->$method($params[$i]);
-                $i++;
-            }
-        }
-        return $request_object;
+        error("[$status->code]$status->details");
     }
     
     protected function getRequestClass($class, $method)

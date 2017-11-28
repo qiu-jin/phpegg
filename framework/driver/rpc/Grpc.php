@@ -8,21 +8,23 @@ class Grpc
 {
     protected $config = [
         // 服务端点
-        //'endpoint'      => null,
+        //'endpoint'                => null,
         // service类名前缀
-        //'prefix'        => null,
-        // 是否启用HTTP2
-        //'enable_http2'  => false,
-        // 是否启用HTTP2
-        //'headers'  => null,
-        // 是否启用HTTP2
-        //'curlopts'  => null,
-        // 
-        'auto_bind_param' => true,
+        //'prefix'                  => null,
+        // 简单模式
+        'simple_mode'               => false,
+        // 简单模式下是否启用HTTP2
+        //'simple_mode_enable_http2'=> false,
+        // 简单模式下公共headers
+        //'simple_mode_headers'     => null,
+        // 简单模式下CURL设置
+        //'simple_mode_curlopts'    => null,
+        // 自动绑定参数
+        'auto_bind_param'           => true,
         // 请求参数协议类格式
-        //'request_scheme_format' => '{service}{method}Request',
-        // 
-        //'response_scheme_format' => '{service}{method}Response',
+        'request_scheme_format'     => '{service}{method}Request',
+        // 响应结构协议类格式
+        'response_scheme_format'    => '{service}{method}Response',
     ];
     
     protected $simple_mode;
@@ -31,7 +33,6 @@ class Grpc
     
     public function __construct($config)
     {
-        $this->simple_mode = Arr::pull($config, 'simple_mode');
         foreach (Arr::pull($config, 'service_schemes') as $type => $scheme) {
             Loader::add($scheme, $type);
         }
@@ -51,16 +52,16 @@ class Grpc
     public function query($name = null)
     {
         $ns = [];
-        if (isset($this->prefix)) {
-            $ns[] = $this->prefix;
+        if (isset($this->config['prefix'])) {
+            $ns[] = $this->config['prefix'];
         }
-        if (isset($ns)) {
-            $ns[] = $ns;
+        if (isset($name)) {
+            $ns[] = $name;
         }
-        if ($this->simple_mode) {
-            return return new query\GrpcSimple($this, $ns, $this->config);
+        if (empty($this->config['simple_mode'])) {
+            return new query\Grpc($this, $ns, $this->config);
         }
-        return return new query\Grpc($this, $ns, $this->config);
+        return new query\GrpcSimple($this, $ns, $this->config);
     }
     
     public function bindParams($request_class, $params)
