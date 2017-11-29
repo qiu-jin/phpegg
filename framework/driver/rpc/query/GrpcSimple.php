@@ -39,7 +39,7 @@ class GrpcSimple
             '{method}'  => ucfirst($method)
         ];
         $request_class  = strtr($this->options['request_scheme_format'], $replace);
-        $request_object = $this->rpc->buildeRequest($request_class, $params);
+        $request_object = $this->rpc->arrayToRequest($request_class, $params);
         $url    = $this->options['endpoint'].'/'.implode('.', $this->ns).'/'.$method;
         $size   = $request_object->byteSize();
         $body   = pack('C1N1a'.$size, 0, $size, $request_object->serializeToString());
@@ -69,9 +69,9 @@ class GrpcSimple
                 if (empty($this->options['response_to_array'])) {
                     return $response_object;
                 }
-                return $this->rpc->toArray($response_object);
+               return $this->rpc->responseToArray($response_object);
             }
-            error("[$response->headers[grpc-status]]$response->headers[grpc-message]");
+            error("[{$response->headers['grpc-status']}]".$response->headers['grpc-message']);
         }
         error($client->error);
     }

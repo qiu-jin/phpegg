@@ -40,7 +40,7 @@ class Grpc
             } else {
                 $request_class = (string) (new \ReflectionMethod($class, $method))->getParameters()[0]->getType();
             }
-            $params = $this->rpc->buildeRequest($request_class, $params);
+            $params = $this->rpc->arrayToRequest($request_class, $params);
         }
         $class = $service.'Client';
         $client = new $class($this->options['endpoint'], [
@@ -48,7 +48,10 @@ class Grpc
         ]);
         list($response, $status) = $client->$method($params)->wait();
         if ($status->code === 0) {
-            return $response;
+            if (empty($this->options['response_to_array'])) {
+                return $response;
+            }
+            return $this->rpc->responseToArray($response);
         }
         error("[$status->code]$status->details");
     }

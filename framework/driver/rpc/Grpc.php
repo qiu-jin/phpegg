@@ -66,12 +66,7 @@ class Grpc
         return new query\GrpcSimple($this, $ns, $this->config);
     }
     
-    public function toArray($esponse)
-    {
-        
-    }
-    
-    public function buildeRequest($request_class, $params)
+    public function arrayToRequest($request_class, $params)
     {
         $i = 0;
         $request_object = new $request_class;
@@ -85,5 +80,12 @@ class Grpc
             }
         }
         return $request_object;
+    }
+    
+    public function responseToArray($response)
+    {
+        return \Closure::bind(function () {
+            return get_object_vars($this);
+        }, $response, $response)();
     }
 }

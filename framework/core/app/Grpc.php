@@ -15,21 +15,21 @@ class Grpc extends App
 {
     protected $config = [
         // 控制器namespace
-        'controller_ns'     => 'controller',
+        'controller_ns'         => 'controller',
         // 控制器类名后缀
-        'controller_suffix' => null,
+        'controller_suffix'     => null,
         /* 参数模式
          * 0 键值参数模式
          * 1 request response 参数模式
          */
-        'param_mode'        => 0,
+        'param_mode'            => 0,
         // 服务定义文件
-        'service_schemes'   => null,
-        
+        'service_schemes'       => null,
+        // 忽略service类名前缀
         'ignore_service_prefix' => 0,
-        
+        // 请求scheme格式
         'request_scheme_format' => '{service}{method}Request',
-        
+        // 响应scheme格式
         'response_scheme_format'=> '{service}{method}Response',
     ];
     
@@ -140,7 +140,6 @@ class Grpc extends App
             if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
                 $request_object = new $request_class;
                 $request_object->mergeFromString($this->readParams());
-                
                 $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}($request_object, new $response_class);
                 if ($return instanceof $response_class) {
                     return $return;
