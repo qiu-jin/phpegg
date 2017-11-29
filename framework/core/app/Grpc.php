@@ -121,14 +121,12 @@ class Grpc extends App
         }
         $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}(...$params);
         if (count($return) > 0) {
-            $responset_object = new $response_class;
-            foreach ($return as $key => $value) {
-                $method = 'set'.ucfirst($key);
-                if (method_exists($responset_object, $method)) {
-                    $responset_object->$method($value);
+            return \Closure::bind(function ($params) {
+                foreach ($params as $k => $v) {
+                    $this->$k = $v;
                 }
-            }
-            return $responset_object;
+                return $this;
+            }, new $response_class, $response_class)($return);
         }
         self::abort(500, 'Invalid return value');
     }

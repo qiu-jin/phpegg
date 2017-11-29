@@ -68,18 +68,17 @@ class Grpc
     
     public function arrayToRequest($request_class, $params)
     {
-        $i = 0;
-        $request_object = new $request_class;
-        foreach (get_class_methods($request_class) as $method) {
-            if (substr($method, 0, 3) === 'set') {
+        return \Closure::bind(function ($params) {
+            $i = 0;
+            foreach ($this as $k => $v) {
                 if (!isset($params[$i])) {
                     break;
                 }
-                $request_object->$method($params[$i]);
+                $this->$k = $params[$i];
                 $i++;
             }
-        }
-        return $request_object;
+            return $this;
+        }, new $request_class, $request_class)($params);
     }
     
     public function responseToArray($response)
