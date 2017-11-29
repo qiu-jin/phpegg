@@ -26,9 +26,11 @@ class Grpc extends App
         // 服务定义文件
         'service_schemes'   => null,
         
+        'ignore_service_prefix' => 0,
+        
         'request_scheme_format' => '{service}{method}Request',
         
-        'response_scheme_format' => '{service}{method}Response',
+        'response_scheme_format'=> '{service}{method}Response',
     ];
     
     protected function dispatch()
@@ -36,7 +38,11 @@ class Grpc extends App
         $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
         $path_array = Request::pathArr();
         if (count($path_array) === 2) {
-            $controller = strtr($path_array[0], '.', '\\');
+            $controller_array = explode('.', $path_array[0]);
+            if ($this->config['ignore_service_prefix'] > 0) {
+                $controller_array = array_slice($controller_array, $this->config['ignore_service_prefix']);
+            }
+            $controller = implode('\\', $controller_array);
             $class = $this->ns.$controller.$this->config['controller_suffix'];
             if (Loader::importPrefixClass($class)) {
                 $controller_instance = new $class();

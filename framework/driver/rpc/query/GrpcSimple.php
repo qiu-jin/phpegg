@@ -38,7 +38,7 @@ class GrpcSimple
             '{service}' => $service,
             '{method}'  => ucfirst($method)
         ];
-        $request_class = strtr($this->options['request_scheme_format'], $replace);
+        $request_class  = strtr($this->options['request_scheme_format'], $replace);
         $request_object = $this->rpc->buildeRequest($request_class, $params);
         $url    = $this->options['endpoint'].'/'.implode('.', $this->ns).'/'.$method;
         $size   = $request_object->byteSize();
