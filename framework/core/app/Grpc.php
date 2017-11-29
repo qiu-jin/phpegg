@@ -103,17 +103,20 @@ class Grpc extends App
             '{service}' => $this->dispatch['controller'],
             '{method}'  => ucfirst($this->dispatch['action'])
         ];
-        $request_class = strtr($this->config['request_scheme_format'], $replace);
+        $request_class  = strtr($this->config['request_scheme_format'], $replace);
         $response_class =  strtr($this->config['response_scheme_format'], $replace);
         $request_object = new $request_class;
         $request_object->mergeFromString($this->readParams());
-        $params = [];
+        $request_params = \Closure::bind(function () {
+            return get_object_vars($this);
+        }, $request_object, $request_class)();
         foreach ($parameters as $parameter) {
-            $param = $request_object->{'get'.ucfirst($parameter->name)}();
-            if ($param === '' && $parameter->isDefaultValueAvailable()) {
+            if (isset($request_params[$parameter->name]) && $request_params[$parameter->name] !== '') {
+                $params[] = $request_params[$parameter->name];
+            } elseif($parameter->isDefaultValueAvailable()) {
                 $params[] = $parameter->getdefaultvalue();
             } else {
-                $params[] = $param;
+                self::abort(500, 'Missing argument');
             }
         }
         $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}(...$params);
@@ -136,7 +139,6 @@ class Grpc extends App
             list($request, $response) = $parameters;
             $request_class = (string) $request->getType();
             $response_class = (string) $response->getType();
-            
             if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
                 $request_object = new $request_class;
                 $request_object->mergeFromString($this->readParams());
