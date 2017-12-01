@@ -3,28 +3,30 @@ namespace framework\driver\queue\consumer;
 
 class Redis extends Consumer
 {
-    protected $job;
-    protected $queue;
-    
-    public function __construct($queue, $job)
+    protected function init($link)
     {
-        $this->job = $job;
-        $this->queue = $queue;
+        $this->queue = $link;
     }
     
-    public function get()
+    public function pop()
     {
-        return $this->queue->rpoplpush($this->job, $this->timeout);
+        return $this->queue->rPop($this->job);
     }
-
-    public function pull()
+    
+    public function bpop()
     {
         return $this->queue->brPop($this->job, $this->timeout);
     }
     
-    
-    public function delete()
+    public function consume(callable $call)
     {
-        
+        while (true) {
+            if ($job = $this->bpop()) {
+                $message = $this->unserialize($job[1]);
+                if (!$call($message)) {
+                    $this->queue->lPush($this->job, $job[1]);
+                }
+            }
+        }
     }
 }

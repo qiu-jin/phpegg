@@ -108,7 +108,6 @@ class Mysqli extends Db
     
     public function prepareExecute($sql, $params, $is_assoc)
     {
-        
         $bind_params = [];
         if ($is_assoc) {
             $str = '';
@@ -201,8 +200,9 @@ class Mysqli extends Db
     }
     
     public function error($query = null)
-    {   
-        return $query ? array($query->errno, $query->error) : array($this->link->errno, $this->link->error);
+    {
+        $q = $query ?? $this->link;
+        return array($q->errno, $q->error)
     }
     
     protected function getFields($table)

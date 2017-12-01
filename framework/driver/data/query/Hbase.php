@@ -25,7 +25,7 @@ class Hbase
     
     public function scan($key, $options = null)
     {
-
+        
     }
     
     public function put($key, $value, $options = null)

@@ -3,10 +3,9 @@ namespace framework\driver\queue\producer;
 
 class Redis extends Producer
 {
-    public function __construct($queue, $job)
+    protected function init($link)
     {
-        $this->job = $job;
-        $this->queue = $queue;
+        $this->queue = $link;
     }
     
     public function push($value)

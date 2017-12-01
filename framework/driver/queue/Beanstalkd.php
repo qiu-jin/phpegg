@@ -11,14 +11,13 @@ class Beanstalkd extends Queue
 {
     protected function connect()
     {
-        $link = new Pheanstalk($this->config['host'], '11300', isset($this->config['timeout']) ? $this->config['timeout'] : 3);
-        return $this->link = $link;
+        return $this->link = new Pheanstalk($this->config['host'], $this->config['port'] ?? 11300, $this->config['timeout'] ?? 3);
     }
 
     public function __destruct()
     {
-        if ($this->link) {
-            //$this->link->disconnect();
+        if ($this->link->getConnection()->isServiceListening()) {
+            $this->link->getConnection()->disconnect();
         }
     }
 }

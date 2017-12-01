@@ -1,7 +1,6 @@
 <?php
 namespace framework\driver\rpc\query;
 
-use framework\core\Loader;
 use framework\core\http\Client;
 
 /*

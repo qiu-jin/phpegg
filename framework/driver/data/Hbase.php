@@ -4,18 +4,18 @@ namespace framework\driver\data;
 use framework\driver\rpc\Thrift;
 
 /*
- * /blob/master/hbase-thrift/src/main/resources/org/apache/hadoop/hbase/thrift2/hbase.thrift
+ * https://github.com/apache/hbase/blob/master/hbase-thrift/src/main/resources/org/apache/hadoop/hbase/thrift2/hbase.thrift
  */
-
 class Hbase
 {
     protected $rpc;
     
     public function __construct($config)
     {
-        $config['prefix'] = 'Hbase\THBaseService';
-        $config['bind_params'] = false;
-        $this->rpc = new Thrift($config);
+        $this->rpc = new Thrift(array_merge($config, [
+            'prefix' => 'Hbase\THBaseServiceClient',
+            'bind_params' => false
+        ]));
     }
     
     public function __get($name)

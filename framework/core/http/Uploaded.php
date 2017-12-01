@@ -25,7 +25,7 @@ class Uploaded
     public function __construct($file, $validate = null)
     {
         $this->file = $file;
-        $validate && $this->validate = $validate;
+        $this->validate = $validate;
     }
     
     public function name()

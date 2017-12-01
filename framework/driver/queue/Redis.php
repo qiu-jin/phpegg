@@ -4,7 +4,6 @@ namespace framework\driver\queue;
 /*
  * https://github.com/phpredis/phpredis
  */
-
 class Redis extends Queue
 {
     protected function connect()
@@ -15,9 +14,8 @@ class Redis extends Queue
                 $link->select($this->config['database']);
             }
             return $this->link = $link;
-        } else {
-            throw new \Exception('Can not connect to Redis server');
         }
+        throw new \Exception('Can not connect to Redis server');
     }
     
     public function __destruct()

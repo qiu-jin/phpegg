@@ -1,8 +1,6 @@
 <?php
 namespace framework\driver\rpc\query;
 
-use framework\core\Loader;
-
 /* 
  * https://grpc.io/docs/quickstart/php.html
  */

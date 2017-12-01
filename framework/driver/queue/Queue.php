@@ -12,20 +12,15 @@ abstract class Queue
     {
         $this->config = $config;
     }
-    
-    public function link()
-    {
-        return $this->link;
-    }
 
-    public function producer($job)
+    public function producer($job = null)
     {
-        return $this->getRoleInstance('producer', $job);
+        return $this->getRoleInstance('Producer', $job);
     }
     
-    public function consumer($job)
+    public function consumer($job = null)
     {
-        return $this->getRoleInstance('consumer', $job);
+        return $this->getRoleInstance('Consumer', $job);
     }
     
     protected function getRoleInstance($role, $job)
@@ -45,7 +40,6 @@ abstract class Queue
         }
         $this->role = $role;
         $class = __NAMESPACE__.'\\'.$role.strrchr(static::class, '\\');
-        $this->instance = new $class($this->connect(), $job, $this->config);
-        return $this->instance;
+        return $this->instance = new $class($this->connect(), $job, $this->config['serializer'] ?? null);
     }
 }

@@ -66,7 +66,7 @@ class Grpc
         return new query\GrpcSimple($this, $ns, $this->config);
     }
     
-    public function arrayToRequest($request_class, $params)
+    public function arrayToRequest($request, $params)
     {
         return \Closure::bind(function ($params) {
             $i = 0;
@@ -78,7 +78,7 @@ class Grpc
                 $i++;
             }
             return $this;
-        }, new $request_class, $request_class)($params);
+        }, new $request, $request)($params);
     }
     
     public function responseToArray($response)

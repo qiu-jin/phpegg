@@ -3,15 +3,18 @@ namespace framework\driver\queue\consumer;
 
 class Kafka extends Consumer
 {
-    protected $queue;
-    
-    public function __construct($link, $job)
+    protected function init($link)
     {
-        $this->queue = $link->newTopic($job); 
+        $this->queue = $link->newTopic($this->job);
     }
     
-    public function pull()
+    public function bpop()
     {
         return $this->queue->consume(RD_KAFKA_PARTITION_UA, $this->timeout); 
+    }
+    
+    public function consume(callable $call)
+    {
+
     }
 }

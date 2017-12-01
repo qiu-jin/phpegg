@@ -3,10 +3,10 @@ namespace framework\driver\queue\producer;
 
 class Beanstalkd extends Producer
 {
-    public function __construct($queue, $job)
+    protected function init($link)
     {
-        $this->queue = $queue;
-        $this->queue->useTube($job);
+        $link->useTube($this->job);
+        $this->queue = $link;
     }
     
     public function push($value)

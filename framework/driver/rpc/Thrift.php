@@ -14,12 +14,12 @@ use Thrift\Protocol\TMultiplexedProtocol;
 
 class Thrift
 {
-    protected $rpc;
     protected $prefix;
+    protected $services;
     protected $protocol;
     protected $transport;
     protected $tmultiplexed;
-    protected $auto_bind_param;
+    protected $auto_bind_params;
     protected $service_method_params;
     
     public function __construct($config)
@@ -52,12 +52,12 @@ class Thrift
         return $this->query()->$method(...$params);
     }
     
-    public function query($name = null, $client_methods = null)
+    public function query($name = null)
     {
-        return new query\Query($this, $name, $client_methods);
+        return new query\Thrift($this, $name);
     }
     
-    public function call($ns, $method, $params, $client_methods)
+    public function call($ns, $method, $params)
     {
         if (isset($this->prefix)) {
             array_unshift($ns, $this->prefix);
@@ -66,18 +66,18 @@ class Thrift
             throw new \Exception('service is empty');
         }
         $class = implode('\\', $ns);
-        if (!isset($this->rpc[$class])) {
+        if (!isset($this->services[$class])) {
             if ($this->tmultiplexed) {
                 $name = substr(strrchr($class, '\\'), 1);
-                $this->rpc[$class] = new $class(new TMultiplexedProtocol($this->protocol, $name));
+                $this->services[$class] = new $class(new TMultiplexedProtocol($this->protocol, $name));
             } else {
-                $this->rpc[$class] = new $class($this->protocol);
+                $this->services[$class] = new $class($this->protocol);
             }
         }
-        if ($this->auto_bind_param && $params) {
+        if ($this->auto_bind_params) {
             $this->bindParams($class, $method, $params);
         }
-        return $this->rpc[$class]->$method(...$params);
+        return $this->services[$class]->$method(...$params);
     }
     
     protected function bindParams($class, $method, &$params)
@@ -91,11 +91,9 @@ class Thrift
             }
         } else {
             $this->service_method_params[$class][$method] = [];
-            $refs = (new \ReflectionMethod($class, $method))->getParameters();
-            foreach ($refs as $i => $ref) {
-                $type = (string) $ref->getType();
-                if ($type === 'object') {
-                    $name = $ref->getName();
+            foreach ((new \ReflectionMethod($class, $method))->getParameters() as $i => $parameter) {
+                if ((string) $parameter->getType() === 'object') {
+                    $name = $parameter->getName();
                     $params[$i] = new $name($params[$i]);
                     $this->service_method_params[$class][$method][$i] = $name;
                 }

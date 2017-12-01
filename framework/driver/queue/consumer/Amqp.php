@@ -3,31 +3,23 @@ namespace framework\driver\queue\consumer;
 
 class Amqp extends Consumer
 {
-    public function __construct($link, $job)
+    protected function init($link)
     {
         $this->queue = new \AMQPQueue(new \AMQPChannel($link)); 
-        $this->queue->setName($job);
+        $this->queue->setName($this->job);
     }
     
-    public function get()
+    public function pop()
     {   
-        $envelope = $this->queue->get();
-        return $envelope ? [$this->unserialize($envelope->getBody())] : null;
+        if ($job = $this->queue->get(AMQP_AUTOACK)) {
+            return $this->unserialize($envelope->getBody());
+        }
     }
     
-    public function pull()
-    {   
-        $envelope = $this->queue->get(AMQP_AUTOACK);
-        return $envelope ? $this->unserialize($envelope->getBody()) : null;
-    }
-    
-    public function bget()
-    {   
-        return $this->queue->get(AMQP_AUTOACK)->getBody();
-    }
-    
-    public function bpop()
-    {   
-        $envelope = $this->queue->get(AMQP_AUTOACK);
+    public function consume(callable $call)
+    {
+        $this->queue->consume(function ($envelope, $queue) use ($call) {
+            return $call($envelope->getBody());
+        }, AMQP_AUTOACK);
     }
 }
