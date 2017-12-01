@@ -13,7 +13,8 @@ class Kafka extends Queue
         } elseif ($this->role === 'consumer') {
             $link = new \RdKafka\Consumer();
         }
-        $link->addBrokers($this->config['hosts']);
+        $hosts = $this->config['hosts'];
+        $link->addBrokers(is_array($hosts) ? implode(',', $hosts) : $hosts);
         return $this->link = $link;
     }
 }
