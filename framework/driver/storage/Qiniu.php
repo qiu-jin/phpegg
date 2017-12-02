@@ -29,7 +29,7 @@ class Qiniu extends Storage
         if ($to) {
             $methods['save'] = $to;
         }
-        $url = $this->domain.$this->path($from);
+        $url = $this->domain.parent::path($from);
         if (!$this->public_read) {
             $url .= '?token='.$this->sign($url);
         }
@@ -110,7 +110,7 @@ class Qiniu extends Storage
         }
         $response = $client->response;
         if ($response->status === 200) {
-            return $method === 'GET' ? $client->getBody() : true;
+            return $method === 'GET' ? $response->body : true;
         }
         if ($response->status === 404 && strtok($path, '/') === 'stat') {
             return false;
