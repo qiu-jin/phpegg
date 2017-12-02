@@ -86,11 +86,10 @@ abstract class App
         defined('APP_DEBUG')|| define('APP_DEBUG', false);
         defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
         if (!defined('APP_DIR')) {
-            if (isset($_SERVER['DOCUMENT_ROOT'])) {
-                define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
-            } else {
+            if (empty($_SERVER['DOCUMENT_ROOT'])) {
                 exit('APP_DIR constant not defined');
             }
+            define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
         }
         require FW_DIR.'common.php';
         require FW_DIR.'core/Config.php';
@@ -129,7 +128,7 @@ abstract class App
         if (in_array($app, ['Standard', 'Rest', 'Inline', 'View', 'Micro', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'], true)) {
             $app = 'framework\core\app\\'.$app;
         } elseif (!is_subclass_of($app, __CLASS__)) {
-            throw new \RuntimeException('Illegal app class: '.$app);
+            throw new \RuntimeException("Illegal app class: $app");
         }
         if ($config === null) {
             $config = Config::get('app');
