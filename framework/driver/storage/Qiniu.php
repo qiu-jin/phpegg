@@ -29,7 +29,7 @@ class Qiniu extends Storage
         if ($to) {
             $methods['save'] = $to;
         }
-        $url = "$this->domain".parent::path($from);
+        $url = $this->domain.$this->uri($from);
         if (!$this->public_read) {
             $url .= '?token='.$this->sign($url);
         }
@@ -43,7 +43,7 @@ class Qiniu extends Storage
 
     public function put($from, $to, $is_buffer = false)
     {
-        $to = parent::path($to);
+        $to = $this->uri($to);
         $str = $this->base64Encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
         $token = $this->sign($str).':'.$str;
         $methods['timeout'] = $this->timeout;
@@ -115,10 +115,16 @@ class Qiniu extends Storage
         $result = $response->json();
         return error($result['error'] ?? $client->error, 2);
     }
+    
+    protected function uri($path)
+    {
+        $path = trim($path);
+        return $path[0] !== '/' ? $path : substr($path, 1);
+    }
 
     protected function path($str)
     {
-        return $this->base64Encode($this->bucket.':'.parent::path($str));
+        return $this->base64Encode($this->bucket.':'.$this->uri($str));
     }
     
     protected function sign($str)

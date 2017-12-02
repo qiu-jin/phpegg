@@ -193,9 +193,9 @@ class Client
         if (empty($this->request->boundary)) {
             $this->request->boundary = uniqid();
             $this->request->headers[] = 'Content-Type: multipart/form-data; boundary='.$this->request->boundary;
-            if (is_array($this->requestt->body)) {
-                foreach ($this->requestt->body as $pk => $pv) {
-                    $body[] = "--$this->request['boundary']";
+            if (is_array($this->request->body)) {
+                foreach ($this->request->body as $pk => $pv) {
+                    $body[] = '--'.$this->request->boundary;
                     $body[] = "Content-Disposition: form-data; name=\"$pk\"";
                     $body[] = '';
                     $body[] = $pv;
@@ -451,13 +451,13 @@ class Client
             $mimetype = 'application/octet-stream';
         }
         return implode(self::EOL, [
-            "--$this->boundary",
+            '--'.$this->request->boundary,
             "Content-Disposition: form-data; name=\"$name\"; filename=\"$filename\"",
             "Content-Type: $mimetype",
             "Content-Transfer-Encoding: binary",
             '',
             (string) $content,
-            "--$this->request['boundary']--",
+            "--{$this->request->boundary}--",
             ''
         ]);
     }
