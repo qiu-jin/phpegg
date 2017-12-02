@@ -134,7 +134,7 @@ class Webdav extends Storage
     
     protected function uri($path)
     {
-        return $this->endpoint.'/'.trim(trim($path), '/');
+        return $this->endpoint.$this->path($path);
     }
     
     protected function auth()

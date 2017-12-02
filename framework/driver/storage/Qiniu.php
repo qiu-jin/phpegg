@@ -29,7 +29,7 @@ class Qiniu extends Storage
         if ($to) {
             $methods['save'] = $to;
         }
-        $url = $this->domain.$this->uri($from);
+        $url = $this->domain.$this->path($from);
         if (!$this->public_read) {
             $url .= '?token='.$this->sign($url);
         }
@@ -38,13 +38,16 @@ class Qiniu extends Storage
     
     public function has($from)
     {
-        return (bool) $this->send(self::$endpoint, '/stat/'.$this->path($from), null, 'GET');
+        return (bool) $this->send(self::$endpoint, '/stat/'.$this->encode($from), null, 'GET');
     }
 
     public function put($from, $to, $is_buffer = false)
     {
-        $to = $this->uri($to);
-        $str = $this->base64Encode(json_encode(['scope'=>$this->bucket.':'.$to, 'deadline'=>time()+3600]));
+        $to = $this->path($to);
+        $str = $this->base64Encode(json_encode([
+            'scope'     => $this->bucket.':'.$to,
+            'deadline'  => time()+3600
+        ]));
         $token = $this->sign($str).':'.$str;
         $methods['timeout'] = $this->timeout;
         $methods['form'] = [['token' => $token, 'key' => $to]];
@@ -58,7 +61,7 @@ class Qiniu extends Storage
     
     public function stat($from)
     {
-        $stat = $this->send(self::$endpoint, '/stat/'.$this->path($from), null, 'GET');
+        $stat = $this->send(self::$endpoint, '/stat/'.$this->encode($from), null, 'GET');
         if ($stat) {
             $stat = jsondecode($stat);
             return [
@@ -72,23 +75,23 @@ class Qiniu extends Storage
 
     public function move($from, $to)
     {
-        return $this->send(self::$endpoint, '/move/'.$this->path($from).'/'.$this->path($to));
+        return $this->send(self::$endpoint, '/move/'.$this->encode($from).'/'.$this->encode($to));
     }
     
     public function copy($from, $to)
     {
-        return $this->send(self::$endpoint, '/copy/'.$this->path($from).'/'.$this->path($to));
+        return $this->send(self::$endpoint, '/copy/'.$this->encode($from).'/'.$this->encode($to));
     }
     
     public function delete($from)
     {
-        return $this->send(self::$endpoint, '/delete/'.$this->path($from));
+        return $this->send(self::$endpoint, '/delete/'.$this->encode($from));
     }
     
     public function fetch($from, $to)
     {
         if (stripos($from, 'http://') === 0 || stripos($from, 'https://') === 0) {
-            $path = '/fetch/'.$this->base64Encode($from).'/to/'.$this->path($to);
+            $path = '/fetch/'.$this->base64Encode($from).'/to/'.$this->encode($to);
             return $this->send("https://iovip{$this->region}.qbox.me", $path);
         }
         return parent::fetch($from, $to);
@@ -116,15 +119,15 @@ class Qiniu extends Storage
         return error($result['error'] ?? $client->error, 2);
     }
     
-    protected function uri($path)
+    protected function path($path)
     {
         $path = trim($path);
         return $path[0] !== '/' ? $path : substr($path, 1);
     }
 
-    protected function path($str)
+    protected function encode($str)
     {
-        return $this->base64Encode($this->bucket.':'.$this->uri($str));
+        return $this->base64Encode($this->bucket.':'.$this->path($str));
     }
     
     protected function sign($str)

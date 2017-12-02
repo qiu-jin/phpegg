@@ -206,7 +206,7 @@ class Client
                 $this->request->body = null;
             }
         } else {
-            $this->request->body = substr($this->body, 0, -strlen("--{$this->request->boundary}--".self::EOL));
+            $this->request->body = substr($this->request->body, 0, -19);
         }
         $this->request->body .= $this->multipartFile($name, $content, $filename, $mimetype);
         return $this;
