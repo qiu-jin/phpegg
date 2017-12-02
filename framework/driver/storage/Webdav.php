@@ -26,8 +26,8 @@ class Webdav extends Storage
         $this->username = $config['username'];
         $this->password = $config['password'];
         $this->domain   = $config['domain'] ?? $this->endpoint;
-        $this->public_read = $config['public_read'] ?: false;
-        $this->auto_create_dir = $config['auto_create_dir'] ?: false;
+        $this->public_read = $config['public_read'] ?? false;
+        $this->auto_create_dir = $config['auto_create_dir'] ?? false;
     }
     
     public function get($from, $to = null)

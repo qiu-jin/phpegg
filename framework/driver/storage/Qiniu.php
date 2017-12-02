@@ -21,7 +21,7 @@ class Qiniu extends Storage
         if (isset($config['region'])) {
             $this->region = '-'.$config['region'];
         }
-        $this->public_read = $config['public_read'] ?: false;
+        $this->public_read = $config['public_read'] ?? false;
     }
 
     public function get($from, $to = null)

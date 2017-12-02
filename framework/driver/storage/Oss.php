@@ -24,7 +24,7 @@ class Oss extends Storage
         } else {
             $this->domain = 'http://'.$config['bucket'].'.'.$config['endpoint'];
         }
-        $this->public_read = $config['public_read'] ?: false;
+        $this->public_read = $config['public_read'] ?? false;
     }
     
     public function get($from, $to = null)

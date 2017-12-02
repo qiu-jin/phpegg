@@ -22,7 +22,7 @@ class S3 extends Storage
         $this->region = $config['region'];
         $this->endpoint = $config['endpoint'] ?? 'https://s3.amazonaws.com';
         $this->domain   = $config['domain'] ?? "$this->endpoint/$this->bucket";
-        $this->public_read = $config['public_read'] ?: false;
+        $this->public_read = $config['public_read'] ?? false;
     }
     
     public function get($from, $to = null)
