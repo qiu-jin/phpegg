@@ -4,7 +4,6 @@ namespace framework\driver\storage;
 /*
  * https://pecl.php.net/package/ssh2
  */
-
 class Sftp extends Storage
 {
     protected $link;

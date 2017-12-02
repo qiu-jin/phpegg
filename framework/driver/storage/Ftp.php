@@ -3,7 +3,7 @@ namespace framework\driver\storage;
 
 class Ftp extends Storage
 {
-    private $link;
+    protected $link;
     
     public function __construct($config)
     {

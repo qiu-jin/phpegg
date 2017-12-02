@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\storage;
 
+use framework\util\Xml;
 use framework\util\File;
 use framework\core\http\Client;
 

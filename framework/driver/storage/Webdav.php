@@ -12,7 +12,6 @@ use framework\core\http\Client;
  * Pcloud:  https://webdav.pcloud.com
  * 坚果云:   https://dav.jianguoyun.com/dav
  */
-
 class Webdav extends Storage
 {
     protected $endpoint;

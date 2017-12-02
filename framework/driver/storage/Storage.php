@@ -56,7 +56,7 @@ abstract class Storage
      */
     public function url($path)
     {
-        return $this->domain.'/'.ltrim($path, '/');
+        return $this->domain.$this->path($path);
     }
     
     /* 
