@@ -9,7 +9,7 @@ class Local extends Storage
     {
         if (isset($config['dir']) && is_dir($config['dir']) && is_writable($config['dir'])) {
             $this->dir = $config['dir'];
-            isset($config['domain']) && $this->domain = $config['domain'];
+            $this->domain = $config['domain'] ?? null;
         } else {
             throw new \Exception('Storage dir is not writable');
         }
@@ -36,7 +36,7 @@ class Local extends Storage
 
     public function stat($from)
     {
-        $stat = stat($from);
+        $stat = stat($this->path($from));
         return $stat ? ['size' => $stat['size'], 'mtime' => $stat['mtime'], 'ctime' => $stat['ctime']] : false;
     }
     
@@ -59,7 +59,7 @@ class Local extends Storage
     
     protected function path($path)
     {
-        return $this->dir.'/'.$path;
+        return $this->dir.parent::path($path);
     }
     
     protected function ckdir($path)

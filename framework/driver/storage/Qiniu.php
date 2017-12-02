@@ -9,7 +9,7 @@ class Qiniu extends Storage
     protected $region;
     protected $acckey;
     protected $seckey;
-    protected $public_read = false;
+    protected $public_read;
     protected static $endpoint = 'https://rs.qbox.me';
     
     public function __construct($config)
@@ -21,6 +21,7 @@ class Qiniu extends Storage
         if (isset($config['region'])) {
             $this->region = '-'.$config['region'];
         }
+        $this->public_read = $config['public_read'] ?: false;
     }
 
     public function get($from, $to = null)
@@ -43,20 +44,19 @@ class Qiniu extends Storage
 
     public function put($from, $to, $is_buffer = false)
     {
-        $to = $this->path($to);
+        $to  = $this->path($to);
         $str = $this->base64Encode(json_encode([
-            'scope'     => $this->bucket.':'.$to,
-            'deadline'  => time()+3600
+            'scope'     => "$this->bucket:$to",
+            'deadline'  => time() + 3600
         ]));
-        $token = $this->sign($str).':'.$str;
-        $methods['timeout'] = $this->timeout;
-        $methods['form'] = [['token' => $token, 'key' => $to]];
-        if ($is_buffer) {
-            $methods['buffer'] = ['file', $from];
-        } else {
-            $methods['file'] = ['file', $from];
-        }
-        return $this->send("https://up{$this->region}.qbox.me", null, $methods);
+        return $this->send("https://up{$this->region}.qbox.me", null, [
+            'timeout'   => $this->timeout,
+            'form'      => [[
+                'token' => $this->sign($str).":$str", 
+                'key'   => $to
+            ]],
+            $is_buffer ? 'buffer' : 'file' => ['file', $from]
+        ]);
     }
     
     public function stat($from)

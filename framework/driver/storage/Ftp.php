@@ -15,7 +15,7 @@ class Ftp extends Storage
         }
         if ($link && ftp_login($link, $config['username'], $config['password']) && ftp_pasv($link, true)) {
             $this->link = $link;
-            isset($config['domain']) && $this->domain = $config['domain'];
+            $this->domain = $config['domain'] ?? $config['host'];
         } else {
             throw new \Exception('Ftp connect error');
         }

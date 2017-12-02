@@ -21,12 +21,8 @@ class S3 extends Storage
         $this->seckey = $config['seckey'];
         $this->region = $config['region'];
         $this->endpoint = $config['endpoint'] ?? 'https://s3.amazonaws.com';
-        $this->public_read = $config['public_read'] ?? false;
-        if (isset($config['domain'])) {
-            $this->domain = $config['domain'];
-        } else {
-            $this->domain = "$this->endpoint/$this->bucket";
-        }
+        $this->domain   = $config['domain'] ?? "$this->endpoint/$this->bucket";
+        $this->public_read = $config['public_read'] ?: false;
     }
     
     public function get($from, $to = null)

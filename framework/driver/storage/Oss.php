@@ -11,7 +11,7 @@ class Oss extends Storage
     protected $acckey;
     protected $seckey;
     protected $endpoint;
-    protected $public_read = false;
+    protected $public_read;
     
     public function __construct($config)
     {
@@ -24,6 +24,7 @@ class Oss extends Storage
         } else {
             $this->domain = 'http://'.$config['bucket'].'.'.$config['endpoint'];
         }
+        $this->public_read = $config['public_read'] ?: false;
     }
     
     public function get($from, $to = null)

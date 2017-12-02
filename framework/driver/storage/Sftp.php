@@ -17,7 +17,7 @@ class Sftp extends Storage
             $this->link = $link;
             $this->sftp = ssh2_sftp($this->link);
             $this->chroot = $config['chroot'] ?? '/home/'.$config['username'];
-            isset($config['domain']) && $this->domain = $config['domain'];
+            $this->domain = $config['domain'] ?? $config['host'];
         } else {
             throw new \Exception('Sftp connect error');
         }
@@ -72,7 +72,7 @@ class Sftp extends Storage
     
     protected function path($path)
     {
-        return $this->chroot.'/'.trim(trim($path), '/');
+        return $this->chroot.parent::path($path);
     }
 
     protected function ckdir($path)
