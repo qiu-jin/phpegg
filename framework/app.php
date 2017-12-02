@@ -85,7 +85,13 @@ abstract class App
         define('FW_DIR', __DIR__.'/');
         defined('APP_DEBUG')|| define('APP_DEBUG', false);
         defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
-        defined('APP_DIR')  || define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
+        if (!defined('APP_DIR')) {
+            if (isset($_SERVER['DOCUMENT_ROOT'])) {
+                define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
+            } else {
+                exit('APP_DIR constant not defined');
+            }
+        }
         require FW_DIR.'common.php';
         require FW_DIR.'core/Config.php';
         require FW_DIR.'core/Loader.php';
