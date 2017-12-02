@@ -25,9 +25,16 @@ class Qcloud extends Sms
             'ext'   => '',
         ]);
         $result = $client->response->json();
-        if (isset($result['result']) && $result['result'] === 0) {
-            return true;
+        if (isset($result['result'])) {
+            if ($result['result'] === 0) {
+                return true;
+            }
+            // 运营商限制发送频率
+            if ($result['result'] >= 1022 && $result['result'] <= 1026) {
+                return false;
+            }
+            return error("[{$result['result']}]".$result['errmsg']);
         }
-        return error($result['errmsg'] ?? $client->error);
+        return error($client->error);
     }
 }

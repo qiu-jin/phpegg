@@ -32,6 +32,13 @@ class Alidayu extends Sms
         if (isset($result['alibaba_aliqin_fc_sms_num_send_response']['result'])) {
             return true;
         }
-        return error($result['error_response']['sub_msg'] ?? $result['error_response']['msg'] ?? $client->error);
+        if (isset($result['error_response']['sub_code'])) {
+            // 运营商限制发送频率
+            if ($result['error_response']['sub_code'] === 'isv.BUSINESS_LIMIT_CONTROL') {
+                return false;
+            }
+            return error("[{$result['error_response']['sub_code']}]".$result['error_response']['sub_msg']);
+        }
+        return error($client->error);
     }
 }

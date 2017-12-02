@@ -35,8 +35,15 @@ class Aliyun extends Sms
         $sign   = base64_encode(hash_hmac('sha1', 'GET&%2F&'.urlencode($query), "$this->seckey&", true));
         $client = Client::get(self::$endpoint."/?Signature=$sign&$query");
         $result = $client->response->json();
-        if (isset($result['Code']) && $result['Code'] === 'OK') {
-            return true;
+        if (isset($result['Code'])) {
+            if ($result['Code'] === 'OK') {
+                return true;
+            }
+            // 运营商限制发送频率
+            if ($result['Code'] === 'isv.BUSINESS_LIMIT_CONTROL') {
+                return false;
+            }
+            return error("[{$result['Code']}]".$result['Message']);
         }
         return error($result['Message'] ?? $client->error);
     }
