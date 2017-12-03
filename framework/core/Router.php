@@ -40,24 +40,29 @@ class Router
     public static function dispatch($path, $ruotes, $param_mode = 0, $method = null)
     {
         $result = self::route($path, $ruotes, $method);
-        if ($result) {
-            list($call_role, $macth) = $result;
-            if (!preg_match('/^(.+?)(\((.*?)\))?$/', $call_role, $call_match)) {
-                throw new Exception("Illegal route call role $call_role");
-            }
-            $call = $call_match[1];
-            if (self::$enable_dynamic_call && strpos('$', $call) !== false) {
-                $call = self::replaceDynamicCall($call, $macth);
-            }
-            if (!$param_mode || empty($call_match[3])) {
-                $params = $macth;
-            } else {
-                $param_method = $param_mode === 2 ? 'parseKvParams' : 'parseListParams';
-                $params = self::{$param_method}($call_match[3], $macth);
-            }
-            return [$call, $params];
+        return $result ? self::parse($reslut, $param_mode) : false;
+    }
+    
+    /*
+     * 解析调度
+     */
+    public static function parse($result, $param_mode = 0)
+    {
+        list($call_role, $macth) = $result;
+        if (!preg_match('/^(.+?)(\((.*?)\))?$/', $call_role, $call_match)) {
+            throw new Exception("Illegal route call role $call_role");
         }
-        return false;
+        $call = $call_match[1];
+        if (self::$enable_dynamic_call && strpos('$', $call) !== false) {
+            $call = self::replaceDynamicCall($call, $macth);
+        }
+        if (!$param_mode || empty($call_match[3])) {
+            $params = $macth;
+        } else {
+            $param_method = $param_mode === 2 ? 'parseKvParams' : 'parseListParams';
+            $params = self::{$param_method}($call_match[3], $macth);
+        }
+        return [$call, $params];
     }
     
     /*

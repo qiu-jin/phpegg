@@ -15,9 +15,9 @@ class Local extends Storage
         }
     }
     
-    public function get($from, $to)
+    public function get($from, $to = null)
     {
-        return $to ? copy($this->path($from), $this->path($to)) : file_get_contents($this->path($from));
+        return $to ? copy($this->path($from), $to) : file_get_contents($this->path($from));
     }
     
     public function has($from)

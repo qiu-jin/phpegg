@@ -17,33 +17,39 @@ class Micro extends App
         'controller_ns' => 'controller',
         // 控制器类名后缀
         'controller_suffix' => null,
+        /* 路由调度的参数模式
+         * 0 无参数
+         * 1 循序参数
+         * 2 键值参数
+         */
+        'route_dispatch_param_mode' => 1,
         // 路由模式下是否启用Getter魔术方法
-        'route_dispatch_enable_getter' => true,
+        'route_dispatch_closure_getter' => true,
         // 路由模式下允许的HTTP方法
         'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/]
     ];
     
-    public function get($role, callable $call)
+    public function get($role, $call)
     {
         $this->dispatch['route'][$role]['GET'] = $call;
     }
     
-    public function put($role, callable $call)
+    public function put($role, $call)
     {
         $this->dispatch['route'][$role]['PUT'] = $call;
     }
     
-    public function post($role, callable $call)
+    public function post($role, $call)
     {
         $this->dispatch['route'][$role]['POST'] = $call;
     }
     
-    public function delete($role, callable $call)
+    public function delete($role, $call)
     {
         $this->dispatch['route'][$role]['DELETE'] = $call;
     }
     
-    public function route($role, callable $call, $methods = null)
+    public function route($role, $call, $methods = null)
     {
         if ($method === null) {
             $this->dispatch['route'][$role] = $call;
@@ -90,7 +96,7 @@ class Micro extends App
     protected function defaultDispatch()
     {
         list($controller, $action, $params) = $this->dispatch['default'];
-        $class = 'app\\'.$this->config['controller_ns'].'\\'.$controller.$this->config['controller_suffix'];
+        $class = $this->getClass($controller);
         if ($action[0] !== '_' && Loader::importPrefixClass($class)) {
             $call = [new $class, $action];
             if (is_callable($call)) {
@@ -106,15 +112,26 @@ class Micro extends App
         if (in_array($method, $this->config['route_dispatch_http_methods'], true)) {
             $result = Router::route(Request::pathArr(), $this->dispatch['route'], $method);
             if ($result) {
-                if ($this->config['route_dispatch_enable_getter'] && $result[0] instanceof \Closure) {
+                if (is_string($result[0])) {
+                    $dispatch = Router::parse($result, $this->config['route_dispatch_param_mode']);
+                    list($controller, $action) = explode('::', $dispatch[0]);
+                    $class = $this->getClass($controller);
+                    return [[new $class, $action], $dispatch[1]];
+                }
+                if ($result[0] instanceof \Closure && $this->config['route_dispatch_closure_getter']) {
                     return [\Closure::bind($result[0], new class () {
                         use Getter;
                     }), $result[1]];
                 } else {
-                    return [$result[0], $result[1]];
+                    return $result;
                 }
             }
         }
         return false;
+    }
+    
+    protected function getClass($controller)
+    {
+        return 'app\\'.$this->config['controller_ns'].'\\'.$controller.$this->config['controller_suffix'];
     }
 }

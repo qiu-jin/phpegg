@@ -118,12 +118,12 @@ class Inline extends App
                 $routes = __include($routes);
             }
             $path = empty($path) ? null : explode('/', $path);
-            $dispatch = Router::dispatch($path, $routes);
-            if ($dispatch) {
+            $result = Router::route($path, $routes);
+            if ($result) {
                 return [
-                    'controller' => $dispatch[0],
-                    'controller_file' => $this->dir.$dispatch[0].'.php',
-                    'params' => $dispatch[1]
+                    'controller' => $result[0],
+                    'controller_file' => $this->dir.$result[0].'.php',
+                    'params' => $result[1]
                 ];
             }
         }

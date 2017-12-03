@@ -19,11 +19,7 @@ class Oss extends Storage
         $this->acckey = $config['acckey'];
         $this->seckey = $config['seckey'];
         $this->endpoint = $config['endpoint'];
-        if (isset($config['domain'])) {
-            $this->domain = $config['domain'];
-        } else {
-            $this->domain = 'http://'.$config['bucket'].'.'.$config['endpoint'];
-        }
+        $this->domain   = $config['domain'] ?? "'http://{$config['bucket']}.{$config['endpoint']}";
         $this->public_read = $config['public_read'] ?? false;
     }
     
