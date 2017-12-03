@@ -68,16 +68,6 @@ function model($name)
     return Container::model($name);
 }
 
-function input($name, ...$params)
-{
-    return Request::$name(...$params);
-}
-
-function output($name, ...$params)
-{
-    return $params ? Response::$name(...$params) : Response::send($name); 
-}
-
 function view($tpl, array $vars = null)
 {
     return Response::view($tpl, $vars);
@@ -121,4 +111,16 @@ function __include($file)
 function __require($file)
 {
     return require $file;
+}
+
+if (!App::IS_CLI) {
+    function input($name, ...$params)
+    {
+        return Request::$name(...$params);
+    }
+
+    function output($name, ...$params)
+    {
+        return $params ? Response::$name(...$params) : Response::send($name); 
+    }
 }

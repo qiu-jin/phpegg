@@ -55,8 +55,18 @@ class Cli extends App
         
     }
     
-    protected function response($return)
+    protected function response($return = null)
     {
 
     }
+}
+
+function input(...$params)
+{
+    App::instance()->input(...$params);
+}
+
+function output(...$params)
+{
+    App::instance()->output(...$params);
 }

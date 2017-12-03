@@ -7,6 +7,9 @@ use framework\core\Config;
 
 abstract class App
 {
+    // 是否为命令行应用
+    const IS_CLI  = PHP_SAPI === 'cli';
+    // 版本号
     const VERSION = '1.0.0';
     // 应用实例容器
     private static $app;
