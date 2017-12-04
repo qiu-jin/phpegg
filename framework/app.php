@@ -28,6 +28,8 @@ abstract class App
     private static $runing;
     // 设置错误处理器
     private static $error_handler;
+    // 内置支持的应用模式
+    private static $modes = ['Standard', 'Rest', 'Inline', 'View', 'Micro', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'];
     
     // 应用配置项
     protected $config;
@@ -98,6 +100,7 @@ abstract class App
         require FW_DIR.'core/Config.php';
         require FW_DIR.'core/Loader.php';
         require FW_DIR.'core/Hook.php';
+        Hook::listen('boot');
         set_error_handler(function (...$e) {
             Error::errorHandler(...$e);
         });
@@ -105,17 +108,20 @@ abstract class App
             Error::exceptionHandler($e);
         });
         register_shutdown_function(function () {
-            self::$app = null;
-            if (!self::$exit) {
-                Error::fatalHandler();
+            try {
+                if (!self::$exit) {
+                    Error::fatalHandler();
+                }
+                self::$app = null;
+                Hook::listen('exit');
+            } catch (\Throwable $e) {
+                exit("Uncaught ShutdownException: ".$e->getMessage());
             }
-            Hook::listen('exit');
             if (function_exists('fastcgi_finish_request')) {
                 fastcgi_finish_request();
             }
             Hook::listen('close');
         });
-        Hook::listen('boot');
     }
     
     /*
@@ -128,17 +134,20 @@ abstract class App
         if (static::class !== __CLASS__) {
             throw new \RuntimeException('Illegal start call');
         }
-        if (in_array($app, ['Standard', 'Rest', 'Inline', 'View', 'Micro', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'], true)) {
-            $app = 'framework\core\app\\'.$app;
-        } elseif (!is_subclass_of($app, __CLASS__)) {
+        if (in_array($app, self::$modes, true)) {
+            $class = 'framework\core\app\\'.$app;
+        } elseif (is_subclass_of($app, __CLASS__)) {
+            $class = $app;
+        } else{
             throw new \RuntimeException("Illegal app class: $app");
         }
+        define('APP_MODE', $app);
         if ($config === null) {
             $config = Config::get('app');
         } else {
             Config::set('app', $config);
         }
-        self::$app = new $app($config);
+        self::$app = new $class($config);
         self::$app->dispatch = self::$app->dispatch();
         Hook::listen('start', self::$app->dispatch);
         if (self::$app->dispatch) {

@@ -202,7 +202,7 @@ class Mysqli extends Db
     public function error($query = null)
     {
         $q = $query ?? $this->link;
-        return array($q->errno, $q->error)
+        return array($q->errno, $q->error);
     }
     
     protected function getFields($table)

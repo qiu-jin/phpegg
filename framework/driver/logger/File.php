@@ -7,7 +7,7 @@ class File extends Logger
     
     public function __construct($config)
     {
-        if (isset($config['logfile']) && is_dir(dirname($config['logfile']))) {
+        if (isset($config['logfile']) && is_writable($config['logfile'])) {
             $this->logfile = $config['logfile'];
         } else {
             $this->send = false;
@@ -17,16 +17,12 @@ class File extends Logger
     public function write($level, $message, $context)
     {
         if (!$this->send) return;
-        try {
-            if (isset($this->formatter)) {
-                $log = $this->formatter->make($level, $message, $context);
-            } else {
-                $log = '['.$level.'] '.$message;
-                if ($context) $log .= PHP_EOL.var_export($context, true);
-            }
-            error_log($log.PHP_EOL, 3, $this->logfile);
-        } catch (\Throwable $e) {
-            //忽略异常
+        if (isset($this->formatter)) {
+            $log = $this->formatter->make($level, $message, $context);
+        } else {
+            $log = '['.$level.'] '.$message;
+            if ($context) $log .= PHP_EOL.var_export($context, true);
         }
+        error_log($log.PHP_EOL, 3, $this->logfile);
     }
 }

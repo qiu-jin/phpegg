@@ -32,37 +32,37 @@ class Micro extends App
     public function get($role, $call)
     {
         $this->dispatch['route'][$role]['GET'] = $call;
+        return $this;
     }
     
     public function put($role, $call)
     {
         $this->dispatch['route'][$role]['PUT'] = $call;
+        return $this;
     }
     
     public function post($role, $call)
     {
         $this->dispatch['route'][$role]['POST'] = $call;
+        return $this;
     }
     
     public function delete($role, $call)
     {
         $this->dispatch['route'][$role]['DELETE'] = $call;
+        return $this;
     }
     
-    public function route($role, $call, $methods = null)
+    public function route($role, $call)
     {
-        if ($method === null) {
-            $this->dispatch['route'][$role] = $call;
-        } else{
-            foreach ((array) $methods as $method) {
-                $this->dispatch['route'][$role][$method] = $call;
-            }
-        }
+        $this->dispatch['route'][$role] = $call;
+        return $this;
     }
     
     public function default($controller, $action, array $params = [])
     {
         $this->dispatch['default'] = [$controller, $action, $params];
+        return $this;
     }
     
     protected function dispatch()

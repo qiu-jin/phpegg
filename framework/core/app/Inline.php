@@ -23,12 +23,10 @@ class Inline extends App
         'enable_getter'     => true,
         // 是否将返回值1改成null
         'return_1_to_null'  => false,
-        
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
-        // 默认调度时URL path中划线转成下划线
+        // 默认调度时URL PATH中划线转成下划线
         'default_dispatch_hyphen_to_underscore' => false,
-        
         // 路由调度的路由表
         'route_dispatch_routes' => null,
     ];

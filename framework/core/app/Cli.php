@@ -2,6 +2,7 @@
 namespace framework\core\app;
 
 use framework\App;
+use framework\core\Loader;
 
 class Cli extends App
 {
@@ -10,14 +11,12 @@ class Cli extends App
         'controller_ns' => 'command',
         // 控制器类名后缀
         'controller_suffix' => null,
-        // 路由模式下是否启用Getter魔术方法
-        'route_dispatch_enable_getter' => true,
     ];
-    // 核心错误
-    protected $core_errors = [
-        404 => '',
-        500 => ''
-    ];
+    
+    public function command($name, callback $call)
+    {
+        $this->dispatch[$name] = $call;
+    }
     
     public function input()
     {
@@ -29,20 +28,17 @@ class Cli extends App
 
     }
     
-    public function command($name, callback $call)
+    public function options($name, $default = null)
     {
-        $this->dispatch[$name] = $call;
         
-        $app->command($name, function () {
-            
-        })
     }
     
     protected function dispatch()
     {
-        if (PHP_SAPI !== 'cli') {
-            throw new \RuntimeException('NO CLI SAPI');
+        if (!App::IS_CLI) {
+            throw new \RuntimeException('NOT CLI SAPI');
         }
+        Loader::add('alias', ['Command' => 'framework\core\app\Command']);
     }
     
     protected function call()
@@ -61,12 +57,7 @@ class Cli extends App
     }
 }
 
-function input(...$params)
+class command
 {
-    App::instance()->input(...$params);
-}
-
-function output(...$params)
-{
-    App::instance()->output(...$params);
+    
 }

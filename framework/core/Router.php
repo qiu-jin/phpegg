@@ -12,7 +12,7 @@ class Router
         'email' => 'Validator::email',
         'mobile' => 'Validator::mobile',
     ];
-    private static $enable_dynamic_call = false;
+    private static $enable_dynamic_call;
     
     /*
      * 初始方法
@@ -28,9 +28,7 @@ class Router
             if (isset($config['callable_filters'])) {
                 self::$callable_filters = array_merge(self::$callable_filters, $config['callable_filters']);
             }
-            if (isset($config['enable_dynamic_call'])) {
-                self::$enable_dynamic_call = $config['enable_dynamic_call'];
-            }
+            self::$enable_dynamic_call = $config['enable_dynamic_call'] ?? false;
         }
     }
     

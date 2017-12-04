@@ -1,26 +1,19 @@
 <?php
 namespace framework\driver\logger;
 
+use framework\core\Container;
+
 class Queue extends Logger
 {
     protected $producer;
     
     public function __construct($config)
     {
-        if (isset($config['queue']) && isset($config['job'])) {
-            try {
-                $this->producer = make('queue', $config['queue'])->producer($config['job']);
-            } catch (\Throwable $e) {
-                return $this->send = false;
-                //忽略异常
-            }
-        } else {
-            $this->send = false;
-        }
+        $this->producer = Container::driver($config['queue'])->producer();
     }
     
     public function write($level, $message, $context)
     {
-        $this->send && $this->producer->push([$level, $message, $context]);
+        $this->producer->push($this->formatter ? $this->formatter->make($level, $message, $context) : [$level, $message, $context]);
     }
 }
