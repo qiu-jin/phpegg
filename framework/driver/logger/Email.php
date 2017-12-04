@@ -11,14 +11,6 @@ class Email extends Logger
     protected $to;
     protected $email;
     protected $cache;
-    
-    protected $driver = [
-        'email' => null,
-        'cache' => [
-            'driver'=> 'opcache',
-            'dir'   => APP_DIR.'storage/cache/',
-        ]
-    ];
     protected $interval = 900;
     
     public function __construct($config)
