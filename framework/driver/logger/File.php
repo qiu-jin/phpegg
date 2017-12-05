@@ -5,18 +5,13 @@ class File extends Logger
 {   
     protected $logfile;
     
-    public function __construct($config)
+    protected function init($config)
     {
-        if (isset($config['logfile']) && is_writable($config['logfile'])) {
-            $this->logfile = $config['logfile'];
-        } else {
-            $this->send = false;
-        }
+        $this->logfile = $config['logfile'];
     }
     
-    public function write($level, $message, $context)
+    public function write($level, $message, $context = null)
     {
-        if (!$this->send) return;
         if (isset($this->formatter)) {
             $log = $this->formatter->make($level, $message, $context);
         } else {

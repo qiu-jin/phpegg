@@ -1,12 +1,8 @@
 <?php
 namespace framework\core;
 
-use framework\extend\logger\Writer;
-use framework\extend\logger\Formatter;
-
 class Logger
 {
-    use Writer;
     /*
      * 日志等级常量
      */
@@ -21,8 +17,7 @@ class Logger
     
     // 标示init方法是否已执行，防止重复执行
     private static $init;
-    private static $writer;
-    private static $configs;
+    private static $handler;
     private static $handlers = [];
     private static $level_handler_name = [];
     
@@ -33,23 +28,15 @@ class Logger
     {
         if (self::$init) return;
         self::$init = true;
-        $configs = Config::get('logger');
-        if ($configs) {
+        if ($configs = Config::get('logger')) {
             foreach ($configs as $name => $config) {
-                if (isset($config['driver'])) {
-                    if (isset($config['level'])) {
-                        foreach (array_unique($config['level']) as $lv) {
-                            self::$level_handler_name[$lv][] = $name;
-                        }
-                        unset($config['level']);
+                if (isset($config['level'])) {
+                    foreach (array_unique($config['level']) as $lv) {
+                        self::$level_handler_name[$lv][] = $name;
                     }
-                } else {
-                    unset($configs[$name]);
                 }
             }
-            self::$configs = $configs;
         }
-        Hook::add('exit', __CLASS__.'::free');
     }
     
     /*
@@ -69,21 +56,7 @@ class Logger
      */
     public static function channel($name = null)
     {
-        if ($name === null) {
-            return self::$writer ?? self::$writer = new self();
-        } elseif (isset(self::$configs[$name])) {
-            return self::getHandler($name);
-        }
-        return null;
-    }
-    
-    /*
-     * 释放资源
-     */
-    public static function free()
-    {
-        self::$writer = null;
-        self::$handlers = null;
+        return $name === null ? self::getNullHandler() : self::getHandler($name);
     }
     
     /*
@@ -91,17 +64,20 @@ class Logger
      */
     private static function getHandler($name)
     {
-        if (isset(self::$handlers[$name])) {
-            return self::$handlers[$name];
-        } else {
-            $config = self::$configs[$name];
-            $handler = Container::driver('logger', $config);
-            if (isset($config['format'])) {
-                $handler->setFormatter(new Formatter($config['format']));
+        return self::$handlers[$name] ?? self::$handlers[$name] = Container::driver('logger', $name);
+    }
+    
+    /*
+     * null channel日志处理器
+     */
+    private static function getNullHandler()
+    {
+        return self::$handler ?? self::$handler = new class () extends \framework\driver\logger\Logger {
+            public function __construct() {}
+            public function write($level, $message, $context = []) {
+                Logger::write($level, $message, $context);
             }
-            self::$handlers[$name] = $handler;
-            return $handler;
-        }
+        };
     }
 }
 Logger::init();

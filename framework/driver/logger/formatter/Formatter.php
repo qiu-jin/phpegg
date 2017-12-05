@@ -1,5 +1,5 @@
 <?php
-namespace framework\extend\logger;
+namespace framework\driver\logger\formatter;
 
 use framework\core\http\Request;
 
@@ -24,7 +24,7 @@ class Formatter
     
     public function _get($name)
     {
-        return isset($this->$name) ? $this->$name : $this->$name = $this->$name();
+        return $this->$name ?? $this->$name = $this->$name();
     }
     
     public function make($level, $message, $context)

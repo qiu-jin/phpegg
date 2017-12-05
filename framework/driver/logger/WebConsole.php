@@ -31,7 +31,7 @@ class WebConsole extends Logger
     ];  
     protected $header_limit_size = 4000;
     
-    public function __construct($config)
+    protected function init($config)
     {
         if (isset($config['allow_ips'])) {
             if (!in_array(Request::ip(), $config['allow_ips'], true)) {

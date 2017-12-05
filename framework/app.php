@@ -100,7 +100,6 @@ abstract class App
         require FW_DIR.'core/Config.php';
         require FW_DIR.'core/Loader.php';
         require FW_DIR.'core/Hook.php';
-        Hook::listen('boot');
         set_error_handler(function (...$e) {
             Error::errorHandler(...$e);
         });
@@ -112,16 +111,18 @@ abstract class App
                 if (!self::$exit) {
                     Error::fatalHandler();
                 }
-                self::$app = null;
                 Hook::listen('exit');
             } catch (\Throwable $e) {
-                exit("Uncaught ShutdownException: ".$e->getMessage());
+                Error::exceptionHandler($e);
             }
+            self::$app = null;
+            Hook::listen('flush');
             if (function_exists('fastcgi_finish_request')) {
                 fastcgi_finish_request();
             }
             Hook::listen('close');
         });
+        Hook::listen('boot');
     }
     
     /*

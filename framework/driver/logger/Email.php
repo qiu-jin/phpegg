@@ -13,7 +13,7 @@ class Email extends Logger
     protected $cache;
     protected $interval = 900;
     
-    public function __construct($config)
+    protected function init($config)
     {
         $this->to = $config['to'];
         $this->email = $config['email'];
@@ -24,7 +24,7 @@ class Email extends Logger
         Hook::add('close', [$this, 'send']);
     }
     
-    public function write($level, $message, $context)
+    public function write($level, $message, $context = null)
     {
         $this->logs[] = [$level, $message, $context];
     }

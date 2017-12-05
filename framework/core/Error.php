@@ -25,11 +25,7 @@ class Error
      */
     public static function set($message, $code = self::ERROR, $limit = 1)
     {
-        $file = null;
-        $line = null;
-        $type = null;
-        $class = null;
-        $function = null;
+        $file = $line = $type = $class = $function = null;
         $level = self::getErrorLevelInfo($code)[0];
         $traces = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         if (isset($traces[$limit])) {
@@ -39,7 +35,7 @@ class Error
         if (Config::env('STRICT_ERROR_MODE')) {
             throw new \ErrorException($message, $code, $code, $file, $line);
         } else {
-            self::record('error.user', $level, $code, $message, $file, $line);
+            self::record('error.user', $code, $level, $message, $file, $line);
         }
     }
     
@@ -54,7 +50,7 @@ class Error
             } else {
                 list($level, $prefix) = self::getErrorLevelInfo($code);
                 $message = $prefix.': '.$message;
-                self::record('error.error', $level, $code, $message, $file, $line);
+                self::record('error.error', $code, $level, $message, $file, $line);
                 if ($level === Logger::CRITICAL || $level === Logger::ALERT || $level === Logger::ERROR ) {
                     App::exit(3);
                     self::response();
@@ -73,7 +69,7 @@ class Error
         $level = Logger::ERROR;
         $name  = $e instanceof Exception ? ($e->getClass() ?? 'CoreException') : get_class($e);
         $message = 'Uncaught '.$name.': '.$e->getMessage();
-        self::record('error.exception', $level,  $e->getCode(), $message, $e->getFile(), $e->getLine());
+        self::record('error.exception', $e->getCode(), $level, $message, $e->getFile(), $e->getLine());
         self::response();
     }
     
@@ -87,7 +83,7 @@ class Error
             App::exit(5);
             list($level, $prefix) = self::getErrorLevelInfo($last_error['type']);
             $message = 'Fatal Error '.$prefix.': '.$last_error['message'];
-            self::record('error.fatal', $level, $last_error['type'], $message, $last_error['file'], $last_error['line']);
+            self::record('error.fatal', $last_error['type'], $level, $message, $last_error['file'], $last_error['line']);
             self::response();
 		} else {
             self::record('error.fatal', Logger::WARNING, 0, 'Unknown exit', null, null);
@@ -105,11 +101,12 @@ class Error
     /*
      * 记录错误
      */
-    private static function record($type, $level, $code, $message, $file, $line, $trace = null)
+    private static function record($type, $code, $level, $message, $file, $line, $trace = null)
     {
-        Hook::listen($type, $level, $code, $message, $file, $line, $trace);
-        self::$error[] = compact('level', 'code', 'message', 'file', 'line', 'trace');
-        Logger::write($level, $message, ['file' => $file, 'line' => $line]);
+        $record = [$level, $message, compact('file', 'line', 'trace')];
+        Hook::listen($type, $code, ...$record);
+        self::$error[] = $record;
+        Logger::write(...$record);
     }
     
     /*
