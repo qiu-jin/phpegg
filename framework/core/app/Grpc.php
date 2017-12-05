@@ -61,8 +61,8 @@ class Grpc extends App
     protected function call()
     {
         if ($this->config['service_schemes']) {
-            foreach ($this->config['service_schemes'] as $type => $scheme) {
-                Loader::add($scheme, $type);
+            foreach ($this->config['service_schemes'] as $type => $rules) {
+                Loader::add($type, $rules);
             }
         }
         $parameters = (new \ReflectionMethod($this->dispatch['controller_instance'], $this->dispatch['action']))->getParameters();

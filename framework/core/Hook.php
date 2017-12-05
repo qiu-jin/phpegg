@@ -13,8 +13,7 @@ class Hook
     {
         if (self::$init) return;
         self::$init = true;
-        $config = Config::get('hook');
-        if ($config) {
+        if ($config = Config::get('hook')) {
             foreach ($config as $name => $hooks) {
                 foreach ($hooks as $hook) {
                     self::add($name, $hook);

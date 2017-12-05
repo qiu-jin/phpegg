@@ -30,15 +30,12 @@ class Loader
     {
         if (self::$init) return;
         self::$init = true;
-        $config = Config::get('loader');
-        if ($config) {
+        if ($config = Config::get('loader')) {
             foreach ($config as $type => $rules) {
-                self::add($rules, $type);
+                self::add($type, $rules);
             }
         }
-        //加载 composer autoload
-        $vendor = Config::env('VENDOR_DIR');
-        if ($vendor) {
+        if ($vendor = Config::env('VENDOR_DIR')) {
             self::import($vendor.'autoload');  
         }
         spl_autoload_register(__CLASS__.'::autoload', true, true);
@@ -47,25 +44,23 @@ class Loader
     /*
      * 添加loader规则
      */
-    public static function add(array $rules, $type = 'prefix')
+    public static function add($type, array $rules)
     {
-        if (count($rules) > 0) {
-            switch ($type) {
-                case 'prefix':
-                    self::$class_prefix = array_merge(self::$class_prefix, $rules);
-                    return;
-                case 'map':
-                    self::$class_map = array_merge(self::$class_map, $rules);
-                    return;
-                case 'alias':
-                    self::$class_alias = array_merge(self::$class_alias, $rules);
-                    return;
-                case 'files':
-                    foreach ($rules as $name) {
-                        self::import($name);
-                    }
-                    return;
-            }
+        switch ($type) {
+            case 'prefix':
+                self::$class_prefix = array_merge(self::$class_prefix, $rules);
+                return;
+            case 'map':
+                self::$class_map = array_merge(self::$class_map, $rules);
+                return;
+            case 'alias':
+                self::$class_alias = array_merge(self::$class_alias, $rules);
+                return;
+            case 'files':
+                foreach ($rules as $name) {
+                    self::import($name);
+                }
+                return;
         }
     }
     

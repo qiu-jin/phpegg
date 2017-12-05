@@ -34,8 +34,8 @@ class Thrift
         $this->transport = new TBufferedTransport($socket, 1024, 1024);
         $this->protocol  = new TBinaryProtocol($this->transport);
         $this->transport->open();
-        foreach ($config['service_schemes'] as $type => $scheme) {
-            Loader::add($scheme, $type);
+        foreach ($config['service_schemes'] as $type => $rules) {
+            Loader::add($type, $rules);
         }
         $this->prefix = $config['prefix'] ?? null;
         $this->tmultiplexed = $config['tmultiplexed'] ?? false;
