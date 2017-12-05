@@ -95,12 +95,8 @@ abstract class Cache
     
     protected function randomGC($random)
     {
-        $random = $random*1000;
-        if ($random >= 1 && $random <= 1000) {
-            $rand = mt_rand(1, 1000);
-            if ($rand <= $random) {
-                Hook::add('close', [$this, 'gc']);
-            }
+        if (mt_rand(1, $random[1]) <= $random[0]) {
+            Hook::add('close', [$this, 'gc']);
         }
     }
 }
