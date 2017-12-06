@@ -39,8 +39,7 @@ class Container
     {
         if (self::$init) return;
         self::$init = true;
-        $config = Config::get('container');
-        if ($config) {
+        if ($config = Config::get('container')) {
             foreach (array_keys(self::$providers) as $type) {
                 if (isset($config[$type])) {
                     self::$providers[$type] = array_merge(self::$providers[$type], $config[$type]);
@@ -199,13 +198,11 @@ class Container
         return new class($ns, $depth) extends Container{
             protected $__ns;
             protected $__depth;
-            public function __construct($ns, $depth)
-            {
+            public function __construct($ns, $depth) {
                 $this->__ns = $ns;
                 $this->__depth = $depth - 1;
             }
-            public function __get($name)
-            {
+            public function __get($name) {
                 $this->__ns[] = $name;
                 $model = implode('.', $this->__ns);
                 if (isset(self::$container[$model])) {
@@ -222,6 +219,7 @@ class Container
      */
     public static function free()
     {
+        self::$providers = null;
         self::$container = null;
     }
 }

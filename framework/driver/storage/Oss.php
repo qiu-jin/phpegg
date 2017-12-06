@@ -34,7 +34,7 @@ class Oss extends Storage
     
     public function has($from)
     {
-        return $this->send('HEAD', $from, null, null, !$this->public_read);
+        return $this->send('HEAD', $from, null, ['curlopt' => [CURLOPT_NOBODY, 1]], !$this->public_read);
     }
     
     public function put($from, $to, $is_buffer = false)
@@ -60,7 +60,9 @@ class Oss extends Storage
 
     public function stat($from)
     {
-        $stat = $this->send('HEAD', $from, null, ['returnHeaders' => true], !$this->public_read);
+        $stat = $this->send('HEAD', $from, null, [
+            'returnHeaders' => true, 'curlopt' => [CURLOPT_NOBODY, true]
+        ], !$this->public_read);
         return $stat ? [
             'type'  => $stat['Content-Type'],
             'size'  => (int) $stat['Content-Length'],

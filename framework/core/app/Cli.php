@@ -57,6 +57,8 @@ class Cli extends App
     }
 }
 
+namespace framework\core;
+
 class command
 {
     

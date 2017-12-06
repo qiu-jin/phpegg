@@ -18,12 +18,11 @@ class Config
     {
         if (self::$init) return;
         self::$init = true;
-        self::loadEnvFile();
-        if ($dir = self::env('CONFIG_DIR')) {
-            self::$dir = $dir;
-        } elseif ($file = self::env('CONFIG_FILE')) {
-            self::loadSingleFile("$file.php");
+        self::loadEnv();
+        if ($file = self::env('CONFIG_FILE')) {
+            self::loadFile("$file.php");
         }
+        self::$dir = self::env('CONFIG_DIR');
     }
     
     /*
@@ -132,15 +131,16 @@ class Config
         }
         if (isset(self::$checked[$name])) {
             return false;
+        } else {
+            self::$checked[$name] = true;
         }
-        self::$checked[$name] = true;
-        return self::$dir && self::loadFile($name);
+        return self::$dir && self::load($name);
     }
     
     /*
      * 从目录中导入文件
      */
-    private static function loadFile($name)
+    private static function load($name)
     {
         $file = self::$dir.$name.'.php';
         if (is_php_file($file)) {
@@ -156,7 +156,7 @@ class Config
     /*
      * 导入环境配置文件
      */
-    private static function loadEnvFile()
+    private static function loadEnv()
     {
         $file = defined('APP_ENV_FILE') ? APP_ENV_FILE : APP_DIR.'env.php';
         if (is_php_file($file)) {
@@ -167,7 +167,7 @@ class Config
     /*
      * 导入单文件配置
      */
-    private static function loadSingleFile($path)
+    private static function loadFile($path)
     {
         $configs = __include($path);
         if (is_array($configs)) {

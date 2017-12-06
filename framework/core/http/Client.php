@@ -334,15 +334,8 @@ class Client
     protected function build()
     {
         $ch = curl_init($this->request->url);
-        if (stripos($this->request->url, 'https://') === 0) {
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        }
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($this->request->method));
-        if ($this->request->method === 'HEAD') {
-            curl_setopt($ch, CURLOPT_NOBODY, 1);
-        }
         if (isset($this->request->body)){
             curl_setopt($ch, CURLOPT_POSTFIELDS, $this->request->body);
         }

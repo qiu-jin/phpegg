@@ -5,13 +5,31 @@ use framework\App;
 
 abstract class Auth
 {
+    private static $init;
     private static $auth;
     
-    protected function __construct(){}
+    // 获取认证用户ID
+    abstract protected function id();
+    
+    // 获取认证用户信息
+    abstract protected function user();
+    
+    // 检查用户是否认证通过
+    abstract protected function check();
+    
+    // 用户认证失败处理
+    abstract protected function fallback();
+    
+    // 登记用户信息
+    abstract protected function login();
+    
+    // 注销用户信息
+    abstract protected function logout();
     
     public static function init()
     {
-        if (self::$auth) return;
+        if (self::$init) return;
+        self::$init = true;
         $config = Config::get('auth');
         if (is_subclass_of($config['class'], __CLASS__)) {
             self::$auth = (new $config['class']($config));
@@ -21,34 +39,15 @@ abstract class Auth
         Hook::add('exit', __CLASS__.'::free');
     }
     
-    // 获取认证用户ID
-    abstract public function id();
-    
-    // 获取认证用户信息
-    abstract public function user();
-    
-    // 检查用户是否认证成功
-    abstract public function check();
-    
-    // 用户认证失败处理
-    abstract public function fallback();
-    
-    // 登记用户信息
-    abstract public function login();
-    
-    // 注销用户信息
-    abstract public function logout();
-    
-    // 运行认证处理，检查用户是否认证成功，否则失败处理并退出
-    public function run()
+    public static function __callStatic($method, $params)
     {
-        $this->check() || $this->fallback() || App::exit();
+        return self::$auth->$method(...$params);
     }
     
-    // 获取运行认证实例
-    public static function instance()
+    // 运行认证处理，检查用户是否认证成功，否则失败处理并退出
+    public static function run()
     {
-        return self::$auth;
+        self::$auth->check() || self::$auth->fallback() || App::exit();
     }
     
     // 清除
