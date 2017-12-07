@@ -13,8 +13,7 @@ trait Getter
             if (is_string($value)) {
                 return $this->$name = Container::make($value);
             } elseif (is_array($value)) {
-                $class = array_shift($value);
-                return $this->$name = new $class(...$value);
+                return $this->$name = new $value[0](...array_slice($value, 1));
             } elseif ($value instanceof \Closure) {
                 return $this->$name = $value();
             }

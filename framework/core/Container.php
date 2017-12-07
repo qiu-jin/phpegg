@@ -4,9 +4,8 @@ namespace framework\core;
 class Container
 {
     protected static $init;
-    protected static $container;
     protected static $providers = [
-        //key表示支持的驱动类型名
+        // 驱动
         'driver'    => [
             'db'        => true,
             'rpc'       => true,
@@ -17,11 +16,12 @@ class Container
             'queue'     => true,
             'email'     => true,
             'sms'       => true,
+            'logger'    => true,
             'geoip'     => true,
             'crypt'     => true,
             'captcha'   => true,
         ],
-        //key表示支持的模型名，value表示模型类的namespace层数
+        // 模型
         'model'     => [
             'model'     => 1,
             'logic'     => 1,
@@ -31,10 +31,8 @@ class Container
         'class'     => [],
         'alias'     => [],
     ];
+    protected static $instances;
 
-    /*
-     * 类加载时调用此初始方法
-     */
     public static function init()
     {
         if (self::$init) return;
@@ -49,74 +47,28 @@ class Container
         Hook::add('exit', __CLASS__.'::free');
     }
     
-    /*
-     * 获取容器实例
-     */
     public static function get($name)
     {
-        return self::$container[$name] ?? null;
+        return self::$instances[$name] ?? null;
     }
     
-    /*
-     * 
-     */
     public static function has($name)
     {
-        return isset(self::$container[$name]);
+        return isset(self::$instances[$name]);
     }
     
-    /*
-     * 生成实例
-     */
-    public static function make($name)
-    {
-        if (isset(self::$container[$name])) {
-            return self::$container[$name];
-        }
-        $params = explode('.', $name);
-        foreach (self::$providers as $type => $provider) {
-            if (isset($provider[$params[0]])) {
-                return self::$container[$params[0]] = self::{'get'.ucfirst($type)}(...$params);
-            }
-        }
-    }
-    
-    public static function exists($name)
-    {
-        if (isset(self::$container[$name])) {
-            return true;
-        }
-        $prefix = strtok($name, '.');
-        foreach (self::$providers as $type => $provider) {
-            if (isset($provider[$prefix])) return true;
-        }
-        return false;
-    }
-    
-    public static function driver($type, $name = null)
-    {
-        if (is_array($name)) {
-            return self::getDriver($type, $name);
-        }
-        return self::$container[$name ? "$type.$name" : $type] = self::getDriver($type, $name);
-    }
-    
-    public static function model($name)
-    {
-        return self::$container[$name] = self::getModel(...explode('.', $name));
-    }
-    
-    /*
-     * 设置容器实例
-     */
     public static function set($name, object $value)
     {
-        self::$container[$name] = $value;
+        self::$instances[$name] = $value;
     }
-
-    /*
-     * 绑定容器
-     */
+    
+    public static function delete($name)
+    {
+        if (isset(self::$instances[$name])) {
+            unset(self::$instances[$name]);
+        }
+    }
+    
     public static function bind($name, $value)
     {
         switch (gettype($value)) {
@@ -138,89 +90,128 @@ class Container
         throw new Exception("Bind illegal type to $name");
     }
     
-    protected static function getModel(...$params)
+    public static function make($name)
     {
-        $depth = self::$providers['model'][$params[0]];
-        if ($depth > 0) {
-            return count($params) === $depth + 1 ? self::makeModel($params) : self::makeModelNs($params, $depth);
+        if (isset(self::$instances[$name])) {
+            return self::$instances[$name];
+        }
+        $params = explode('.', $name);
+        foreach (self::$providers as $type => $provider) {
+            if (isset($provider[$params[0]])) {
+                return self::$instances[$name] = self::{'make'.ucfirst($type)}(...$params);
+            }
         }
     }
     
-    /*
-     * 生成驱动实例
-     */
-    protected static function getDriver($type, $name = null)
+    public static function driver($type, $name = null)
     {
-        if ($name) {
-            $config = is_array($name) ? $name : Config::get("$type.$name");
-        } else {
-            list($index, $config) = Config::firstPair($type);
-        }
-        if (isset($config['driver'])) {
-            $class = 'framework\driver\\'.$type.'\\'.ucfirst($config['driver']);
-            if (isset($index)) {
-                return self::$container["$type.$index"] = new $class($config);
+        if (isset(self::$providers['driver'][$type])) {
+            if (is_array($name)) {
+                return self::makeDriverInstance($type, $name);
             }
-            return new $class($config);
+            $index = $name ? "$type.$name" : $type;
+            return self::$instances[$index] ?? self::$instances[$index] = self::makeDriver($type, $name);
+        }
+    }
+    
+    public static function model($name)
+    {
+        $ns = explode('.', $name);
+        if (isset(self::$providers['model'][$ns[0]])) {
+            return self::$instances[$name] ?? self::$instances[$name] = self::makeModel(...$ns);
+        }
+    }
+    
+    public static function hasProvider($name)
+    {
+        foreach (self::$providers as $type => $provider) {
+            if (isset($provider[$name])) return true;
+        }
+        return false;
+    }
+    
+    public static function getModel($type, ...$ns)
+    {
+        $index = implode('.', $ns);
+        if (isset(self::$instances[$index])) {
+            return self::$instances;
+        }
+        $depth = self::$providers['model'][$ns[0]];
+        if (isset($ns[$depth])) {
+            $class = 'app\\'.implode('\\', $ns);
+            return new $class(); 
+        } else {
+            return self::makeModelNs($ns);
+        }
+    }
+    
+    protected static function makeModel($type, ...$ns)
+    {
+        $depth = self::$providers['model'][$type];
+        if ($ns) {
+            if (count($ns) === $depth) {
+                $class = 'app\\'.$type.'\\'.implode('\\', $ns);
+                return new $class(); 
+            }
+        } else {
+            return self::makeModelNs($ns, $depth);
         }
     }
 
-    protected static function getClass($name)
+    protected static function makeDriver($type, $index = null)
+    {
+        if ($index) {
+            return self::makeDriverInstance($type, Config::get("$type.$index"));
+        } else {
+            list($index, $config) = Config::firstPair($type);
+            return self::$instances["$type.$index"] ?? self::makeDriverInstance($type, $config);
+        }
+    }
+
+    protected static function makeClass($name)
     {
         $value = self::$providers['class'][$name];
         return new $value[0](...array_slice($value, 1));
     }
 
-    protected static function getClosure($name)
+    protected static function makeClosure($name)
     {
         return self::$providers['closure'][$name]();
     }
     
-    protected static function getAlias($name)
+    protected static function makeAlias($name)
     {
         return self::get(self::$providers['alias'][$name]);
     }
     
-    /*
-     * 获取模型类实例
-     */
-    protected static function makeModel($params)
-    {
-        $class = 'app\\'.implode('\\', $params);
-        return new $class();
-    }
-    
-    /*
-     * 获取模型
-     */
     protected static function makeModelNs($ns, $depth)
     {
-        return new class($ns, $depth) extends Container{
+        return new class($ns) {
             protected $__ns;
             protected $__depth;
             public function __construct($ns, $depth) {
                 $this->__ns = $ns;
-                $this->__depth = $depth - 1;
+                $this->__depth = $depth--;
             }
             public function __get($name) {
                 $this->__ns[] = $name;
-                $model = implode('.', $this->__ns);
-                if (isset(self::$container[$model])) {
-                    return $this->$name = self::$container[$model];
-                }
-                $this->$name = $this->__depth < 1 ? self::makeModel($this->__ns) : new self($this->__ns, $this->__depth);
-                return self::$container[$model] = $this->$name;
+                return $this->$name = $this->__depth < 1
+                                    ? Container::model(...$this->__ns)
+                                    : self($this->__ns, $this->__depth);
             }
         };
     }
     
-    /*
-     * 清理资源
-     */
+    protected static function makeDriverInstance($type, $config)
+    {
+        $class = 'framework\driver\\'.$type.'\\'.ucfirst($config['driver']);
+        return new $class($config);
+    }
+    
     public static function free()
     {
         self::$providers = null;
-        self::$container = null;
+        self::$instances = null;
     }
 }
 Container::init();

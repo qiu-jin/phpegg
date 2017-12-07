@@ -104,6 +104,9 @@ class Rest extends App
         Response::json(['result' => $return], false);
     }
     
+    /*
+     * 默认调度
+     */
     protected function defaultDispatch($path) 
     {
         if (!in_array($this->method, $this->config['default_dispatch_http_methods'], true)) {
@@ -159,6 +162,9 @@ class Rest extends App
         return false;
     }
     
+    /*
+     * 资源调度
+     */
     protected function resourceDispatch($path)
     {
         $depth = $this->config['controller_depth'];
@@ -193,6 +199,9 @@ class Rest extends App
         return false;
     }
     
+    /*
+     * 路由调度
+     */
     protected function routeDispatch($path)
     {
         $param_mode = $this->config['route_dispatch_param_mode'];
@@ -232,6 +241,9 @@ class Rest extends App
         return false;
     }
     
+    /*
+     * Action 路由调度
+     */
     protected function actionRouteDispatch($param_mode, $controller, $path)
     {
         $property = $this->config['route_dispatch_action_routes'];
@@ -255,6 +267,9 @@ class Rest extends App
         return false;
     }
 
+    /*
+     * 获取键值参数
+     */
     protected function getKvParams(array $path)
     {
         $params = [];
@@ -265,6 +280,9 @@ class Rest extends App
         return $params;
     }
     
+    /*
+     * 设置POST参数
+     */
     protected function setPostParams()
     {
         $type = Request::header('Content-Type');

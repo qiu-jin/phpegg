@@ -37,7 +37,7 @@ abstract class App
     protected $dispatch;
     
     /*
-     * 应用调度方法，调度失败返回false
+     * 应用调度
      */
     abstract protected function dispatch();
     

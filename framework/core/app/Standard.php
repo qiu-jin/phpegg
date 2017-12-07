@@ -62,9 +62,6 @@ class Standard extends App
     ];
     protected $ref_method;
     
-    /*
-     * 控制器调度
-     */
     protected function dispatch()
     {
         $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
@@ -78,9 +75,6 @@ class Standard extends App
         return false;
     }
 
-    /*
-     * 调用控制器代码
-     */
     protected function call()
     {
         extract($this->dispatch, EXTR_SKIP);
@@ -101,9 +95,6 @@ class Standard extends App
         return $controller_instance->$action(...$params);
     }
     
-    /*
-     * 默认错误处理
-     */
     protected function error($code = null, $message = null)
     {
         Response::status($code ?: 500);
@@ -114,9 +105,6 @@ class Standard extends App
         }
     }
     
-    /*
-     * 默认响应输出
-     */
     protected function response($return = [])
     {
         if ($this->config['enable_view']) {
@@ -267,6 +255,9 @@ class Standard extends App
         return false;
     }
     
+    /*
+     * Action 路由调度
+     */
     protected function actionRouteDispatch($param_mode, $controller, $path)
     {
         $property = $this->config['route_dispatch_action_routes'];

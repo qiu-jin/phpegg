@@ -6,10 +6,10 @@ class Config
     private static $init;
     //配置文件目录
     private static $dir;
-    //缓存文件检查
-    private static $checked = [];
     //配置值缓存
-    private static $configs = [];
+    private static $configs;
+    //缓存文件检查
+    private static $checked;
     
     /*
      * 类加载时调用此初始方法

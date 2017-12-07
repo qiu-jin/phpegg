@@ -90,8 +90,6 @@ class Loader
             self::import(self::$class_map[$class]);
         } elseif (isset(self::$class_alias[$class])) {
             class_alias(self::$class_alias[$class], $class);
-        } elseif ($prefix === 'exception') {
-            class_alias(Exception::class, $class);
         }
     }
     

@@ -142,17 +142,16 @@ class Response
     public static function flush()
     {
         Hook::listen('response', self::$response);
-        if (!headers_sent()) {
-            if (isset(self::$response->status)) {
-                http_response_code(self::$response->status);
-            }
-            if (isset(self::$response->headers)) {
-                foreach (self::$response->headers as $hk => $hv) {
-                    header($hk.': '.$hv);
-                }
-            }
-        } else {
+        if (headers_sent()) {
             throw new \Exception('Response headers sent failure');
+        }
+        if (isset(self::$response->status)) {
+            http_response_code(self::$response->status);
+        }
+        if (isset(self::$response->headers)) {
+            foreach (self::$response->headers as $k => $v) {
+                header("$k: $v");
+            }
         }
         if (isset(self::$response->body)) {
             echo self::$response->body;
