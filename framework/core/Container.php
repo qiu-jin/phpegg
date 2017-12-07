@@ -74,20 +74,20 @@ class Container
         switch (gettype($value)) {
             case 'array':
                 self::$providers['class'][$name] = $value;
-                break;
+                return;
             case 'string':
                 if (strcasecmp($name, $value) !== 0) {
                     self::$providers['alias'][$name] = $value;
-                    break;
+                    return;
                 }
-                throw new Exception("Alias same name");
+                throw new \Exception("Alias same name");
             case 'object':
                 if ($value instanceof \Closure) {
                     self::$providers['closure'][$name] = $value;
+                    return;
                 }
-                break;
         }
-        throw new Exception("Bind illegal type to $name");
+        throw new \Exception("Bind illegal type to $name");
     }
     
     public static function make($name)
@@ -118,44 +118,22 @@ class Container
     {
         $ns = explode('.', $name);
         if (isset(self::$providers['model'][$ns[0]])) {
-            return self::$instances[$name] ?? self::$instances[$name] = self::makeModel(...$ns);
+            return self::$instances[$name] ?? self::$instances[$name] = self::makeModelInstance(...$ns);
         }
     }
     
     public static function hasProvider($name)
     {
         foreach (self::$providers as $type => $provider) {
-            if (isset($provider[$name])) return true;
+            if (isset($provider[$name])) return $type;
         }
         return false;
-    }
-    
-    public static function getModel($type, ...$ns)
-    {
-        $index = implode('.', $ns);
-        if (isset(self::$instances[$index])) {
-            return self::$instances;
-        }
-        $depth = self::$providers['model'][$ns[0]];
-        if (isset($ns[$depth])) {
-            $class = 'app\\'.implode('\\', $ns);
-            return new $class(); 
-        } else {
-            return self::makeModelNs($ns);
-        }
     }
     
     protected static function makeModel($type, ...$ns)
     {
         $depth = self::$providers['model'][$type];
-        if ($ns) {
-            if (count($ns) === $depth) {
-                $class = 'app\\'.$type.'\\'.implode('\\', $ns);
-                return new $class(); 
-            }
-        } else {
-            return self::makeModelNs($ns, $depth);
-        }
+        return $ns ? self::makeModelInstance($type, ...$ns) : self::makeModelNs([$type], $depth);
     }
 
     protected static function makeDriver($type, $index = null)
@@ -186,20 +164,26 @@ class Container
     
     protected static function makeModelNs($ns, $depth)
     {
-        return new class($ns) {
+        return new class($ns, $depth) {
             protected $__ns;
             protected $__depth;
             public function __construct($ns, $depth) {
                 $this->__ns = $ns;
-                $this->__depth = $depth--;
+                $this->__depth = $depth - 1;
             }
             public function __get($name) {
                 $this->__ns[] = $name;
                 return $this->$name = $this->__depth < 1
-                                    ? Container::model(...$this->__ns)
-                                    : self($this->__ns, $this->__depth);
+                                    ? Container::model(implode('.', $this->__ns))
+                                    : new self($this->__ns, $this->__depth);
             }
         };
+    }
+    
+    protected static function makeModelInstance($type, ...$ns)
+    {
+        $class = 'app\\'.$type.'\\'.implode('\\', $ns);
+        return new $class(); 
     }
     
     protected static function makeDriverInstance($type, $config)
