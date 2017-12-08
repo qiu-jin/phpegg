@@ -7,7 +7,7 @@ class Graphql extends App
 {
     protected function dispatch()
     {
-
+        
     }
     
     protected function call()

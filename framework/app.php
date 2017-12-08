@@ -132,9 +132,6 @@ abstract class App
     {
         if (self::$app) return;
         self::boot();
-        if (static::class !== __CLASS__) {
-            throw new \RuntimeException('Illegal start call');
-        }
         if (in_array($app, self::$modes, true)) {
             $class = 'framework\core\app\\'.$app;
         } elseif (is_subclass_of($app, __CLASS__)) {

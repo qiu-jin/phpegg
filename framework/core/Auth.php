@@ -21,7 +21,7 @@ abstract class Auth
     abstract protected function fallback();
     
     // 登记用户信息
-    abstract protected function login();
+    abstract protected function login($user);
     
     // 注销用户信息
     abstract protected function logout();

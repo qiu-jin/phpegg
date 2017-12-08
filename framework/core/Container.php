@@ -27,8 +27,11 @@ class Container
             'logic'     => 1,
             'service'   => 1
         ],
+        // 闭包
         'closure'   => [],
+        // 类
         'class'     => [],
+        // 别名
         'alias'     => [],
     ];
     protected static $instances;
@@ -173,9 +176,8 @@ class Container
             }
             public function __get($name) {
                 $this->__ns[] = $name;
-                return $this->$name = $this->__depth < 1
-                                    ? Container::model(implode('.', $this->__ns))
-                                    : new self($this->__ns, $this->__depth);
+                return $this->$name = $this->__depth < 1 ? Container::model(implode('.', $this->__ns))
+                                                         : new self($this->__ns, $this->__depth);
             }
         };
     }
