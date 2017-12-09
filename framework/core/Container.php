@@ -196,7 +196,6 @@ class Container
     
     public static function free()
     {
-        self::$providers = null;
         self::$instances = null;
     }
 }

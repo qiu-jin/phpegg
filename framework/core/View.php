@@ -55,7 +55,7 @@ class View
             $vars = array_merge($view->vars, $vars);
         }
         ob_start();
-        __include_view(self::file($tpl), $vars);
+        __include_view_file(self::file($tpl), $vars);
         return ob_get_clean();
     }
     
@@ -154,7 +154,7 @@ class View
     {   
         if (isset(self::$config['error'][$code])) {
             ob_start();
-            __include_view(self::file(self::$config['error'][$code]), compact('code', 'message'));
+            __include_view_file(self::file(self::$config['error'][$code]), compact('code', 'message'));
             return ob_get_clean();
         } elseif ($code === 404) {
             return ViewError::render404($message);
@@ -204,7 +204,7 @@ class View
 }
 View::init();
 
-function __include_view($__view_file, $__view_vars)
+function __include_view_file($__view_file, $__view_vars)
 {
     if ($__view_vars) {
         extract($__view_vars, EXTR_SKIP);
