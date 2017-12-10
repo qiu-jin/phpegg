@@ -4,19 +4,18 @@ namespace framework\driver\cache;
 /*
  * https://github.com/phpredis/phpredis
  */
-
 class Redis extends Cache
 {
-    protected $link;
+    protected $redis;
     
     protected function init($config)
     {
-        $link = new \Redis();
-        if ($link->connect($config['host'], $config['port'] ?? 6379)) {
+        $redis = new \Redis();
+        if ($redis->connect($config['host'], $config['port'] ?? 6379)) {
             if (isset($config['database'])) {
-                $link->select($config['database']);
+                $redis->select($config['database']);
             }
-            $this->link = $link;
+            $this->redis = $redis;
         } else {
             throw new \Exception('Redis connect error');
         }
@@ -24,46 +23,46 @@ class Redis extends Cache
     
     public function get($key, $default = null)
     {
-        $value = $this->link->get($key);
+        $value = $this->redis->get($key);
         return $value ? $this->unserialize($value) : $default;
     }
     
     public function has($key)
     {
-        return $this->link->exists($key);
+        return $this->redis->exists($key);
     }
     
     public function set($key, $value, $ttl = null)
     {
         if ($ttl) {
-            return $this->link->setex($key, $ttl, $this->serialize($value));
+            return $this->redis->setex($key, $ttl, $this->serialize($value));
         } else {
-            return $this->link->set($key, $this->serialize($value)); 
+            return $this->redis->set($key, $this->serialize($value)); 
         }
     }
 
     public function delete($key)
     {
-        return $this->link->del($key);
+        return $this->redis->del($key);
     }
     
     public function increment($key, $value = 1)
     {
-        return $value > 1 ? $this->link->incrBy($key, $value) : $this->link->incr($key);
+        return $value > 1 ? $this->redis->incrBy($key, $value) : $this->redis->incr($key);
     }
     
     public function decrement($key, $value = 1)
     {
-        return $value > 1 ? $this->link->decrBy($key, $value) : $this->link->decr($key);
+        return $value > 1 ? $this->redis->decrBy($key, $value) : $this->redis->decr($key);
     }
     
     public function clear()
     {
-        return $this->link->flushdb();
+        return $this->redis->flushdb();
     }
     
     public function __destruct()
     {
-        $this->link->close();
+        $this->redis->close();
     }
 }

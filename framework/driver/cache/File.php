@@ -16,7 +16,7 @@ class File extends Cache
                 $this->dir .= '/';
             }
             $this->ext = $config['ext'] ?? '.cache';
-            $this->gc_maxlife = $config['gc_maxlife'] ?? 86400;
+            $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
         } else {
             throw new \Exception('Cache dir is not writable');
         }
@@ -38,7 +38,6 @@ class File extends Cache
                     return $this->unserialize($data);
                 } else {
                     fclose($fp);
-                    unlink($file);
                 }
             }
         }
@@ -50,7 +49,7 @@ class File extends Cache
         $fp = fopen($this->filename($key), 'w');
         if ($fp) {
             if (flock($fp, LOCK_EX)) {
-                $expiration = $ttl ? $ttl+time() : 0;
+                $expiration = $ttl ? $ttl + time() : 0;
                 fwrite($fp, "$expiration".PHP_EOL);
                 fwrite($fp, $this->serialize($value));
                 fflush($fp);
@@ -71,13 +70,8 @@ class File extends Cache
             $fp = fopen($file, 'r');
             if ($fp) {
                 $expiration = (int) trim(fgets($fp));
-                if($expiration === '0' || $expiration < time()){
-                    fclose($fp);
-                    return true;
-                } else {
-                    fclose($fp);
-                    unlink($file);
-                }
+                fclose($fp);
+                return $expiration === '0' || $expiration < time();
             }
         }
         return false;
@@ -106,11 +100,10 @@ class File extends Cache
     
     public function gc()
     {
-        $maxtime = time() - $this->gc_maxlife;
-        $ch = opendir($this->dir);
-        if ($ch) {
-            while (($f = readdir($ch)) !== false) {
-                $file = $this->dir.$f;
+        if ($ch = opendir($this->dir)) {
+            $maxtime = time() - $this->gc_maxlife;
+            while (($item = readdir($ch)) !== false) {
+                $file = $this->dir.$item;
                 if (is_file($file) && $maxtime > filemtime($file)) {
                     unlink($file);
                 }

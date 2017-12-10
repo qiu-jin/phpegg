@@ -8,16 +8,17 @@ use framework\core\Container;
  * value BLOB
  * expiration int(11)
  */
-
 class Db extends Cache
 {
     protected $db;
     protected $table;
+    protected $gc_maxlife;
 
     protected function init($config)
     {
         $this->db = Container::driver('db', $config['db']);
         $this->table = $config['table'] ?? 'cache';
+        $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
     }
     
     public function get($key, $default = null)
@@ -30,10 +31,10 @@ class Db extends Cache
     
     public function set($key, $value, $ttl = null)
     {
-        return $this->db->exec("REPLACE INTO $this->table SET key = ?, value = ?, expiration = ?", [
+        return (bool) $this->db->exec("REPLACE INTO $this->table SET key = ?, value = ?, expiration = ?", [
             $key,
             $this->serialize($value),
-            $ttl ? time() + $ttl : time() + 311040000
+            time() + ($ttl ?? $this->gc_maxlife)
         ]);
     }
 
@@ -48,24 +49,21 @@ class Db extends Cache
     {
         return (bool) $this->db->exec("DELETE FROM $this->table WHERE key = ?", [$key]);
     }
-    include 'Db.php';
     
     public function getMultiple(array $keys, $default = null)
     {
-        $in = implode(",", array_fill(0, count($value), '?'));
+        $in = implode(",", array_fill(0, count($keys), '?'));
         $data = $this->db->exec("SELECT key, value FROM $this->table WHERE key IN ($in) AND 'expiration' > ".time(), $keys);
         $caches = array_column($data, 'value', 'key');
         foreach ($keys as $key) {
-            if (!isset($caches[$key])) {
-                $caches[$key] = $default;
-            }
+            $caches[$key] = isset($caches[$key]) ? $this->unserialize($caches[$key]) : $default;
         }
         return $caches;
     }
     
     public function deleteMultiple(array $keys)
     {
-        $in = implode(",", array_fill(0, count($value), '?'));
+        $in = implode(",", array_fill(0, count($keys), '?'));
         return (bool) $this->db->exec("DELETE FROM $this->table WHERE key IN ($in)", [$keys]);
     }
     

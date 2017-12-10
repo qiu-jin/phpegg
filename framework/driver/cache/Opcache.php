@@ -16,7 +16,7 @@ class Opcache extends Cache
                 $this->dir .= '/';
             }
             $this->ext = $config['ext'] ?? '.cache.php';
-            $this->gc_maxlife = $config['gc_maxlife'] ?? 86400;
+            $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
             $this->filter_value = $config['filter_value'] ?? false;
         } else {
             throw new \Exception('Cache dir is not writable');
@@ -31,7 +31,6 @@ class Opcache extends Cache
             if ($expiration === 0 || $expiration > time()) {
                 return $cache;
             }
-            $this->removeCache($file);
         }
         return $default;
     }
@@ -45,7 +44,7 @@ class Opcache extends Cache
         $fp = fopen($file, 'w');
         if ($fp) {
             if (flock($fp, LOCK_EX)) {
-                $expiration = $ttl ? $ttl+time() : 0;
+                $expiration = $ttl ? $ttl + time() : 0;
                 $str = "<?php \$expiration = $expiration;".PHP_EOL;
                 $str .= 'return '.var_export($value, true).";"; 
                 fwrite($fp, $str);
@@ -65,10 +64,7 @@ class Opcache extends Cache
         $file = $this->filename($key);
         if (is_php_file($file)) {
             require($file);
-            if ($expiration === 0 || $expiration < time()) {
-                return true;
-            }
-            $this->removeCache($file);
+            return $expiration === 0 || $expiration < time();
         }
         return false;
     }
@@ -96,11 +92,10 @@ class Opcache extends Cache
     
     public function gc()
     {
-        $maxtime = time()+$this->gc_maxlife;
-        $fp = opendir($this->dir);
-        if ($fp) {
-            while (($f = readdir($fp)) !== false) {
-                $file = $this->dir.$f;
+        if ($fp = opendir($this->dir)) {
+            $maxtime = time() + $this->gc_maxlife;
+            while (($item = readdir($fp)) !== false) {
+                $file = $this->dir.$item;
                 if (is_php_file($file) && $maxtime < filemtime($file)) {
                     $this->removeCache($file);
                 }
