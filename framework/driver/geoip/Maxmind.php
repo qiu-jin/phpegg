@@ -36,7 +36,7 @@ class Maxmind extends Geoip
     protected function apiHandle($ip, $raw = false)
     {
         $url = self::$endpoint.'/'.$this->api['type'].'/'.$ip;
-        $client = Client::get($url)->header('Authorization', 'Basic '.base64_encode($this->api['acckey'].':'.$this->api['seckey']));
+        $client = Client::get($url)->header('Authorization', 'Basic '.base64_encode("$this->api[acckey]:$this->api[seckey]"));
         $result = $client->response->json();
         if (isset($result['country'])) {
             if ($raw) {
@@ -62,7 +62,10 @@ class Maxmind extends Geoip
             $this->db['reader'] = new Reader($this->db['database']);
         }
         $record = $this->db['reader']->get($ip);
-        return $raw ? $record : ['iso_code' => $record['country']['iso_code'], 'country' => $record['country']['names'][$this->lang]];
+        return $raw ? $record : [
+            'iso_code'  => $record['country']['iso_code'],
+            'country'   => $record['country']['names'][$this->lang]
+        ];
     }
     
     public function __destruct()

@@ -5,19 +5,13 @@ class Openssl extends Crypt
 {
     protected $key;
     protected $iv;
-    protected $method = 'AES-128-CBC';
+    protected $method;
     
     protected function init($config)
     {
-        if (isset($config['key'])) {
-            $this->key = $config['key'];
-        } else {
-            throw new \Exception('Crypt no key');
-        }
-        $this->iv = isset($config['iv']) ? $config['iv'] : openssl_digest($config['key'], 'MD5', true);
-        if (isset($config['method'])) {
-            $this->method = $config['method'];
-        }
+        $this->key = $config['key'];
+        $this->iv  = $config['iv'] ?? openssl_digest($config['key'], 'MD5', true);
+        $this->method = $config['method'] ?? 'AES-128-CBC';
     }
     
     public function encrypt($data, $raw = false)

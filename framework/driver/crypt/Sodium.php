@@ -12,12 +12,8 @@ class Sodium extends Crypt
     
     protected function init($config)
     {
-        if (isset($config['key'])) {
-            $this->key = $config['key'];
-        } else {
-            throw new \Exception('Crypt no key');
-        }
-        $this->nonce = isset($config['nonce']) ? $config['nonce'] : sodium_crypto_generichash($config['key'], null, 24);
+        $this->key = $config['key'];
+        $this->nonce = $config['nonce'] ?? sodium_crypto_generichash($config['key'], null, 24);
     }
     
     public function encrypt($data, $raw = false)
