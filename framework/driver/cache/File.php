@@ -5,19 +5,18 @@ namespace framework\driver\cache;
 class File extends Cache
 {
     protected $dir;
-    protected $ext = '.cache';
-    protected $gc_maxlife = 86400;
+    protected $ext;
+    protected $gc_maxlife;
 
     protected function init($config)
     {
-        if (isset($config['dir']) && is_dir($config['dir']) && is_writable($config['dir'])) {
+        if (is_dir($config['dir']) && is_writable($config['dir'])) {
             $this->dir = $config['dir'];
             if (substr($this->dir, -1) !== '/') {
                 $this->dir .= '/';
             }
-            if (isset($config['gc_maxlife'])) {
-                $this->gc_maxlife = (int) $config['gc_maxlife'];
-            }
+            $this->ext = $config['ext'] ?? '.cache';
+            $this->gc_maxlife = $config['gc_maxlife'] ?? 86400;
         } else {
             throw new \Exception('Cache dir is not writable');
         }
@@ -107,7 +106,7 @@ class File extends Cache
     
     public function gc()
     {
-        $maxtime = time()-$this->gc_maxlife;
+        $maxtime = time() - $this->gc_maxlife;
         $ch = opendir($this->dir);
         if ($ch) {
             while (($f = readdir($ch)) !== false) {

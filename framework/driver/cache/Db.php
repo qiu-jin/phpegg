@@ -11,29 +11,26 @@ use framework\core\Container;
 
 class Db extends Cache
 {
+    protected $db;
     protected $table;
 
     protected function init($config)
     {
-        $this->link = Container::driver('db', $config['db']);
-        $this->table = $config['table'];
+        $this->db = Container::driver('db', $config['db']);
+        $this->table = $config['table'] ?? 'cache';
     }
     
     public function get($key, $default = null)
     {
-        $cache = $this->link->exec("SELECT `value`, `expiration` FROM `$this->table` WHERE `key` = ?", [$key]);
-        if ($cache) {
-            if ($cache[0]['expiration'] > time()) {
-                return $this->unserialize($cache[0]['value']);
-            }
-            $this->link->exec("DELETE FROM `$this->table` WHERE `key` = ?", [$key]);
-        }
-        return $default;
+        $cache = $this->db->exec("SELECT value FROM $this->table WHERE key = ? AND 'expiration' > ?", [
+            $key, time()
+        ]);
+        return $cache ? $this->unserialize($cache[0]['value']) : $default;
     }
     
     public function set($key, $value, $ttl = null)
     {
-        return $this->link->exec("REPLACE INTO `$this->table` SET `key` = ?, `value` = ?, `expiration` = ?", [
+        return $this->db->exec("REPLACE INTO $this->table SET key = ?, value = ?, expiration = ?", [
             $key,
             $this->serialize($value),
             $ttl ? time() + $ttl : time() + 311040000
@@ -42,43 +39,53 @@ class Db extends Cache
 
     public function has($key)
     {
-        $cache = $this->link->exec("SELECT `expiration` FROM `$this->table` WHERE `key` = ?", [$key]);
-        if ($cache) {
-            if ($cache[0]['expiration'] > time()) {
-                return true;
-            }
-            $this->link->exec("DELETE FROM `$this->table` WHERE `key` = ?", [$key]);
-        }
-        return false;
+        return (bool) $this->db->exec("SELECT value FROM $this->table WHERE key = ? AND 'expiration' > ?", [
+            $key, time()
+        ]);
     }
     
     public function delete($key)
     {
-        return (bool) $this->link->exec("DELETE FROM `$this->table` WHERE `key` = ?", [$key]);
+        return (bool) $this->db->exec("DELETE FROM $this->table WHERE key = ?", [$key]);
     }
+    include 'Db.php';
     
     public function getMultiple(array $keys, $default = null)
     {
-
-    }
-    
-    public function setMultiple(array $values, $ttl = null)
-    {
-
+        $in = implode(",", array_fill(0, count($value), '?'));
+        $data = $this->db->exec("SELECT key, value FROM $this->table WHERE key IN ($in) AND 'expiration' > ".time(), $keys);
+        $caches = array_column($data, 'value', 'key');
+        foreach ($keys as $key) {
+            if (!isset($caches[$key])) {
+                $caches[$key] = $default;
+            }
+        }
+        return $caches;
     }
     
     public function deleteMultiple(array $keys)
     {
-
+        $in = implode(",", array_fill(0, count($value), '?'));
+        return (bool) $this->db->exec("DELETE FROM $this->table WHERE key IN ($in)", [$keys]);
+    }
+    
+    public function increment($key, $value = 1)
+    {
+        return (bool) $this->db->exec("UPDATE $this->table SET value = value + ? WHERE key = ?", [$value, $key]);
+    }
+    
+    public function decrement($key, $value = 1)
+    {
+        return (bool) $this->db->exec("UPDATE $this->table SET value = value - ? WHERE key = ?", [$value, $key]);
     }
     
     public function clear()
     {
-        return (bool) $this->link->query("TRUNCATE `$this->table`");
+        return (bool) $this->db->query("TRUNCATE $this->table");
     }
     
     public function gc()
     {
-        $this->link->exec("DELETE FROM `$this->table` WHERE `expiration` < ", [time()]);
+        $this->db->exec("DELETE FROM $this->table WHERE expiration < ", [time()]);
     }
 }

@@ -4,23 +4,20 @@ namespace framework\driver\cache;
 class Opcache extends Cache
 {
     protected $dir;
-    protected $ext = '.cache.php';
-    protected $gc_maxlife = 86400;
-    protected $filter_value = false;
+    protected $ext;
+    protected $gc_maxlife;
+    protected $filter_value;
 
     protected function init($config)
     {
-        if (isset($config['dir']) && is_dir($config['dir']) && is_writable($config['dir'])) {
+        if (is_dir($config['dir']) && is_writable($config['dir'])) {
             $this->dir = $config['dir'];
             if (substr($this->dir, -1) !== '/') {
                 $this->dir .= '/';
             }
-            if (isset($config['gc_maxlife'])) {
-                $this->gc_maxlife = (int) $config['gc_maxlife'];
-            }
-            if (isset($config['filter_value'])) {
-                $this->filter_value = (bool) $config['filter_value'];
-            }
+            $this->ext = $config['ext'] ?? '.cache.php';
+            $this->gc_maxlife = $config['gc_maxlife'] ?? 86400;
+            $this->filter_value = $config['filter_value'] ?? false;
         } else {
             throw new \Exception('Cache dir is not writable');
         }

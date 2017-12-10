@@ -7,6 +7,8 @@ namespace framework\driver\cache;
 
 class Redis extends Cache
 {
+    protected $link;
+    
     protected function init($config)
     {
         $link = new \Redis();

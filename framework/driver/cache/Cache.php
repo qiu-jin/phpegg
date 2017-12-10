@@ -5,7 +5,6 @@ use framework\core\Hook;
 
 abstract class Cache
 {
-    protected $link;
     protected $serialize;
     protected $unserialize;
     
@@ -28,11 +27,6 @@ abstract class Cache
         if (isset($config['gc_random'])) {
             $this->randomGC($config['gc_random']);
         }
-    }
-    
-    public function link()
-    {
-        return $this->link;
     }
     
     public function pull($key)

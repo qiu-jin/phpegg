@@ -4,14 +4,12 @@ namespace framework\driver\cache;
 class Apc extends Cache
 {
     protected $prefix;
-    protected $global_clear = false;
+    protected $global_clear;
     
     protected function init($config)
     {
-        $this->prefix = $config['prefix'].'_';
-        if (isset($config['global_clear'])) {
-            $this->global_clear = $config['global_clear'];
-        }
+        $this->prefix = $config['prefix'];
+        $this->global_clear = $config['global_clear'] ?? false;
     }
     
     public function get($key, $default = null)
@@ -27,7 +25,7 @@ class Apc extends Cache
     
     public function set($key, $value, $ttl = null)
     {
-        return apcu_store($this->prefix.$key, $this->serialize($value), $ttl ? (int) $ttl : 0);
+        return apcu_store($this->prefix.$key, $this->serialize($value), $ttl ?? 0);
     }
     
     public function delete($key)

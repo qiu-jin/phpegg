@@ -3,6 +3,8 @@ namespace framework\driver\cache;
 
 class Memcached extends Cache
 {
+    protected $link;
+    
     protected function init($config)
     {
         $link = new \Memcached;
