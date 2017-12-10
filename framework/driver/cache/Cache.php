@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\cache;
 
-use Framework\Core\Hook;
+use framework\core\Hook;
 
 abstract class Cache
 {
