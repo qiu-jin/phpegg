@@ -15,7 +15,7 @@ class Router
     private static $enable_dynamic_call;
     
     /*
-     * 初始方法
+     * 初始化
      */
     public static function init()
     {

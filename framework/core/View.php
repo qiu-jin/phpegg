@@ -11,7 +11,7 @@ class View
     private static $config;
     
     /*
-     * 类加载时调用此初始方法
+     * 初始化
      */
     public static function init()
     {
@@ -22,7 +22,7 @@ class View
         if (empty(self::$config['dir'])) {
             self::$config['dir'] = APP_DIR.'view/';
         }
-        Hook::add('exit', __CLASS__.'::free');
+        Event::on('exit', __CLASS__.'::free');
     }
     
     /*

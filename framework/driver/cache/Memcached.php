@@ -84,6 +84,11 @@ class Memcached extends Cache
         return $this->memcache->flush();
     }
     
+    public function getConnection()
+    {
+        return $this->memcache;
+    }
+    
     public function __destruct()
     {
         $this->memcache->quit();

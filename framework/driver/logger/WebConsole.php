@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\logger;
 
-use framework\core\Hook;
+use framework\core\Event;
 use framework\core\http\Request;
 
 /*
@@ -46,7 +46,7 @@ class WebConsole extends Logger
         if (isset($config['header_limit_size'])) {
             $this->header_limit_size = $config['header_limit_size'];
         }
-        Hook::add('exit', [$this, 'send']);
+        Event::on('exit', [$this, 'send']);
     }
     
     public function write($level, $message, $context = null)

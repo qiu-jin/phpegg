@@ -3,7 +3,6 @@ namespace framework\core;
 
 class Loader
 {
-    // 标示init方法是否已执行，防止重复执行
     private static $init;
     // 类对应文件
     private static $class_map = [];
@@ -25,7 +24,7 @@ class Loader
     ];
     
     /*
-     * 类加载时调用此初始方法
+     * 初始化
      */
     public static function init()
     {

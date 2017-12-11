@@ -15,14 +15,13 @@ class Logger
     const INFO      = 'info';
     const DEBUG     = 'debug';
     
-    // 标示init方法是否已执行，防止重复执行
     private static $init;
     private static $handler;
     private static $handlers = [];
     private static $level_handler_name = [];
     
     /*
-     * 类加载时调用此初始方法
+     * 初始化
      */
     public static function init()
     {

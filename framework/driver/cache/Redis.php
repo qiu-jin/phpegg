@@ -61,6 +61,11 @@ class Redis extends Cache
         return $this->redis->flushdb();
     }
     
+    public function getConnection()
+    {
+        return $this->redis;
+    }
+    
     public function __destruct()
     {
         $this->redis->close();

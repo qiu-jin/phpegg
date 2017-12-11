@@ -3,5 +3,5 @@ namespace framework\core;
 
 class Job
 {
-
+    
 }

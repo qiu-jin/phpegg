@@ -2,21 +2,21 @@
 namespace framework\core\http;
 
 use framework\App;
-use framework\core\Hook;
 use framework\core\View;
+use framework\core\Event;
 
 class Response
 {
     private static $response;
     
     /*
-     * 类加载时调用此初始方法
+     * 初始化
      */
     public static function init()
     {
         if (self::$response) return;
         self::$response = new \stdClass();
-        Hook::add('flush', __CLASS__.'::flush');
+        Event::on('flush', __CLASS__.'::flush');
     }
     
     /*
@@ -141,7 +141,7 @@ class Response
      */
     public static function flush()
     {
-        Hook::listen('response', self::$response);
+        Event::listen('response', self::$response);
         if (headers_sent()) {
             throw new \Exception('Response headers sent failure');
         }

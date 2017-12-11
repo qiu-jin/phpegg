@@ -12,7 +12,7 @@ class Config
     private static $checked;
     
     /*
-     * 类加载时调用此初始方法
+     * 初始化
      */
     public static function init()
     {
@@ -158,10 +158,7 @@ class Config
      */
     private static function loadEnv()
     {
-        $file = defined('APP_ENV_FILE') ? APP_ENV_FILE : APP_DIR.'env.php';
-        if (is_php_file($file)) {
-            __include($file);
-        }
+        __include(defined('ENV_FILE') ? ENV_FILE : APP_DIR.'env.php');
     }
     
     /*

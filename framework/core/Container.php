@@ -47,7 +47,7 @@ class Container
                 }
             }
         }
-        Hook::add('exit', __CLASS__.'::free');
+        Event::on('exit', __CLASS__.'::free');
     }
     
     public static function get($name)

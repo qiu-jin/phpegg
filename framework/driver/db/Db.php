@@ -104,6 +104,11 @@ abstract class Db
         $this->debug = (bool) $bool;
     }
     
+    public function getConnection()
+    {
+        return $this->link;
+    }
+    
     /*
     public function getSql($all = true)
     {

@@ -2,7 +2,6 @@
 namespace framework\core;
 
 use framework\App;
-use framework\core\Hook;
 
 class Error
 {
@@ -104,7 +103,7 @@ class Error
     private static function record($type, $code, $level, $message, $file, $line, $trace = null)
     {
         $record = [$level, $message, compact('file', 'line', 'trace')];
-        Hook::listen($type, $code, ...$record);
+        Event::on($type, $code, ...$record);
         self::$error[] = $record;
         Logger::write(...$record);
     }

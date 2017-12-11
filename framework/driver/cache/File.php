@@ -15,7 +15,7 @@ class File extends Cache
             if (substr($this->dir, -1) !== '/') {
                 $this->dir .= '/';
             }
-            $this->ext = $config['ext'] ?? '.cache';
+            $this->ext = $config['ext'] ?? '.cache.txt';
             $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
         } else {
             throw new \Exception('Cache dir is not writable');
@@ -108,7 +108,7 @@ class File extends Cache
                     unlink($file);
                 }
             }
-            closedir($dp);
+            closedir($ch);
         }
     }
     

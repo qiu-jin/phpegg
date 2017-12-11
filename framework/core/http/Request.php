@@ -1,14 +1,14 @@
 <?php
 namespace framework\core\http;
 
-use framework\core\Hook;
+use framework\core\Event;
 
 class Request
 {
     private static $request;
     
     /*
-     * 类加载时调用此初始方法
+     * 初始化
      */
     public static function init()
     {
@@ -18,8 +18,8 @@ class Request
         self::$request->post =& $_POST;
         self::$request->server =& $_SERVER;
         self::$request->params =& $_REQUEST;
-        Hook::add('exit', __CLASS__.'::free');
-        Hook::listen('request', self::$request);
+        Event::on('exit', __CLASS__.'::free');
+        Event::listen('request', self::$request);
     }
     
     /*

@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\cache;
 
-use framework\core\Hook;
+use framework\core\Event;
 
 abstract class Cache
 {
@@ -24,29 +24,9 @@ abstract class Cache
         if (isset($config['serializer'])) {
             list($this->serialize, $this->unserialize) = $config['serializer'];
         }
-        if (isset($config['gc_random'])) {
-            $this->randomGC($config['gc_random']);
+        if (isset($config['gc_random']) && mt_rand(1, $config['gc_random'][1]) <= $config['gc_random'][0]) {
+            Event::on('close', [$this, 'gc']);
         }
-    }
-    
-    public function pull($key)
-    {
-        $value = $this->get($key);
-        $this->delete($key);
-        return $value;
-    }
-    
-    public function remember($key, $value, $ttl = null)
-    {
-        if (!$this->has($key)) {
-            if ($value instanceof \Closure) {
-                $value = call_user_func($value);
-            }
-            $this->set($key, $value, $ttl);
-        } else {
-            $value = $this->get($key);
-        }
-        return $value;
     }
     
     public function getMultiple(array $keys, $default = null)
@@ -77,6 +57,26 @@ abstract class Cache
         return true;
     }
     
+    public function pull($key)
+    {
+        $value = $this->get($key);
+        $this->delete($key);
+        return $value;
+    }
+    
+    public function remember($key, $value, $ttl = null)
+    {
+        if (!$this->has($key)) {
+            if ($value instanceof \Closure) {
+                $value = call_user_func($value);
+            }
+            $this->set($key, $value, $ttl);
+        } else {
+            $value = $this->get($key);
+        }
+        return $value;
+    }
+    
     protected function serialize($data)
     {
         return $this->serialize ? ($this->serialize)($data) : $data;
@@ -85,12 +85,5 @@ abstract class Cache
     protected function unserialize($data)
     {
         return $this->unserialize ? ($this->unserialize)($data) : $data;
-    }
-    
-    protected function randomGC($random)
-    {
-        if (mt_rand(1, $random[1]) <= $random[0]) {
-            Hook::add('close', [$this, 'gc']);
-        }
     }
 }

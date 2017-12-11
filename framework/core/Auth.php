@@ -26,6 +26,9 @@ abstract class Auth
     // 注销用户信息
     abstract protected function logout();
     
+    /*
+     * 初始化
+     */
     public static function init()
     {
         if (self::$init) return;
@@ -36,9 +39,12 @@ abstract class Auth
         } else {
             throw new Exception('Illegal auth class');
         }
-        Hook::add('exit', __CLASS__.'::free');
+        Event::on('exit', __CLASS__.'::free');
     }
     
+    /*
+     * 静态调用
+     */
     public static function __callStatic($method, $params)
     {
         return self::$auth->$method(...$params);

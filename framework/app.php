@@ -1,8 +1,8 @@
 <?php 
 namespace framework;
 
-use framework\core\Hook;
 use framework\core\Error;
+use framework\core\Event;
 use framework\core\Config;
 
 abstract class App
@@ -99,7 +99,6 @@ abstract class App
         require FW_DIR.'common.php';
         require FW_DIR.'core/Config.php';
         require FW_DIR.'core/Loader.php';
-        require FW_DIR.'core/Hook.php';
         set_error_handler(function (...$e) {
             Error::errorHandler(...$e);
         });
@@ -111,18 +110,18 @@ abstract class App
                 if (!self::$exit) {
                     Error::fatalHandler();
                 }
-                Hook::listen('exit');
+                Event::listen('exit');
             } catch (\Throwable $e) {
                 Error::exceptionHandler($e);
             }
             self::$app = null;
-            Hook::listen('flush');
+            Event::listen('flush');
             if (function_exists('fastcgi_finish_request')) {
                 fastcgi_finish_request();
             }
-            Hook::listen('close');
+            Event::listen('close');
         });
-        Hook::listen('boot');
+        Event::listen('boot');
     }
     
     /*
@@ -147,7 +146,7 @@ abstract class App
         }
         self::$app = new $class($config);
         self::$app->dispatch = self::$app->dispatch();
-        Hook::listen('start', self::$app->dispatch);
+        Event::listen('dispatch', self::$app->dispatch);
         if (self::$app->dispatch) {
             return self::$app;
         }

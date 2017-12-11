@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\logger;
 
-use framework\core\Hook;
+use framework\core\Event;
 use framework\core\Container;
 use framework\core\http\Request;
 use framework\extend\view\Error;
@@ -21,7 +21,7 @@ class Email extends Logger
             'driver'=> 'opcache',
             'dir'   => APP_DIR.'storage/cache/',
         ];
-        Hook::add('close', [$this, 'send']);
+        Event::on('close', [$this, 'send']);
     }
     
     public function write($level, $message, $context = null)
