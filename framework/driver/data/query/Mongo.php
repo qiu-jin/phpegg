@@ -7,7 +7,10 @@ use MongoDB\Driver\BulkWrite;
 class Mongo
 {
     protected $ns;
+    protected $raw;
+    protected $where;
     protected $manager;
+    protected $options;
     
     public function __construct($manager, $db, $collection)
     {
@@ -17,63 +20,77 @@ class Mongo
     
     public function get($id)
     {
-        return $this->getRaw($id)->toArray();
+        $this->options['limit'] = 1;
+        return $this->find(['_id' => $id])[0] ?? null;
     }
     
-    public function find($filter, $options = null)
+    public function find($where = null)
     {
-        return $this->findRaw($filter, $options)->toArray();
+        $result = $this->manager->executeQuery($this->ns, new Query($where ?? $this->where, $this->options));
+        return $this->raw ? $result : $result->toArray();
     }
     
     public function set($id, $data)
     {
-        $result = $this->setRaw($id, $data);
-        return $result->getUpsertedCount() ?: $result->getModifiedCount();
+        $result = $this->bulkWrite('update', ['_id' => $id], $data, ['upsert' => true]);
+        return $this->raw ? $result : ($result->getUpsertedCount() ?: $result->getModifiedCount());
     }
 
     public function insert($data)
     {
-        return $this->insertRaw($data)->getInsertedCount();
+        $result = $this->bulkWrite('insert', $data);
+        return $this->raw ? $result : $result->getInsertedCount();
     }
     
-    public function update($filter, $data, $options = null)
+    public function update($data, $options = null)
     {
-        return $this->updateRaw($data, $filter, $options)->getModifiedCount();
+        $result = $this->bulkWrite('update', $this->where, $data, $options ?? $this->options);
+        return $this->raw ? $result : $result->getModifiedCount();
     }
     
-    public function delete($filter, $options = null)
+    public function delete($id = null)
     {
-        return $this->deleteRaw($filter, $options)->getDeletedCount();
-    }
-
-    public function getRaw($id)
-    {
-        return $this->findRaw(['_id' => $id]);
+        $result = $this->bulkWrite('delete', $id ? ['_id' => $id] : $this->where, $this->options);
+        return $this->raw ? $result : $result->getDeletedCount();
     }
     
-    public function findRaw($filter, $options = null)
+    public function raw()
     {
-        return $this->manager->executeQuery($this->ns, new Query($filter, $options));
+        $this->raw = true;
+        return $this;
     }
     
-    public function setRaw($id, $data)
+    public function select(...$fields)
     {
-        return $this->bulkWrite('update', ['_id' => $id], $data, ['upsert' => true]);
-    }
-
-    public function insertRaw($data)
-    {
-        return $this->bulkWrite('insert', $data);
+        $this->options['projections'] = $fields;
+        return $this;
     }
     
-    public function updateRaw($filter, $data, $options = null)
+    public function where($where)
     {
-        return $this->bulkWrite('update', is_array($filter) ? $filter : ['_id' => $filter], $data, $options);
+        $this->where = $where;
+        return $this;
     }
     
-    public function deleteRaw($filter, $options = null)
+    public function limit($limit, $skip = null)
     {
-        return $this->bulkWrite('delete', is_array($filter) ? $filter : ['_id' => $filter], $options);
+        $this->options['limit'] = $limit;
+        if ($skip) {
+            $this->options['skip'] = $skip;
+        }
+        return $this;
+    }
+    
+    public function order($field, $desc = false)
+    {
+        $this->options['sort'][$field] = $desc ? -1 : 1;
+        return $this;
+    }
+    
+    public function options($options)
+    {
+        $this->options = $this->options ? array_merge($this->options, $options) : $options;
+        return $this;
     }
     
     protected function bulkWrite($method, ...$params)

@@ -103,7 +103,7 @@ class Error
     private static function record($type, $code, $level, $message, $file, $line, $trace = null)
     {
         $record = [$level, $message, compact('file', 'line', 'trace')];
-        Event::on($type, $code, ...$record);
+        Event::listen($type, $code, ...$record);
         self::$error[] = $record;
         Logger::write(...$record);
     }

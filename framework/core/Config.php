@@ -20,7 +20,7 @@ class Config
         self::$init = true;
         self::loadEnv();
         if ($file = self::env('CONFIG_FILE')) {
-            self::loadFile("$file.php");
+            self::loadFile($file);
         }
         self::$dir = self::env('CONFIG_DIR');
     }
