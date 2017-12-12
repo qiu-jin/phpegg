@@ -54,9 +54,9 @@ class Mongo
         return $this->raw ? $result : $result->getDeletedCount();
     }
     
-    public function raw()
+    public function raw($bool = true)
     {
-        $this->raw = true;
+        $this->raw = (bool) $bool;
         return $this;
     }
     
