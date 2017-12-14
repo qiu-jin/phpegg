@@ -2,17 +2,16 @@
 namespace framework\core\app;
 
 use framework\App;
+use framework\util\Str;
 use framework\util\Xml;
-use framework\core\Router;
-use framework\core\Loader;
 use framework\core\Config;
+use framework\core\Router;
+use framework\core\Controller;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\extend\misc\ReflectionMethod;
 
 class Rest extends App
 {
-    protected $ns;
     protected $config = [
         // 调度模式，支持default resource route组合
         'dispatch_mode'     => ['default'],
@@ -24,7 +23,6 @@ class Rest extends App
         'controller_suffix' => null,
         // request参数是否转为控制器方法参数
         'bind_request_params'   => null,
-        
         // 默认调度的路径转为驼峰风格
         'default_dispatch_to_camel' => null,
         /* 默认调度的参数模式
@@ -35,7 +33,6 @@ class Rest extends App
         'default_dispatch_param_mode' => 1,
         // 默认调度下允许的HTTP方法
         'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/],
-        
         // 资源调度默认路由表
         'resource_dispatch_routes'=> [
             '/'     => ['GET' => 'index', 'POST' => 'create'],
@@ -43,7 +40,6 @@ class Rest extends App
             'create'=> ['GET' => 'new'],
             '*/edit'=> ['GET' => 'edit']
         ],
-        
         /* 路由调度的参数模式
          * 0 无参数
          * 1 循序参数
@@ -56,11 +52,9 @@ class Rest extends App
         'route_dispatch_action_routes' => null,
     ];
     protected $method;
-    protected $ref_method;
     
     protected function dispatch()
     {
-        $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
         $this->method = Request::method();
         $path = Request::pathArr();
         foreach ($this->config['dispatch_mode'] as $mode) {
@@ -77,16 +71,16 @@ class Rest extends App
         $this->setPostParams();
         extract($this->dispatch, EXTR_SKIP);
         if ($param_mode) {
-            $ref_method = $this->ref_method ?? new \ReflectionMethod($ccontroller_instance, $action);
+            $reflection_method = new \ReflectionMethod($controller, $action);
             if ($param_mode === 1) {
-                $params = ReflectionMethod::bindListParams($ref_method, $params);
+                $params = Controller::methodBindListParams($reflection_method, $params);
             } elseif ($param_mode === 2) {
                 if ($this->config['bind_request_params']) {
                     foreach ($this->config['bind_request_params'] as $param) {
                         $params = array_merge(Request::{$param}(), $params);
                     }
                 }
-                $params = ReflectionMethod::bindKvParams($ref_method, $params);
+                $params = Controller::methodBindKvParams($reflection_method, $params);
             }
             if ($params === false) self::abort(500, 'Missing argument');
         }
@@ -146,8 +140,7 @@ class Rest extends App
             }
             $controller = implode('\\', $controller_array);
         }
-        $class = $this->ns.$controller.$this->config['controller_suffix'];
-        if (class_exists($class, false) || Loader::importPrefixClass($class)) {
+        if ($class = $this->getControllerClass($controller, true)) {
             $ccontroller_instance = new $class();
             if (is_callable([$ccontroller_instance, $this->method])) {
                 return [
@@ -159,7 +152,6 @@ class Rest extends App
                 ];
             }
         }
-        return false;
     }
     
     /*
@@ -182,8 +174,7 @@ class Rest extends App
         }
         $dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method);
         if ($dispatch) {
-            $class = $this->ns.$controller.$this->config['controller_suffix'];
-            if (class_exists($class, false) || Loader::importPrefixClass($class)) {
+            if ($class = $this->getControllerClass($controller, true)) {
                 $ccontroller_instance = new $class();
                 if (is_callable([$ccontroller_instance, $dispatch[0]])) {
                     return [
@@ -196,7 +187,6 @@ class Rest extends App
                 }
             }
         }
-        return false;
     }
     
     /*
@@ -211,10 +201,10 @@ class Rest extends App
             if ($dispatch) {
                 if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
-                    $controller_instance = (new $this->ns.$controller.$this->config['controller_suffix']);
+                    $class = $this->getControllerClass($controller);
                     return [
                         'controller'            => $controller,
-                        'controller_instance'   => (new $this->ns.$controller.$this->config['controller_suffix']),
+                        'controller_instance'   => new $class,
                         'action'                => $action,
                         'params'                => $dispatch[1],
                         'param_mode'            => $param_mode
@@ -238,7 +228,6 @@ class Rest extends App
                 }
             }
         }
-        return false;
     }
     
     /*
@@ -246,8 +235,8 @@ class Rest extends App
      */
     protected function actionRouteDispatch($param_mode, $controller, $path)
     {
+        $class = $this->getControllerClass($controller);
         $property = $this->config['route_dispatch_action_routes'];
-        $class = $this->ns.$controller.$this->config['controller_suffix'];
         if (property_exists($class, $property)) {
             $routes = (new \ReflectionClass($class))->getDefaultProperties()[$property] ?? null;
             if ($routes) {
@@ -264,7 +253,6 @@ class Rest extends App
                 }
             }
         }
-        return false;
     }
 
     /*
@@ -272,12 +260,11 @@ class Rest extends App
      */
     protected function getKvParams(array $path)
     {
-        $params = [];
         $len = count($path);
-        for ($i =0; $i < $len; $i = $i+2) {
-            $params[$path[$i]] = $path[$i+1] ?? null;
+        for ($i = 1; $i < $len; $i = $i+2) {
+            $params[$path[$i-1]] = $path[$i];
         }
-        return $params;
+        return $params ?? [];
     }
     
     /*

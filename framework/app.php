@@ -206,4 +206,20 @@ abstract class App
     {
         self::$error_handler = $handler;
     }
+    
+    /*
+     * 获取控制器类名
+     */
+    protected function getControllerClass($controller, $check = false)
+    {
+        $class = "app\\{$this->config['controller_ns']}\\$controller".($this->config['controller_suffix'] ?? null);
+        if (class_exists($class, false)) {
+            return $class;
+        }
+        $file = APP_DIR.strtr($this->config['controller_ns'], '\\', '/')."/$controller.php";
+        if (!$check || (preg_match('/^\w+(\\\\\w+)*$/', $controller) && is_php_file($file))) {
+            __include($file);
+            return $class;
+        }
+    }
 }

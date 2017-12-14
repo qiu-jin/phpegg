@@ -4,7 +4,6 @@ namespace framework\core\app;
 use framework\App;
 use framework\core\Getter;
 use framework\core\Router;
-use framework\core\Loader;
 use framework\core\http\Request;
 use framework\core\http\response;
 
@@ -96,14 +95,12 @@ class Micro extends App
     protected function defaultDispatch()
     {
         list($controller, $action, $params) = $this->dispatch['default'];
-        $class = $this->getClass($controller);
-        if ($action[0] !== '_' && Loader::importPrefixClass($class)) {
+        if ($action[0] !== '_' && $class = $this->getControllerClass($controller, true)) {
             $call = [new $class, $action];
             if (is_callable($call)) {
                 return [$call, $params];
             }
         }
-        return false;
     }
     
     protected function routeDispatch()
@@ -115,7 +112,7 @@ class Micro extends App
                 if (is_string($result[0])) {
                     $dispatch = Router::parse($result, $this->config['route_dispatch_param_mode']);
                     list($controller, $action) = explode('::', $dispatch[0]);
-                    $class = $this->getClass($controller);
+                    $class = $this->getControllerClass($controller);
                     return [[new $class, $action], $dispatch[1]];
                 }
                 if ($result[0] instanceof \Closure && $this->config['route_dispatch_closure_getter']) {
@@ -127,11 +124,5 @@ class Micro extends App
                 }
             }
         }
-        return false;
-    }
-    
-    protected function getClass($controller)
-    {
-        return 'app\\'.$this->config['controller_ns'].'\\'.$controller.$this->config['controller_suffix'];
     }
 }

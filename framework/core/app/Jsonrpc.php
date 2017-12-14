@@ -5,17 +5,15 @@ use framework\App;
 use framework\util\Arr;
 use framework\core\Job;
 use framework\core\Hook;
-use framework\core\Loader;
 use framework\core\Logger;
+use framework\core\Controller;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\extend\misc\ReflectionMethod;
 
 class Jsonrpc extends App
 {
     const VERSION = '2.0';
     
-    protected $ns;
     protected $config = [
         // 控制器namespace
         'controller_ns' => 'controller',
@@ -39,7 +37,6 @@ class Jsonrpc extends App
         'notification_mode' => false,
         // 通知回调方法
         'notification_callback' => null,
-        
         // Request 解码, 也支持igbinary_unserialize msgpack_unserialize等
         'request_unserialize' => 'jsondecode',
         // Response 编码, 也支持igbinary_serialize msgpack_serialize等
@@ -59,7 +56,7 @@ class Jsonrpc extends App
     // 批请求控制器实例缓存
     protected $controller_instances;
     // 批请求控制器方法反射实例缓存
-    protected $controller_refmethods;
+    protected $controller_reflection_methods;
     
     
     protected function dispatch()
@@ -68,7 +65,6 @@ class Jsonrpc extends App
         if (!$data) {
             $this->abort(-32700, 'Parse error');
         }
-        $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
         $batch_max_num = $this->config['batch_max_num'];
         if ($batch_max_num !== 1 && !Arr::isAssoc($data)) {
             if ($batch_max_num !== 0 && count($data) > $batch_max_num) {
@@ -120,11 +116,11 @@ class Jsonrpc extends App
     {
         extract($dispatch, EXTR_SKIP);
         if ($this->config['param_mode']) {
-            $ref_method = $this->getRefMethod($controller_instance, $action);
+            $reflection_method = $this->getReflectionMethod($controller, $action);
             if ($this->config['param_mode'] === 1) {
-                $params = ReflectionMethod::bindListParams($ref_method, $params);
+                $params = Controller::methodBindListParams($reflection_method, $params);
             } elseif ($this->config['param_mode'] === 2) {
-                $params = ReflectionMethod::bindKvParams($ref_method, $params);
+                $params = Controller::methodBindKvParams($reflection_method, $params);
             }
             if ($params === false) {
                 return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
@@ -188,14 +184,11 @@ class Jsonrpc extends App
             if (count($method_array) > 1) {
                 $action = array_pop($method_array);
                 if ($action[0] !== '_' ) {
-                    $controller_instance = $this->makeControllerInstance($method_array);
+                    $controller = implode('\\', $method_array);
+                    $controller_instance = $this->makeControllerInstance($controller);
                     if (!empty($controller_instance) && is_callable([$controller_instance, $action])) {
-                        return [
-                            'id'                    => $id,
-                            'controller_instance'   => $controller_instance,
-                            'action'                => $action,
-                            'params'                => $item['params'] ?? []
-                        ];
+                        $params = $item['params'] ?? [];
+                        return compact('id', 'action', 'controller', 'controller_instance', 'params');
                     }
                 }
             }
@@ -210,31 +203,23 @@ class Jsonrpc extends App
         ];
     }
     
-    protected function makeControllerInstance($controller_array)
+    protected function makeControllerInstance($controller)
     {
-        $class = $this->ns.implode('\\', $controller_array).$this->config['controller_suffix'];
-        if (!$this->is_batch_call) {
-            return Loader::importPrefixClass($class) ? new $class() : false;
-        }
-        if (isset($this->controller_instances[$class])) {
-            return $this->controller_instances[$class];
-        } else {
-            if (Loader::importPrefixClass($class)) {
-                return $this->controller_instances[$class] = new $class();
-            } else {
-                return $this->controller_instances[$class] = false;
+        if ($class = $this->getControllerClass($controller)) {
+            if (!$this->is_batch_call) {
+                return $class;
             }
+            return $this->controller_instances[$class] ?? $this->controller_instances[$class] = new $class();
         }
     }
     
-    protected function getRefMethod($controller, $action)
+    protected function getReflectionMethod($controller, $action)
     {
         if ($this->is_batch_call) {
-            $class = get_class($controller);
-            if (isset($this->controller_refmethods[$class][$action])) {
-                return $this->controller_refmethods[$class][$action];
+            if (isset($this->controller_reflection_methods[$controller][$action])) {
+                return $this->controller_reflection_methods[$controller][$action];
             }
-            return $this->controller_refmethods[$class][$action] = new \ReflectionMethod($controller, $action);
+            return $this->controller_reflection_methods[$controller][$action] = new \ReflectionMethod($controller, $action);
         }
         return new \ReflectionMethod($controller, $action);
     }

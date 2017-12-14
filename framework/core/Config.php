@@ -102,7 +102,7 @@ class Config
      */
     public static function first($name)
     {
-        return self::check($name) ? reset(self::$configs[$name]) : false;
+        return self::check($name) ? current(self::$configs[$name]) : null;
     }
     
     /*
@@ -110,7 +110,7 @@ class Config
      */
     public static function random($name)
     {
-        return self::check($name) ? self::$configs[$name][array_rand(self::$configs[$name])] : false;
+        return self::check($name) ? self::$configs[$name][array_rand(self::$configs[$name])] : null;
     }
     
     /*
@@ -118,7 +118,12 @@ class Config
      */
     public static function firstPair($name)
     {
-        return self::check($name) ? [key(self::$configs[$name]), reset(self::$configs[$name])] : false;
+        if (self::check($name)) {
+            foreach (self::$configs[$name] as $key => $value) {
+                return [$key, $value];
+            }
+        }
+        return null;
     }
     
     /*

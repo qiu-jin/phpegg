@@ -11,7 +11,6 @@ use framework\core\http\Response;
 
 class Inline extends App
 {
-    protected $dir;
     protected $config = [
         // 调度模式，支持default route组合
         'dispatch_mode'     => ['default'],
@@ -33,7 +32,6 @@ class Inline extends App
     
     protected function dispatch()
     {
-        $this->dir = APP_DIR.'/'.$this->config['controller_path'].'/';
         $path = trim(Request::path(), '/');
         foreach ($this->config['dispatch_mode'] as $mode) {
             $dispatch = $this->{$mode.'Dispatch'}($path);
@@ -46,20 +44,18 @@ class Inline extends App
     
     protected function call()
     {
-        $file = $this->dispatch['controller_file'];
-        $params = $this->dispatch['params'] ?? [];
-        if ($this->config['enable_getter']) {
-            $return = (new class() {
-                use Getter;
-                public function __invoke($__file, $_PARAMS) {
-                    return require($__file);
-                }
-            })($file, $params);
-        } else {
-            $return = (static function($__file, $_PARAMS) {
+        if (empty($this->config['enable_getter'])) {
+            $call = static function($__file, $_PARAMS) {
                 return require($__file);
-            })($file, $params);
+            };
+        } else {
+            $call = \Closure::bind(function($__file, $_PARAMS) {
+                return require($__file);
+            }, new class() {
+                use Getter;
+            });
         }
+        $return = $call($this->dispatch['controller_file'], $this->dispatch['params'] ?? []);
         return $return === 1 && $this->config['return_1_to_null'] ? null : $return;
     }
 
@@ -91,21 +87,17 @@ class Inline extends App
                 $controller = $path;
             }
             if (preg_match('/^([\w\-]+)(\/[\w\-]+)*$/', $controller)) {
-                $controller_file = $this->dir.$controller.'.php';
+                $controller_file = $this->getControllerFile($controller);
                 if (is_php_file($controller_file)) {
-                    return [
-                        'controller' => $controller,
-                        'controller_file' => $controller_file
-                    ];
+                    return compact('controller', 'controller_file');
                 }
             }
         } elseif (isset($this->config['default_dispatch_index'])) {
             return [
                 'controller' => $this->config['default_dispatch_index'],
-                'controller_file' => $this->dir.$this->config['default_dispatch_index'].'.php'
+                'controller_file' => $this->getControllerFile($this->config['default_dispatch_index'])
             ];
         }
-        return false;
     }
     
     protected function routeDispatch($path)
@@ -120,11 +112,15 @@ class Inline extends App
             if ($result) {
                 return [
                     'controller' => $result[0],
-                    'controller_file' => $this->dir.$result[0].'.php',
+                    'controller_file' => $this->getControllerFile($result[0]),
                     'params' => $result[1]
                 ];
             }
         }
-        return false;
+    }
+    
+    protected function getControllerFile($controller)
+    {
+        return APP_DIR.$this->config['controller_path']."/$controller.php";
     }
 }

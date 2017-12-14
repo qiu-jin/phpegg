@@ -3,6 +3,7 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\core\Loader;
+use framework\core\Controller;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
@@ -35,23 +36,18 @@ class Grpc extends App
     
     protected function dispatch()
     {
-        $this->ns = 'app\\'.$this->config['controller_ns'].'\\';
         $path_array = Request::pathArr();
         if (count($path_array) === 2) {
+            $action = $path_array[1];
             $controller_array = explode('.', $path_array[0]);
             if ($this->config['ignore_service_prefix'] > 0) {
                 $controller_array = array_slice($controller_array, $this->config['ignore_service_prefix']);
             }
             $controller = implode('\\', $controller_array);
-            $class = $this->ns.$controller.$this->config['controller_suffix'];
-            if (Loader::importPrefixClass($class)) {
+            if ($action[0] !== '_' && $class = $this->getControllerClass($controller, true)) {
                 $controller_instance = new $class();
-                if (is_callable([$controller_instance, $path_array[1]])) {
-                    return [
-                        'controller'            => $controller,
-                        'controller_instance'   => $controller_instance,
-                        'action'                => $path_array[1],
-                    ];
+                if (is_callable([$controller_instance, $action])) {
+                    return compact('action', 'controller', 'controller_instance');
                 }
             }
         }
@@ -65,11 +61,11 @@ class Grpc extends App
                 Loader::add($type, $rules);
             }
         }
-        $parameters = (new \ReflectionMethod($this->dispatch['controller_instance'], $this->dispatch['action']))->getParameters();
+        $reflection_method = new \ReflectionMethod($this->dispatch['controller'], $this->dispatch['action']);
         if ($this->config['param_mode']) {
-            return $this->callWithReqResParams($parameters);
+            return $this->callWithReqResParams($reflection_method);
         } else {
-            return $this->callWithKvParams($parameters);
+            return $this->callWithKvParams($reflection_method);
         }
     }
     
@@ -97,27 +93,21 @@ class Grpc extends App
         self::abort(500, 'Invalid params');
     }
     
-    protected function callWithKvParams($parameters)
+    protected function callWithKvParams($reflection_method)
     {
         $replace = [
             '{service}' => $this->dispatch['controller'],
             '{method}'  => ucfirst($this->dispatch['action'])
         ];
         $request_class  = strtr($this->config['request_scheme_format'], $replace);
-        $response_class =  strtr($this->config['response_scheme_format'], $replace);
+        $response_class = strtr($this->config['response_scheme_format'], $replace);
         $request_object = new $request_class;
         $request_object->mergeFromString($this->readParams());
-        $request_params = \Closure::bind(function () {
-            return get_object_vars($this);
-        }, $request_object, $request_class)();
-        foreach ($parameters as $parameter) {
-            if (isset($request_params[$parameter->name]) && $request_params[$parameter->name] !== '') {
-                $params[] = $request_params[$parameter->name];
-            } elseif($parameter->isDefaultValueAvailable()) {
-                $params[] = $parameter->getdefaultvalue();
-            } else {
-                self::abort(500, 'Missing argument');
-            }
+        $params = \Closure::bind(function ($reflection_method) {
+            return Controller::methodBindKvParams($reflection_method, get_object_vars($this));
+        }, $request_object, $request_class)($reflection_method);
+        if (!$params) {
+            self::abort(500, 'Missing argument');
         }
         $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}(...$params);
         if (count($return) > 0) {
@@ -131,10 +121,10 @@ class Grpc extends App
         self::abort(500, 'Invalid return value');
     }
     
-    protected function callWithReqResParams($parameters)
+    protected function callWithReqResParams($reflection_method)
     {
-        if (count($parameters) === 2) {
-            list($request, $response) = $parameters;
+        if ($reflection_method->getnumberofparameters() === 2) {
+            list($request, $response) = $reflection_method->getParameters();
             $request_class = (string) $request->getType();
             $response_class = (string) $response->getType();
             if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {

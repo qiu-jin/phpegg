@@ -63,18 +63,6 @@ class Loader
                 return;
         }
     }
-    
-    public static function importPrefixClass($class)
-    {
-        if (preg_match('/^(\w+)((\\\\\w+)+)$/', $class, $match) && isset(self::$class_prefix[$match[1]])) {
-            $file = self::$class_prefix[$match[1]].strtr(substr($match[2], 1), '\\', '/').'.php';
-            if (is_php_file($file)) {
-                __include($file);
-                return class_exists($class, false);
-            }
-        }
-        return false;
-    }
 
     /*
      * spl_autoload_register 自动加载处理器
