@@ -23,11 +23,11 @@ class Controller
     
     public static function methodBindListParams(\ReflectionMethod $reflection_method, $params, $default_null = false)
     {
-        $method_cou = count($params);
-        $method_num = $reflection_method->getnumberofparameters();
-        if ($method_num > $method_cou) {
+        $count = count($params);
+        $number = $reflection_method->getnumberofparameters();
+        if ($number > $count) {
             $parameters = $reflection_method->getParameters();
-            for ($i = $method_cou; $i < $method_num; $i++) {
+            for ($i = $count; $i < $number; $i++) {
                 if ($parameters[$i]->isDefaultValueAvailable()) {
                     $params[] = $parameters[$i]->getdefaultvalue();
                 } elseif ($default_null) {

@@ -86,7 +86,7 @@ class Inline extends App
             } else {
                 $controller = $path;
             }
-            if (preg_match('/^([\w\-]+)(\/[\w\-]+)*$/', $controller)) {
+            if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)) {
                 $controller_file = $this->getControllerFile($controller);
                 if (is_php_file($controller_file)) {
                     return compact('controller', 'controller_file');
@@ -102,14 +102,13 @@ class Inline extends App
     
     protected function routeDispatch($path)
     {
-        if ($this->config['route_dispatch_routes']) {
+        if (!empty($this->config['route_dispatch_routes'])) {
             $routes = $this->config['route_dispatch_routes'];
             if (is_string($routes)) {
                 $routes = __include($routes);
             }
             $path = empty($path) ? null : explode('/', $path);
-            $result = Router::route($path, $routes);
-            if ($result) {
+            if ($result = Router::route($path, $routes)) {
                 return [
                     'controller' => $result[0],
                     'controller_file' => $this->getControllerFile($result[0]),

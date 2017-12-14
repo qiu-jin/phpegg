@@ -41,21 +41,16 @@ class View
         self::$view->func[$name] = $value;
     }
     
-    public static function output($tpl, $vars = null)
-    {
-        Response::view($tpl, $vars);
-    }
-    
     /*
      * 渲染页面
      */
     public static function render($tpl, $vars = [])
     {
-        if (isset(self::$view->vars)) {
-            $vars = array_merge($view->vars, $vars);
-        }
         ob_start();
-        __include_view_file(self::file($tpl), $vars);
+        (static function($__file, $__vars) {
+            extract($__vars, EXTR_SKIP);
+            require($__file);
+        })(self::file($tpl), self::$view->vars ? $vars + self::$view->vars : $vars);
         return ob_get_clean();
     }
     
@@ -80,15 +75,15 @@ class View
             if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
                 $dir = dirname($phpfile);
                 if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
-                    throw new Exception("View dir create fail: $dir");
+                    throw new \Exception("View dir create fail: $dir");
                 }
                 if (!file_put_contents($phpfile, Template::complie(file_get_contents($tplfile)))) {
-                    throw new Exception("View file write fail: $phpfile");
+                    throw new \Exception("View file write fail: $phpfile");
                 }
             }
             return $phpfile;
         }
-        throw new Exception("Not found template: $tplfile");
+        throw new \Exception("Not found template: $tplfile");
     }
 
     public static function layout($tpl, $file)
@@ -103,7 +98,7 @@ class View
         }
         $layoutfile = self::getTemplateFile($path, $tpl[0] !== '/');
         if (!is_file($layoutfile)) {
-            throw new Exception("Not found template: $layoutfile");
+            throw new \Exception("Not found template: $layoutfile");
         }
         if (filemtime($file) < filemtime($layoutfile)) {
             $tplfile = self::getTemplateFile(substr($file, 0, -4));
@@ -115,11 +110,11 @@ class View
                 include $file;
                 return true;
             }
-            throw new Exception("View file write fail: $file");
+            throw new \Exception("View file write fail: $file");
         }
     }
     
-    private static function layoutFile($tpl)
+    public static function layoutFile($tpl)
     {
         $path = self::$config['dir'].$tpl;
         $prefix = self::$config['template']['layout_prefix'] ?? '_layout_';
@@ -135,16 +130,7 @@ class View
             }
             return $phpfile;
         }
-        throw new Exception("Not found template: $tplfile");
-    }
-    
-    public static function exists($tpl)
-    {
-        $path = self::$config['dir'].$tpl;
-        if (isset(self::$config['template'])) {
-            return is_file(self::getTemplateFile($path, true));
-        }
-        return is_php_file("$path.php");
+        throw new \Exception("Not found template: $tplfile");
     }
 
     /*
@@ -153,9 +139,7 @@ class View
     public static function error($code, $message = null)
     {   
         if (isset(self::$config['error'][$code])) {
-            ob_start();
-            __include_view_file(self::file(self::$config['error'][$code]), compact('code', 'message'));
-            return ob_get_clean();
+            return self::render(self::$config['error'][$code], compact('code', 'message'));
         } elseif ($code === 404) {
             return ViewError::render404($message);
         } else {
@@ -177,12 +161,13 @@ class View
                     $vars[$v] = $params[$i];
                 }
             }
-            Response::view($tpl, $vars);
+            return Response::view($tpl, $vars);
         }
-        throw new Exception('Call to undefined method '.__CLASS__.'::'.$method);
+        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
     }
     
-    private static function getTemplateFile($path, $is_relative_path = false)
+    
+    public static function getTemplateFile($path, $is_relative_path = false)
     {
         $ext = self::$config['template']['ext'] ?? '.htm';
         if (empty(self::$config['template']['dir'])) {
@@ -203,11 +188,3 @@ class View
     }
 }
 View::init();
-
-function __include_view_file($__view_file, $__view_vars)
-{
-    if ($__view_vars) {
-        extract($__view_vars, EXTR_SKIP);
-    }
-    include $__view_file;
-}

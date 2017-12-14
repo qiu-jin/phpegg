@@ -13,16 +13,14 @@ class View extends App
     protected $config = [
         // 调度模式，支持default route组合
         'dispatch_mode'     => ['default'],
-        // 
+        // 是否启用pjax
         'enable_pjax'       => false,
-        // 
+        // view_model namespace
         'view_model_ns'     => 'viewmodel',
-
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
         // 默认调度时URL path中划线转成下划线
         'default_dispatch_hyphen_to_underscore' => false,
-        
         // 路由调度的路由表
         'route_dispatch_routes' => null,
     ];
@@ -41,17 +39,13 @@ class View extends App
     
     protected function call()
     {
+        $method = $this->config['enable_pjax'] && Response::isPjax() ? 'layoutFile' : 'file';
         ob_start();
-        if ($this->config['enable_pjax'] && Response::isPjax()) {
-            $file = CoreView::layoutFile($this->dispatch['view_path']);
-        } else {
-            $file = CoreView::file($this->dispatch['view_path']);
-        }
-        (new class() {
-            public function __invoke($__file) {
-                return require($__file);
-            }
-        })($file);
+        \Closure::bind(function($__file) {
+            require($__file);
+        }, new class() {
+            use Getter;
+        })(CoreView::$method($this->dispatch['view_path']));
         return ob_get_clean();
     }
     
@@ -71,30 +65,34 @@ class View extends App
             if ($this->config['default_dispatch_hyphen_to_underscore']) {
                 $path = strtr($path, '-', '_');
             }
-            if (preg_match('/^([\w\-]+)(\/[\w\-]+)*$/', $path)) {
-                if (CoreView::exists($path)) {
-                    return ['view_path' => $path];
-                }
+            if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $path) && $this->checkView($path)) {
+                return ['view_path' => $path];
             }
         } elseif (isset($this->config['default_dispatch_index'])) {
             return ['view_path' => $this->config['default_dispatch_index']];
         }
-        return false;
     }
     
     protected function routeDispatch($path)
     {
-        if (isset($this->config['route_dispatch_routes'])) {
+        if (!empty($this->config['route_dispatch_routes'])) {
             $routes = $this->config['route_dispatch_routes'];
             if (is_string($routes)) {
                 $routes = __include($routes);
             }
             $path = empty($path) ? null : explode('/', $path);
-            $dispatch = Router::dispatch($path, $routes);
-            if ($dispatch) {
-                return ['view_path' => $dispatch[0], 'params' => $dispatch[1]];
+            if ($result = Router::route($path, $routes)) {
+                return ['view_path' => $result[0], 'params' => $result[1]];
             }
         }
-        return false;
+    }
+    
+    protected function checkView($path)
+    {
+        $path = (Config::get('view.dir') ?? APP_DIR.'view/').$path;
+        if (Config::has('view.template')) {
+            return is_file(CoreView::getTemplateFile($path, true));
+        }
+        return is_php_file("$path.php");
     }
 }
