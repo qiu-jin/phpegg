@@ -20,7 +20,7 @@ class JsonrpcBatch
         $this->ns[] = $this->common_ns[] = $common_ns;
         $this->common_client_methods = $common_client_methods;
         if (isset($options)) {
-            $this->options = array_merge($this->options, $options);
+            $this->options = $options + $this->options;
         }
     }
 

@@ -38,7 +38,7 @@ class Grpc
         foreach (Arr::pull($config, 'service_schemes') as $type => $rules) {
             Loader::add($type, $rules);
         }
-        $this->config = array_merge($this->config, $config);
+        $this->config = $config + $this->config;
     }
     
     public function __get($name)

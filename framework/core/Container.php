@@ -16,7 +16,6 @@ class Container
             'queue'     => true,
             'email'     => true,
             'sms'       => true,
-            'logger'    => true,
             'geoip'     => true,
             'crypt'     => true,
             'captcha'   => true,
@@ -43,7 +42,7 @@ class Container
         if ($config = Config::get('container')) {
             foreach (array_keys(self::$providers) as $type) {
                 if (isset($config[$type])) {
-                    self::$providers[$type] = array_merge(self::$providers[$type], $config[$type]);
+                    self::$providers[$type] = $config[$type] + self::$providers[$type];
                 }
             }
         }
@@ -108,13 +107,11 @@ class Container
     
     public static function driver($type, $name = null)
     {
-        if (isset(self::$providers['driver'][$type])) {
-            if (is_array($name)) {
-                return self::makeDriverInstance($type, $name);
-            }
-            $index = $name ? "$type.$name" : $type;
-            return self::$instances[$index] ?? self::$instances[$index] = self::makeDriver($type, $name);
+        if (is_array($name)) {
+            return self::makeDriverInstance($type, $name);
         }
+        $index = $name ? "$type.$name" : $type;
+        return self::$instances[$index] ?? self::$instances[$index] = self::makeDriver($type, $name);
     }
     
     public static function model($name)

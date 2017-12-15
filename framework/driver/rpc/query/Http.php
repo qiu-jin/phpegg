@@ -22,7 +22,7 @@ class Http
             $this->ns[] = $name;
         }
         if (isset($options)) {
-            $this->options = array_merge($this->options, $options);
+            $this->options = $options + $this->options;
         }
     }
 

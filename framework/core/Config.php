@@ -98,6 +98,14 @@ class Config
     }
     
     /*
+     * 获取配置项值，不缓存，不支持多级配置项
+     */
+    public static function flash($name)
+    {
+        return self::$configs[$name] ?? self::load($name);
+    }
+    
+    /*
      * 设置配置项第一个值，不支持多级配置项
      */
     public static function first($name)
@@ -139,7 +147,7 @@ class Config
         } else {
             self::$checked[$name] = true;
         }
-        return self::$dir && self::load($name);
+        return self::$dir && self::$configs[$name] = self::load($name);
     }
     
     /*
@@ -148,14 +156,9 @@ class Config
     private static function load($name)
     {
         $file = self::$dir.$name.'.php';
-        if (is_php_file($file)) {
-            $config = __include($file);
-            if (is_array($config)) {
-                self::$configs[$name] = $config;
-                return true;
-            }
+        if (is_php_file($file) && is_array($config = __include($file))) {
+            return $config;
         }
-        return false;
     }
     
     /*
@@ -171,8 +174,7 @@ class Config
      */
     private static function loadFile($path)
     {
-        $configs = __include($path);
-        if (is_array($configs)) {
+        if (is_array($configs = __include($path))) {
             self::$configs = $configs;
         }
     }

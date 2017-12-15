@@ -57,7 +57,7 @@ class Response
     public static function headers(array $headers)
     {
         if (isset(self::$response->headers)) {
-            self::$response->headers = array_merge(self::$response->headers, $headers);
+            self::$response->headers = $headers + self::$response->headers;
         } else {
             self::$response->headers = $headers;
         }

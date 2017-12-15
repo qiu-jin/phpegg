@@ -85,6 +85,24 @@ class View
         }
         throw new \Exception("Not found template: $tplfile");
     }
+    
+    public static function block($tpl)
+    {
+        $path    = self::$config['dir'].$tpl;
+        $prefix  = self::$config['template']['pjax_view_prefix'] ?? '__';
+        $phpfile = dirname($path)."/$prefix".basename($path).'.php';
+        if (!isset(self::$config['template'])) {
+            return $phpfile;
+        }
+        $tplfile = self::getTemplateFile($path);
+        if (is_file($tplfile)) {
+            if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
+                file_put_contents($phpfile, Template::complie(file_get_contents($tplfile), false));
+            }
+            return $phpfile;
+        }
+        throw new \Exception("Not found template: $tplfile");
+    }
 
     public static function layout($tpl, $file)
     {
@@ -107,30 +125,10 @@ class View
                 if (extension_loaded('opcache')) {
                     opcache_compile_file($file);
                 }
-                include $file;
-                return true;
+                return $file;
             }
             throw new \Exception("View file write fail: $file");
         }
-    }
-    
-    public static function layoutFile($tpl)
-    {
-        $path = self::$config['dir'].$tpl;
-        $prefix = self::$config['template']['layout_prefix'] ?? '_layout_';
-        $phpfile = dirname($path)."/$prefix".basename($path).'.php';
-        if (!isset(self::$config['template'])) {
-            return $phpfile;
-        }
-        $tplfile = self::getTemplateFile($path);
-        if (is_file($tplfile)) {
-            if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
-                $content = Template::complie($tplfile);
-                file_put_contents($layoutfile, $content);
-            }
-            return $phpfile;
-        }
-        throw new \Exception("Not found template: $tplfile");
     }
 
     /*
@@ -157,7 +155,7 @@ class View
             $tpl = array_pop($vars);
             if ($vars) {
                 foreach (array_keys($vars) as $i => $v) {
-                    if (!isset($params[$i]))  break;
+                    if (!isset($params[$i])) break;
                     $vars[$v] = $params[$i];
                 }
             }
@@ -165,8 +163,7 @@ class View
         }
         throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
     }
-    
-    
+
     public static function getTemplateFile($path, $is_relative_path = false)
     {
         $ext = self::$config['template']['ext'] ?? '.htm';
@@ -184,7 +181,6 @@ class View
     public static function free()
     {
         self::$view = null;
-        self::$config = null;
     }
 }
 View::init();

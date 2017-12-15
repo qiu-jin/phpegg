@@ -3,6 +3,7 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\core\Config;
+use framework\core\Template;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\extend\view\ViewModel;
@@ -24,10 +25,15 @@ class View extends App
         // 路由调度的路由表
         'route_dispatch_routes' => null,
     ];
+    protected $view_config;
     
     protected function dispatch()
     {
         $path = trim(Request::path(), '/');
+        $this->view_config = Config::get('view');
+        if (empty($this->view_config['dir'])) {
+            Config::set('view.dir', $this->view_config['dir'] = APP_DIR.'view/');
+        }
         foreach ($this->config['dispatch_mode'] as $mode) {
             $dispatch = $this->{$mode.'Dispatch'}($path);
             if ($dispatch) {
@@ -39,13 +45,13 @@ class View extends App
     
     protected function call()
     {
-        $method = $this->config['enable_pjax'] && Response::isPjax() ? 'layoutFile' : 'file';
         ob_start();
+        $method = $this->config['enable_pjax'] && Response::isPjax() ? 'block' : 'file';
         \Closure::bind(function($__file) {
             require($__file);
         }, new class() {
             use Getter;
-        })(CoreView::$method($this->dispatch['view_path']));
+        })(CoreView::{$method}($this->dispatch['view_path']));
         return ob_get_clean();
     }
     
@@ -76,9 +82,8 @@ class View extends App
     protected function routeDispatch($path)
     {
         if (!empty($this->config['route_dispatch_routes'])) {
-            $routes = $this->config['route_dispatch_routes'];
-            if (is_string($routes)) {
-                $routes = __include($routes);
+            if (is_string($routes = $this->config['route_dispatch_routes'])) {
+                $routes = Config::flash($routes);
             }
             $path = empty($path) ? null : explode('/', $path);
             if ($result = Router::route($path, $routes)) {
@@ -89,8 +94,8 @@ class View extends App
     
     protected function checkView($path)
     {
-        $path = (Config::get('view.dir') ?? APP_DIR.'view/').$path;
-        if (Config::has('view.template')) {
+        $path = $this->view_config['dir'].$path;
+        if (isset($this->view_config['template'])) {
             return is_file(CoreView::getTemplateFile($path, true));
         }
         return is_php_file("$path.php");

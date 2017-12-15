@@ -26,7 +26,7 @@ class HttpBatch
         $this->ns[] = $this->common_ns[] = $common_ns;
         $this->client_methods = $this->common_client_methods = $common_client_methods;
         if (isset($options)) {
-            $this->options = array_merge($this->options, $options);
+            $this->options = $options + $this->options;
         }
     }
 

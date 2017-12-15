@@ -48,13 +48,13 @@ class Loader
     {
         switch ($type) {
             case 'prefix':
-                self::$class_prefix = array_merge(self::$class_prefix, $rules);
+                self::$class_prefix = $rules + self::$class_prefix;
                 return;
             case 'map':
-                self::$class_map = array_merge(self::$class_map, $rules);
+                self::$class_map    = $rules + self::$class_map;
                 return;
             case 'alias':
-                self::$class_alias = array_merge(self::$class_alias, $rules);
+                self::$class_alias  = $rules + self::$class_alias;
                 return;
             case 'files':
                 foreach ($rules as $name) {

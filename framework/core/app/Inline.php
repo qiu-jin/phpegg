@@ -103,9 +103,8 @@ class Inline extends App
     protected function routeDispatch($path)
     {
         if (!empty($this->config['route_dispatch_routes'])) {
-            $routes = $this->config['route_dispatch_routes'];
-            if (is_string($routes)) {
-                $routes = __include($routes);
+            if (is_string($routes = $this->config['route_dispatch_routes'])) {
+                $routes = Config::flash($routes);
             }
             $path = empty($path) ? null : explode('/', $path);
             if ($result = Router::route($path, $routes)) {

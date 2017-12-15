@@ -78,7 +78,9 @@ class Standard extends App
             } elseif ($param_mode === 2) {
                 if ($this->config['bind_request_params']) {
                     foreach ($this->config['bind_request_params'] as $param) {
-                        $params = array_merge(Request::{$param}(), $params);
+                        if ($request_param = Request::{$param}()) {
+                            $params = $request_param + $params;
+                        }
                     }
                 }
                 $params = Controller::methodBindKvParams($reflection_method, $params, $this->config['missing_params_to_null']);
@@ -204,8 +206,10 @@ class Standard extends App
     {
         $param_mode = $this->config['route_dispatch_param_mode'];
         if (isset($this->config['route_dispatch_routes'])) {
-            $routes = $this->config['route_dispatch_routes'];
-            $dispatch = Router::dispatch($path, is_array($routes) ? $routes : __include($routes), $param_mode);
+            if (is_string($routes = $this->config['route_dispatch_routes'])) {
+                $routes = Config::flash($routes);
+            }
+            $dispatch = Router::dispatch($path, $routes, $param_mode);
             if ($dispatch) {
                 if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
