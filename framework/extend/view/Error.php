@@ -17,22 +17,23 @@ class Error
     public static function renderError($message)
     {
         $loglevel = [
-            Logger::EMERGENCY  => ['icon'=>'❌', 'class' => 'error', 'txt' => 'error'],
-            Logger::ALERT      => ['icon'=>'❌', 'class' => 'error', 'txt' => 'error'],
-            Logger::CRITICAL   => ['icon'=>'❌', 'class' => 'error', 'txt' => 'error'],
-            Logger::ERROR      => ['icon'=>'❌', 'class' => 'error', 'txt' => 'error'],
-            Logger::WARNING    => ['icon'=>'⚠️', 'class' => 'warning', 'txt' => 'warning'],
-            Logger::NOTICE     => ['icon'=>'⚠️', 'class' => 'warning', 'txt' => 'warning'],
-            Logger::INFO       => ['icon'=>'❕', 'class' => 'info', 'txt' => 'info'],
-            Logger::DEBUG      => ['icon'=>'❕', 'class' => 'info', 'txt' => 'info']
+            Logger::EMERGENCY  => ['icon'=>'❌', 'class' => 'error',   'title' => 'error'],
+            Logger::ALERT      => ['icon'=>'❌', 'class' => 'error',   'title' => 'error'],
+            Logger::CRITICAL   => ['icon'=>'❌', 'class' => 'error',   'title' => 'error'],
+            Logger::ERROR      => ['icon'=>'❌', 'class' => 'error',   'title' => 'error'],
+            Logger::WARNING    => ['icon'=>'⚠️', 'class' => 'warning', 'title' => 'warning'],
+            Logger::NOTICE     => ['icon'=>'⚠️', 'class' => 'warning', 'title' => 'warning'],
+            Logger::INFO       => ['icon'=>'❕', 'class' => 'info',    'title' => 'info'],
+            Logger::DEBUG      => ['icon'=>'❕', 'class' => 'info',    'title' => 'info']
         ];
         $html = '<h1 style="text-align: center">🙁 500 Internal Server Error 🙁</h1>';
         if($message) {
             $html .= '<style type="text/css">.table {background: #AAAAAA}tr{ background-color: #EEEEEE;}.error{ background-color: #FFCCCC;}.warning{ background-color: #FFFFCC;}.info{ background-color: #EEEEEE;}</style>';
             $html .= '<table table cellpadding="5" cellspacing="1" width="100%" class="table">';
             foreach ($message as $line){
-                $level = $line['level'];
-                $html .= '<tr class="'.$loglevel[$level]['class'].'"><td title="'.$loglevel[$level]['txt'].'">'.$loglevel[$level]['icon'].' '.$line['message'].'</td></tr>';
+                $level = $loglevel[$line['level']];
+                $txt   = $line['message'].' in '.($line['context']['file'] ?? '').' on '.($line['context']['line'] ?? '');
+                $html .= '<tr class="'.$level['class'].'"><td title="'.$level['title'].'">'.$level['icon'].' '.$txt.'</td></tr>';
             }
             $html .= '</table>';
         }

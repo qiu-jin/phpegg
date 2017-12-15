@@ -2,6 +2,7 @@
 namespace framework\core\app;
 
 use framework\App;
+use framework\core\View;
 use framework\core\Getter;
 use framework\core\Router;
 use framework\core\http\Request;
@@ -16,40 +17,20 @@ class Micro extends App
         'controller_ns' => 'controller',
         // 控制器类名后缀
         'controller_suffix' => null,
-        /* 路由调度的参数模式
-         * 0 无参数
-         * 1 循序参数
-         * 2 键值参数
-         */
-        'route_dispatch_param_mode' => 1,
         // 路由模式下是否启用Getter魔术方法
         'route_dispatch_closure_getter' => true,
         // 路由模式下允许的HTTP方法
         'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/]
     ];
     
-    public function get($role, $call)
+    public function __call($method, $params)
     {
-        $this->dispatch['route'][$role]['GET'] = $call;
-        return $this;
-    }
-    
-    public function put($role, $call)
-    {
-        $this->dispatch['route'][$role]['PUT'] = $call;
-        return $this;
-    }
-    
-    public function post($role, $call)
-    {
-        $this->dispatch['route'][$role]['POST'] = $call;
-        return $this;
-    }
-    
-    public function delete($role, $call)
-    {
-        $this->dispatch['route'][$role]['DELETE'] = $call;
-        return $this;
+        $method = strtoupper($method);
+        if (in_array($method, $this->config['route_dispatch_http_methods'], true)) {
+            $this->dispatch['route'][$params[0]][$method] = $params[1];
+            return $this;
+        }
+        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
     }
     
     public function route($role, $call)
@@ -85,9 +66,7 @@ class Micro extends App
     protected function error($code = null, $message = null)
     {
         Response::status($code ?: 500);
-        if ($message) {
-            Response::send(is_array($message) ? var_export($message, true) : $message);
-        }
+        Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
     }
     
     protected function response($return) {}
@@ -109,18 +88,18 @@ class Micro extends App
         if (in_array($method, $this->config['route_dispatch_http_methods'], true)) {
             $result = Router::route(Request::pathArr(), $this->dispatch['route'], $method);
             if ($result) {
-                if (is_string($result[0])) {
-                    $dispatch = Router::parse($result, $this->config['route_dispatch_param_mode']);
+                if (is_callable($result[0])) {
+                    if ($this->config['route_dispatch_closure_getter'] && $result[0] instanceof \Closure) {
+                        return [\Closure::bind($result[0], new class () {
+                            use Getter;
+                        }), $result[1]];
+                    }
+                    return $result;
+                } else {
+                    $dispatch = Router::parse($result, 1);
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->getControllerClass($controller);
                     return [[new $class, $action], $dispatch[1]];
-                }
-                if ($result[0] instanceof \Closure && $this->config['route_dispatch_closure_getter']) {
-                    return [\Closure::bind($result[0], new class () {
-                        use Getter;
-                    }), $result[1]];
-                } else {
-                    return $result;
                 }
             }
         }
