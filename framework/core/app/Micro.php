@@ -23,14 +23,10 @@ class Micro extends App
         'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/]
     ];
     
-    public function __call($method, $params)
+    public function default($controller, $action, array $params = [])
     {
-        $method = strtoupper($method);
-        if (in_array($method, $this->config['route_dispatch_http_methods'], true)) {
-            $this->dispatch['route'][$params[0]][$method] = $params[1];
-            return $this;
-        }
-        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
+        $this->dispatch['default'] = [$controller, $action, $params];
+        return $this;
     }
     
     public function route($role, $call)
@@ -39,10 +35,14 @@ class Micro extends App
         return $this;
     }
     
-    public function default($controller, $action, array $params = [])
+    public function __call($method, $params)
     {
-        $this->dispatch['default'] = [$controller, $action, $params];
-        return $this;
+        $method = strtoupper($method);
+        if (in_array($method, $this->config['route_dispatch_http_methods'])) {
+            $this->dispatch['route'][$params[0]][$method] = $params[1];
+            return $this;
+        }
+        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
     }
     
     protected function dispatch()

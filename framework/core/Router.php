@@ -128,7 +128,7 @@ class Router
                 case '{':
                     if (substr($unit, -1) === '}') {
                         $name = substr($unit, 1, -1);
-                        if (isset(self::$regex_filters[$name]) && preg_match('/^'.self::$regex_filters[$name].'$/i', $path[$i], $matchs)) {
+                        if (isset(self::$regex_filters[$name]) && preg_match('/^'.self::$regex_filters[$name].'$/i', $path[$i])) {
                             $macth[] = $path[$i];
                             break;
                         }
@@ -160,7 +160,7 @@ class Router
                     return false;
             }
         }
-        return $macth;
+        return isset($path[$i+1]) ? false : $macth;
     }
     
     /*
