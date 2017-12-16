@@ -660,7 +660,7 @@ class Template
                     break;
                 }
             }
-            return array('left'=>$left, 'right'=>$right, 'str'=>substr($str, $lpos, $rpos-$lpos+1));
+            return array('left' => $left, 'right' => $right, 'str'=> substr($str, $lpos, $rpos - $lpos + 1));
         }
     }
     
@@ -672,9 +672,9 @@ class Template
         $blank = '';
         $i = strlen($str)-1;
         while ($i >= 0) {
-            if (isset($str{$i})) {
-               if (self::isBlankChar($str{$i})) {
-                   $blank .= $str{$i};
+            if (isset($str[$i])) {
+               if (self::isBlankChar($str[$i])) {
+                   $blank .= $str[$i];
                } else {
                    return $blank;
                }

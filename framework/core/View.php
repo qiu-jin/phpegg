@@ -70,20 +70,8 @@ class View
         if (!isset(self::$config['template'])) {
             return $phpfile;
         }
-        $tplfile = self::getTemplateFile($path, $is_relative_path);
-        if (is_file($tplfile)) {
-            if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
-                $dir = dirname($phpfile);
-                if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
-                    throw new \Exception("View dir create fail: $dir");
-                }
-                if (!file_put_contents($phpfile, Template::complie(file_get_contents($tplfile)))) {
-                    throw new \Exception("View file write fail: $phpfile");
-                }
-            }
-            return $phpfile;
-        }
-        throw new \Exception("Not found template: $tplfile");
+        self::complie(self::getTemplateFile($path, $is_relative_path), $phpfile);
+        return $phpfile;
     }
     
     public static function block($tpl)
@@ -94,14 +82,8 @@ class View
         if (!isset(self::$config['template'])) {
             return $phpfile;
         }
-        $tplfile = self::getTemplateFile($path);
-        if (is_file($tplfile)) {
-            if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
-                file_put_contents($phpfile, Template::complie(file_get_contents($tplfile), false));
-            }
-            return $phpfile;
-        }
-        throw new \Exception("Not found template: $tplfile");
+        self::complie(self::getTemplateFile($path), $phpfile);
+        return $phpfile;
     }
 
     public static function layout($tpl, $file)
@@ -115,10 +97,10 @@ class View
             $path = dirname($file).'/'.$tpl;
         }
         $layoutfile = self::getTemplateFile($path, $tpl[0] !== '/');
-        if (!is_file($layoutfile)) {
-            throw new \Exception("Not found template: $layoutfile");
-        }
-        if (filemtime($file) < filemtime($layoutfile)) {
+        if (is_file($layoutfile)) {
+            if (filemtime($file) > filemtime($layoutfile)) {
+                return $file;
+            }
             $tplfile = self::getTemplateFile(substr($file, 0, -4));
             $content = Template::complie(file_get_contents($tplfile), file_get_contents($layoutfile));
             if (file_put_contents($file, $content)) {
@@ -128,7 +110,8 @@ class View
                 return $file;
             }
             throw new \Exception("View file write fail: $file");
-        }
+        } 
+        throw new \Exception("Not found template: $layoutfile");
     }
 
     /*
@@ -161,7 +144,7 @@ class View
             }
             return Response::view($tpl, $vars);
         }
-        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
+        throw new \Exception('Call to undefined method '.__CLASS__."::$method");
     }
 
     public static function getTemplateFile($path, $is_relative_path = false)
@@ -177,7 +160,25 @@ class View
             }
         }
     }
-
+    
+    public static function complie($tplfile, $phpfile, $layout = null)
+    {
+        if (!is_file($tplfile)) {
+            throw new \Exception("Not found template: $tplfile");
+        }
+        if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
+            $dir = dirname($phpfile);
+            if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
+                throw new \Exception("View dir create fail: $dir");
+            }
+            if (!file_put_contents($phpfile, Template::complie(file_get_contents($tplfile), $layout))) {
+                throw new \Exception("View file write fail: $phpfile");
+            }
+            return true;
+        }
+        return false;
+    }
+    
     public static function free()
     {
         self::$view = null;
