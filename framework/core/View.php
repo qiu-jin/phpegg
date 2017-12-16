@@ -89,7 +89,7 @@ class View
     public static function block($tpl)
     {
         $path    = self::$config['dir'].$tpl;
-        $prefix  = self::$config['template']['pjax_view_prefix'] ?? '__';
+        $prefix  = self::$config['template']['block_view_prefix'] ?? '__';
         $phpfile = dirname($path)."/$prefix".basename($path).'.php';
         if (!isset(self::$config['template'])) {
             return $phpfile;

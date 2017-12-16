@@ -3,7 +3,6 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\core\Config;
-use framework\core\Template;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\extend\view\ViewModel;
@@ -25,15 +24,10 @@ class View extends App
         // 路由调度的路由表
         'route_dispatch_routes' => null,
     ];
-    protected $view_config;
     
     protected function dispatch()
     {
         $path = trim(Request::path(), '/');
-        $this->view_config = Config::get('view');
-        if (empty($this->view_config['dir'])) {
-            Config::set('view.dir', $this->view_config['dir'] = APP_DIR.'view/');
-        }
         foreach ($this->config['dispatch_mode'] as $mode) {
             $dispatch = $this->{$mode.'Dispatch'}($path);
             if ($dispatch) {
@@ -71,7 +65,7 @@ class View extends App
             if ($this->config['default_dispatch_hyphen_to_underscore']) {
                 $path = strtr($path, '-', '_');
             }
-            if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $path) && $this->checkView($path)) {
+            if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $path) && $this->checkViewPath($path)) {
                 return ['view_path' => $path];
             }
         } elseif (isset($this->config['default_dispatch_index'])) {
@@ -92,10 +86,10 @@ class View extends App
         }
     }
     
-    protected function checkView($path)
+    protected function checkViewPath($path)
     {
-        $path = $this->view_config['dir'].$path;
-        if (isset($this->view_config['template'])) {
+        $path = Config::get('view.dir', APP_DIR.'view/').$path;
+        if (Config::has('view.template')) {
             return is_file(CoreView::getTemplateFile($path, true));
         }
         return is_php_file("$path.php");
