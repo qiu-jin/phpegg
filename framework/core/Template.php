@@ -1,36 +1,34 @@
 <?php
 namespace framework\core;
 
-use framework\core\http\Request;
-
 class Template
 {
     protected static $init;
     
-    protected static $dsl_prefix = 'e-';
-    
-    protected static $ebp = ['{', '}'];
-    
-    protected static $operator = [
+    protected static $operators = [
         '!', '&', '|', '=', '>', '<', '+', '-', '*', '/', '%', '?', ':'
     ];
     
-    protected static $structure = [
-        'set', 'if', 'elseif', 'else', 'switch', 'case', 'default', 'each', 'for', 'import', 'layout'
+    protected static $structures = [
+        'if', 'elseif', 'else', 'each', 'for', 'include', 'extends'
     ];
     
-    protected static $var_alias = [
-        'GET'       => '_GET',
-        'POST'      => '_POST',
-        'COOKIE'    => '_COOKIE',
-        'SEESION'   => '_SEESION',
-        'SERVER'    => '_SERVER',
+    protected static $struct_html_tag = 'php';
+    
+    protected static $struct_attr_prefix = '@';
+    
+    protected static $assign_attr_prefix = '$';
+    
+    protected static $interpolation = ['{', '}'];
+    
+    protected static $alias = [
+
     ];
     
-    protected static $function_alias = [
-        'is'        => 'call_user_func("is_".$1, $0)',
+    protected static $functions = [
+        'is'        => '{"is_$1"}($0)',
         'has'       => 'isset($0)',
-        'default'   => 'isset($0) ? $0 : $1',
+        'default'   => '$0 ?? $1',
         
         'str'       => 'strval($0)',
         'num'       => '($0+0)',
@@ -69,139 +67,116 @@ class Template
     {
         if (self::$init) return;
         self::$init = true;
-        $config = Config::get('template');
-        if (isset($config['function_alias'])) {
-            self::$function_alias = $config['function_alias'] + self::$function_alias;
+        if ($config = Config::get('template')) {
+            
         }
     }
     
-    public static function complie($template, $layout = null)
+    public static function complie($str, $layout = null)
     {
         if ($layout === null) {
-            $template = self::mergeLayout($template, $layout);
+            $str = self::mergeLayout($str, $layout);
         }
-        return self::ebpParser(self::tagParser($template, $layout === false));
+        return self::parse(self::tagParse($str, $layout === false));
     }
 
     /*
      * 模版语法解析
      */
-    protected static function ebpParser($str)
+    protected static function parse($str)
     {
         $i = 1;
         $pairs = explode(self::$ebp[0], $str);
-        $tpl = $pairs[0];
         $count = count($pairs);
-        if ($count > 1) {
-            while ($i < $count) {
-                $fchar = $pairs[$i]{0};
-                if ($fchar === '$') {
-                    $pairs[$i] = substr($pairs[$i], 1);
-                }
-                $ret = array('continue' => false);
-                do {
-                    if ($i < $count) {
-                        $pair = $pairs[$i];
-                        $ret = self::replaceStrvars($pair, self::$ebp[0], self::$ebp[1], $ret['continue'] ? $ret : null);
-                        $i++;
-                    } else {
-                        throw new \Exception('read error: '.$count);
-                    }
-                } while ($ret['continue'] === true);
-                if ($fchar === '$') {
-                    $tpl .= '<?php echo htmlspecialchars('.self::readUnit($ret['code'], $ret['vars']).'); ?>';
-                } else {
-                    $tpl .= '<?php echo '.self::readUnit($ret['code'], $ret['vars']).'; ?>';
-                }
-                if(strlen($pair) - $ret['pos'] > 1) $tpl .= substr($pair, $ret['pos']+1);
-            }
+        if ($count < 2) {
+            return $str;
         }
-        return $tpl;
-    }
-    
-    /*
-     * 模版语法解析
-     */
-    protected static function sbpParser($str, $remove_ayout = false)
-    {
-        $reg = "/".preg_quote(self::$sbp[0])."(".implode('|', self::$structure).").+/";
-        $str = preg_replace_callback($reg, function ($match) {
-            $tmp  = '';
-            $slen = strlen(self::$sbp[0]);
-            $elen = strlen(self::$sbp[1]);
-            $ret  = self::replaceStrvars(substr($match[0], $slen), self::$sbp[0], self::$sbp[1]);
-            if ($ret['continue']) throw new \Exception('read error: '.$match[0]);
-            $val = self::restoreStrvars(substr($ret['code'], strlen($match[1])+1), $ret['vars']);
-            $structure_ret = self::readStructure($match[1], $val);
-            if ($match[1] == 'else' || $match[1] == 'elseif') {
-                $tmp .= '<?php }'.$structure_ret['code'].' ?>';
+        $tpl = $pairs[0];
+        while ($i < $count) {
+            $fchar = $pairs[$i]{0};
+            if ($fchar === '$') {
+                $pairs[$i] = substr($pairs[$i], 1);
+            }
+            $ret = array('continue' => false);
+            do {
+                if ($i < $count) {
+                    $pair = $pairs[$i];
+                    $ret = self::replaceStrvars($pair, self::$ebp[0], self::$ebp[1], $ret['continue'] ? $ret : null);
+                    $i++;
+                } else {
+                    throw new \Exception('read error: '.$count);
+                }
+            } while ($ret['continue'] === true);
+            if ($fchar === '$') {
+                $tpl .= '<?php echo htmlspecialchars('.self::readUnit($ret['code'], $ret['vars']).'); ?>';
             } else {
-                $tmp .= '<?php '.$structure_ret['code'].' ?>';
+                $tpl .= '<?php echo '.self::readUnit($ret['code'], $ret['vars']).'; ?>';
             }
-            if (strlen($match[0]) - $ret['pos'] > $elen + 2) {
-                $tmp .= substr($match[0], $ret['pos']+$elen);
-            }
-            if ($remove_ayout && $match[1] === 'layout') {
-                return;
-            }
-            return $tmp;
-        }, $str);
-        $reg = "/".preg_quote(self::$sbp[0])."\/(if|each|for|switch)".preg_quote(self::$sbp[1])."/";
-        $str = preg_replace($reg, '<?php } ?>', $str);
-        if ($str) return $str;
-        throw new \Exception('sbp_parser error: '.$str);
+            if(strlen($pair) - $ret['pos'] > 1) $tpl .= substr($pair, $ret['pos']+1);
+        }
     }
     
     /*
      * 模版标签语法解析
      */
-    protected static function tagParser($str, $remove_ayout = false)
+    public static function tagParse($str, $remove_ayout = false)
     {
-        $reg = "/<([a-z]+)[ \t]+".self::$tag_attr_prefix."(".implode('|', self::$structure).").+/";
-        if (preg_match_all($reg, $str, $matchs, PREG_OFFSET_CAPTURE)) {
-            $tpl = '';
-            $start_pos = 0;
-            $end_tags = array();
-            $skip_num = array();
-            foreach ($matchs[0] as $i => $match) {
-                $tmp = substr($str, $start_pos, $match[1]-$start_pos);
-                $blank = self::readLeftBlank($tmp);
-                $tpl .= $end_tags ? self::completeEndTag($tmp, $end_tags, $skip_num) : $tmp;
-                $ret = self::replaceStrvars($match[0], $start = '<', $end = '>');
-                $tag = self::readTag($ret['code'].'>', $ret['vars']);
-                $tpl .= implode("\r\n".$blank, $tag['code']);
-                if ($matchs[1][$i][0] != self::$blank_tag) {
-                    $tpl .= "\r\n".$blank.$tag['html'];
-                }
-                if ($tag['end']) {
-                    if (substr($tag['html'], -2, 1) === '/') {
-                        $tpl .= "\r\n".$blank.'<?php } ?>';
-                    } else {
-                        $skip_num[] = 0;
-                        $end_tags[] = $matchs[1][$i][0];
-                    }
-                }
-                if (strlen($match[0]) - $ret['pos'] > 2) {
-                    $end_html = substr($match[0], $ret['pos']+1);
-                    $tpl .= $end_tags ? self::completeEndTag($end_html, $end_tags, $skip_num, $blank) : $end_html;
-                }
-                $start_pos = strlen($match[0])+$match[1];
-            }
-            $tpl .= $end_tags ? self::completeEndTag(substr($str, $start_pos), $end_tags, $skip_num) : substr($str, $start_pos);
-            return $tpl;
+        $regex = "/<([a-zA-Z]+) +(".self::$struct_attr_prefix."|".self::$assign_attr_prefix.")/U";
+        if (!preg_match_all($regex, $str, $matchs, PREG_OFFSET_CAPTURE)) {
+            return $str;
         }
-        return $str;
+        dd($matchs);
+        $res       = '';
+        $pos       = 0;
+        $end_tags  = [];
+        $skip_num  = [];
+        foreach ($matchs[0] as $i => $match) {
+            if ($pos > $match[1]) {
+                throw new \Exception("Tag parse error");
+            }
+            $left  = substr($str, $pos, $match[1] - $pos);
+            $blank = self::readLeftBlank($left);
+            $res  .= $end_tags ? self::completeEndTag($left, $end_tags, $skip_num) : $left;
+            
+            $tag   = self::readTag($str, $match[1]);
+
+            $res  .= implode(PHP_EOL.$blank, $tag['code']);
+            if ($matchs[1][$i][0] !== self::$struct_html_tag) {
+                $res .= PHP_EOL.$blank.$tag['html'];
+            }
+            $pos  = $tag['pos'];
+            
+            
+            if ($tag['complete']) {
+                $skip_num[] = 0;
+                $end_tags[] = $matchs[1][$i][0];
+                
+                
+                if (substr($tag['html'], -2, 1) === '/') {
+                    $res .= PHP_EOL.$blank.'<?php } ?>';
+                } else {
+                    $skip_num[] = 0;
+                    $end_tags[] = $matchs[1][$i][0];
+                }
+            }
+        }
+        $res .= $end_tags ? self::completeEndTag(substr($str, $start_pos), $end_tags, $skip_num) : substr($str, $start_pos);
+        return $res;
     }
     
-    /*
-     * 读取模版标签
-     */
-    protected static function readTag($tag, $vars)
+    protected static function readTag($str, $pos)
     {
-        $end = false;
+        $val  = self::replaceStrvars($match[0], '<', '>');
+        $tag  = self::readTag($ret['code'].'>', $ret['vars']);
+        
+        $end  = false;
         $html = '';
         $code = array();
         $has_noas_attr = false;
+        
+        $regex = "/(".self::$struct_attr_prefix."|".self::$assign_attr_prefix.")([.\:\.\[\]])(=\\$[1-9]+)?/";
+        
+        
         $reg = "/".self::$tag_attr_prefix."(".implode('|', self::$structure).")(=\\$[1-9])?/";
         if (preg_match_all($reg, $tag, $matchs, PREG_OFFSET_CAPTURE)) {
             $start_pos = 0;
@@ -212,7 +187,7 @@ class Template
                     if ($has_noas_attr) throw new \Exception('read_tag error: '.$tag);
                     $has_noas_attr = true;
                 }
-                if ($attr[0] === 'else' || $attr[0] === 'default') {
+                if ($attr[0] === 'else') {
                     $val = null;
                 } else {
                     if (empty($matchs[2][$i][0])) {
@@ -233,53 +208,91 @@ class Template
         ];
     }
     
-    /*
-     * 合并完成模版标签闭合
-     */
-    protected static function completeEndTag($str, &$end_tags, &$skip_num, $blank = null)
+    public static function readTagAttr($str, $start = null, $end = null, $continue = null)
     {
-        $code = '';
-        do {
-            $i = count($end_tags)-1;
-            $start_tag = '<'.$end_tags[$i];
-            $end_tag = '<\/'.$end_tags[$i].'>';
-            if (preg_match_all('/('.$start_tag.'|'.$end_tag.')/', $str, $matchs, PREG_OFFSET_CAPTURE)) {
-                $start_pos = 0;
-                foreach ($matchs[0] as $match) {                    
-                    $tmp = substr($str, $start_pos, $match[1] - $start_pos);
-                    $code .= $tmp;
-                    $start_pos = strlen($match[0]) + $match[1];
-                    if ($match[0] === $start_tag) {
-                        $code .= $match[0];
-                        $skip_num[$i]++;
-                    } else {
-                        if ($skip_num[$i] > 0) {
-                            $code .= $match[0];
-                            $skip_num[$i]--;
-                        } else {
-                            if ($end_tags[$i] !== self::$blank_tag) {
-                                $code .= $match[0]."\r\n".($blank ? $blank : self::readLeftBlank($tmp));
-                            }
-                            $code .= '<?php } ?>';
-                            array_pop($skip_num);
-                            array_pop($end_tags);
-                            break;
-                        }
-                    }
-                }
-                $str = substr($str, $start_pos);
-            } else {
-                $code .= $str;
-                break;
+        $pos = 0;
+        $num = 0;
+        if ($continue) {
+            extract($continue, EXTR_SKIP);
+            if ($start) {
+                $var .= $start;
             }
-        } while ($i > 0);
-        return $code;
+        } else {
+            $var    = '';
+            $code   = '';
+            $quote  = null;
+            $vars   = [];
+        }
+        if($end) {
+            $end_len = strlen($end);
+        }
+        $len = strlen($str);
+        for($i = 0; $i < $len; $i++) {
+            $char = $str[$i];
+            if (self::isQuoteChar($char)) {
+                if ($quote) {
+                    if ($quote === $char) {
+                        if ($continue) {
+                            if (($i === 0 || $str{$i-1} !== '\\')) {
+                                $vars[] = $quote.$var.$quote;
+                                $var = '';
+                                $num = 0;
+                                $quote = null;
+                                $code .= '$'.count($vars);
+                            } else {
+                                $var .= $char;
+                            }
+                        } else {
+                            if (($i - $num === 1) || ($str{$i-1} !== '\\')) {
+                                $vars[] = $quote.$var.$quote;
+                                $var = '';
+                                $num = 0;
+                                $quote = null;
+                                $code .= '$'.count($vars);
+                            } else {
+                                $var .= $char;
+                            }
+                        }
+                    } else {
+                        $var .= $char;
+                    }
+                } else {
+                    $num = $i;
+                    $quote = $char;
+                }
+            } elseif ($end && ($i - $end_len) > -2) {
+                if ($quote){
+                    $var  .= $char;
+                } elseif (substr($str, $i + 1 - $end_len, $end_len) !== $end) {
+                    $code .= $char;
+                } else {
+                    if ($end_len > 1) {
+                        $code = substr($code, 0, 1 - $end_len);
+                    }
+                    return ['continue' => false, 'code' => $code, 'pos' => $i, 'vars' => $vars];
+                }
+            } elseif (self::isNewlineChar($char)) {
+                throw new \Exception("Value not allow newline char: $str");
+            } else {
+                if ($quote) {
+                    $var .= $char;
+                } else {
+                    $code .= $char;
+                }
+            }
+        }
+        if ($quote) {
+            return ['continue' => true,  'code' => $code, 'pos' => $len, 'vars' => $vars, 'var' => $var, 'quote' => $quote];
+        } else {
+            return ['continue' => false, 'code' => $code, 'pos' => $pos, 'vars' => $vars];
+        }
     }
+    
     
     /*
      * 合并布局模版
      */
-    protected static function mergeLayout($str1, $str2)
+    public static function mergeLayout($str1, $str2)
     {
         if (isset(self::$sbp)) {
             $start_re = '/'.self::$sbp[0].'block (\w+)'.self::$sbp[1].'/';
@@ -335,6 +348,49 @@ class Template
     }
     
     /*
+     * 合并完成模版标签闭合
+     */
+    protected static function completeEndTag($str, &$end_tags, &$skip_num, $blank = null)
+    {
+        $code = '';
+        do {
+            $i = count($end_tags)-1;
+            $start_tag = '<'.$end_tags[$i];
+            $end_tag = '<\/'.$end_tags[$i].'>';
+            if (preg_match_all('/('.$start_tag.'|'.$end_tag.')/', $str, $matchs, PREG_OFFSET_CAPTURE)) {
+                $start_pos = 0;
+                foreach ($matchs[0] as $match) {                    
+                    $tmp = substr($str, $start_pos, $match[1] - $start_pos);
+                    $code .= $tmp;
+                    $start_pos = strlen($match[0]) + $match[1];
+                    if ($match[0] === $start_tag) {
+                        $code .= $match[0];
+                        $skip_num[$i]++;
+                    } else {
+                        if ($skip_num[$i] > 0) {
+                            $code .= $match[0];
+                            $skip_num[$i]--;
+                        } else {
+                            if ($end_tags[$i] !== self::$blank_tag) {
+                                $code .= $match[0]."\r\n".($blank ? $blank : self::readLeftBlank($tmp));
+                            }
+                            $code .= '<?php } ?>';
+                            array_pop($skip_num);
+                            array_pop($end_tags);
+                            break;
+                        }
+                    }
+                }
+                $str = substr($str, $start_pos);
+            } else {
+                $code .= $str;
+                break;
+            }
+        } while ($i > 0);
+        return $code;
+    }
+    
+    /*
      * 读取语句结构
      */
     protected static function readStructure($structure, $val = null)
@@ -343,16 +399,6 @@ class Template
         $code = '';
         if ($val) $ret = self::replaceStrvars($val);
         switch ($structure) {
-            case 'set':
-                $pairs = explode(';', $ret['code']);
-                foreach ($pairs as $pair) {
-                    $item = explode('=', trim($pair));
-                    if (count($item) !== 2) throw new \Exception('read_structure error: '.$pair);
-                    $kvar = self::readArgument(trim($item[0]), $ret['vars']);
-                    $vvar = self::readArgument(trim($item[1]), $ret['vars']);
-                    $code .= $kvar['value'].' = '.$vvar['value'].';';
-                }
-                break;
             case 'if':
                 $end = true;
                 $code = 'if ('.self::readExp($ret['code'], $ret['vars'], self::$operator).') {';
@@ -364,18 +410,6 @@ class Template
             case 'else':
                 $end = true;
                 $code = ' else {';
-                break;
-            case 'switch':
-                $end = true;
-                $argument = self::readArgument($ret['code'], $ret['vars']);
-                $code =  'switch ('.$argument['value'].') {';
-                break;
-            case 'case':
-                $argument = self::readArgument($ret['code'], $ret['vars']);
-                $code = 'case: '.$argument['value'];
-                break;
-            case 'default':
-                $code = 'default: ';
                 break;
             case 'each':
                 $end = true;
@@ -508,55 +542,6 @@ class Template
             }
         }
         return $code;
-    }
-    
-    /*
-     * 读取JSON
-     */
-    protected static function readJson($str)
-    {
-        $quote = null;
-        $len = strlen($str);
-        $start_char = $str{0};
-        $start_char_num = 0;
-        if ($start_char === '{') {
-            $end_char = '}';
-        } elseif ($start_char === '[') {
-            $end_char = ']';
-        } else {
-            return false;
-        }
-        $code = $start_char;
-        for ($i=1; $i<$len; $i++) {
-            $char = $str{$i};
-            if (self::isQuoteChar($char)) {
-                if ($quote) {
-                    if ($char === $quote) {
-                        $quote = null;
-                    }
-                } else {
-                    $quote = $char;
-                }
-            } elseif ($char === $start_char) {
-                if (!$quote) {
-                    $start_char_num++;
-                }
-            } elseif ($char === $end_char) {
-                if (!$quote) {
-                    if ($start_char_num > 0) {
-                        $start_char_num--;
-                    } else {
-                        $array = json_decode($code.$end_char, true);
-                        if ($array) {
-                            return array('code'=>var_export($array, true), 'pos'=>$i);
-                        }
-                        return false;
-                    }
-                }
-            }
-            $code .= $char;
-        }
-        return false;
     }
     
     /*
@@ -710,86 +695,7 @@ class Template
             return 'call_user_func($this->functions["'.$name.'"],'.implode(',', $args).')';
         }
     }
-    
-    /*
-     * 替换字符串变量
-     */
-    protected static function replaceStrvars($str , $start = null, $end = null, $continue = null)
-    {
-        $pos = 0;
-        $num = 0;
-        if ($continue) {
-            $var = $continue['var'];
-            if ($start) $var .= $start;
-            $code = $continue['code'];
-            $quote = $continue['quote'];
-            $vars = $continue['vars'];
-        } else {
-            $var = '';
-            $code = '';
-            $quote = null;
-            $vars = array();
-        }
-        if($end) $end_len = strlen($end);
-        $len = strlen($str);
-        for($i=0; $i<$len; $i++) {
-            $char = $str{$i};
-            if (self::isQuoteChar($char)) {
-                if ($quote) {
-                    if ($quote === $char) {
-                        if ($continue) {
-                            if (($i === 0 || $str{$i-1} !== '\\')) {
-                                $vars[] = $quote.$var.$quote;
-                                $var = '';
-                                $num = 0;
-                                $quote = null;
-                                $code .= '$'.count($vars);
-                            } else {
-                                $var .= $char;
-                            }
-                        } else {
-                            if (($i - $num === 1) || ($str{$i-1} !== '\\')) {
-                                $vars[] = $quote.$var.$quote;
-                                $var = '';
-                                $num = 0;
-                                $quote = null;
-                                $code .= '$'.count($vars);
-                            } else {
-                                $var .= $char;
-                            }
-                        }
-                    } else {
-                        $var .= $char;
-                    }
-                } else {
-                    $num = $i;
-                    $quote = $char;
-                }
-            } elseif ($end && ($i-$end_len) > -2) {
-                if ($quote){
-                    $var .= $char;
-                } elseif (substr($str, $i+1-$end_len, $end_len) !== $end) {
-                    $code .= $char;
-                } else {
-                    if ($end_len > 1) $code = substr($code, 0, 1-$end_len);
-                    return array('continue'=>false, 'code'=>$code, 'pos'=>$i, 'vars'=>$vars);
-                }
-            } elseif (self::isNewlineChar($char)) {
-                throw new \Exception('replace_strvars error: '.$str);
-            } else {
-                if ($quote) {
-                    $var .= $char;
-                } else {
-                    $code .= $char;
-                }
-            }
-        }
-        if ($quote) {
-            return array('continue'=>true, 'code'=>$code, 'var'=>$var, 'pos'=>$len, 'vars'=>$vars, 'quote'=>$quote);
-        } else {
-            return array('continue'=>false, 'code'=>$code, 'pos'=>$pos, 'vars'=>$vars);
-        }
-    }
+
     
     /*
      * 还原变量

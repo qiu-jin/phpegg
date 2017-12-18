@@ -3,9 +3,9 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\core\Config;
+use framework\core\ViewModel;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\extend\view\ViewModel;
 use framework\core\View as CoreView;
 
 class View extends App

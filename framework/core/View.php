@@ -64,13 +64,12 @@ class View
             $path = self::$config['dir'].$tpl;
         } else {
             $is_relative_path = true;
-            $path = $dir.'/'.$tpl;
+            $path = "$dir/$tpl";
         }
-        $phpfile = $path.'.php';        
-        if (!isset(self::$config['template'])) {
-            return $phpfile;
+        $phpfile = "$path.php";        
+        if (isset(self::$config['template'])) {
+            self::complie(self::getTemplateFile($path, $is_relative_path), $phpfile);
         }
-        self::complie(self::getTemplateFile($path, $is_relative_path), $phpfile);
         return $phpfile;
     }
     
@@ -79,10 +78,9 @@ class View
         $path    = self::$config['dir'].$tpl;
         $prefix  = self::$config['template']['block_view_prefix'] ?? '__';
         $phpfile = dirname($path)."/$prefix".basename($path).'.php';
-        if (!isset(self::$config['template'])) {
-            return $phpfile;
+        if (isset(self::$config['template'])) {
+            self::complie(self::getTemplateFile($path), $phpfile);
         }
-        self::complie(self::getTemplateFile($path), $phpfile);
         return $phpfile;
     }
 
@@ -96,22 +94,18 @@ class View
         } else {
             $path = dirname($file).'/'.$tpl;
         }
-        $layoutfile = self::getTemplateFile($path, $tpl[0] !== '/');
-        if (is_file($layoutfile)) {
-            if (filemtime($file) > filemtime($layoutfile)) {
-                return $file;
-            }
-            $tplfile = self::getTemplateFile(substr($file, 0, -4));
-            $content = Template::complie(file_get_contents($tplfile), file_get_contents($layoutfile));
-            if (file_put_contents($file, $content)) {
-                if (extension_loaded('opcache')) {
-                    opcache_compile_file($file);
+        $layout = self::getTemplateFile($path, $tpl[0] !== '/');
+        if (is_file($layout)) {
+            if (filemtime($file) < filemtime($layout)) {
+                if (self::complie(self::getTemplateFile(substr($file, 0, -4)), $file, file_get_contents($layout))) {
+                    if (extension_loaded('opcache')) {
+                        opcache_compile_file($file);
+                    }
                 }
-                return $file;
             }
-            throw new \Exception("View file write fail: $file");
+            return $file;
         } 
-        throw new \Exception("Not found template: $layoutfile");
+        throw new \Exception("Template file not found: $layoutfile");
     }
 
     /*
@@ -164,19 +158,22 @@ class View
     public static function complie($tplfile, $phpfile, $layout = null)
     {
         if (!is_file($tplfile)) {
-            throw new \Exception("Not found template: $tplfile");
+            throw new \Exception("Template file not found: $tplfile");
         }
         if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
             $dir = dirname($phpfile);
-            if (!is_dir($dir) && !mkdir($dir, 0777, true)) {
-                throw new \Exception("View dir create fail: $dir");
+            if ($layout || is_dir($dir) || mkdir($dir, 0777, true)) {
+                if ($content = file_get_contents($tplfile)) {
+                    $engine = self::$config['template']['engine'] ?? Template::class;
+                    if (file_put_contents($phpfile, $engine::complie($content, $layout))) {
+                        return true;
+                    }
+                    throw new \Exception("View file write fail: $phpfile");
+                }
+                throw new \Exception("Template file read write fail: $tplfile");
             }
-            if (!file_put_contents($phpfile, Template::complie(file_get_contents($tplfile), $layout))) {
-                throw new \Exception("View file write fail: $phpfile");
-            }
-            return true;
+            throw new \Exception("View dir create fail: $dir");
         }
-        return false;
     }
     
     public static function free()
