@@ -114,22 +114,16 @@ class Grpc extends App
         $response_class = strtr($this->config['response_scheme_format'], $replace);
         $request_object = new $request_class;
         $request_object->mergeFromString($this->readParams());
-        $params = \Closure::bind(function ($reflection_method) {
-            return Controller::methodBindKvParams($reflection_method, get_object_vars($this));
+        $params = \Closure::bind(function ($rm) {
+            return Controller::methodBindKvParams($rm, get_object_vars($this));
         }, $request_object, $request_class)($reflection_method);
-        if (!$params) {
-            self::abort(500, 'Missing argument');
-        }
         $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}(...$params);
-        if (count($return) > 0) {
-            return \Closure::bind(function ($params) {
-                foreach ($params as $k => $v) {
-                    $this->$k = $v;
-                }
-                return $this;
-            }, new $response_class, $response_class)($return);
-        }
-        self::abort(500, 'Invalid return value');
+        return \Closure::bind(function (array $params) {
+            foreach ($params as $k => $v) {
+                $this->$k = $v;
+            }
+            return $this;
+        }, new $response_class, $response_class)($return);
     }
     
     protected function callWithReqResParams($reflection_method)
@@ -141,10 +135,11 @@ class Grpc extends App
             if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
                 $request_object = new $request_class;
                 $request_object->mergeFromString($this->readParams());
-                $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}($request_object, new $response_class);
-                if ($return instanceof $response_class) {
-                    return $return;
-                }
+                $this->dispatch['controller_instance']->{$this->dispatch['action']}(
+                    $request_object,
+                    $response_object = new $response_class
+                );
+                return $response_object;
             }
         }
         self::abort(500, 'Illegal message scheme class');
