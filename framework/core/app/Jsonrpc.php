@@ -12,13 +12,17 @@ use framework\core\http\Response;
 
 class Jsonrpc extends App
 {
-    const VERSION = '2.0';
+    const JSONRPC = '2.0';
     
     protected $config = [
         // 控制器namespace
         'controller_ns' => 'controller',
         // 控制器类名后缀
         'controller_suffix' => null,
+        // 控制器别名
+        'controller_alias'  => null,
+        // 允许调度的控制器，为空不限制
+        'dispatch_controllers' => null,
         /* 参数模式
          * 0 无参数
          * 1 顺序参数
@@ -85,7 +89,7 @@ class Jsonrpc extends App
         foreach ($this->dispatch as $dispatch) {
             $return = [
                 'id'        => $dispatch['id'],
-                'jsonrpc'   => self::VERSION
+                'jsonrpc'   => self::JSONRPC
             ];
             if (isset($dispatch['error'])) {
                 $return['error'] = $dispatch['error'];
@@ -139,7 +143,7 @@ class Jsonrpc extends App
             if ($dispatch_count > $return_count) {
                 $this->return[] = [
                     'id'        => $this->dispatch[$return_count]['id'],
-                    'jsonrpc'   => self::VERSION,
+                    'jsonrpc'   => self::JSONRPC,
                     'error'     => [
                         'code'      => $code ?? -32000,
                         'message'   => $message ?? 'Server error'
@@ -149,7 +153,7 @@ class Jsonrpc extends App
                     for ($i = $return_count + 1; $i < $dispatch_count; $i++) {
                         $this->return[] = [
                             'id'        => $this->dispatch[$return_count+$i]['id'],
-                            'jsonrpc'   => self::VERSION,
+                            'jsonrpc'   => self::JSONRPC,
                             'error'     => ['code'=> -32002, 'message' => 'Batch request abort']
                         ];
                     }
@@ -165,7 +169,7 @@ class Jsonrpc extends App
             }
             $this->response([
                 'id'        => $this->dispatch['id'] ?? null,
-                'jsonrpc'   => self::VERSION,
+                'jsonrpc'   => self::JSONRPC,
                 'error'     => compact('code', 'message')
             ]);
         }
@@ -186,7 +190,7 @@ class Jsonrpc extends App
                 if ($action[0] !== '_' ) {
                     $controller = implode('\\', $method_array);
                     $controller_instance = $this->makeControllerInstance($controller);
-                    if (!empty($controller_instance) && is_callable([$controller_instance, $action])) {
+                    if ($controller_instance && is_callable([$controller_instance, $action])) {
                         $params = $item['params'] ?? [];
                         return compact('id', 'action', 'controller', 'controller_instance', 'params');
                     }
@@ -205,7 +209,14 @@ class Jsonrpc extends App
     
     protected function makeControllerInstance($controller)
     {
-        if ($class = $this->getControllerClass($controller)) {
+        if (isset($this->config['controller_alias'][$controller])) {
+            $controller = $this->config['controller_alias'][$controller];
+        } elseif (empty($this->config['dispatch_controllers'])) {
+            $check = true;
+        } elseif (!in_array($controller, $this->config['dispatch_controllers'], true)) {
+            return;
+        }
+        if ($class = $this->getControllerClass($controller, isset($check))) {
             if (!$this->is_batch_call) {
                 return $class;
             }

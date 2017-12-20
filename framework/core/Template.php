@@ -10,19 +10,19 @@ class Template
     ];
     
     protected static $structures = [
-        'if', 'elseif', 'else', 'each', 'for', 'include', 'extends'
+        'if', 'elseif', 'else', 'each', 'for', 'include', 'inline', 'extends'
     ];
     
-    protected static $struct_html_tag = 'php';
+    protected static $struct_html_tag = 'egg';
     
     protected static $struct_attr_prefix = '@';
     
     protected static $assign_attr_prefix = '$';
     
-    protected static $interpolation = ['{', '}'];
+    protected static $inter_text_sign = ['{{', '}}'];
     
     protected static $alias = [
-
+        
     ];
     
     protected static $functions = [
@@ -145,7 +145,6 @@ class Template
                 $res .= PHP_EOL.$blank.$tag['html'];
             }
             $pos  = $tag['pos'];
-            
             
             if ($tag['complete']) {
                 $skip_num[] = 0;

@@ -19,6 +19,10 @@ class Grpc extends App
         'controller_ns'         => 'controller',
         // 控制器类名后缀
         'controller_suffix'     => null,
+        // 控制器别名
+        'controller_alias'      => null,
+        // 允许调度的控制器，为空不限制
+        'dispatch_controllers'  => null,
         /* 参数模式
          * 0 键值参数模式
          * 1 request response 参数模式
@@ -44,7 +48,14 @@ class Grpc extends App
                 $controller_array = array_slice($controller_array, $this->config['ignore_service_prefix']);
             }
             $controller = implode('\\', $controller_array);
-            if ($action[0] !== '_' && $class = $this->getControllerClass($controller, true)) {
+            if (isset($this->config['controller_alias'][$controller])) {
+                $controller = $this->config['controller_alias'][$controller];
+            } elseif (empty($this->config['dispatch_controllers'])) {
+                $check = true;
+            } elseif (!in_array($controller, $this->config['dispatch_controllers'], true)) {
+                return false;
+            }
+            if ($action[0] !== '_' && $class = $this->getControllerClass($controller, isset($check))) {
                 $controller_instance = new $class();
                 if (is_callable([$controller_instance, $action])) {
                     return compact('action', 'controller', 'controller_instance');

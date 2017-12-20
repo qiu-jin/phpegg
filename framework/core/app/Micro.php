@@ -17,6 +17,8 @@ class Micro extends App
         'controller_ns' => 'controller',
         // 控制器类名后缀
         'controller_suffix' => null,
+        // 默认调度的控制器，为空不限制
+        'default_dispatch_controllers' => null,
         // 路由模式下是否启用Getter魔术方法
         'route_dispatch_closure_getter' => true,
         // 路由模式下允许的HTTP方法
@@ -42,7 +44,7 @@ class Micro extends App
             $this->dispatch['route'][$params[0]][$method] = $params[1];
             return $this;
         }
-        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
+        throw new \Exception('Call to undefined method '.__CLASS__."::$method");
     }
     
     protected function dispatch()
@@ -69,14 +71,18 @@ class Micro extends App
         Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
     }
     
-    protected function response($return) {}
+    protected function response($return = null) {}
     
     protected function defaultDispatch()
     {
         list($controller, $action, $params) = $this->dispatch['default'];
-        if ($action[0] !== '_' && $class = $this->getControllerClass($controller, true)) {
-            $call = [new $class, $action];
-            if (is_callable($call)) {
+        if (empty($this->config['default_dispatch_controllers'])) {
+            $check = true;
+        } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
+            return;
+        }
+        if ($action[0] !== '_' && $class = $this->getControllerClass($controller, isset($check))) {
+            if (is_callable($call = [new $class, $action])) {
                 return [$call, $params];
             }
         }

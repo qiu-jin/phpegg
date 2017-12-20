@@ -17,6 +17,8 @@ class View extends App
         'enable_pjax'       => false,
         // view_model namespace
         'view_model_ns'     => 'viewmodel',
+        // 默认调度的视图，为空不限制
+        'default_dispatch_views' => null,
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
         // 默认调度时URL path中划线转成下划线
@@ -45,7 +47,7 @@ class View extends App
             require($__file);
         }, new class() {
             use Getter;
-        })(CoreView::{$method}($this->dispatch['view_path']));
+        })(CoreView::{$method}($this->dispatch['view']));
         return ob_get_clean();
     }
     
@@ -65,11 +67,18 @@ class View extends App
             if ($this->config['default_dispatch_hyphen_to_underscore']) {
                 $path = strtr($path, '-', '_');
             }
-            if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $path) && $this->checkViewPath($path)) {
-                return ['view_path' => $path];
+            if (empty($this->config['default_dispatch_views'])) {
+                if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $path)) {
+                    $view = Config::get('view.dir', APP_DIR.'view/').$path;
+                    if (is_php_file("$view.php") || (Config::has('view.template') && is_file(CoreView::getTemplateFile($path, true)))) {
+                        return ['view' => $path];
+                    }
+                }
+            } elseif (in_array($path, $this->config['default_dispatch_views'], true)) {
+                return ['view' => $path];
             }
         } elseif (isset($this->config['default_dispatch_index'])) {
-            return ['view_path' => $this->config['default_dispatch_index']];
+            return ['view' => $this->config['default_dispatch_index']];
         }
     }
     
@@ -81,17 +90,8 @@ class View extends App
             }
             $path = empty($path) ? null : explode('/', $path);
             if ($result = Router::route($path, $routes)) {
-                return ['view_path' => $result[0], 'params' => $result[1]];
+                return ['view' => $result[0], 'params' => $result[1]];
             }
         }
-    }
-    
-    protected function checkViewPath($path)
-    {
-        $path = Config::get('view.dir', APP_DIR.'view/').$path;
-        if (Config::has('view.template')) {
-            return is_file(CoreView::getTemplateFile($path, true));
-        }
-        return is_php_file("$path.php");
     }
 }

@@ -24,7 +24,7 @@ class Standard extends App
         // 是否启用视图
         'enable_view' => false,
         // 视图模版文件名是否转为下划线风格
-        'template_to_snake' => true,
+        'template_to_snake' => false,
         // request参数是否转为控制器方法参数
         'bind_request_params' => null,
         // 缺少的参数设为null值
@@ -37,6 +37,8 @@ class Standard extends App
         'default_dispatch_param_mode' => 1,
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
+        // 默认调度的控制器，为空不限制
+        'default_dispatch_controllers' => null,
         // 默认调度的控制器缺省方法
         'default_dispatch_default_action' => 'index',
         // 默认调度的路径转为驼峰风格
@@ -136,14 +138,14 @@ class Standard extends App
         $param_mode = $this->config['default_dispatch_param_mode'];
         if (empty($path)) {
             if (!isset($this->config['default_dispatch_index'])) {
-                return false;
+                return;
             }
             list($controller, $action) = explode('::', $this->config['default_dispatch_index']);
         } else {
             if (isset($this->dispatch['route'])) {
                 if (empty($this->dispatch['route'][1])) {
                     if (!isset($this->config['default_dispatch_default_action'])) {
-                        return false;
+                        return;
                     }
                     $action = $this->config['default_dispatch_default_action'];
                 } else {
@@ -182,16 +184,21 @@ class Standard extends App
                     $controller_array = $path;
                 }
                 if (!isset($controller_array)) {
-                    return false;
+                    return;
                 }
                 if (isset($this->config['default_dispatch_to_camel'])) {
                     $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
                     $controller_array[] = Str::toCamel(array_pop($controller_array), $this->config['default_dispatch_to_camel']);
                 }
                 $controller = implode('\\', $controller_array);
+                if (empty($this->config['default_dispatch_controllers'])) {
+                    $check = true;
+                } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
+                    return;
+                }
             }
         }
-        if ($action[0] !== '_' && $class = $this->getControllerClass($controller, true)) {
+        if ($action[0] !== '_' && $class = $this->getControllerClass($controller, isset($check))) {
             $controller_instance = new $class();
             if (is_callable([$controller_instance, $action])) {
                 return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');

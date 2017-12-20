@@ -31,6 +31,8 @@ class Rest extends App
          * 2 键值参数
          */
         'default_dispatch_param_mode' => 1,
+        // 默认调度的控制器，为空不限制
+        'default_dispatch_controllers' => null,
         // 默认调度下允许的HTTP方法
         'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/],
         // 资源调度默认路由表
@@ -106,7 +108,7 @@ class Rest extends App
     protected function defaultDispatch($path) 
     {
         if (!in_array($this->method, $this->config['default_dispatch_http_methods'], true)) {
-            return false;
+            return;
         }
         $count = count($path);
         $depth = $this->config['controller_depth'];
@@ -117,13 +119,13 @@ class Rest extends App
         } else {
             if ($depth > 0) {
                 if ($count < $depth) {
-                    return false;
+                    return;
                 }
                 if ($count === $depth) {
                     $controller_array = $path;
                 } else {
                     if ($param_mode < 1) {
-                        return false;
+                        return;
                     }
                     $controller_array = array_slice($path, 0, $depth);
                     $params = array_slice($path, $depth);
@@ -141,8 +143,13 @@ class Rest extends App
                 $controller_array[] = Str::toCamel(array_pop($controller_array), $this->config['default_dispatch_to_camel']);
             }
             $controller = implode('\\', $controller_array);
+            if (empty($this->config['default_dispatch_controllers'])) {
+                $check = true;
+            } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
+                return;
+            }
         }
-        if ($class = $this->getControllerClass($controller, true)) {
+        if ($class = $this->getControllerClass($controller, isset($check))) {
             $ccontroller_instance = new $class();
             if (is_callable([$ccontroller_instance, $this->method])) {
                 return [
@@ -172,7 +179,7 @@ class Rest extends App
             $controller = implode('\\', array_slice($path, 0, $depth));
             $action_path = array_slice($path, $depth);
         } else {
-            return false;
+            return;
         }
         $dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method);
         if ($dispatch) {

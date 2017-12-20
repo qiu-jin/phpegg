@@ -196,9 +196,9 @@ abstract class App
     /*
      * 获取调度信息
      */
-    public static function getDispatch()
+    public static function getDispatch($name = null)
     {
-        return self::$app->dispatch;
+        return $name === null ? self::$app->dispatch : self::$app->dispatch[$name] ?? null;
     }
     
     /*

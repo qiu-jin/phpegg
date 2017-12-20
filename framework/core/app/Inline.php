@@ -24,6 +24,8 @@ class Inline extends App
         'return_1_to_null'  => false,
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
+        // 默认调度的控制器，为空不限制
+        'default_dispatch_controllers' => null,
         // 默认调度时URL PATH中划线转成下划线
         'default_dispatch_hyphen_to_underscore' => false,
         // 路由调度的路由表
@@ -86,18 +88,23 @@ class Inline extends App
             } else {
                 $controller = $path;
             }
-            if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)) {
-                $controller_file = $this->getControllerFile($controller);
-                if (is_php_file($controller_file)) {
-                    return compact('controller', 'controller_file');
+            if (empty($this->config['default_dispatch_controllers'])) {
+                if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)) {
+                    if (is_php_file($controller_file = $this->getControllerFile($controller))) {
+                        return compact('controller', 'controller_file');
+                    }
                 }
+                return;
+            } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
+                return;
             }
         } elseif (isset($this->config['default_dispatch_index'])) {
-            return [
-                'controller' => $this->config['default_dispatch_index'],
-                'controller_file' => $this->getControllerFile($this->config['default_dispatch_index'])
-            ];
+            $controller = $this->config['default_dispatch_index'];
         }
+        return [
+            'controller'        => $controller,
+            'controller_file'   => $this->getControllerFile($controller)
+        ];
     }
     
     protected function routeDispatch($path)
@@ -109,9 +116,9 @@ class Inline extends App
             $path = empty($path) ? null : explode('/', $path);
             if ($result = Router::route($path, $routes)) {
                 return [
-                    'controller' => $result[0],
-                    'controller_file' => $this->getControllerFile($result[0]),
-                    'params' => $result[1]
+                    'controller'        => $result[0],
+                    'controller_file'   => $this->getControllerFile($result[0]),
+                    'params'            => $result[1]
                 ];
             }
         }

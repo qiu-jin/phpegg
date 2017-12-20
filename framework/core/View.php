@@ -36,9 +36,9 @@ class View
     /*
      * 设置函数
      */
-    public static function func($name, callable $value)
+    public static function filter($name, callable $value)
     {
-        self::$view->func[$name] = $value;
+        self::$view->filters[$name] = $value;
     }
     
     /*

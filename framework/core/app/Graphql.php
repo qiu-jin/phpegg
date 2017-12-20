@@ -17,12 +17,12 @@ class Graphql extends App
     
     protected function error($code = null, $message = null)
     {
-
+        
     }
     
     protected function response($return)
     {
-
+        
     }
     
     protected function parseQuery($query)
