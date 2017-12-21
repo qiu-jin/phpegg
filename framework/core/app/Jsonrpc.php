@@ -65,23 +65,23 @@ class Jsonrpc extends App
     
     protected function dispatch()
     {
-        $data = ($this->config['request_unserialize'])(Request::body());
-        if (!$data) {
-            $this->abort(-32700, 'Parse error');
-        }
-        $batch_max_num = $this->config['batch_max_num'];
-        if ($batch_max_num !== 1 && !Arr::isAssoc($data)) {
-            if ($batch_max_num !== 0 && count($data) > $batch_max_num) {
-                $this->abort(-32001, "Than batch max num $batch_max_num");
+        $body = Request::body();
+        if ($body && $data = ($this->config['request_unserialize'])($body)) {
+            $num = $this->config['batch_max_num'];
+            if ($num !== 1 && !Arr::isAssoc($data)) {
+                if ($num !== 0 && count($data) > $num) {
+                    $this->abort(-32001, "Than batch max num $num");
+                }
+                $this->is_batch_call = true;
+                foreach ($data as $item) {
+                    $dispatch[] = $this->defaultDispatch($item);
+                }
+            } else {
+                $dispatch[] = $this->defaultDispatch($data);
             }
-            $this->is_batch_call = true;
-            foreach ($data as $item) {
-                $dispatch[] = $this->defaultDispatch($item);
-            }
-        } else {
-            $dispatch[] = $this->defaultDispatch($data);
+            return $dispatch;
         }
-        return $dispatch;
+        self::abort(-32700, 'Parse error');
     }
     
     protected function call()
@@ -94,7 +94,7 @@ class Jsonrpc extends App
             if (isset($dispatch['error'])) {
                 $return['error'] = $dispatch['error'];
             } else {
-                if (isset($dispatch['id']) || !$this->config['notification_mode']) {
+                if (isset($dispatch['id']) || empty($this->config['notification_mode'])) {
                     if ($this->config['batch_exception_abort']) {
                         $return += $this->handle($dispatch);
                     } else {
@@ -119,20 +119,20 @@ class Jsonrpc extends App
     protected function handle($dispatch)
     {
         extract($dispatch, EXTR_SKIP);
-        if ($this->config['param_mode']) {
-            $reflection_method = $this->getReflectionMethod($controller, $action);
-            if ($this->config['param_mode'] === 1) {
-                $params = Controller::methodBindListParams($reflection_method, $params);
-            } elseif ($this->config['param_mode'] === 2) {
-                $params = Controller::methodBindKvParams($reflection_method, $params);
-            }
-            if ($params === false) {
-                return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
-            }
-            return ['result' => $controller_instance->$action(...$params)];
+        if (!$this->config['param_mode']) {
+            Request::set('post', $params);
+            return ['result' => $controller_instance->$action()];
         }
-        Request::set('post', $params);
-        return ['result' => $controller_instance->$action()];
+        $reflection_method = $this->getReflectionMethod($controller, $action);
+        if ($this->config['param_mode'] === 1) {
+            $params = Controller::methodBindListParams($reflection_method, $params);
+        } elseif ($this->config['param_mode'] === 2) {
+            $params = Controller::methodBindKvParams($reflection_method, $params);
+        }
+        if ($params === false) {
+            return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
+        }
+        return ['result' => $controller_instance->$action(...$params)];
     }
     
     protected function error($code = null, $message = null)
@@ -163,7 +163,7 @@ class Jsonrpc extends App
         } else {
             if (isset($this->core_errors[$code])) {
                 $code = $this->core_errors[$code][0];
-                if ($message == null) {
+                if ($message === null) {
                     $message = $this->core_errors[$code][1];
                 }
             }
@@ -196,15 +196,11 @@ class Jsonrpc extends App
                     }
                 }
             }
-            return [
-                'id'    => $id,
-                'error' => ['code' => -32601, 'message' => 'Method not found']
-            ];
+            $error = ['code' => -32601, 'message' => 'Method not found'];
+        } else {
+            $error = ['code' => -32600, 'message' => 'Invalid Request'];
         }
-        return [
-            'id'    => $id,
-            'error' => ['code' => -32600, 'message' => 'Invalid Request']
-        ];
+        return compact('id', 'error');
     }
     
     protected function makeControllerInstance($controller)
@@ -226,13 +222,13 @@ class Jsonrpc extends App
     
     protected function getReflectionMethod($controller, $action)
     {
-        if ($this->is_batch_call) {
-            if (isset($this->controller_reflection_methods[$controller][$action])) {
-                return $this->controller_reflection_methods[$controller][$action];
-            }
-            return $this->controller_reflection_methods[$controller][$action] = new \ReflectionMethod($controller, $action);
+        if (!$this->is_batch_call) {
+            return new \ReflectionMethod($controller, $action);
         }
-        return new \ReflectionMethod($controller, $action);
+        if (isset($this->controller_reflection_methods[$controller][$action])) {
+            return $this->controller_reflection_methods[$controller][$action];
+        }
+        return $this->controller_reflection_methods[$controller][$action] = new \ReflectionMethod($controller, $action);
     }
     
     protected function addJob($dispatch)

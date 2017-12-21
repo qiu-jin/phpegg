@@ -160,10 +160,8 @@ abstract class App
      */
     public static function exit($status = 1)
     {
-        if ($status === 0) {
-            return self::$exit;
-        } elseif ($status === 1) {
-            if (!self::$exit) {
+        if ($status === 1) {
+            if (!isset(self::$exit)) {
                 self::$exit = 1;
                 exit;
             }

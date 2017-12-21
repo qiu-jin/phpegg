@@ -38,9 +38,9 @@ class Response
     /*
      * 设置响应状态码
      */
-    public static function status($code)
+    public static function status($code = 200)
     {
-        self::$response->status = $code;
+        self::$response->status = Status::CODE[$code] ?? 500;
     }
     
     /*

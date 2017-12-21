@@ -63,7 +63,9 @@ class Inline extends App
 
     protected function error($code = null, $message = null)
     {
-        Response::status($code ?: 500);
+        if (is_int($code) && $code >= 100 && $code < 1000) {
+            Response::status($code);
+        }
         if ($this->config['enable_view']) {
             Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
         } else {
@@ -83,10 +85,10 @@ class Inline extends App
     protected function defaultDispatch($path) 
     {
         if ($path) {
-            if ($this->config['default_dispatch_hyphen_to_underscore']) {
-                $controller = strtr($path, '-', '_');
-            } else {
+            if (empty($this->config['default_dispatch_hyphen_to_underscore'])) {
                 $controller = $path;
+            } else {
+                $controller = strtr($path, '-', '_');
             }
             if (empty($this->config['default_dispatch_controllers'])) {
                 if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)) {

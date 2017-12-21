@@ -94,7 +94,9 @@ class Standard extends App
     
     protected function error($code = null, $message = null)
     {
-        Response::status($code ?: 500);
+        if (is_int($code) && $code >= 100 && $code < 1000) {
+            Response::status($code);
+        }
         if ($this->config['enable_view']) {
             Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
         } else {
@@ -105,25 +107,9 @@ class Standard extends App
     protected function response($return = [])
     {
         if ($this->config['enable_view']) {
-            Response::view($this->getTemplate(), $return, false);
+            Response::view($this->getViewPath(), $return, false);
         } else {
             Response::json($return, false);
-        }
-    }
-    
-    /*
-     * 获取视图模版
-     */
-    protected function getTemplate()
-    {
-        $path = $this->dispatch['controller'];
-        if (empty($this->config['template_to_snake'])) {
-            return '/'.strtr('\\', '/', $path).'/'.$this->dispatch['action'];
-        } else {
-            $array = explode('\\', $path);
-            $array[] = Str::toSnake(array_pop($array));
-            $array[] = Str::toSnake($this->dispatch['action']);
-            return '/'.implode('/', $array);
         }
     }
     
@@ -275,6 +261,22 @@ class Standard extends App
                     ];
                 }
             }
+        }
+    }
+    
+    /*
+     * 获取视图路径
+     */
+    protected function getViewPath()
+    {
+        $path = $this->dispatch['controller'];
+        if (empty($this->config['template_to_snake'])) {
+            return '/'.strtr('\\', '/', $path).'/'.$this->dispatch['action'];
+        } else {
+            $array = explode('\\', $path);
+            $array[] = Str::toSnake(array_pop($array));
+            $array[] = Str::toSnake($this->dispatch['action']);
+            return '/'.implode('/', $array);
         }
     }
     

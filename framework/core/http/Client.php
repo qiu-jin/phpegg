@@ -305,7 +305,8 @@ class Client
                 $this->request = $request;
             }
             public function __toString() {
-                return ($this->code ? "[$this->code]$this->message" : 'unknown http error').": {$this->request->method} {$this->request->url}";
+                return ($this->code ? "[$this->code]$this->message" : 'unknown http error')
+                       .": {$this->request->method} {$this->request->url}";
             }
         };
     }

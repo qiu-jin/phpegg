@@ -85,6 +85,7 @@ class Error
             self::record('error.fatal', $last_error['type'], $level, $message, $last_error['file'], $last_error['line']);
             self::response();
 		} else {
+            App::exit(0);
             self::record('error.fatal', Logger::WARNING, 0, 'Unknown exit', null, null);
 		}
     }

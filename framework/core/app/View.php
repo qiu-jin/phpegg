@@ -15,6 +15,8 @@ class View extends App
         'dispatch_mode'     => ['default'],
         // 是否启用pjax
         'enable_pjax'       => false,
+        // 
+        'bootstrap_call'    => null,
         // view_model namespace
         'view_model_ns'     => 'viewmodel',
         // 默认调度的视图，为空不限制
@@ -42,12 +44,11 @@ class View extends App
     protected function call()
     {
         ob_start();
-        $method = $this->config['enable_pjax'] && Response::isPjax() ? 'block' : 'file';
-        \Closure::bind(function($__file) {
-            require($__file);
-        }, new class() {
-            use Getter;
-        })(CoreView::{$method}($this->dispatch['view']));
+        $type = $this->config['enable_pjax'] && Response::isPjax() ? 'block' : 'file';
+        (static function($__file, $__vars) {
+            extract($__vars, EXTR_SKIP);
+            return require($__file);
+        })(CoreView::{$type}($this->dispatch['view']), $vars ?? []);
         return ob_get_clean();
     }
     
