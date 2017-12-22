@@ -68,14 +68,19 @@ function model($name)
     return Container::model($name);
 }
 
-function view($tpl, array $vars = null)
+function view($path, array $vars = null)
 {
-    return Response::view($tpl, $vars);
+    return Response::view($path, $vars);
 }
 
 function dd(...$vars)
 {
     Response::send(Debug::dump(...$vars));
+}
+
+function dump(...$vars)
+{
+    Response::send(Debug::dump(...$vars), false);
 }
 
 function abort($code = null, $message = null)

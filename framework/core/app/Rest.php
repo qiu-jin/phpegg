@@ -86,7 +86,9 @@ class Rest extends App
                 }
                 $params = Controller::methodBindKvParams($reflection_method, $params);
             }
-            if ($params === false) self::abort(500, 'Missing argument');
+            if ($params === false) {
+                self::abort(400, 'Missing argument');
+            }
         }
         return $ccontroller_instance->$action(...$params);
     }

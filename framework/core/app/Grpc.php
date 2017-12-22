@@ -101,7 +101,7 @@ class Grpc extends App
                 return $message;
             }
         }
-        self::abort(500, 'Invalid params');
+        self::abort(400, 'Invalid params');
     }
     
     protected function callWithKvParams($reflection_method)

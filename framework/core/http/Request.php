@@ -5,6 +5,7 @@ use framework\core\Event;
 
 class Request
 {
+    private static $init;
     private static $request;
     
     /*
@@ -12,7 +13,10 @@ class Request
      */
     public static function init()
     {
-        if (self::$request) return;
+        if (self::$init) {
+            return;
+        }
+        self::$init = true;
         self::$request = new \stdClass();
         self::$request->get =& $_GET;
         self::$request->post =& $_POST;

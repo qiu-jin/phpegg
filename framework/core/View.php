@@ -15,7 +15,9 @@ class View
      */
     public static function init()
     {
-        if (self::$init) return;
+        if (self::$init) {
+            return;
+        }
         self::$init = true;
         self::$view = new \stdClass();
         self::$config = Config::get('view');

@@ -87,7 +87,9 @@ class Standard extends App
                 }
                 $params = Controller::methodBindKvParams($reflection_method, $params, $this->config['missing_params_to_null']);
             }
-            if ($params === false) self::abort(500, 'Missing argument');
+            if ($params === false) {
+                self::abort(400, 'Missing argument');
+            }
         }
         return $controller_instance->$action(...$params);
     }

@@ -9,10 +9,11 @@ class Session
     
     public static function init()
     {
-        if (self::$init) return;
+        if (self::$init) {
+            return;
+        }
         self::$init = true;
-        $config = Config::get('session');
-        if ($config) {
+        if ($config = Config::get('session')) {
             foreach ($config as $key => $value) {
                 if (in_array($key, ['id', 'name', 'save_path', 'cache_expire', 'cache_limiter'], true)) {
                     call_user_func("session_$key", $value);

@@ -28,7 +28,9 @@ class Loader
      */
     public static function init()
     {
-        if (self::$init) return;
+        if (self::$init) {
+            return;
+        }
         self::$init = true;
         if ($config = Config::get('loader')) {
             foreach ($config as $type => $rules) {

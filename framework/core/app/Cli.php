@@ -38,7 +38,6 @@ class Cli extends App
         if (!App::IS_CLI) {
             throw new \RuntimeException('NOT CLI SAPI');
         }
-        Loader::add('alias', ['Command' => 'framework\core\app\Command']);
     }
     
     protected function call()
@@ -55,11 +54,4 @@ class Cli extends App
     {
 
     }
-}
-
-namespace framework\core;
-
-class command
-{
-    
 }

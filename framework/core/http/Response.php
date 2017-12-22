@@ -7,6 +7,7 @@ use framework\core\Event;
 
 class Response
 {
+    private static $init;
     private static $response;
     
     /*
@@ -14,7 +15,10 @@ class Response
      */
     public static function init()
     {
-        if (self::$response) return;
+        if (self::$init) {
+            return;
+        }
+        self::$init = true;
         self::$response = new \stdClass();
         Event::on('flush', __CLASS__.'::flush');
     }

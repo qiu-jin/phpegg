@@ -25,7 +25,9 @@ class Logger
      */
     public static function init()
     {
-        if (self::$init) return;
+        if (self::$init) {
+            return;
+        }
         self::$init = true;
         if ($configs = Config::get('logger')) {
             foreach ($configs as $name => $config) {

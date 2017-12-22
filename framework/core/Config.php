@@ -16,7 +16,9 @@ class Config
      */
     public static function init()
     {
-        if (self::$init) return;
+        if (self::$init) {
+            return;
+        }
         self::$init = true;
         self::loadEnv();
         if ($file = self::env('CONFIG_FILE')) {

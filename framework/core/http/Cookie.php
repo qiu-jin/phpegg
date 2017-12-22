@@ -21,10 +21,11 @@ class Cookie
     
     public static function init()
     {
-        if (self::$init) return;
+        if (self::$init) {
+            return;
+        }
         self::$init = true;
-        $config = Config::get('cookie');
-        if ($config) {
+        if ($config = Config::get('cookie')) {
             if (isset($config['option'])) {
                 self::$option = array_merge(self::$option, $config['option']);
             }

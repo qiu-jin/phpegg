@@ -37,7 +37,9 @@ class Container
 
     public static function init()
     {
-        if (self::$init) return;
+        if (self::$init) {
+            return;
+        }
         self::$init = true;
         if ($config = Config::get('container')) {
             foreach (array_keys(self::$providers) as $type) {

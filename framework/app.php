@@ -87,8 +87,10 @@ abstract class App
      */
     public static function boot()
     {
-        if (self::$boot) return;
-        self::$boot = true;
+        if (self::$boot) {
+            return;
+        }
+        self::$boot = true
         define('FW_DIR', __DIR__.'/');
         defined('APP_DEBUG')|| define('APP_DEBUG', false);
         defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
@@ -131,8 +133,9 @@ abstract class App
      */
     public static function start($app = 'Standard', array $config = null)
     {
-        if (self::$app) return;
-        self::boot();
+        if (self::$app) {
+            return;
+        }
         if (in_array($app, self::$modes, true)) {
             $class = 'framework\core\app\\'.$app;
         } elseif (is_subclass_of($app, __CLASS__)) {
@@ -212,7 +215,10 @@ abstract class App
      */
     protected function getControllerClass($controller, $check = false)
     {
-        $class = "app\\{$this->config['controller_ns']}\\$controller".($this->config['controller_suffix'] ?? null);
+        $class = "app\\{$this->config['controller_ns']}\\$controller";
+        if (isset($this->config['controller_suffix'])) {
+            $class .= $this->config['controller_suffix'];
+        }
         if (class_exists($class, false)) {
             return $class;
         }
@@ -223,3 +229,4 @@ abstract class App
         }
     }
 }
+App::boot();
