@@ -56,8 +56,7 @@ class Micro extends App
     {
         foreach ($this->config['dispatch_mode'] as $mode) {
             if (isset($this->dispatch[$mode])) {
-                $dispatch = $this->{$mode.'Dispatch'}();
-                if ($dispatch) {
+                if ($dispatch = $this->{$mode.'Dispatch'}()) {
                     return $dispatch[0](...$dispatch[1]);
                 }
             }
@@ -92,8 +91,7 @@ class Micro extends App
     {
         $method = Request::method();
         if (in_array($method, $this->config['route_dispatch_http_methods'], true)) {
-            $result = Router::route(Request::pathArr(), $this->dispatch['route'], $method);
-            if ($result) {
+            if ($result = Router::route(Request::pathArr(), $this->dispatch['route'], $method)) {
                 if (is_callable($result[0])) {
                     if ($this->config['route_dispatch_closure_getter'] && $result[0] instanceof \Closure) {
                         return [\Closure::bind($result[0], new class () {

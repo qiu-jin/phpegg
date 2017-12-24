@@ -8,9 +8,11 @@ use framework\core\Config;
 abstract class App
 {
     // 是否为命令行应用
-    const IS_CLI  = PHP_SAPI === 'cli';
+    const IS_CLI = PHP_SAPI === 'cli';
     // 版本号
     const VERSION = '1.0.0';
+    // 内置支持的应用模式
+    const MODES = ['Standard', 'Rest', 'Inline', 'View', 'Micro', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'];
     // 应用实例容器
     private static $app;
     // 标示boot方法是否已执行，防止重复执行
@@ -28,8 +30,6 @@ abstract class App
     private static $runing;
     // 设置错误处理器
     private static $error_handler;
-    // 内置支持的应用模式
-    private static $modes = ['Standard', 'Rest', 'Inline', 'View', 'Micro', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'];
     
     // 应用配置项
     protected $config;
@@ -90,7 +90,7 @@ abstract class App
         if (self::$boot) {
             return;
         }
-        self::$boot = true
+        self::$boot = true;
         define('FW_DIR', __DIR__.'/');
         defined('APP_DEBUG')|| define('APP_DEBUG', false);
         defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
@@ -136,7 +136,7 @@ abstract class App
         if (self::$app) {
             return;
         }
-        if (in_array($app, self::$modes, true)) {
+        if (in_array($app, self::MODES, true)) {
             $class = 'framework\core\app\\'.$app;
         } elseif (is_subclass_of($app, __CLASS__)) {
             $class = $app;
@@ -171,6 +171,14 @@ abstract class App
         } else {
             self::$exit = $status;
         }
+    }
+    
+    /*
+     * 是否已退出应用
+     */
+    public static function isExit()
+    {
+        return isset(self::$exit);
     }
     
     /*

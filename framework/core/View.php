@@ -96,8 +96,7 @@ class View
         } else {
             $path = dirname($file).'/'.$tpl;
         }
-        $layout = self::getTemplateFile($path, $tpl[0] !== '/');
-        if (is_file($layout)) {
+        if (is_file($layout = self::getTemplateFile($path, $tpl[0] !== '/'))) {
             if (filemtime($file) < filemtime($layout)) {
                 if (self::complie(self::getTemplateFile(substr($file, 0, -4)), $file, file_get_contents($layout))) {
                     if (extension_loaded('opcache')) {

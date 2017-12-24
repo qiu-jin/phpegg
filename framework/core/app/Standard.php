@@ -62,8 +62,7 @@ class Standard extends App
     {
         $path = Request::pathArr();
         foreach ($this->config['dispatch_mode'] as $mode) {
-            $dispatch = $this->{$mode.'Dispatch'}($path);
-            if ($dispatch) {
+            if ($dispatch = $this->{$mode.'Dispatch'}($path)) {
                 return $dispatch;
             }
         }
@@ -147,14 +146,14 @@ class Standard extends App
             } else {
                 if ($depth > 0) {
                     if ($count > $depth) {
-                        if ($count == $depth+1) {
+                        if ($count == $depth + 1) {
                             $action = array_pop($path);
                             $controller_array = $path;
                         } else {
                             if ($param_mode > 0) {
                                 $action = $path[$depth];
                                 $controller_array = array_slice($path, 0, $depth);
-                                $params = array_slice($path, $depth+1);
+                                $params = array_slice($path, $depth + 1);
                                 if ($param_mode === 2) {
                                     $params = $this->getKvParams($params);
                                 }
@@ -187,8 +186,7 @@ class Standard extends App
             }
         }
         if ($action[0] !== '_' && $class = $this->getControllerClass($controller, isset($check))) {
-            $controller_instance = new $class();
-            if (is_callable([$controller_instance, $action])) {
+            if (is_callable([$controller_instance = new $class(), $action])) {
                 return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
             }
         }
@@ -204,8 +202,7 @@ class Standard extends App
             if (is_string($routes = $this->config['route_dispatch_routes'])) {
                 $routes = Config::flash($routes);
             }
-            $dispatch = Router::dispatch($path, $routes, $param_mode);
-            if ($dispatch) {
+            if ($routes && $dispatch = Router::dispatch($path, $routes, $param_mode)) {
                 if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->getControllerClass($controller);
@@ -226,15 +223,13 @@ class Standard extends App
         if (isset($this->config['route_dispatch_action_routes'])) {
             if (isset($this->dispatch['route'])) {
                 return $this->actionRouteDispatch($param_mode, ...$this->dispatch['route']);
-            } else {
-                $depth = $this->config['controller_depth'];
-                if ($depth < 1) {
-                    throw new \Exception('If enable action route, must controller_depth > 0');
-                }
-                if (count($path) >= $depth) {
-                    $controller = implode('\\', array_slice($path, 0, $depth));
-                    return $this->actionRouteDispatch($param_mode, $controller, array_slice($path, $depth));
-                }
+            }
+            if (($depth = $this->config['controller_depth']) < 1) {
+                throw new \Exception('If enable action route, must controller_depth > 0');
+            }
+            if (count($path) >= $depth) {
+                $controller = implode('\\', array_slice($path, 0, $depth));
+                return $this->actionRouteDispatch($param_mode, $controller, array_slice($path, $depth));
             }
         }
     }
@@ -248,20 +243,17 @@ class Standard extends App
         $property = $this->config['route_dispatch_action_routes'];
         if (property_exists($class, $property)) {
             $routes = (new \ReflectionClass($class))->getDefaultProperties()[$property] ?? null;
-            if ($routes) {
-                $dispatch = Router::dispatch($path, $routes, $param_mode);
-                if ($dispatch) {
-                    if ($this->config['route_dispatch_protected_access']) {
-                        $this->checkMethodAccessible($class, $dispatch[0]);
-                    }
-                    return [
-                        'controller'            => $controller,
-                        'controller_instance'   => new $class,
-                        'action'                => $dispatch[0],
-                        'params'                => $dispatch[1],
-                        'param_mode'            => $param_mode
-                    ];
+            if ($routes && $dispatch = Router::dispatch($path, $routes, $param_mode)) {
+                if ($this->config['route_dispatch_protected_access']) {
+                    $this->checkMethodAccessible($class, $dispatch[0]);
                 }
+                return [
+                    'controller'            => $controller,
+                    'controller_instance'   => new $class,
+                    'action'                => $dispatch[0],
+                    'params'                => $dispatch[1],
+                    'param_mode'            => $param_mode
+                ];
             }
         }
     }

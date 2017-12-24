@@ -38,6 +38,7 @@ class Cli extends App
         if (!App::IS_CLI) {
             throw new \RuntimeException('NOT CLI SAPI');
         }
+        
     }
     
     protected function call()

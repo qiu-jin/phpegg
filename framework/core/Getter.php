@@ -22,4 +22,24 @@ trait Getter
         }
         throw new \Exception('Undefined property: '.__CLASS__.'::$'.$name);
     }
+    
+    private function __makeNs($ns)
+    {
+        return new class($ns, $depth) {
+            protected $__ns;
+            protected $__depth;
+            public function __construct($ns, $depth) {
+                $this->__ns = $ns;
+                $this->__depth = $depth - 1;
+            }
+            public function __get($name) {
+                $this->__ns[] = $name;
+                if ($this->__depth > 0) {
+                    return $this->$name = new self($this->__ns, $this->__depth);
+                } else {
+                    return $this->$name = Container::model(implode('\\', $this->__ns));
+                }
+            }
+        };
+    }
 }

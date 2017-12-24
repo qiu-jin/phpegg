@@ -135,7 +135,7 @@ class Container
     protected static function makeModel($type, ...$ns)
     {
         $depth = self::$providers['model'][$type];
-        return $ns ? self::makeModelInstance($type, ...$ns) : self::makeModelNs([$type], $depth);
+        return $ns ? self::makeModelInstance($type, ...$ns) : self::makeNs([$type], $depth);
     }
 
     protected static function makeDriver($type, $index = null)
@@ -164,7 +164,7 @@ class Container
         return self::get(self::$providers['alias'][$name]);
     }
     
-    protected static function makeModelNs($ns, $depth)
+    protected static function makeNs($ns, $depth)
     {
         return new class($ns, $depth) {
             protected $__ns;
@@ -175,8 +175,11 @@ class Container
             }
             public function __get($name) {
                 $this->__ns[] = $name;
-                return $this->$name = $this->__depth < 1 ? Container::model(implode('.', $this->__ns))
-                                                         : new self($this->__ns, $this->__depth);
+                if ($this->__depth > 0) {
+                    return $this->$name = new self($this->__ns, $this->__depth);
+                } else {
+                    return $this->$name = Container::model(implode('.', $this->__ns));
+                }
             }
         };
     }
