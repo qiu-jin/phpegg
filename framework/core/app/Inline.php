@@ -89,7 +89,7 @@ class Inline extends App
             } else {
                 $controller = strtr($path, '-', '_');
             }
-            if (empty($this->config['default_dispatch_controllers'])) {
+            if (!isset($this->config['default_dispatch_controllers'])) {
                 if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)) {
                     if (is_php_file($controller_file = $this->getControllerFile($controller))) {
                         return compact('controller', 'controller_file');

@@ -178,7 +178,7 @@ class Standard extends App
                     $controller_array[] = Str::toCamel(array_pop($controller_array), $this->config['default_dispatch_to_camel']);
                 }
                 $controller = implode('\\', $controller_array);
-                if (empty($this->config['default_dispatch_controllers'])) {
+                if (!isset($this->config['default_dispatch_controllers'])) {
                     $check = true;
                 } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
                     return;

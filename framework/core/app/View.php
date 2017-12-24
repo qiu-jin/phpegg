@@ -68,7 +68,7 @@ class View extends App
             if ($this->config['default_dispatch_hyphen_to_underscore']) {
                 $path = strtr($path, '-', '_');
             }
-            if (empty($this->config['default_dispatch_views'])) {
+            if (!isset($this->config['default_dispatch_views'])) {
                 if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $path)) {
                     $view = Config::get('view.dir', APP_DIR.'view/').$path;
                     if (is_php_file("$view.php") || (Config::has('view.template') && is_file(CoreView::getTemplateFile($path, true)))) {

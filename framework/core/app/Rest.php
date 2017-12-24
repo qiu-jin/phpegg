@@ -23,6 +23,8 @@ class Rest extends App
         'controller_suffix' => null,
         // request参数是否转为控制器方法参数
         'bind_request_params'   => null,
+        // 解析request body并注入到post
+        'parse_request_to_post' => false,
         // 默认调度的路径转为驼峰风格
         'default_dispatch_to_camel' => null,
         /* 默认调度的参数模式
@@ -73,7 +75,9 @@ class Rest extends App
 
     protected function call()
     {
-        $this->setPostParams();
+        if ($this->config['parse_request_to_post']) {
+            $this->setPostParams();
+        }
         extract($this->dispatch, EXTR_SKIP);
         if ($param_mode) {
             $reflection_method = new \ReflectionMethod($controller, $action);
@@ -183,7 +187,7 @@ class Rest extends App
                 $path[$depth] = Str::toCamel($path[$depth], $this->config['resource_dispatch_controller_to_camel']);
             }
             $controller = implode('\\', array_slice($path, 0, $depth));
-            if (empty($this->config['resource_dispatch_controllers'])) {
+            if (!isset($this->config['resource_dispatch_controllers'])) {
                 $check = true;
             } elseif (!in_array($controller, $this->config['resource_dispatch_controllers'], true)) {
                 return;
@@ -283,8 +287,7 @@ class Rest extends App
      */
     protected function setPostParams()
     {
-        $type = Request::header('Content-Type');
-        if ($type) {
+        if ($type = Request::header('Content-Type')) {
             switch (trim(strtok(strtolower($type), ';'))) {
                 case 'application/json':
                     Request::set('post', jsondecode(Request::body()));

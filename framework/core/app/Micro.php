@@ -75,7 +75,7 @@ class Micro extends App
     protected function defaultDispatch()
     {
         list($controller, $action, $params) = $this->dispatch['default'];
-        if (empty($this->config['default_dispatch_controllers'])) {
+        if (!isset($this->config['default_dispatch_controllers'])) {
             $check = true;
         } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
             return;
