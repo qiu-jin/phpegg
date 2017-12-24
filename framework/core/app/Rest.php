@@ -35,17 +35,17 @@ class Rest extends App
         'default_dispatch_controllers' => null,
         // 默认调度下允许的HTTP方法
         'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/],
-        // 资源调度的控制器路径转为驼峰风格
-        'resource_dispatch_to_camel' => null,
         // 资源调度的控制器，为空不限制
         'resource_dispatch_controllers' => null,
         // 资源调度默认路由表
-        'resource_dispatch_routes'=> [
+        'resource_dispatch_routes' => [
             '/'     => ['GET' => 'index', 'POST' => 'create'],
             '*'     => ['GET' => 'show',  'PUT'  => 'update', 'DELETE' => 'destroy'],
             'create'=> ['GET' => 'new'],
             '*/edit'=> ['GET' => 'edit']
         ],
+        // 资源调度的控制器路径转为驼峰风格
+        'resource_dispatch_controller_to_camel' => null,
         /* 路由调度的参数模式
          * 0 无参数
          * 1 循序参数
@@ -179,11 +179,10 @@ class Rest extends App
             $controller = $this->dispatch['route'][0];
             $action_path = $this->dispatch['route'][1];
         } elseif (count($path) >= $depth) {
-            $controller_array = array_slice($path, 0, $depth)
-            if (!empty($this->config['resource_dispatch_to_camel'])) {
-                $controller_array[] = Str::toCamel(array_pop($controller_array), $this->config['resource_dispatch_to_camel']);
+            if (!empty($this->config['resource_dispatch_controller_to_camel'])) {
+                $path[$depth] = Str::toCamel($path[$depth], $this->config['resource_dispatch_controller_to_camel']);
             }
-            $controller = implode('\\', $controller_array);
+            $controller = implode('\\', array_slice($path, 0, $depth));
             if (empty($this->config['resource_dispatch_controllers'])) {
                 $check = true;
             } elseif (!in_array($controller, $this->config['resource_dispatch_controllers'], true)) {
