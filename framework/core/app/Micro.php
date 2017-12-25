@@ -77,7 +77,7 @@ class Micro extends App
             return;
         }
         if ($action[0] !== '_'
-            && $class = $this->getControllerClass($controller, isset($check))
+            && ($class = $this->getControllerClass($controller, isset($check)))
             && is_callable($call = [new $class, $action])
         ) {
             return [$call, $params];

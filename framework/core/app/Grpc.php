@@ -55,7 +55,7 @@ class Grpc extends App
                 return false;
             }
             if ($action[0] !== '_'
-                && $class = $this->getControllerClass($controller, isset($check))
+                && ($class = $this->getControllerClass($controller, isset($check)))
                 && is_callable([$controller_instance = new $class(), $action])
             ) {
                 return compact('action', 'controller', 'controller_instance');

@@ -188,7 +188,7 @@ class Jsonrpc extends App
                 $action = array_pop($method_array);
                 $controller = implode('\\', $method_array);
                 if ($action[0] !== '_'
-                    && $controller_instance = $this->makeControllerInstance($controller)
+                    && ($controller_instance = $this->makeControllerInstance($controller))
                     && is_callable([$controller_instance, $action])
                 ) {
                     $params = $item['params'] ?? [];

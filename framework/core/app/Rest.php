@@ -158,7 +158,7 @@ class Rest extends App
                 return;
             }
         }
-        if ($class = $this->getControllerClass($controller, isset($check))
+        if (($class = $this->getControllerClass($controller, isset($check)))
             && is_callable([$ccontroller_instance = new $class(), $this->method])
         ) {
             return [
@@ -196,8 +196,8 @@ class Rest extends App
         } else {
             return;
         }
-        if ($dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method)
-            && $class = $this->getControllerClass($controller, isset($check))
+        if (($dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method))
+            && ($class = $this->getControllerClass($controller, isset($check)))
             && is_callable([$controller_instance = new $class(), $dispatch[0]])
         ) {
             return [
@@ -220,7 +220,7 @@ class Rest extends App
             if (is_string($routes = $this->config['route_dispatch_routes'])) {
                 $routes = Config::flash($routes);
             }
-            if ($routes && $dispatch = Router::dispatch($path, $routes, $param_mode, $this->method)) {
+            if ($routes && ($dispatch = Router::dispatch($path, $routes, $param_mode, $this->method))) {
                 if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->getControllerClass($controller);
@@ -254,9 +254,9 @@ class Rest extends App
      */
     protected function actionRouteDispatch($param_mode, $controller, $path)
     {
-        if ($vars = get_class_vars($class = $this->getControllerClass($controller))
+        if (($vars = get_class_vars($class = $this->getControllerClass($controller)))
             && isset($vars[$this->config['route_dispatch_action_routes']])
-            && $dispatch = Router::dispatch($path, $vars[$this->config['route_dispatch_action_routes']], $param_mode)
+            && ($dispatch = Router::dispatch($path, $vars[$this->config['route_dispatch_action_routes']], $param_mode))
         ) {
             return [
                 'controller'            => $controller,
