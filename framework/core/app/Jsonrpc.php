@@ -184,16 +184,15 @@ class Jsonrpc extends App
     {
         $id = $item['id'] ?? null;
         if (isset($item['method'])) {
-            $method_array = explode('.', $item['method']);
-            if (count($method_array) > 1) {
+            if (count($method_array = explode('.', $item['method'])) > 1) {
                 $action = array_pop($method_array);
-                if ($action[0] !== '_' ) {
-                    $controller = implode('\\', $method_array);
-                    $controller_instance = $this->makeControllerInstance($controller);
-                    if ($controller_instance && is_callable([$controller_instance, $action])) {
-                        $params = $item['params'] ?? [];
-                        return compact('id', 'action', 'controller', 'controller_instance', 'params');
-                    }
+                $controller = implode('\\', $method_array);
+                if ($action[0] !== '_'
+                    && $controller_instance = $this->makeControllerInstance($controller)
+                    && is_callable([$controller_instance, $action])
+                ) {
+                    $params = $item['params'] ?? [];
+                    return compact('id', 'action', 'controller', 'controller_instance', 'params');
                 }
             }
             $error = ['code' => -32601, 'message' => 'Method not found'];

@@ -93,6 +93,11 @@ function error($message, $limit = 1)
     return (bool) Error::set($message, E_USER_ERROR, $limit+1);
 }
 
+function instance($class, ...$params)
+{
+    return new $class(...$params);
+}
+
 function jsonencode($data)
 {
     return json_encode($data, JSON_UNESCAPED_UNICODE);

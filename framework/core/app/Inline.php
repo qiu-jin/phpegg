@@ -62,7 +62,7 @@ class Inline extends App
 
     protected function error($code = null, $message = null)
     {
-        if (is_int($code) && $code >= 100 && $code < 1000) {
+        if ($code >= 100 && $code < 1000) {
             Response::status($code);
         }
         if ($this->config['enable_view']) {
@@ -90,10 +90,10 @@ class Inline extends App
                 $controller = strtr($path, '-', '_');
             }
             if (!isset($this->config['default_dispatch_controllers'])) {
-                if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)) {
-                    if (is_php_file($controller_file = $this->getControllerFile($controller))) {
-                        return compact('controller', 'controller_file');
-                    }
+                if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)
+                    && is_php_file($controller_file = $this->getControllerFile($controller))
+                ) {
+                    return compact('controller', 'controller_file');
                 }
                 return;
             } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {

@@ -40,8 +40,7 @@ class Grpc extends App
     
     protected function dispatch()
     {
-        $path_array = Request::pathArr();
-        if (count($path_array) === 2) {
+        if (count($path_array = Request::pathArr()) === 2) {
             $action = $path_array[1];
             $controller_array = explode('.', $path_array[0]);
             if ($this->config['ignore_service_prefix'] > 0) {
@@ -55,11 +54,11 @@ class Grpc extends App
             } elseif (!in_array($controller, $this->config['dispatch_controllers'], true)) {
                 return false;
             }
-            if ($action[0] !== '_' && $class = $this->getControllerClass($controller, isset($check))) {
-                $controller_instance = new $class();
-                if (is_callable([$controller_instance, $action])) {
-                    return compact('action', 'controller', 'controller_instance');
-                }
+            if ($action[0] !== '_'
+                && $class = $this->getControllerClass($controller, isset($check))
+                && is_callable([$controller_instance = new $class(), $action])
+            ) {
+                return compact('action', 'controller', 'controller_instance');
             }
         }
         return false;
@@ -67,7 +66,7 @@ class Grpc extends App
     
     protected function call()
     {
-        if ($this->config['service_schemes']) {
+        if (isset($this->config['service_schemes'])) {
             foreach ($this->config['service_schemes'] as $type => $rules) {
                 Loader::add($type, $rules);
             }
@@ -94,8 +93,7 @@ class Grpc extends App
     
     protected function readParams()
     {
-        $body = Request::body();
-        if (strlen($body) > 5) {
+        if ($body = Request::body() && strlen($body) > 5) {
             extract(unpack('Cencode/Nzise/a*message', $body), EXTR_SKIP);
             if ($zise === strlen($message)) {
                 return $message;

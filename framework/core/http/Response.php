@@ -44,7 +44,7 @@ class Response
      */
     public static function status($code = 200)
     {
-        self::$response->status = Status::CODE[$code] ?? 500;
+        self::$response->status = isset(Status::CODE[$code]) ? $code : 500;
     }
     
     /*

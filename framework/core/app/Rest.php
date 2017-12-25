@@ -63,8 +63,8 @@ class Rest extends App
     
     protected function dispatch()
     {
-        $this->method = Request::method();
         $path = Request::pathArr();
+        $this->method = Request::method();
         foreach ($this->config['dispatch_mode'] as $mode) {
             if ($dispatch = $this->{$mode.'Dispatch'}($path)) {
                 return $dispatch;
@@ -84,7 +84,7 @@ class Rest extends App
             if ($param_mode === 1) {
                 $params = Controller::methodBindListParams($reflection_method, $params);
             } elseif ($param_mode === 2) {
-                if ($this->config['bind_request_params']) {
+                if (isset($this->config['bind_request_params'])) {
                     foreach ($this->config['bind_request_params'] as $param) {
                         if ($request_param = Request::{$param}()) {
                             $params = $request_param + $params;
@@ -119,8 +119,8 @@ class Rest extends App
         if (!in_array($this->method, $this->config['default_dispatch_http_methods'], true)) {
             return;
         }
-        $count = count($path);
-        $depth = $this->config['controller_depth'];
+        $count      = count($path);
+        $depth      = $this->config['controller_depth'];
         $param_mode = $this->config['default_dispatch_param_mode'];
         if (isset($this->dispatch['route'])) {
             $controller = $this->dispatch['route'][0];
@@ -152,22 +152,22 @@ class Rest extends App
                 $controller_array[] = Str::toCamel(array_pop($controller_array), $this->config['default_dispatch_to_camel']);
             }
             $controller = implode('\\', $controller_array);
-            if (empty($this->config['default_dispatch_controllers'])) {
+            if (!isset($this->config['default_dispatch_controllers'])) {
                 $check = true;
             } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
                 return;
             }
         }
-        if ($class = $this->getControllerClass($controller, isset($check))) {
-            if (is_callable([$ccontroller_instance = new $class(), $this->method])) {
-                return [
-                    'controller'            => $controller,
-                    'ccontroller_instance'  => $ccontroller_instance,
-                    'action'                => $this->method,
-                    'params'                => $params ?? [],
-                    'param_mode'            => $param_mode
-                ];
-            }
+        if ($class = $this->getControllerClass($controller, isset($check))
+            && is_callable([$ccontroller_instance = new $class(), $this->method])
+        ) {
+            return [
+                'controller'            => $controller,
+                'ccontroller_instance'  => $ccontroller_instance,
+                'action'                => $this->method,
+                'params'                => $params ?? [],
+                'param_mode'            => $param_mode
+            ];
         }
     }
     
@@ -196,17 +196,17 @@ class Rest extends App
         } else {
             return;
         }
-        if ($dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method)) {
-            $class = $this->getControllerClass($controller, isset($check));
-            if ($class && is_callable([$controller_instance = new $class(), $dispatch[0]])) {
-                return [
-                    'controller'            => $controller,
-                    'controller_instance'   => $controller_instance,
-                    'action'                => $dispatch[0],
-                    'params'                => $dispatch[1],
-                    'param_mode'            => 0
-                ];
-            }
+        if ($dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method)
+            && $class = $this->getControllerClass($controller, isset($check))
+            && is_callable([$controller_instance = new $class(), $dispatch[0]])
+        ) {
+            return [
+                'controller'            => $controller,
+                'controller_instance'   => $controller_instance,
+                'action'                => $dispatch[0],
+                'params'                => $dispatch[1],
+                'param_mode'            => 0
+            ];
         }
     }
     
@@ -254,19 +254,17 @@ class Rest extends App
      */
     protected function actionRouteDispatch($param_mode, $controller, $path)
     {
-        $class = $this->getControllerClass($controller);
-        $property = $this->config['route_dispatch_action_routes'];
-        if (property_exists($class, $property)) {
-            $routes = (new \ReflectionClass($class))->getDefaultProperties()[$property] ?? null;
-            if ($routes && $dispatch = Router::dispatch($path, $routes, $param_mode, $this->method)) {
-                return [
-                    'controller'            => $controller,
-                    'controller_instance'   => new $class,
-                    'action'                => $action,
-                    'params'                => $dispatch[1],
-                    'param_mode'            => $param_mode
-                ];
-            }
+        if ($vars = get_class_vars($class = $this->getControllerClass($controller))
+            && isset($vars[$this->config['route_dispatch_action_routes']])
+            && $dispatch = Router::dispatch($path, $vars[$this->config['route_dispatch_action_routes']], $param_mode)
+        ) {
+            return [
+                'controller'            => $controller,
+                'controller_instance'   => new $class,
+                'action'                => $dispatch[0],
+                'params'                => $dispatch[1],
+                'param_mode'            => $param_mode
+            ];
         }
     }
 
@@ -288,7 +286,7 @@ class Rest extends App
     protected function setPostParams()
     {
         if ($type = Request::header('Content-Type')) {
-            switch (trim(strtok(strtolower($type), ';'))) {
+            switch (trim(strtolower(strtok($type, ';')))) {
                 case 'application/json':
                     Request::set('post', jsondecode(Request::body()));
                     break;

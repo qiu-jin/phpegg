@@ -2,7 +2,7 @@
 namespace framework\core\app;
 
 use framework\App;
-use framework\core\Loader;
+use framework\core\Command;
 
 class Cli extends App
 {
@@ -11,26 +11,21 @@ class Cli extends App
         'controller_ns' => 'command',
         // 控制器类名后缀
         'controller_suffix' => null,
+        // 默认调度的控制器，为空不限制
+        'default_dispatch_controllers' => null,
     ];
     
-    public function command($name, callback $call)
+    public function command(...$params)
     {
-        $this->dispatch[$name] = $call;
-    }
-    
-    public function input()
-    {
-
-    }
-    
-    public function output()
-    {
-
-    }
-    
-    public function options($name, $default = null)
-    {
-        
+        $count = count($params);
+        if ($count === 1) {
+            $this->dispatch[null] = $params[0];
+            return $this
+        } elseif ($count === 2) {
+            $this->dispatch[$params[0]] = $params[1];
+            return $this
+        }
+        throw new \RuntimeException('Command params error');
     }
     
     protected function dispatch()
@@ -51,8 +46,5 @@ class Cli extends App
         
     }
     
-    protected function response($return = null)
-    {
-
-    }
+    protected function response($return = null) {}
 }

@@ -16,8 +16,7 @@ class Graphql extends App
     
     protected function dispatch()
     {
-        $body = Request::body();
-        if ($body && $query = $this->parseBody($body)) {
+        if ($body = Request::body() && $query = $this->parseBody($body)) {
             return compact('query');
         }
     }

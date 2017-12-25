@@ -157,7 +157,7 @@ class Config
      */
     private static function load($name)
     {
-        $file = self::$dir.$name.'.php';
+        $file = self::$dir."$name.php";
         if (is_php_file($file) && is_array($config = __include($file))) {
             return $config;
         }

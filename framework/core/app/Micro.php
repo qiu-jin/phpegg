@@ -2,7 +2,6 @@
 namespace framework\core\app;
 
 use framework\App;
-use framework\core\View;
 use framework\core\Getter;
 use framework\core\Router;
 use framework\core\http\Request;
@@ -39,8 +38,7 @@ class Micro extends App
     
     public function __call($method, $params)
     {
-        $method = strtoupper($method);
-        if (in_array($method, $this->config['route_dispatch_http_methods'])) {
+        if (in_array($method = strtoupper($method), $this->config['route_dispatch_http_methods'])) {
             $this->dispatch['route'][$params[0]][$method] = $params[1];
             return $this;
         }
@@ -55,10 +53,8 @@ class Micro extends App
     protected function call()
     {
         foreach ($this->config['dispatch_mode'] as $mode) {
-            if (isset($this->dispatch[$mode])) {
-                if ($dispatch = $this->{$mode.'Dispatch'}()) {
-                    return $dispatch[0](...$dispatch[1]);
-                }
+            if (isset($this->dispatch[$mode]) && $dispatch = $this->{$mode.'Dispatch'}()) {
+                return $dispatch[0](...$dispatch[1]);
             }
         }
         self::abort(404);
@@ -67,7 +63,7 @@ class Micro extends App
     protected function error($code = null, $message = null)
     {
         Response::status($code ?: 500);
-        Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
+        Response::send("Error[$code]:\r\n".var_export($message, true), null, false);
     }
     
     protected function response($return = null) {}
@@ -80,31 +76,31 @@ class Micro extends App
         } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
             return;
         }
-        if ($action[0] !== '_' && $class = $this->getControllerClass($controller, isset($check))) {
-            if (is_callable($call = [new $class, $action])) {
-                return [$call, $params];
-            }
+        if ($action[0] !== '_'
+            && $class = $this->getControllerClass($controller, isset($check))
+            && is_callable($call = [new $class, $action])
+        ) {
+            return [$call, $params];
         }
     }
     
     protected function routeDispatch()
     {
-        $method = Request::method();
-        if (in_array($method, $this->config['route_dispatch_http_methods'], true)) {
-            if ($result = Router::route(Request::pathArr(), $this->dispatch['route'], $method)) {
-                if (is_callable($result[0])) {
-                    if ($this->config['route_dispatch_closure_getter'] && $result[0] instanceof \Closure) {
-                        return [\Closure::bind($result[0], new class () {
-                            use Getter;
-                        }), $result[1]];
-                    }
-                    return $result;
-                } else {
-                    $dispatch = Router::parse($result, 1);
-                    list($controller, $action) = explode('::', $dispatch[0]);
-                    $class = $this->getControllerClass($controller);
-                    return [[new $class, $action], $dispatch[1]];
+        if (in_array($method = Request::method(), $this->config['route_dispatch_http_methods'], true)
+            && $result = Router::route(Request::pathArr(), $this->dispatch['route'], $method)
+        ) {
+            if (is_callable($result[0])) {
+                if ($this->config['route_dispatch_closure_getter'] && $result[0] instanceof \Closure) {
+                    return [\Closure::bind($result[0], new class () {
+                        use Getter;
+                    }), $result[1]];
                 }
+                return $result;
+            } else {
+                $dispatch = Router::parse($result, 1);
+                list($controller, $action) = explode('::', $dispatch[0]);
+                $class = $this->getControllerClass($controller);
+                return [[new $class, $action], $dispatch[1]];
             }
         }
     }

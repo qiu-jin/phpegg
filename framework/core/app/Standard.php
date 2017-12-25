@@ -77,7 +77,7 @@ class Standard extends App
             if ($param_mode === 1) {
                 $params = Controller::methodBindListParams($reflection_method, $params, $this->config['missing_params_to_null']);
             } elseif ($param_mode === 2) {
-                if ($this->config['bind_request_params']) {
+                if (isset($this->config['bind_request_params'])) {
                     foreach ($this->config['bind_request_params'] as $param) {
                         if ($request_param = Request::{$param}()) {
                             $params = $request_param + $params;
@@ -95,7 +95,7 @@ class Standard extends App
     
     protected function error($code = null, $message = null)
     {
-        if (is_int($code) && $code >= 100 && $code < 1000) {
+        if ($code >= 100 && $code < 1000) {
             Response::status($code);
         }
         if ($this->config['enable_view']) {
@@ -119,9 +119,9 @@ class Standard extends App
      */
     protected function defaultDispatch($path) 
     {
-        $count = count($path);
-        $depth = $this->config['controller_depth'];
-        $params = [];
+        $params     = [];
+        $count      = count($path);
+        $depth      = $this->config['controller_depth'];
         $param_mode = $this->config['default_dispatch_param_mode'];
         if (empty($path)) {
             if (!isset($this->config['default_dispatch_index'])) {
@@ -185,10 +185,11 @@ class Standard extends App
                 }
             }
         }
-        if ($action[0] !== '_' && $class = $this->getControllerClass($controller, isset($check))) {
-            if (is_callable([$controller_instance = new $class(), $action])) {
-                return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
-            }
+        if ($action[0] !== '_'
+            && $class = $this->getControllerClass($controller, isset($check))
+            && is_callable([$controller_instance = new $class(), $action])
+        ) {
+            return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
         }
     }
     
@@ -239,22 +240,20 @@ class Standard extends App
      */
     protected function actionRouteDispatch($param_mode, $controller, $path)
     {
-        $class = $this->getControllerClass($controller);
-        $property = $this->config['route_dispatch_action_routes'];
-        if (property_exists($class, $property)) {
-            $routes = (new \ReflectionClass($class))->getDefaultProperties()[$property] ?? null;
-            if ($routes && $dispatch = Router::dispatch($path, $routes, $param_mode)) {
-                if ($this->config['route_dispatch_protected_access']) {
-                    $this->checkMethodAccessible($class, $dispatch[0]);
-                }
-                return [
-                    'controller'            => $controller,
-                    'controller_instance'   => new $class,
-                    'action'                => $dispatch[0],
-                    'params'                => $dispatch[1],
-                    'param_mode'            => $param_mode
-                ];
+        if ($vars = get_class_vars($class = $this->getControllerClass($controller))
+            && isset($vars[$this->config['route_dispatch_action_routes']])
+            && $dispatch = Router::dispatch($path, $vars[$this->config['route_dispatch_action_routes']], $param_mode)
+        ) {
+            if ($this->config['route_dispatch_protected_access']) {
+                $this->checkMethodAccessible($class, $dispatch[0]);
             }
+            return [
+                'controller'            => $controller,
+                'controller_instance'   => new $class,
+                'action'                => $dispatch[0],
+                'params'                => $dispatch[1],
+                'param_mode'            => $param_mode
+            ];
         }
     }
     

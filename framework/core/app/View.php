@@ -33,8 +33,7 @@ class View extends App
     {
         $path = trim(Request::path(), '/');
         foreach ($this->config['dispatch_mode'] as $mode) {
-            $dispatch = $this->{$mode.'Dispatch'}($path);
-            if ($dispatch) {
+            if ($dispatch = $this->{$mode.'Dispatch'}($path)) {
                 return $dispatch;
             }
         }
@@ -71,7 +70,9 @@ class View extends App
             if (!isset($this->config['default_dispatch_views'])) {
                 if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $path)) {
                     $view = Config::get('view.dir', APP_DIR.'view/').$path;
-                    if (is_php_file("$view.php") || (Config::has('view.template') && is_file(CoreView::getTemplateFile($path, true)))) {
+                    if (is_php_file("$view.php")
+                        || (Config::has('view.template') && is_file(CoreView::getTemplateFile($path, true)))
+                    ) {
                         return ['view' => $path];
                     }
                 }
