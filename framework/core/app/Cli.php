@@ -20,8 +20,11 @@ class Cli extends App
         // 匿名函数是否启用Getter魔术方法
         'enable_closure_getter' => true,
     ];
-    protected $arguments;
-    protected $is_single_command = false;
+    protected $command = [
+        'name'      => true,
+        'params'    => [],
+        'options'   => []
+    ];
 
     public function command(...$params)
     {
@@ -31,7 +34,7 @@ class Cli extends App
                 $this->dispatch = $params[0] + $this->dispatch;
             } else {
                 $this->dispatch = $params[0];
-                $this->is_single_command = true;
+                $this->command['name'] = null;
             }
             return $this;
         } elseif ($count === 2) {
@@ -55,7 +58,7 @@ class Cli extends App
     protected function call()
     {
         $name = '';
-        if ($this->is_single_command) {
+        if (!$this->command['name']) {
             $call = $this->dispatch;
         } elseif (isset($this->dispatch[$name])) {
             $call = $this->dispatch[$name];
@@ -95,14 +98,32 @@ class Cli extends App
     protected function parseArgv()
     {
         $argv = $_SERVER['argv'];
-        $script = array_shift($argv);
-        if (($count = count($_SERVER['argv'])) > 0) {
-            
+        array_shift($argv);
+        if ($this->command['name']) {
+            if (!$this->command['name'] = array_shift($argv)) {
+                self::abort(404);
+            }
         }
-    }
-    
-    protected function autoComplete()
-    {
-        
+        if (($count = count($argv)) > 0) {
+            $is_option = false;
+            for ($i = 0; $i < $count; $i++) {
+                if (!$is_option && strpos($argv[$i], '-') === false) {
+                    $this->command['params'][] = $argv[$i];
+                    continue;
+                }
+    			$is_option = true;
+    			if (substr($argv[$i], 0, 1) !== '-') {
+    				continue;
+    			}
+    			$arg = str_replace('-', '', $v);
+    			$value = null;
+    			if (isset($argv[$i + 1]) && mb_substr($argv[$i + 1], 0, 1) != '-') {
+    				$value = $argv[$i + 1];
+    				$i++;
+    			}
+    			$this->command['options'][$arg] = $value;
+    			$is_option = false;
+            }
+        }
     }
 }
