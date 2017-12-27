@@ -7,8 +7,6 @@ use framework\core\Config;
 
 abstract class App
 {
-    // 是否为命令行应用
-    const IS_CLI = PHP_SAPI === 'cli';
     // 版本号
     const VERSION = '1.0.0';
     // 内置支持的应用模式
@@ -152,7 +150,7 @@ abstract class App
         self::$app = new $class($config);
         self::$app->dispatch = self::$app->dispatch();
         Event::listen('dispatch', self::$app->dispatch);
-        if (self::$app->dispatch) {
+        if (self::$app->dispatch !== false) {
             return self::$app;
         }
         self::abort(404);

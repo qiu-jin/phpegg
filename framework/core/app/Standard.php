@@ -279,7 +279,7 @@ class Standard extends App
     protected function getKvParams(array $path)
     {
         $len = count($path);
-        for ($i = 1; $i < $len; $i = $i+2) {
+        for ($i = 1; $i < $len; $i = $i + 2) {
             $params[$path[$i-1]] = $path[$i];
         }
         return $params ?? [];

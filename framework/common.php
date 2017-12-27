@@ -98,6 +98,16 @@ function instance($class, ...$params)
     return new $class(...$params);
 }
 
+function input($name, ...$params)
+{
+    return Request::$name(...$params);
+}
+
+function output($name, ...$params)
+{
+    return $params ? Response::$name(...$params) : Response::send($name); 
+}
+
 function jsonencode($data)
 {
     return json_encode($data, JSON_UNESCAPED_UNICODE);
@@ -123,14 +133,3 @@ function __require($file)
     return require $file;
 }
 
-if (!App::IS_CLI) {
-    function input($name, ...$params)
-    {
-        return Request::$name(...$params);
-    }
-
-    function output($name, ...$params)
-    {
-        return $params ? Response::$name(...$params) : Response::send($name); 
-    }
-}

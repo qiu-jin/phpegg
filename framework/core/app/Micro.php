@@ -53,7 +53,7 @@ class Micro extends App
     protected function call()
     {
         foreach ($this->config['dispatch_mode'] as $mode) {
-            if (isset($this->dispatch[$mode]) && $dispatch = $this->{$mode.'Dispatch'}()) {
+            if (isset($this->dispatch[$mode]) && ($dispatch = $this->{$mode.'Dispatch'}())) {
                 return $dispatch[0](...$dispatch[1]);
             }
         }
