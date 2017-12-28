@@ -16,13 +16,7 @@ class Cli extends App
         // 匿名函数是否启用Getter魔术方法
         'enable_closure_getter' => true,
     ];
-    
-    protected $parsed_argv = [
-        'script'    => null,
-        'name'      => true,
-        'params'    => [],
-        'options'   => []
-    ];
+    protected $parsed_argv;
     protected $enable_readline = false;
 
     public function command(...$params)
@@ -75,14 +69,14 @@ class Cli extends App
     protected function call()
     {
         $this->parseArgv();
-        if (!$name = $this->parsed_argv['name']) {
-            $call = $this->dispatch;
+        if (($name = $this->parsed_argv['name']) === null) {
+            $dispatch = $this->dispatch;
         } elseif (isset($this->dispatch[$name])) {
-            $call = $this->dispatch[$name];
+            $dispatch = $this->dispatch[$name];
         } else {
             self::abort(404);
         }
-        if ($call instanceof \Closure) {
+        if ($dispatch instanceof \Closure) {
             if (empty($this->config['enable_closure_getter'])) {
                 $command = new class ($this) extends Command {};
             } else {
@@ -90,15 +84,15 @@ class Cli extends App
                     use Getter;
                 };
             }
-            $ref  = new \ReflectionFunction($call);
-            $call = \Closure::bind($call, $command, Command::class);
+            $ref  = new \ReflectionFunction($dispatch);
+            $call = \Closure::bind($dispatch, $command, Command::class);
         } else {
-            if (!is_subclass_of($call, Command::class)) {
+            if (!is_subclass_of($dispatch, Command::class)) {
                 throw new \RuntimeException('call error');
             }
             $method = $this->config['default_call_method'] ?? '__invoke';
-            $ref    = new \ReflectionMethod($call, $method);
-            $call   = [new $call($this), $method];
+            $ref    = new \ReflectionMethod($dispatch, $method);
+            $call   = [new $dispatch($this), $method];
         }
         if (($params = Controller::methodBindListParams($ref, $this->parsed_argv['params'])) === false) {
             self::abort(400);
@@ -120,11 +114,9 @@ class Cli extends App
     protected function parseArgv()
     {
         $argv = $_SERVER['argv'];
-        $this->parsed_argv['script'] = array_shift($argv);
-        if ($this->parsed_argv['name']) {
-            if (!$this->parsed_argv['name'] = array_shift($argv)) {
-                self::abort(404);
-            }
+        array_shift($argv);
+        if (empty($this->parsed_argv) && !($this->parsed_argv['name'] = array_shift($argv))) {
+            self::abort(404);
         }
         if (($count = count($argv)) > 0) {
             $is_option = false;
