@@ -3,7 +3,7 @@ namespace framework\core;
 
 class Controller
 {
-    public static function methodBindKvParams(\ReflectionMethod $reflection_method, $params, $default_null = false)
+    public static function methodBindKvParams($reflection_method, $params, $default_null = false)
     {
         if ($reflection_method->getnumberofparameters() > 0) {
             foreach ($reflection_method->getParameters() as $param) {
@@ -21,7 +21,7 @@ class Controller
         return $new_params ?? [];
     }
     
-    public static function methodBindListParams(\ReflectionMethod $reflection_method, $params, $default_null = false)
+    public static function methodBindListParams($reflection_method, $params, $default_null = false)
     {
         $count = count($params);
         $number = $reflection_method->getnumberofparameters();
