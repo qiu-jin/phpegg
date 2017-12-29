@@ -11,13 +11,44 @@ class Cli extends App
     protected $config = [
         // 默认命令
         'default_commands' => null,
-        // 
+        // 默认调用的方法，为空则使用__invoke
         'default_call_method' => null,
         // 匿名函数是否启用Getter魔术方法
         'enable_closure_getter' => true,
     ];
     protected $parsed_argv;
     protected $enable_readline = false;
+    protected $styles = [
+        'color' => [
+    		'black'         => '0;30',
+    		'dark_gray'     => '1;30',
+    		'blue'          => '0;34',
+    		'dark_blue'     => '1;34',
+    		'light_blue'    => '1;34',
+    		'green'         => '0;32',
+    		'light_green'   => '1;32',
+    		'cyan'          => '0;36',
+    		'light_cyan'    => '1;36',
+    		'red'           => '0;31',
+    		'light_red'     => '1;31',
+    		'purple'        => '0;35',
+    		'light_purple'  => '1;35',
+    		'light_yellow'  => '0;33',
+    		'yellow'        => '1;33',
+    		'light_gray'    => '0;37',
+    		'white'         => '1;37',
+        ],
+        'background' => [
+            'black'         => '40',
+            'red'		    => '41',
+            'green'		    => '42',
+            'yellow'	    => '43',
+    		'blue'		    => '44',
+    		'magenta'	    => '45',
+    		'cyan'		    => '46',
+    		'light_gray'    => '47',
+        ]
+    ];
 
     public function command(...$params)
     {
@@ -39,15 +70,34 @@ class Cli extends App
     
     public function read($prompt = null)
     {
-		if ($this->enable_readline){
+		if ($this->enable_readline) {
 			return readline($prompt);
-		}
-		echo $prompt;
+		} elseif ($prompt !== null) {
+            $this->write($prompt);
+        }
 		return fgets(STDIN);
     }
     
-    public function write($text)
+    public function write($text, $style = null)
     {
+        if ($style) {
+            $str = '';
+            if (isset($style['color']) && isset($this->styles['color'][$style['color']])) {
+                $str .= "\033[".$this->styles['color'][$style['color']]."m";
+            }
+            if (isset($style['background']) && isset($this->styles['background'][$style['background']])) {
+                $str .= "\033[".$this->styles['background'][$style['background']]."m";
+            }
+            if (!empty($style['underline'])) {
+                $str .= "\033[4m";
+            }
+            if ($str) {
+                $text = $str.$text."\033[0m";
+            }
+            if (!empty($style['newline'])) {
+                $text .= PHP_EOL;
+            }
+        }
         fwrite(STDOUT, $text);
     }
     

@@ -36,14 +36,24 @@ abstract class Command
         
     }
     
-    protected function write($text)
+    protected function write($text, $style = null)
     {
-        $this->app->write($text);
+        $this->app->write($text, $style);
     }
     
-    protected function writeln($text)
+    protected function writeln($text, $style = null)
     {
-        $this->app->write($text.PHP_EOL);
+        $this->app->write($text, ['newline' => true] + $style);
+    }
+    
+    protected function error($text)
+    {
+        $this->writeln($text, ['color' => 'red']);
+    }
+    
+    protected function info($text)
+    {
+        $this->writeln($text, ['color' => 'green']);
     }
     
     protected function param(int $index = null)
