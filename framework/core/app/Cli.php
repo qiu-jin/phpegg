@@ -11,6 +11,8 @@ class Cli extends App
     protected $config = [
         // 默认命令
         'default_commands' => null,
+        // 
+        'enable_readline'  => true,
         // 默认调用的方法，为空则使用__invoke
         'default_call_method' => null,
         // 匿名函数是否启用Getter魔术方法
@@ -19,7 +21,8 @@ class Cli extends App
     protected $parsed_argv;
     protected $enable_readline = false;
     protected $styles = [
-        'color' => [
+        'underline' => '4',
+        'foreground' => [
     		'black'         => '0;30',
     		'dark_gray'     => '1;30',
     		'blue'          => '0;34',
@@ -68,11 +71,18 @@ class Cli extends App
         throw new \RuntimeException('Command params error');
     }
     
-    public function read($prompt = null)
+    public function read($prompt = null, array $auto_complete = null)
     {
 		if ($this->enable_readline) {
-			return readline($prompt);
-		} elseif ($prompt !== null) {
+            if (!$auto_complete) {
+                return readline($prompt);
+            }
+            $this->setAutoComplete($auto_complete);
+            $input = readline($prompt);
+            $this->unsetAutoComplete();
+            return $input;
+		}
+        if ($prompt !== null) {
             $this->write($prompt);
         }
 		return fgets(STDIN);
@@ -82,8 +92,8 @@ class Cli extends App
     {
         if ($style) {
             $str = '';
-            if (isset($style['color']) && isset($this->styles['color'][$style['color']])) {
-                $str .= "\033[".$this->styles['color'][$style['color']]."m";
+            if (isset($style['foreground']) && isset($this->styles['foreground'][$style['foreground']])) {
+                $str .= "\033[".$this->styles['foreground'][$style['foreground']]."m";
             }
             if (isset($style['background']) && isset($this->styles['background'][$style['background']])) {
                 $str .= "\033[".$this->styles['background'][$style['background']]."m";
@@ -95,7 +105,7 @@ class Cli extends App
                 $text = $str.$text."\033[0m";
             }
             if (!empty($style['newline'])) {
-                $text .= PHP_EOL;
+                $text .= str_repeat(PHP_EOL, $style['newline']);
             }
         }
         fwrite(STDOUT, $text);
@@ -112,7 +122,7 @@ class Cli extends App
             throw new \RuntimeException('NOT CLI SAPI');
         }
         define('IS_CLI', true);
-        $this->enable_readline = extension_loaded('readline');
+        $this->enable_readline = !empty($this->config['enable_readline']) && extension_loaded('readline');
         return $this->config['default_commands'] ?: [];
     }
     
@@ -189,5 +199,19 @@ class Cli extends App
     			$is_option = false;
             }
         }
+    }
+    
+    protected function setAutoComplete($values)
+    {
+        readline_completion_function(function ($input, $index) use ($values) {
+            return $input === '' ? $values : array_filter($values, function ($value) use ($input) {
+                return stripos($value, $input) === 0 ? $value : false;
+            });
+        });
+    }
+    
+    protected function unsetAutoComplete()
+    {
+        readline_completion_function(function () {});
     }
 }
