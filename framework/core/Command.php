@@ -2,13 +2,14 @@
 namespace framework\core;
 
 use framework\App;
+use framework\core\app\Cli;
 
 abstract class Command
 {
     protected $app;
     protected $argv;
     protected $options;
-    protected $short_to_long = [
+    protected $short_to_long_options = [
         'h' => 'help',
         'l' => 'list',
         'v' => 'version',
@@ -17,12 +18,15 @@ abstract class Command
     public function __construct($app = null)
     {
         $this->app = $app ?? App::instance();
+        if (!$this->app instanceof Cli) {
+            throw new \RuntimeException('Not Cli mode');
+        }
         $this->argv = $this->app->getArgv();
         $this->options = $this->argv['long_options'] ?? [];
-        if (isset($this->argv['short_options']) && isset($this->short_to_long)) {
+        if (isset($this->argv['short_options']) && isset($this->short_to_long_options)) {
             foreach ($this->argv['short_options'] as $k => $v) {
-                if (isset($this->short_to_long[$k])) {
-                    $this->options[$this->short_to_long[$k]] = $v;
+                if (isset($this->short_to_long_options[$k])) {
+                    $this->options[$this->short_to_long_options[$k]] = $v;
                 }
             }
         }

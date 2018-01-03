@@ -11,7 +11,7 @@ class Cli extends App
     protected $config = [
         // 默认命令
         'default_commands' => null,
-        // 
+        // 是否启用readline扩展
         'enable_readline'  => true,
         // 默认调用的方法，为空则使用__invoke
         'default_call_method' => null,
