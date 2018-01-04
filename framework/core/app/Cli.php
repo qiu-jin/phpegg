@@ -74,12 +74,19 @@ class Cli extends App
     public function read($prompt = null, array $auto_complete = null)
     {
 		if ($this->enable_readline) {
-            if (!$auto_complete) {
+            if ($auto_complete === null) {
                 return readline($prompt);
             }
-            $this->setAutoComplete($auto_complete);
+            readline_completion_function(function ($input, $index) use ($auto_complete) {
+                if ($input === '') {
+                    return $auto_complete;
+                }
+                return array_filter($auto_complete, function ($value) use ($input) {
+                    return stripos($value, $input) === 0 ? $value : false;
+                });
+            });
             $input = readline($prompt);
-            $this->unsetAutoComplete();
+            readline_completion_function(function () {});
             return $input;
 		}
         if ($prompt !== null) {
@@ -199,19 +206,5 @@ class Cli extends App
     			$is_option = false;
             }
         }
-    }
-    
-    protected function setAutoComplete($values)
-    {
-        readline_completion_function(function ($input, $index) use ($values) {
-            return $input === '' ? $values : array_filter($values, function ($value) use ($input) {
-                return stripos($value, $input) === 0 ? $value : false;
-            });
-        });
-    }
-    
-    protected function unsetAutoComplete()
-    {
-        readline_completion_function(function () {});
     }
 }
