@@ -7,7 +7,7 @@ use framework\core\Command;
 use framework\core\Controller;
 
 class Cli extends App
-{
+{   
     protected $config = [
         // 默认命令
         'default_commands' => null,
@@ -18,6 +18,7 @@ class Cli extends App
         // 匿名函数是否启用Getter魔术方法
         'enable_closure_getter' => true,
     ];
+    protected $is_win;
     protected $parsed_argv;
     protected $enable_readline = false;
     protected $styles = [
@@ -92,9 +93,10 @@ class Cli extends App
     
     protected function dispatch()
     {
-        if (!App::IS_CLI) {
+        if (!self::IS_CLI) {
             throw new \RuntimeException('NOT CLI SAPI');
         }
+        $this->is_win = stripos(PHP_OS, 'win') === 0;
         $this->enable_readline = !empty($this->config['enable_readline']) && extension_loaded('readline');
         return $this->config['default_commands'] ?? [];
     }
@@ -121,7 +123,7 @@ class Cli extends App
             $call = \Closure::bind($dispatch, $command, Command::class);
         } else {
             if (!is_subclass_of($dispatch, Command::class)) {
-                throw new \RuntimeException('call error');
+                throw new \RuntimeException('Not is command subclass');
             }
             $method = $this->config['default_call_method'] ?? '__invoke';
             $ref    = new \ReflectionMethod($dispatch, $method);

@@ -96,7 +96,7 @@ abstract class App
         defined('APP_DEBUG')|| define('APP_DEBUG', false);
         defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
         if (!defined('APP_DIR')) {
-            if (empty($_SERVER['DOCUMENT_ROOT'])) {
+            if (self::IS_CLI) {
                 exit('APP_DIR constant not defined');
             }
             define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');

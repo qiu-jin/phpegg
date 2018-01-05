@@ -55,7 +55,7 @@ abstract class Command
     
     protected function param(int $index, $default = null)
     {
-        return $this->argv['params'][$index + 1] ?? $default;
+        return $this->argv['params'][$index - 1] ?? $default;
     }
     
     protected function options()
