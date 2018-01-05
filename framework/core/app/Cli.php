@@ -73,64 +73,30 @@ class Cli extends App
     
     public function read($prompt = null, array $auto_complete = null)
     {
-		if ($this->enable_readline) {
-            if ($auto_complete === null) {
-                return readline($prompt);
-            }
-            readline_completion_function(function ($input, $index) use ($auto_complete) {
-                if ($input === '') {
-                    return $auto_complete;
-                }
-                return array_filter($auto_complete, function ($value) use ($input) {
-                    return stripos($value, $input) === 0 ? $value : false;
-                });
-            });
-            $input = readline($prompt);
-            readline_completion_function(function () {});
-            return $input;
-		}
-        if ($prompt !== null) {
+        if ($auto_complete === null) {
             $this->write($prompt);
+    		return fgets(STDIN);
         }
-		return fgets(STDIN);
+        return $this->autoComplete($prompt, $auto_complete);
     }
     
     public function write($text, $style = null)
     {
-        if ($style) {
-            $str = '';
-            if (isset($style['foreground']) && isset($this->styles['foreground'][$style['foreground']])) {
-                $str .= "\033[".$this->styles['foreground'][$style['foreground']]."m";
-            }
-            if (isset($style['background']) && isset($this->styles['background'][$style['background']])) {
-                $str .= "\033[".$this->styles['background'][$style['background']]."m";
-            }
-            if (!empty($style['underline'])) {
-                $str .= "\033[4m";
-            }
-            if ($str) {
-                $text = $str.$text."\033[0m";
-            }
-            if (!empty($style['newline'])) {
-                $text .= str_repeat(PHP_EOL, $style['newline']);
-            }
-        }
-        fwrite(STDOUT, $text);
+        fwrite(STDOUT, $style ? $this->outputFormat($text, $style) : $text);
     }
     
-    public function getArgv()
+    public function getParsedArgv()
     {
         return $this->parsed_argv;
     }
     
     protected function dispatch()
     {
-        if (PHP_SAPI !== 'cli') {
+        if (!App::IS_CLI) {
             throw new \RuntimeException('NOT CLI SAPI');
         }
-        define('IS_CLI', true);
         $this->enable_readline = !empty($this->config['enable_readline']) && extension_loaded('readline');
-        return $this->config['default_commands'] ?: [];
+        return $this->config['default_commands'] ?? [];
     }
     
     protected function call()
@@ -160,6 +126,9 @@ class Cli extends App
             $method = $this->config['default_call_method'] ?? '__invoke';
             $ref    = new \ReflectionMethod($dispatch, $method);
             $call   = [new $dispatch($this), $method];
+        }
+        if (empty($this->parsed_argv['params'])) {
+            return $call();
         }
         if (($params = Controller::methodBindListParams($ref, $this->parsed_argv['params'])) === false) {
             self::abort(400);
@@ -206,5 +175,45 @@ class Cli extends App
     			$is_option = false;
             }
         }
+    }
+    
+    protected function autoComplete($prompt, $auto_complete)
+    {
+		if (!$this->enable_readline) {
+            $this->write($prompt);
+    		return fgets(STDIN);
+		}
+        readline_completion_function(function ($input, $index) use ($auto_complete) {
+            if ($input === '') {
+                return $auto_complete;
+            }
+            return array_filter($auto_complete, function ($value) use ($input) {
+                return stripos($value, $input) === 0 ? $value : false;
+            });
+        });
+        $input = readline($prompt);
+        readline_completion_function(function () {});
+        return $input;
+    }
+    
+    protected function outputFormat($text, $style)
+    {
+        $str = '';
+        if (isset($style['foreground']) && isset($this->styles['foreground'][$style['foreground']])) {
+            $str .= "\033[".$this->styles['foreground'][$style['foreground']]."m";
+        }
+        if (isset($style['background']) && isset($this->styles['background'][$style['background']])) {
+            $str .= "\033[".$this->styles['background'][$style['background']]."m";
+        }
+        if (!empty($style['underline'])) {
+            $str .= "\033[4m";
+        }
+        if ($str) {
+            $text = $str.$text."\033[0m";
+        }
+        if (!empty($style['newline'])) {
+            $text .= str_repeat(PHP_EOL, $style['newline']);
+        }
+        return $text;
     }
 }

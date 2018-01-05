@@ -9,8 +9,11 @@ abstract class App
 {
     // 版本号
     const VERSION = '1.0.0';
+    // 是否命令行环境
+    const IS_CLI  = PHP_SAPI === 'cli';
     // 内置支持的应用模式
-    const MODES = ['Standard', 'Rest', 'Inline', 'View', 'Micro', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'];
+    const MODES   = ['Standard', 'Rest', 'Inline', 'View', 'Micro', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'];
+    
     // 应用实例容器
     private static $app;
     // 标示boot方法是否已执行，防止重复执行
@@ -134,14 +137,14 @@ abstract class App
         if (self::$app) {
             return;
         }
+        define('APP_MODE', $app);
         if (in_array($app, self::MODES, true)) {
-            $class = 'framework\core\app\\'.$app;
+            $class = __NAMESPACE__.'\core\app\\'.$app;
         } elseif (is_subclass_of($app, __CLASS__)) {
             $class = $app;
         } else{
             throw new \RuntimeException("Illegal app class: $app");
         }
-        define('APP_MODE', $app);
         if ($config === null) {
             $config = Config::get('app');
         } else {
