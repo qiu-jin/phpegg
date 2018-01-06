@@ -105,7 +105,7 @@ abstract class Command
     
     protected function hidden($prompt)
     {
-        $this->line($prompt);
+        $this->app->write($prompt);
         return $this->app->readHidden();
     }
     

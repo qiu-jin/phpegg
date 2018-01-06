@@ -77,7 +77,7 @@ class Cli extends App
     
     public function read($prompt = null, array $auto_complete = null)
     {
-        if ($auto_complete === null) {
+        if ($auto_complete === null || !$this->enable_readline) {
             $this->write($prompt);
     		return fgets(STDIN);
         }
@@ -91,7 +91,7 @@ class Cli extends App
     
     public function isWin()
     {
-        return $this->is_win;
+        return $this->is_win ?? $this->is_win = stripos(PHP_OS, 'win') === 0;
     }
     
     public function hasStty()
@@ -121,45 +121,9 @@ class Cli extends App
     
     public function readHidden()
     {
-        $shell_script = 'x=0
-while : ;do
-    char=`
-        stty cbreak -echo
-        dd if=/dev/tty bs=1 count=1 2>/dev/null
-        stty -cbreak echo
-    `
-    if [ "$char" = "" ];then
-        break
-    fi
-    if [[ "$ret" == $(echo -ne \'\b\') ]];then
-        if [ $x -eq 0 ];then
-            continue
-        fi
-        password="${password%?}"
-        printf "33[1D"
-        printf "33[K"
-        let x--
-        continue
-    fi
-    password="$password$char"
-    echo -n "*"
-    let x++
-done';
-
-        return rtrim(shell_exec(sprintf("/usr/bin/env %s -c '%s'", 'bash', $shell_script)));
-        
-          
-        
-        
-        
-        
-        
-        
-        
         if ($this->isWin()) {
-            
+            return $this->read();
         }
-        /*
         if ($this->hasStty()) {
             $sttyMode = shell_exec('stty -g');
             shell_exec('stty -echo');
@@ -168,9 +132,8 @@ done';
             if (false === $value) {
                 throw new \RuntimeException('Aborted');
             }
-            $value = trim($value);
             $this->write(PHP_EOL);
-            return $value;
+            return trim($value);
         }
         if ($shell = $this->getShell()) {
             $readCmd = $shell === 'csh' ? 'set mypassword = $<' : 'read -r mypassword';
@@ -178,7 +141,7 @@ done';
             $value   = rtrim(shell_exec($command));
             $this->write(PHP_EOL);
             return $value;
-        }*/
+        }
     }
     
     public function getParsedArgv()
@@ -191,7 +154,7 @@ done';
         if (!self::IS_CLI) {
             throw new \RuntimeException('NOT CLI SAPI');
         }
-        $this->is_win = stripos(PHP_OS, 'win') === 0;
+        
         $this->enable_readline = !empty($this->config['enable_readline']) && extension_loaded('readline');
         return $this->config['default_commands'] ?? [];
     }
