@@ -103,9 +103,10 @@ abstract class Command
         
     }
     
-    protected function hidden()
+    protected function hidden($prompt)
     {
-        
+        $this->line($prompt);
+        return $this->app->readHidden();
     }
     
     protected function write($text, $style = null)
@@ -120,12 +121,12 @@ abstract class Command
     
     protected function error($text)
     {
-        $this->writeln($text, ['color' => 'red']);
+        $this->line($text, ['color' => 'red']);
     }
     
     protected function info($text)
     {
-        $this->writeln($text, ['color' => 'green']);
+        $this->line($text, ['color' => 'green']);
     }
     
     protected function table($data)

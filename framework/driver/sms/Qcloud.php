@@ -29,7 +29,7 @@ class Qcloud extends Sms
             if ($result['result'] === 0) {
                 return true;
             }
-            // 运营商限制发送频率
+            // 运营商发送频率限制不触发错误或异常
             if ($result['result'] >= 1022 && $result['result'] <= 1026) {
                 return false;
             }

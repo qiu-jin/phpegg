@@ -18,11 +18,14 @@ class Cli extends App
         // 匿名函数是否启用Getter魔术方法
         'enable_closure_getter' => true,
     ];
+    
+    protected $shell;
     protected $is_win;
     protected $parsed_argv;
-    protected $enable_readline = false;
+    protected $enable_stty;
+    protected $enable_readline;
     protected $styles = [
-        'underline' => '4',
+        'underline'  => '4',
         'foreground' => [
     		'black'         => '0;30',
     		'dark_gray'     => '1;30',
@@ -84,6 +87,98 @@ class Cli extends App
     public function write($text, $style = null)
     {
         fwrite(STDOUT, $style ? $this->outputFormat($text, $style) : $text);
+    }
+    
+    public function isWin()
+    {
+        return $this->is_win;
+    }
+    
+    public function hasStty()
+    {
+        if (isset($this->stty)) {
+            return $this->stty;
+        }
+        exec('stty 2>&1', $output, $exitcode);
+        return $this->stty = $exitcode === 0;
+    }
+    
+    public function getShell()
+    {
+        if (isset($this->shell)) {
+            return $this->shell;
+        }
+        if (file_exists('/usr/bin/env')) {
+            $test = "/usr/bin/env %s -c 'echo OK' 2> /dev/null";
+            foreach (['bash', 'zsh', 'ksh', 'csh'] as $sh) {
+                if ('OK' === rtrim(shell_exec(sprintf($test, $sh)))) {
+                    return $this->shell = $sh;
+                }
+            }
+        }
+        return $this->shell = false;
+    }
+    
+    public function readHidden()
+    {
+        $shell_script = 'x=0
+while : ;do
+    char=`
+        stty cbreak -echo
+        dd if=/dev/tty bs=1 count=1 2>/dev/null
+        stty -cbreak echo
+    `
+    if [ "$char" = "" ];then
+        break
+    fi
+    if [[ "$ret" == $(echo -ne \'\b\') ]];then
+        if [ $x -eq 0 ];then
+            continue
+        fi
+        password="${password%?}"
+        printf "33[1D"
+        printf "33[K"
+        let x--
+        continue
+    fi
+    password="$password$char"
+    echo -n "*"
+    let x++
+done';
+
+        return rtrim(shell_exec(sprintf("/usr/bin/env %s -c '%s'", 'bash', $shell_script)));
+        
+          
+        
+        
+        
+        
+        
+        
+        
+        if ($this->isWin()) {
+            
+        }
+        /*
+        if ($this->hasStty()) {
+            $sttyMode = shell_exec('stty -g');
+            shell_exec('stty -echo');
+            $value = fgets(STDIN, 4096);
+            shell_exec(sprintf('stty %s', $sttyMode));
+            if (false === $value) {
+                throw new \RuntimeException('Aborted');
+            }
+            $value = trim($value);
+            $this->write(PHP_EOL);
+            return $value;
+        }
+        if ($shell = $this->getShell()) {
+            $readCmd = $shell === 'csh' ? 'set mypassword = $<' : 'read -r mypassword';
+            $command = sprintf("/usr/bin/env %s -c 'stty -echo; %s; stty echo; echo \$mypassword'", $shell, $readCmd);
+            $value   = rtrim(shell_exec($command));
+            $this->write(PHP_EOL);
+            return $value;
+        }*/
     }
     
     public function getParsedArgv()

@@ -33,7 +33,7 @@ class Alidayu extends Sms
             return true;
         }
         if (isset($result['error_response']['sub_code'])) {
-            // 运营商限制发送频率
+            // 运营商发送频率限制不触发错误或异常
             if ($result['error_response']['sub_code'] === 'isv.BUSINESS_LIMIT_CONTROL') {
                 return false;
             }
