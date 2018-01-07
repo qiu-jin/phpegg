@@ -23,7 +23,7 @@ class Cli extends App
     protected $parsed_argv;
     protected $enable_readline;
     
-    protected $formatter_styles = [
+    protected $styles = [
         'bold'        => ['1', '22'],
         'underscore'  => ['4', '24'],
         'blink'       => ['5', '25'],
@@ -50,38 +50,13 @@ class Cli extends App
             'white'   => ['47', '49'],
         ],
     ];
-    
-    protected $styles = [
-        'underline'  => '4',
-        'foreground' => [
-    		'black'         => '0;30',
-    		'dark_gray'     => '1;30',
-    		'blue'          => '0;34',
-    		'dark_blue'     => '1;34',
-    		'light_blue'    => '1;34',
-    		'green'         => '0;32',
-    		'light_green'   => '1;32',
-    		'cyan'          => '0;36',
-    		'light_cyan'    => '1;36',
-    		'red'           => '0;31',
-    		'light_red'     => '1;31',
-    		'purple'        => '0;35',
-    		'light_purple'  => '1;35',
-    		'light_yellow'  => '0;33',
-    		'yellow'        => '1;33',
-    		'light_gray'    => '0;37',
-    		'white'         => '1;37',
-        ],
-        'background' => [
-            'black'         => '40',
-            'red'		    => '41',
-            'green'		    => '42',
-            'yellow'	    => '43',
-    		'blue'		    => '44',
-    		'magenta'	    => '45',
-    		'cyan'		    => '46',
-    		'light_gray'    => '47',
-        ]
+    protected $templates = [
+        'error'     => ['foreground' => 'white', 'background' => 'red'],
+        'info'      => ['foreground' => 'green'],
+        'comment'   => ['foreground' => 'yellow'],
+        'question'  => ['foreground' => 'black', 'background' => 'cyan'],
+        'highlight' => ['foreground' => 'red'],
+        'warning'   => ['foreground' => 'black', 'background' => 'yellow'],
     ];
 
     public function command(...$params)
@@ -108,12 +83,17 @@ class Cli extends App
             $this->write($prompt);
     		return fgets(STDIN);
         }
-        return $this->autoComplete($prompt, $auto_complete);
+        return $this->inputAutoComplete($prompt, $auto_complete);
     }
     
     public function write($text, $style = null)
     {
-        fwrite(STDOUT, $style ? $this->outputFormat($text, $style) : $text);
+        if ($style === true) {
+            $text = $this->outputTemplate($text);
+        } elseif (is_array($style)) {
+            $text = $this->outputFormat($text, $style);
+        }
+        fwrite(STDOUT, $text);
     }
     
     public function isWin()
@@ -243,7 +223,42 @@ class Cli extends App
         return $text;
     }
     
-    protected function autoComplete($prompt, $auto_complete)
+    protected function outputTemplate($text)
+    {
+        $offset = 0;
+        $output = '';
+        $regex  = '[a-z][a-z0-9_=;-]*';
+        if (preg_match_all("#<(($regex) | /($regex)?)>#isx", $text, $matches, PREG_OFFSET_CAPTURE)) {
+            foreach ($matches[0] as $i => $match) {
+                $pos  = $match[1];
+                $text = $match[0];
+                if (0 != $pos && '\\' == $message[$pos - 1]) {
+                    continue;
+                }
+                $output .= $this->applyCurrentStyle(substr($message, $offset, $pos - $offset));
+                $offset = $pos + strlen($text);
+                if ($open = '/' != $text[1]) {
+                    $tag = $matches[1][$i][0];
+                } else {
+                    $tag = isset($matches[3][$i][0]) ? $matches[3][$i][0] : '';
+                }
+                if (!$open && !$tag) {
+                    // </>
+                    $this->styleStack->pop();
+                } elseif (false === $style = $this->createStyleFromString(strtolower($tag))) {
+                    $output .= $this->applyCurrentStyle($text);
+                } elseif ($open) {
+                    $this->styleStack->push($style);
+                } else {
+                    $this->styleStack->pop($style);
+                }
+            }
+            $output .= $this->applyCurrentStyle(substr($message, $offset));
+            return str_replace('\\<', '<', $output);
+        }
+    }
+    
+    protected function inputAutoComplete($prompt, $auto_complete)
     {
 		if (!$this->enable_readline) {
             $this->write($prompt);
