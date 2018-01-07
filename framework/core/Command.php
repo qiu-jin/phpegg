@@ -88,27 +88,6 @@ abstract class Command
         return $this->argv['short_options'][$name] ?? $default;
     }
     
-    protected function ask($prompt, array $auto_complete = null)
-    {
-        return $this->app->read($prompt, $auto_complete);
-    }
-    
-    protected function confirm($prompt)
-    {
-        return in_array(strtolower($this->app->read($prompt)), ['y', 'yes'], true);
-    }
-
-    protected function choice($prompt, array $options)
-    {
-        
-    }
-    
-    protected function hidden($prompt)
-    {
-        $this->app->write($prompt);
-        return $this->app->readHidden();
-    }
-    
     protected function write($text, $style = null)
     {
         $this->app->write($text, $style);
@@ -132,6 +111,38 @@ abstract class Command
     protected function table($data)
     {
         $this->write();
+    }
+    
+    protected function ask($prompt, array $auto_complete = null)
+    {
+        return $this->app->read($prompt, $auto_complete);
+    }
+    
+    protected function confirm($prompt)
+    {
+        return in_array(strtolower($this->app->read($prompt)), ['y', 'yes'], true);
+    }
+
+    protected function choice($prompt, array $options, $is_multi_select = false)
+    {
+        
+    }
+    
+    protected function hidden($prompt)
+    {
+        $this->app->write($prompt);
+        if ($this->app->hasStty()) {
+            $sttyMode = shell_exec('stty -g');
+            shell_exec('stty -echo');
+            $value = $this->app->read();
+            shell_exec(sprintf('stty %s', $sttyMode));
+            if (false !== $value) {
+                $this->line('');
+                return $value;
+            }
+            throw new \RuntimeException('Aborted');
+        }
+        throw new \RuntimeException('Unable to hide the response.');
     }
     
     public function __tostring()

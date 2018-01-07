@@ -18,12 +18,39 @@ class Cli extends App
         // 匿名函数是否启用Getter魔术方法
         'enable_closure_getter' => true,
     ];
-    
-    protected $shell;
     protected $is_win;
+    protected $has_stty;
     protected $parsed_argv;
-    protected $enable_stty;
     protected $enable_readline;
+    
+    protected $formatter_styles = [
+        'bold'        => ['1', '22'],
+        'underscore'  => ['4', '24'],
+        'blink'       => ['5', '25'],
+        'reverse'     => ['7', '27'],
+        'conceal'     => ['8', '28'],
+        'foreground' => [
+            'black'   => ['30', '39'],
+            'red'     => ['31', '39'],
+            'green'   => ['32', '39'],
+            'yellow'  => ['33', '39'],
+            'blue'    => ['34', '39'],
+            'magenta' => ['35', '39'],
+            'cyan'    => ['36', '39'],
+            'white'   => ['37', '39'],
+        ],
+        'background' => [
+            'black'   => ['40', '49'],
+            'red'     => ['41', '49'],
+            'green'   => ['42', '49'],
+            'yellow'  => ['43', '49'],
+            'blue'    => ['44', '49'],
+            'magenta' => ['45', '49'],
+            'cyan'    => ['46', '49'],
+            'white'   => ['47', '49'],
+        ],
+    ];
+    
     protected $styles = [
         'underline'  => '4',
         'foreground' => [
@@ -96,52 +123,11 @@ class Cli extends App
     
     public function hasStty()
     {
-        if (isset($this->stty)) {
-            return $this->stty;
+        if (isset($this->has_stty)) {
+            return $this->has_stty;
         }
-        exec('stty 2>&1', $output, $exitcode);
-        return $this->stty = $exitcode === 0;
-    }
-    
-    public function getShell()
-    {
-        if (isset($this->shell)) {
-            return $this->shell;
-        }
-        if (file_exists('/usr/bin/env')) {
-            $test = "/usr/bin/env %s -c 'echo OK' 2> /dev/null";
-            foreach (['bash', 'zsh', 'ksh', 'csh'] as $sh) {
-                if ('OK' === rtrim(shell_exec(sprintf($test, $sh)))) {
-                    return $this->shell = $sh;
-                }
-            }
-        }
-        return $this->shell = false;
-    }
-    
-    public function readHidden()
-    {
-        if ($this->isWin()) {
-            return $this->read();
-        }
-        if ($this->hasStty()) {
-            $sttyMode = shell_exec('stty -g');
-            shell_exec('stty -echo');
-            $value = fgets(STDIN, 4096);
-            shell_exec(sprintf('stty %s', $sttyMode));
-            if (false === $value) {
-                throw new \RuntimeException('Aborted');
-            }
-            $this->write(PHP_EOL);
-            return trim($value);
-        }
-        if ($shell = $this->getShell()) {
-            $readCmd = $shell === 'csh' ? 'set mypassword = $<' : 'read -r mypassword';
-            $command = sprintf("/usr/bin/env %s -c 'stty -echo; %s; stty echo; echo \$mypassword'", $shell, $readCmd);
-            $value   = rtrim(shell_exec($command));
-            $this->write(PHP_EOL);
-            return $value;
-        }
+        exec('stty 2>&1', $tmp, $code);
+        return $this->has_stty = $code === 0;
     }
     
     public function getParsedArgv()
@@ -154,7 +140,6 @@ class Cli extends App
         if (!self::IS_CLI) {
             throw new \RuntimeException('NOT CLI SAPI');
         }
-        
         $this->enable_readline = !empty($this->config['enable_readline']) && extension_loaded('readline');
         return $this->config['default_commands'] ?? [];
     }
@@ -237,25 +222,6 @@ class Cli extends App
         }
     }
     
-    protected function autoComplete($prompt, $auto_complete)
-    {
-		if (!$this->enable_readline) {
-            $this->write($prompt);
-    		return fgets(STDIN);
-		}
-        readline_completion_function(function ($input, $index) use ($auto_complete) {
-            if ($input === '') {
-                return $auto_complete;
-            }
-            return array_filter($auto_complete, function ($value) use ($input) {
-                return stripos($value, $input) === 0 ? $value : false;
-            });
-        });
-        $input = readline($prompt);
-        readline_completion_function(function () {});
-        return $input;
-    }
-    
     protected function outputFormat($text, $style)
     {
         $str = '';
@@ -275,5 +241,24 @@ class Cli extends App
             $text .= str_repeat(PHP_EOL, $style['newline']);
         }
         return $text;
+    }
+    
+    protected function autoComplete($prompt, $auto_complete)
+    {
+		if (!$this->enable_readline) {
+            $this->write($prompt);
+    		return fgets(STDIN);
+		}
+        readline_completion_function(function ($input, $index) use ($auto_complete) {
+            if ($input === '') {
+                return $auto_complete;
+            }
+            return array_filter($auto_complete, function ($value) use ($input) {
+                return stripos($value, $input) === 0 ? $value : false;
+            });
+        });
+        $input = readline($prompt);
+        readline_completion_function(function () {});
+        return $input;
     }
 }
