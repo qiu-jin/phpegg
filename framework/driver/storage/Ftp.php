@@ -13,7 +13,10 @@ class Ftp extends Storage
         } else {
             $link = ftp_ssl_connect($config['host'], $port);
         }
-        if ($link && ftp_login($link, $config['username'], $config['password']) && ftp_pasv($link, true)) {
+        if ($link && ftp_login($link, $config['username'], $config['password'])) {
+            if ($config['enable_pasv'] ?? true) {
+                ftp_pasv($link, true);
+            }
             $this->link = $link;
             $this->domain = $config['domain'] ?? $config['host'];
         } else {

@@ -20,6 +20,9 @@ abstract class Command
         if (!$this->app instanceof Cli) {
             throw new \RuntimeException('Not is Cli mode');
         }
+        if (isset($this->title)) {
+            $this->title($this->title);
+        }
         $this->argv = $this->app->getParsedArgv();
         $this->options = $this->argv['long_options'] ?? [];
         if (isset($this->argv['short_options'])) {
@@ -33,9 +36,11 @@ abstract class Command
             }
             $this->options += $this->argv['short_options'];
         }
-        if (isset($this->title)) {
-            $this->title($this->title);
-        }
+    }
+    
+    protected function app()
+    {
+        return $this->app;
     }
     
     protected function pid()
@@ -95,22 +100,74 @@ abstract class Command
     
     protected function line($text, $style = null)
     {
-        $this->app->write($text, ['newline' => 1] + ($style ?? []));
+        $this->app->write($text, $style);
+        $this->newline();
     }
     
     protected function error($text)
     {
-        $this->line($text, ['color' => 'red']);
+        $this->line("<error>$text</error>", true);
     }
     
     protected function info($text)
     {
-        $this->line($text, ['color' => 'green']);
+        $this->line("<info>$text</info>", true);
     }
     
-    protected function table($data)
+    protected function comment($text)
     {
-        $this->write();
+        $this->line("<comment>$text</comment>", true);
+    }
+    
+    protected function question($text)
+    {
+        $this->line("<question>$text</question>", true);
+    }
+    
+    protected function highlight($text)
+    {
+        $this->line("<highlight>$text</highlight>", true);
+    }
+    
+    protected function warning($text)
+    {
+        $this->line("<warning>$text</warning>", true);
+    }
+    
+    protected function table($data, array $head = null)
+    {
+        $data = array_values($data);
+		if ($head) {
+			array_unshift($data, $head);
+		} elseif (!isset($data[0][0])) {
+            array_unshift($data, $head = array_keys($data[0]));
+		}
+		foreach ($data as $i => $row) {
+            $row = array_values($row);
+            $data[$i] = $row;
+			foreach ($row as $k => $v) {
+                $max_width[$k] = max($max_width[$k] ?? 0, mb_strwidth($v));
+			}
+		}
+        $border = '+'.implode('+', array_map(function ($w) {
+            return str_repeat('-', $w + 2);
+        }, $max_width)).'+';
+        foreach ($data as $row) {
+            $table[] = '| '.implode(' | ', array_map(function ($w, $v){
+                return $v.str_repeat(' ', $w - mb_strwidth($v));
+            }, $max_width, $row)).' |';
+		}
+        $table[] = $border;
+        if ($head) {
+            array_unshift($table, array_shift($table), $border);
+        }
+        array_unshift($table, $border);
+        $this->line(implode(PHP_EOL, $table));
+    }
+    
+    protected function newline($num = 1)
+    {
+        $this->app->write(str_repeat(PHP_EOL, $num));
     }
     
     protected function ask($prompt, array $auto_complete = null)
@@ -128,16 +185,21 @@ abstract class Command
         
     }
     
+    protected function progress()
+    {
+        
+    }
+    
     protected function hidden($prompt)
     {
-        $this->app->write($prompt);
+        $this->app->write($prompt, true);
         if ($this->app->hasStty()) {
             $sttyMode = shell_exec('stty -g');
             shell_exec('stty -echo');
             $value = $this->app->read();
             shell_exec(sprintf('stty %s', $sttyMode));
             if (false !== $value) {
-                $this->line('');
+                $this->newline();
                 return $value;
             }
             throw new \RuntimeException('Aborted');

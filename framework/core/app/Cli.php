@@ -2,6 +2,7 @@
 namespace framework\core\app;
 
 use framework\App;
+use framework\util\Arr;
 use framework\core\Getter;
 use framework\core\Command;
 use framework\core\Controller;
@@ -10,26 +11,28 @@ class Cli extends App
 {   
     protected $config = [
         // 默认命令
-        'default_commands' => null,
-        // 是否启用readline扩展
-        'enable_readline'  => true,
+        //'default_commands' => null,
         // 默认调用的方法，为空则使用__invoke
         'default_call_method' => null,
         // 匿名函数是否启用Getter魔术方法
         'enable_closure_getter' => true,
     ];
+    // 是否为windows系统
     protected $is_win;
+    // 是否有stty命令工具
     protected $has_stty;
+    // 已解析的输入参数
     protected $parsed_argv;
+    // 是否启用readline扩展
     protected $enable_readline;
-    
+    // 终端输出样式
     protected $styles = [
         'bold'        => ['1', '22'],
         'underscore'  => ['4', '24'],
         'blink'       => ['5', '25'],
         'reverse'     => ['7', '27'],
         'conceal'     => ['8', '28'],
-        'foreground' => [
+        'foreground'  => [
             'black'   => ['30', '39'],
             'red'     => ['31', '39'],
             'green'   => ['32', '39'],
@@ -39,7 +42,7 @@ class Cli extends App
             'cyan'    => ['36', '39'],
             'white'   => ['37', '39'],
         ],
-        'background' => [
+        'background'  => [
             'black'   => ['40', '49'],
             'red'     => ['41', '49'],
             'green'   => ['42', '49'],
@@ -50,6 +53,7 @@ class Cli extends App
             'white'   => ['47', '49'],
         ],
     ];
+    // 输出样式模版
     protected $templates = [
         'error'     => ['foreground' => 'white', 'background' => 'red'],
         'info'      => ['foreground' => 'green'],
@@ -57,6 +61,12 @@ class Cli extends App
         'question'  => ['foreground' => 'black', 'background' => 'cyan'],
         'highlight' => ['foreground' => 'red'],
         'warning'   => ['foreground' => 'black', 'background' => 'yellow'],
+    ];
+    // 核心错误
+    protected $core_errors = [
+        404 => 'Bad Request',
+        404 => 'Method not found',
+        500 => 'Internal Server Error',
     ];
 
     public function command(...$params)
@@ -79,6 +89,9 @@ class Cli extends App
     
     public function read($prompt = null, array $auto_complete = null)
     {
+        if ($prompt !== null) {
+            $prompt = $this->formatTemplate($prompt);
+        }
         if ($auto_complete === null || !$this->enable_readline) {
             $this->write($prompt);
     		return fgets(STDIN);
@@ -89,9 +102,9 @@ class Cli extends App
     public function write($text, $style = null)
     {
         if ($style === true) {
-            $text = $this->outputTemplate($text);
+            $text = $this->formatTemplate($text);
         } elseif (is_array($style)) {
-            $text = $this->outputFormat($text, $style);
+            $text = $this->formatStyle($text, $style);
         }
         fwrite(STDOUT, $text);
     }
@@ -115,13 +128,88 @@ class Cli extends App
         return $this->parsed_argv;
     }
     
+    public function formatStyle($text, $style)
+    {
+        if ($style) {
+            foreach ($style as $k => $v) {
+                if ($k === 'foreground' || $k === 'background') {
+                    if (isset($this->styles[$k][$v])) {
+                        list($start[], $end[]) = $this->styles[$k][$v];
+                    }
+                } elseif (isset($this->styles[$k])) {
+                    if ($this->styles[$k]) {
+                        list($start[], $end[]) = $this->styles[$k];
+                    }
+                }
+            }
+            if (isset($start)) {
+                return "\033[".implode(';', $start)."m$text\033[".implode(';', $end)."m";
+            }
+        }
+        return $text;
+    }
+    
+    public function formatTemplate($text)
+    {
+        $regex = '[a-z][a-z0-9_=;-]*';
+        if (!preg_match_all("#<(($regex) | /($regex)?)>#isx", $text, $matches, PREG_OFFSET_CAPTURE)) {
+            return $text;
+        }
+        $offset = 0;
+        $stack  = [];
+        $output = '';
+        foreach ($matches[0] as $i => $match) {
+            list($tag, $pos) = $match;
+            $part = substr($text, $offset, $pos - $offset);
+            if ($tag[1] !== '/') {
+                $count   = count($stack);
+                $stack[] = ['tag' => substr($tag, 1, -1), 'text' => ''];
+            } else {
+                if (($last = array_pop($stack)) && $last['tag'] === substr($tag, 2, -1)) {
+                    $count = count($stack);
+                    $part  = $this->formatStyle($last['text'].$part, $this->templates[$last['tag']]);
+                } else {
+                    throw new \RuntimeException('Template output error');
+                }
+            }
+            if ($count === 0) {
+                $output .= $part;
+            } else {
+                $stack[$count - 1]['text'] .= $part;
+            }
+            $offset = $pos + strlen($tag);
+        }
+        if ($stack) {
+            throw new \RuntimeException('Template output error');
+        }
+        return str_replace('\\<', '<', $output.substr($text, $offset));
+    }
+    
+    public function inputAutoComplete($prompt, $values)
+    {
+        readline_completion_function(function ($input, $index) use ($values) {
+            if ($input === '') {
+                return $values;
+            }
+            return array_filter($values, function ($value) use ($input) {
+                return stripos($value, $input) === 0 ? $value : false;
+            });
+        });
+        $input = readline($prompt);
+        readline_completion_function(function () {});
+        return $input;
+    }
+    
     protected function dispatch()
     {
-        if (!self::IS_CLI) {
+        if (!App::IS_CLI) {
             throw new \RuntimeException('NOT CLI SAPI');
         }
-        $this->enable_readline = !empty($this->config['enable_readline']) && extension_loaded('readline');
-        return $this->config['default_commands'] ?? [];
+        if (is_array($templates = Arr::pull($this->config, 'templates'))) {
+            $this->templates += $templates;
+        }
+        $this->enable_readline = extension_loaded('readline');
+        return Arr::pull($this->config, 'default_commands', []);
     }
     
     protected function call()
@@ -163,7 +251,8 @@ class Cli extends App
     
     protected function error($code = null, $message = null)
     {
-        var_dump($code, $message);
+        $status = $this->formatStyle(($this->core_errors[$code] ?? $code).':', ['bold' => true]);
+        fwrite(STDERR, $this->formatTemplate("<error>$status</error>").var_export($message, true).PHP_EOL);
     }
     
     protected function response($return = null)
@@ -179,101 +268,41 @@ class Cli extends App
         if (empty($this->parsed_argv) && !($this->parsed_argv['name'] = array_shift($argv))) {
             self::abort(404);
         }
-        if (($count = count($argv)) > 0) {
-            $is_option = false;
-            for ($i = 0; $i < $count; $i++) {
-                if (!$is_option && strpos($argv[$i], '-') === false) {
+        if (($count = count($argv)) === 0) {
+            return;
+        }
+        $last_option = null;
+        for ($i = 0; $i < $count; $i++) {
+            if (strpos($argv[$i], '-') !== 0) {
+                if ($last_option) {
+                    $this->parsed_argv["$last_option[0]_options"][$last_option[1]] = $argv[$i];
+                    $last_option = null;
+                } else {
                     $this->parsed_argv['params'][] = $argv[$i];
-                    continue;
                 }
-    			$is_option = true;
-    			if (substr($argv[$i], 0, 1) !== '-') {
-    				continue;
-    			}
-    			$arg = str_replace('-', '', $argv[$i]);
-    			$value = null;
-    			if (isset($argv[$i + 1]) && substr($argv[$i + 1], 0, 1) != '-') {
-    				$value = $argv[$i + 1];
-    				$i++;
-    			}
-    			$this->parsed_argv['options'][$arg] = $value;
-    			$is_option = false;
-            }
-        }
-    }
-    
-    protected function outputFormat($text, $style)
-    {
-        $str = '';
-        if (isset($style['foreground']) && isset($this->styles['foreground'][$style['foreground']])) {
-            $str .= "\033[".$this->styles['foreground'][$style['foreground']]."m";
-        }
-        if (isset($style['background']) && isset($this->styles['background'][$style['background']])) {
-            $str .= "\033[".$this->styles['background'][$style['background']]."m";
-        }
-        if (!empty($style['underline'])) {
-            $str .= "\033[4m";
-        }
-        if ($str) {
-            $text = $str.$text."\033[0m";
-        }
-        if (!empty($style['newline'])) {
-            $text .= str_repeat(PHP_EOL, $style['newline']);
-        }
-        return $text;
-    }
-    
-    protected function outputTemplate($text)
-    {
-        $offset = 0;
-        $output = '';
-        $regex  = '[a-z][a-z0-9_=;-]*';
-        if (preg_match_all("#<(($regex) | /($regex)?)>#isx", $text, $matches, PREG_OFFSET_CAPTURE)) {
-            foreach ($matches[0] as $i => $match) {
-                $pos  = $match[1];
-                $text = $match[0];
-                if (0 != $pos && '\\' == $message[$pos - 1]) {
-                    continue;
-                }
-                $output .= $this->applyCurrentStyle(substr($message, $offset, $pos - $offset));
-                $offset = $pos + strlen($text);
-                if ($open = '/' != $text[1]) {
-                    $tag = $matches[1][$i][0];
+            } else {
+                $last_option = null;
+                if (strpos($argv[$i], '--') === 0) {
+                    if ($option_name = substr($argv[$i], 2)) {
+                        if (strpos($option_name, '=') > 0) {
+                            list($k, $v) = explode('=', $option_name, 2);
+                            $this->parsed_argv['long_options'][$k] = $v;
+                        } else {
+                            $this->parsed_argv['long_options'][$option_name] = true;
+                            $last_option = ['long', $option_name];
+                        }
+                    }
                 } else {
-                    $tag = isset($matches[3][$i][0]) ? $matches[3][$i][0] : '';
-                }
-                if (!$open && !$tag) {
-                    // </>
-                    $this->styleStack->pop();
-                } elseif (false === $style = $this->createStyleFromString(strtolower($tag))) {
-                    $output .= $this->applyCurrentStyle($text);
-                } elseif ($open) {
-                    $this->styleStack->push($style);
-                } else {
-                    $this->styleStack->pop($style);
+                    if ($option_name = substr($argv[$i], 1)) {
+                        if (isset($option_name[1])) {
+                            $this->parsed_argv['short_options'][$option_name[0]] = substr($option_name, 1);
+                        } elseif (isset($option_name[0])) {
+                            $this->parsed_argv['short_options'][$option_name] = true;
+                            $last_option = ['short', $option_name];
+                        }
+                    }
                 }
             }
-            $output .= $this->applyCurrentStyle(substr($message, $offset));
-            return str_replace('\\<', '<', $output);
         }
-    }
-    
-    protected function inputAutoComplete($prompt, $auto_complete)
-    {
-		if (!$this->enable_readline) {
-            $this->write($prompt);
-    		return fgets(STDIN);
-		}
-        readline_completion_function(function ($input, $index) use ($auto_complete) {
-            if ($input === '') {
-                return $auto_complete;
-            }
-            return array_filter($auto_complete, function ($value) use ($input) {
-                return stripos($value, $input) === 0 ? $value : false;
-            });
-        });
-        $input = readline($prompt);
-        readline_completion_function(function () {});
-        return $input;
     }
 }
