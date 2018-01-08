@@ -207,6 +207,24 @@ abstract class Command
         throw new \RuntimeException('Unable to hide the response.');
     }
     
+    public function anticipate($prompt, array $values)
+    {
+        if (!$this->hasReadline()) {
+            throw new \RuntimeException('Anticipate method must enable readline.');
+        }
+        readline_completion_function(function ($input, $index) use ($values) {
+            if ($input === '') {
+                return $values;
+            }
+            return array_filter($values, function ($value) use ($input) {
+                return stripos($value, $input) === 0 ? $value : false;
+            });
+        });
+        $input = readline($prompt);
+        readline_completion_function(function () {});
+        return $input;
+    }
+    
     public function __tostring()
     {
         

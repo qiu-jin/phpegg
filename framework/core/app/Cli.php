@@ -21,10 +21,10 @@ class Cli extends App
     protected $is_win;
     // 是否有stty命令工具
     protected $has_stty;
+    // 是否启用readline扩展
+    protected $has_readline;
     // 已解析的输入参数
     protected $parsed_argv;
-    // 是否启用readline扩展
-    protected $enable_readline;
     // 终端输出样式
     protected $styles = [
         'bold'        => ['1', '22'],
@@ -87,16 +87,12 @@ class Cli extends App
         throw new \RuntimeException('Command params error');
     }
     
-    public function read($prompt = null, array $auto_complete = null)
+    public function read($prompt = null)
     {
         if ($prompt !== null) {
-            $prompt = $this->formatTemplate($prompt);
+            $this->write($this->formatTemplate($prompt));
         }
-        if ($auto_complete === null || !$this->enable_readline) {
-            $this->write($prompt);
-    		return fgets(STDIN);
-        }
-        return $this->inputAutoComplete($prompt, $auto_complete);
+		return fgets(STDIN);
     }
     
     public function write($text, $style = null)
@@ -121,6 +117,11 @@ class Cli extends App
         }
         exec('stty 2>&1', $tmp, $code);
         return $this->has_stty = $code === 0;
+    }
+    
+    public function hasReadline()
+    {
+        return $this->has_readline ?? $this->has_readline = extension_loaded('readline');
     }
     
     public function getParsedArgv()
@@ -185,21 +186,6 @@ class Cli extends App
         return str_replace('\\<', '<', $output.substr($text, $offset));
     }
     
-    public function inputAutoComplete($prompt, $values)
-    {
-        readline_completion_function(function ($input, $index) use ($values) {
-            if ($input === '') {
-                return $values;
-            }
-            return array_filter($values, function ($value) use ($input) {
-                return stripos($value, $input) === 0 ? $value : false;
-            });
-        });
-        $input = readline($prompt);
-        readline_completion_function(function () {});
-        return $input;
-    }
-    
     protected function dispatch()
     {
         if (!App::IS_CLI) {
@@ -208,7 +194,6 @@ class Cli extends App
         if (is_array($templates = Arr::pull($this->config, 'templates'))) {
             $this->templates += $templates;
         }
-        $this->enable_readline = extension_loaded('readline');
         return Arr::pull($this->config, 'default_commands', []);
     }
     
