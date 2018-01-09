@@ -16,7 +16,7 @@ class View extends App
         // 是否启用pjax
         'enable_pjax'       => false,
         // 
-        'bootstrap_call'    => null,
+        'boot_vars_call'    => null,
         // view_model namespace
         'view_model_ns'     => 'viewmodel',
         // 默认调度的视图，为空不限制
@@ -43,6 +43,9 @@ class View extends App
     protected function call()
     {
         ob_start();
+        if (isset($this->config['boot_vars_call'])) {
+            $vars = $this->config['boot_vars_call']();
+        }
         $type = $this->config['enable_pjax'] && Response::isPjax() ? 'block' : 'file';
         (static function($__file, $__vars) {
             extract($__vars, EXTR_SKIP);

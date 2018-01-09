@@ -41,11 +41,10 @@ class Event
     public static function listen($name, ...$params)
     {
         if (isset(self::$events[$name])) {
-            $stop = false;
-            $params[] =& $stop;
             while (self::$events[$name]->valid()) {
-                (self::$events[$name]->extract())(...$params);
-                if ($stop) break;
+                if ((self::$events[$name]->extract())(...$params) === false) {
+                    break;
+                }
             }
             unset(self::$events[$name]);
         }

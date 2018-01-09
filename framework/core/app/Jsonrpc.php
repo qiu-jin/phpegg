@@ -4,7 +4,7 @@ namespace framework\core\app;
 use framework\App;
 use framework\util\Arr;
 use framework\core\Job;
-use framework\core\Hook;
+use framework\core\Event;
 use framework\core\Logger;
 use framework\core\Controller;
 use framework\core\http\Request;
@@ -50,6 +50,7 @@ class Jsonrpc extends App
     ];
     // 核心错误
     protected $core_errors = [
+        400 => [-32700, 'Parse error'],
         404 => [-32601, 'Method not found'],
         500 => [-32000, 'Server error']
     ];
@@ -232,7 +233,7 @@ class Jsonrpc extends App
     
     protected function addJob($dispatch)
     {
-        Hook::add('close', function () use ($dispatch) {
+        Event::on('close', function () use ($dispatch) {
             try {
                 $return = $this->call($dispatch);
             } catch (\Throwable $e) {

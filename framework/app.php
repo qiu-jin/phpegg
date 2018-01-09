@@ -77,7 +77,7 @@ abstract class App
         }
         self::$runing = true;
         $return = $this->call();
-        if (!$return_handler || $return_handler($return)) {
+        if ($return_handler === null || $return_handler($return) === true) {
             $this->response($return);
         }
         self::$exit = 2;

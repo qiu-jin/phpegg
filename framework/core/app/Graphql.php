@@ -9,16 +9,19 @@ use framework\core\http\Response;
 class Graphql extends App
 {
     protected $config = [
-        
+        'schema_ns'         => 'schema',
+        'check_field_type'  => false,
+        'max_resolve'       => 5
     ];
     // 返回值
     protected $return;
     
     protected function dispatch()
     {
-        if ($body = Request::body() && $query = $this->parseBody($body)) {
-            return compact('query');
+        if (($body = Request::body()) && ($result = $this->parseBody($body))) {
+            return $result;
         }
+        return false;
     }
     
     protected function call()
