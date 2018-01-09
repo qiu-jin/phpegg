@@ -17,7 +17,6 @@ class Async extends Cli
     
     protected function dispatch()
     {
-
         $this->server = new \swoole_http_server($this->config['server_ip'], $this->config['server_port']);
         $this->server->on("start", function ($server) {
             

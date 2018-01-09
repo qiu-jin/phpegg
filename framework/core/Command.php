@@ -134,7 +134,7 @@ abstract class Command
         $this->line("<warning>$text</warning>", true);
     }
     
-    protected function table($data, array $head = null)
+    protected function table(array $data, array $head = null)
     {
         $data = array_values($data);
 		if ($head) {
@@ -185,15 +185,26 @@ abstract class Command
         
     }
     
-    protected function progress()
+    protected function progress($step = 1, int $total = 100)
     {
-        
+        static $in_progress = false;
+        if ($in_progress !== false && $in_progress <= $step) {
+            $this->app->write("\033[1A");
+        }
+        if (($in_progress = $step) !== false) {
+			$percent = intval(($step / $total) * 100);
+            $this->app->write("[\033[32m".str_repeat('#', $step).str_repeat('.', $total - $step)."\033[0m]");
+            $this->app->write(sprintf(" %3d%% Complete", $percent).PHP_EOL);
+        } else {
+            $this->app->write("\007");
+            $in_progress = false;
+        }
     }
     
     protected function hidden($prompt)
     {
-        $this->app->write($prompt, true);
         if ($this->app->hasStty()) {
+            $this->app->write($prompt);
             $sttyMode = shell_exec('stty -g');
             shell_exec('stty -echo');
             $value = $this->app->read();
@@ -209,20 +220,20 @@ abstract class Command
     
     public function anticipate($prompt, array $values)
     {
-        if (!$this->hasReadline()) {
-            throw new \RuntimeException('Anticipate method must enable readline.');
-        }
-        readline_completion_function(function ($input, $index) use ($values) {
-            if ($input === '') {
-                return $values;
-            }
-            return array_filter($values, function ($value) use ($input) {
-                return stripos($value, $input) === 0 ? $value : false;
+        if ($this->hasReadline()) {
+            readline_completion_function(function ($input, $index) use ($values) {
+                if ($input === '') {
+                    return $values;
+                }
+                return array_filter($values, function ($value) use ($input) {
+                    return stripos($value, $input) === 0 ? $value : false;
+                });
             });
-        });
-        $input = readline($prompt);
-        readline_completion_function(function () {});
-        return $input;
+            $input = readline($prompt);
+            readline_completion_function(function () {});
+            return $input;
+        }
+        throw new \RuntimeException('Anticipate method must enable readline.');
     }
     
     public function __tostring()
