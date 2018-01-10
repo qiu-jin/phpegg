@@ -120,7 +120,7 @@ function jsondecode($data)
 
 function is_php_file($file)
 {
-    return (function_exists('opcache_is_script_cached') && opcache_is_script_cached($file)) || is_file($file);
+    return (extension_loaded('opcache') && opcache_is_script_cached($file)) || is_file($file);
 }
 
 function __include($file)

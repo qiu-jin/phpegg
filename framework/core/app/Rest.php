@@ -6,9 +6,9 @@ use framework\util\Str;
 use framework\util\Xml;
 use framework\core\Config;
 use framework\core\Router;
-use framework\core\Controller;
 use framework\core\http\Request;
 use framework\core\http\Response;
+use framework\extend\MethodParameter;
 
 class Rest extends App
 {
@@ -82,7 +82,7 @@ class Rest extends App
         if ($param_mode) {
             $reflection_method = new \ReflectionMethod($controller, $action);
             if ($param_mode === 1) {
-                $params = Controller::methodBindListParams($reflection_method, $params);
+                $params = MethodParameter::bindListParams($reflection_method, $params);
             } elseif ($param_mode === 2) {
                 if (isset($this->config['bind_request_params'])) {
                     foreach ($this->config['bind_request_params'] as $param) {
@@ -91,7 +91,7 @@ class Rest extends App
                         }
                     }
                 }
-                $params = Controller::methodBindKvParams($reflection_method, $params);
+                $params = MethodParameter::bindKvParams($reflection_method, $params);
             }
             if ($params === false) {
                 self::abort(400, 'Missing argument');

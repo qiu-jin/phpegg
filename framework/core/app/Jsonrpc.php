@@ -6,9 +6,9 @@ use framework\util\Arr;
 use framework\core\Job;
 use framework\core\Event;
 use framework\core\Logger;
-use framework\core\Controller;
 use framework\core\http\Request;
 use framework\core\http\Response;
+use framework\extend\MethodParameter;
 
 class Jsonrpc extends App
 {
@@ -126,9 +126,9 @@ class Jsonrpc extends App
         }
         $reflection_method = $this->getReflectionMethod($controller, $action);
         if ($this->config['param_mode'] === 1) {
-            $params = Controller::methodBindListParams($reflection_method, $params);
+            $params = MethodParameter::bindListParams($reflection_method, $params);
         } elseif ($this->config['param_mode'] === 2) {
-            $params = Controller::methodBindKvParams($reflection_method, $params);
+            $params = MethodParameter::bindKvParams($reflection_method, $params);
         }
         if ($params === false) {
             return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];

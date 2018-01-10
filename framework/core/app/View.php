@@ -3,6 +3,7 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\core\Config;
+use framework\core\Getter;
 use framework\core\ViewModel;
 use framework\core\http\Request;
 use framework\core\http\Response;
@@ -15,15 +16,15 @@ class View extends App
         'dispatch_mode'     => ['default'],
         // 是否启用pjax
         'enable_pjax'       => false,
-        // 
+        // 视图初始变量
         'boot_vars_call'    => null,
-        // view_model namespace
+        // 视图模型名称空间
         'view_model_ns'     => 'viewmodel',
         // 默认调度的视图，为空不限制
         'default_dispatch_views' => null,
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
-        // 默认调度时URL path中划线转成下划线
+        // 默认调度时是否将URL PATH中划线转成下划线
         'default_dispatch_hyphen_to_underscore' => false,
         // 路由调度的路由表
         'route_dispatch_routes' => null,
@@ -47,10 +48,12 @@ class View extends App
             $vars = $this->config['boot_vars_call']();
         }
         $type = $this->config['enable_pjax'] && Response::isPjax() ? 'block' : 'file';
-        (static function($__file, $__vars) {
+        (\Closure::bind(function($__file, $__vars) {
             extract($__vars, EXTR_SKIP);
             return require($__file);
-        })(CoreView::{$type}($this->dispatch['view']), $vars ?? []);
+        }, new class() {
+            use Getter;
+        }))(CoreView::{$type}($this->dispatch['view']), $vars ?? []);
         return ob_get_clean();
     }
     

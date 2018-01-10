@@ -208,7 +208,7 @@ abstract class App
      */
     public static function getDispatch($name = null)
     {
-        return $name === null ? self::$app->dispatch : self::$app->dispatch[$name] ?? null;
+        return $name === null ? self::$app->dispatch : (self::$app->dispatch[$name] ?? null);
     }
     
     /*

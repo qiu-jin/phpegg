@@ -1,9 +1,9 @@
 <?php
-namespace framework\core;
+namespace framework\extend;
 
-class Controller
+class MethodParameter
 {
-    public static function methodBindKvParams($reflection_method, $params, $default_null = false)
+    public static function BindKvParams($reflection_method, $params, $default_null = false)
     {
         if ($reflection_method->getnumberofparameters() > 0) {
             foreach ($reflection_method->getParameters() as $param) {
@@ -21,7 +21,7 @@ class Controller
         return $new_params ?? [];
     }
     
-    public static function methodBindListParams($reflection_method, $params, $default_null = false)
+    public static function BindListParams($reflection_method, $params, $default_null = false)
     {
         $count = count($params);
         $number = $reflection_method->getnumberofparameters();

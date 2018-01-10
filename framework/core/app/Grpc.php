@@ -3,9 +3,9 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\core\Loader;
-use framework\core\Controller;
 use framework\core\http\Request;
 use framework\core\http\Response;
+use framework\extend\MethodParameter;
 
 /*
  * https://github.com/google/protobuf
@@ -114,7 +114,7 @@ class Grpc extends App
             $request_object = new $request_class;
             $request_object->mergeFromString($this->readParams());
             $params = \Closure::bind(function ($ref) {
-                return Controller::methodBindKvParams($ref, get_object_vars($this));
+                return MethodParameter::bindKvParams($ref, get_object_vars($this));
             }, $request_object, $request_class)($reflection_method);
             $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}(...$params);
             return \Closure::bind(function (array $params) {

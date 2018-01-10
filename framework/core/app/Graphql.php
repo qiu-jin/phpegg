@@ -18,7 +18,10 @@ class Graphql extends App
     
     protected function dispatch()
     {
-        if (($body = Request::body()) && ($result = $this->parseBody($body))) {
+        if (Request::isPost()) {
+            $request = Request::body()；
+        }
+        if ($request && ($result = $this->parseRequest($request))) {
             return $result;
         }
         return false;
@@ -39,7 +42,7 @@ class Graphql extends App
         
     }
     
-    protected function parseBody($body)
+    protected function parseRequest($request)
     {
         
     }
