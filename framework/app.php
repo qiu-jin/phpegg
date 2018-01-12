@@ -19,7 +19,6 @@ abstract class App
     // 标示boot方法是否已执行，防止重复执行
     private static $boot;
     /* 标示退出状态
-     * 0 未标示
      * 1 用户强制退出，使用exit
      * 2 请求完成并退出
      * 3 错误退出
@@ -115,18 +114,18 @@ abstract class App
                 if (!self::$exit) {
                     Error::fatalHandler();
                 }
-                Event::listen('exit');
+                Event::trigger('exit');
             } catch (\Throwable $e) {
                 Error::exceptionHandler($e);
             }
             self::$app = null;
-            Event::listen('flush');
+            Event::trigger('flush');
             if (function_exists('fastcgi_finish_request')) {
                 fastcgi_finish_request();
             }
-            Event::listen('close');
+            Event::trigger('close');
         });
-        Event::listen('boot');
+        Event::trigger('boot');
     }
     
     /*
@@ -152,7 +151,7 @@ abstract class App
         }
         self::$app = new $class($config);
         self::$app->dispatch = self::$app->dispatch();
-        Event::listen('dispatch', self::$app->dispatch);
+        Event::trigger('dispatch', self::$app->dispatch);
         if (self::$app->dispatch !== false) {
             return self::$app;
         }

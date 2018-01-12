@@ -105,7 +105,7 @@ class Error
     {
         $context = compact('file', 'line', 'trace');
         self::$error[] = compact('level', 'message', 'context');
-        Event::listen($type, $code, $level, $message, $context);
+        Event::trigger($type, $code, $level, $message, $context);
         Logger::write($level, $message, $context);
     }
     

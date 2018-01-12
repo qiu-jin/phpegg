@@ -32,8 +32,7 @@ class Config
      */
     public static function env($name, $default = null)
     {
-        $const = "app\\env\\$name";
-        return defined($const) ? constant($const) : $default;
+        return defined($const = "app\\env\\$name") ? constant($const) : $default;
     }
     
     /*
@@ -133,7 +132,6 @@ class Config
                 return [$key, $value];
             }
         }
-        return null;
     }
     
     /*
@@ -146,10 +144,9 @@ class Config
         }
         if (isset(self::$checked[$name])) {
             return false;
-        } else {
-            self::$checked[$name] = true;
         }
-        return self::$dir && self::$configs[$name] = self::load($name);
+        self::$checked[$name] = true;
+        return self::$dir && (self::$configs[$name] = self::load($name));
     }
     
     /*
@@ -157,8 +154,7 @@ class Config
      */
     private static function load($name)
     {
-        $file = self::$dir."$name.php";
-        if (is_php_file($file) && is_array($config = __include($file))) {
+        if (is_php_file($file = self::$dir."$name.php") && is_array($config = __include($file))) {
             return $config;
         }
     }

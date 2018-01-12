@@ -145,7 +145,7 @@ class Response
      */
     public static function flush()
     {
-        Event::listen('response', self::$response);
+        Event::trigger('response', self::$response);
         if (headers_sent()) {
             throw new \Exception('Response headers sent failure');
         }

@@ -23,7 +23,7 @@ class Request
         self::$request->server =& $_SERVER;
         self::$request->params =& $_REQUEST;
         Event::on('exit', __CLASS__.'::free');
-        Event::listen('request', self::$request);
+        Event::trigger('request', self::$request);
     }
     
     /*

@@ -38,7 +38,7 @@ class Event
     /*
      * 触发事件
      */
-    public static function listen($name, ...$params)
+    public static function trigger($name, ...$params)
     {
         if (isset(self::$events[$name])) {
             while (self::$events[$name]->valid()) {
