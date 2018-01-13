@@ -17,8 +17,8 @@ class Event
         self::$init = true;
         if ($config = Config::get('event')) {
             foreach ($config as $name => $events) {
-                foreach ($events as $event) {
-                    self::on($name, $event);
+                foreach ($events as $i => $event) {
+                    self::on($name, $event, (int) $i);
                 }
             }
         }
@@ -27,9 +27,9 @@ class Event
     /*
      * 注册事件
      */
-    public static function on($name, callable $call, int $priority = 100)
+    public static function on($name, callable $call, int $priority = 0)
     {
-        if (empty(self::$events[$name])) {
+        if (!isset(self::$events[$name])) {
             self::$events[$name] = new \SplPriorityQueue();
         }
         self::$events[$name]->insert($call, $priority);
