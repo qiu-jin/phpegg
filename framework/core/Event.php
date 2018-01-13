@@ -25,7 +25,7 @@ class Event
     }
     
     /*
-     * 添加事件
+     * 注册事件
      */
     public static function on($name, callable $call, int $priority = 100)
     {
@@ -48,6 +48,23 @@ class Event
             }
             unset(self::$events[$name]);
         }
+    }
+    
+    /*
+     * 获取已注册事件
+     * return SplPriorityQueue
+     */
+    public static function get($name)
+    {
+        return self::$events[$name] ?? null;
+    }
+    
+    /*
+     * 是否已注册事件
+     */
+    public static function has($name)
+    {
+        return isset(self::$events[$name]);
     }
     
     /*
