@@ -16,7 +16,6 @@ class Logger
     const DEBUG     = 'debug';
     
     private static $init;
-    private static $handler;
     private static $handlers = [];
     private static $level_handler_name = [];
     
@@ -31,7 +30,7 @@ class Logger
         self::$init = true;
         if ($configs = Config::get('logger')) {
             foreach ($configs as $name => $config) {
-                if (isset($config['level'])) {
+                if (isset($config['level']) && $name !== null) {
                     foreach (array_unique($config['level']) as $lv) {
                         self::$level_handler_name[$lv][] = $name;
                     }
@@ -43,11 +42,11 @@ class Logger
     /*
      * 写入日志
      */
-    public static function write($level, $message, $context = [])
+    public static function write($level, $message, $context = null)
     {
         if (isset(self::$level_handler_name[$level])) {
             foreach (self::$level_handler_name[$level] as $name) {
-                self::getHandler($name)->write($level, $message, $context);
+                self::channel($name)->write($level, $message, $context);
             }
         }
     }
@@ -57,25 +56,15 @@ class Logger
      */
     public static function channel($name = null)
     {
-        return $name === null ? self::getNullHandler() : self::getHandler($name);
-    }
-    
-    /*
-     * 获取日志处理器实例
-     */
-    private static function getHandler($name)
-    {
-        return self::$handlers[$name] ?? self::$handlers[$name] = Container::driver('logger', $name);
-    }
-    
-    /*
-     * null channel日志处理器
-     */
-    private static function getNullHandler()
-    {
-        return self::$handler ?? self::$handler = new class () extends \framework\driver\logger\Logger {
+        if (isset(self::$handlers[$name])) {
+            return self::$handlers[$name];
+        }
+        if ($name !== null) {
+            return self::$handlers[$name] = Container::driver('logger', $name);
+        }
+        return self::$handlers[null] = new class () extends \framework\driver\logger\Logger {
             public function __construct() {}
-            public function write($level, $message, $context = []) {
+            public function write($level, $message, $context = null) {
                 Logger::write($level, $message, $context);
             }
         };

@@ -11,7 +11,7 @@ abstract class Auth
     protected $user;
     
     // 验证用户
-    abstract protected function validate();
+    abstract protected function auth();
     
     // 用户认证失败处理
     abstract protected function fallback();
@@ -31,14 +31,13 @@ abstract class Auth
             return;
         }
         self::$init = true;
-        $config = Config::get('auth');
-        if (is_subclass_of($config['class'], __CLASS__)) {
-            self::$auth = (new $config['class']($config));
-            if (empty($config['no_auto_validate'])) {
-                self::$auth->user = self::$auth->validate();
-            }
-        } else {
+        $config = Config::flash('auth');
+        if (!isset($config['class']) || !is_subclass_of($config['class'], __CLASS__)) {
             throw new Exception('Illegal auth class');
+        }
+        self::$auth = (new $config['class']($config));
+        if (!isset($config['auto_auth']) || $config['auto_auth'] !== false) {
+            self::$auth->user = self::$auth->auth();
         }
         Event::on('exit', __CLASS__.'::free');
     }
@@ -61,14 +60,25 @@ abstract class Auth
         return self::$auth->user;
     }
     
-    public static function pass($user)
+    public static function pass($user, $login = false)
     {
+        if ($login) {
+            self::$auth->login($user);
+        }
         self::$auth->user = $user;
+    }
+    
+    public static function out($logout = false)
+    {
+        if ($logout) {
+            self::$auth->logout();
+        }
+        self::$auth->user = null;
     }
     
     public static function check()
     {
-        return (bool) (self::$auth->user ?? self::$auth->user = self::$auth->validate());
+        return isset(self::$auth->user) || boolval(self::$auth->user = self::$auth->auth());
     }
     
     // 运行认证处理，检查用户是否认证成功，否则失败处理并退出

@@ -23,7 +23,7 @@ class Router
             return;
         }
         self::$init = true;
-        if ($config = Config::get('router')) {
+        if ($config = Config::flash('router')) {
             if (isset($config['regex_filters'])) {
                 self::$regex_filters = $config['regex_filters'];
             }

@@ -12,12 +12,14 @@ class File extends Logger
     
     public function write($level, $message, $context = null)
     {
-        if (isset($this->formatter)) {
+        if ($this->formatter) {
             $log = $this->formatter->make($level, $message, $context);
         } else {
-            $log = '['.$level.'] '.$message;
-            if ($context) $log .= PHP_EOL.var_export($context, true);
+            $log = "[$level] $message".PHP_EOL;
+            if ($context) {
+                $log .= var_export($context, true).PHP_EOL;
+            }
         }
-        error_log($log.PHP_EOL, 3, $this->logfile);
+        error_log($log, 3, $this->logfile);
     }
 }

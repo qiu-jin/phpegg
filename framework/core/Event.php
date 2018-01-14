@@ -15,7 +15,7 @@ class Event
             return;
         }
         self::$init = true;
-        if ($config = Config::get('event')) {
+        if ($config = Config::flash('event')) {
             foreach ($config as $name => $events) {
                 foreach ($events as $i => $event) {
                     self::on($name, $event, (int) $i);

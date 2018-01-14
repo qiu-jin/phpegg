@@ -32,7 +32,7 @@ class Loader
             return;
         }
         self::$init = true;
-        if ($config = Config::get('loader')) {
+        if ($config = Config::flash('loader')) {
             foreach ($config as $type => $rules) {
                 self::add($type, $rules);
             }

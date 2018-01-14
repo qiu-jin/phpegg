@@ -9,16 +9,13 @@ class Queue extends Logger
     
     protected function init($config)
     {
-        if (isset($config['job'])) {
-            $config['queue']['job'] = $config['job'];
-        }
-        $this->producer = Container::driver($config['queue'])->producer();
+        $this->producer = Container::driver('queue', $config['queue'])->producer($config['job'] ?? null);
     }
     
     public function write($level, $message, $context = null)
     {
-        $this->producer->push($this->formatter ? $this->formatter->make($level, $message, $context)
-                                               : [$level, $message, $context]
+        $this->producer->push(
+            $this->formatter ? $this->formatter->make($level, $message, $context) : [$level, $message, $context]
         );
     }
 }

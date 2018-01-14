@@ -1,22 +1,24 @@
 <?php
 namespace framework\driver\logger;
 
+use framework\driver\logger\formatter\Formatter;
+
 abstract class Logger
 {
-    protected $send = true;
+    protected $logs;
     protected $formatter;
     
     public function __construct($config)
     {
         $this->init($config);
         if (isset($config['format'])) {
-            $this->formatter = new formatter\Formatter($config['format']);
+            $this->formatter = new Formatter($config['format']);
         }
     }
     
     public function write($level, $message, $context = null)
     {
-        //write to Null
+        $this->logs[] = [$level, $message, $context];
     }
     
     public function log($level, $message, $context = null)

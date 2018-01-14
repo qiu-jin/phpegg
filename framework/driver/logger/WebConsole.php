@@ -3,6 +3,7 @@ namespace framework\driver\logger;
 
 use framework\core\Event;
 use framework\core\http\Request;
+use framework\core\http\Response;
 
 /*
  * Chrome
@@ -14,6 +15,7 @@ use framework\core\http\Request;
 class WebConsole extends Logger
 {
     const VERSION = '4.0.0';
+    
     protected static $loglevel = [
         'emergency'  => 'error',
         'alert'      => 'error',
@@ -28,24 +30,20 @@ class WebConsole extends Logger
         'groupEnd'   => 'groupEnd',
         'groupCollapsed' => 'groupCollapsed'
             
-    ];  
-    protected $header_limit_size = 4000;
+    ];
+    
+    protected $send = true;
+    protected $header_limit_size;
     
     protected function init($config)
     {
-        if (isset($config['allow_ips'])) {
-            if (!in_array(Request::ip(), $config['allow_ips'], true)) {
-                return $this->send = false;
-            }
+        if (isset($config['allow_ips']) && !in_array(Request::ip(), $config['allow_ips'], true)) {
+            return $this->send = false;
         }
-        if (isset($config['check_header_accept'])) {
-            if ($config['check_header_accept'] !== $_SERVER['HTTP_ACCEPT_LOGGER_DATA']) {
-                return $this->send = false;
-            }
+        if (isset($config['check_header_accept']) && $config['check_header_accept'] !== $_SERVER['HTTP_ACCEPT_LOGGER_DATA']) {
+            return $this->send = false;
         }
-        if (isset($config['header_limit_size'])) {
-            $this->header_limit_size = $config['header_limit_size'];
-        }
+        $this->header_limit_size = $config['header_limit_size'] ?? 4000;
         Event::on('exit', [$this, 'send']);
     }
     
@@ -77,31 +75,29 @@ class WebConsole extends Logger
     public function send()
     {        
         if ($this->logs && !headers_sent()) {
-            $rows = [];
             foreach ($this->logs as $log) {
-                $trace = null;
-                if (isset($log[2]['file']) && isset($log[2]['line'])) {
-                    $trace = $log[2]['file'].' : '.$log[2]['line'];
-                }
-                $level = self::$loglevel[$log[0]] ?? '';
-                $rows[] = [null, $log[1], $trace, $level];
+                $rows[] = [
+                    null,
+                    $log[1],
+                    isset($log[2]['file']) ? $log[2]['file'].' : '.($log[2]['line'] ?? '') : null,
+                    self::$loglevel[$log[0]] ?? ''
+                ];
             }
-            $data = [
+            $format = [
                 'version' => self::VERSION,
                 'columns' => ['label', 'log', 'backtrace', 'type'],
                 'rows'    => $rows
             ];
-            $output = $this->encode($data);
-            if (strlen($output) > $this->header_limit_size) {
-                $data['rows'] = [[
-                     'header_limit_size: '.$this->header_limit_size.'', '', 'warn'  
+            $data = $this->encode($format);
+            if (strlen($data) > $this->header_limit_size) {
+                $format['rows'] = [[
+                    "header_limit_size: $this->header_limit_size", '', 'warn'
                 ]];
-                $output = $this->encode($data);
+                $data = $this->encode($format);
             }
-            header('X-ChromeLogger-Data: '.$output);
+            Response::header('X-ChromeLogger-Data', $data);
         }
-        $this->logs = [];
-        
+        $this->logs = null;
     }
     
     protected function encode ($data)
