@@ -20,28 +20,24 @@ class Geetest
     
     public function render($tag = 'div', $attr = [])
     {
-        $str = '';
         if (empty($attr['id'])) {
             $attr['id'] = 'geetest-captcha';
         }
         foreach ($attr as $k => $v) {
             $str .= "$k='$v' ";
         }
-        $init_data = [
-            "gt:'$this->acckey'",
-            "new_captcha:true"
-        ];
-        $challenge = Client::get(self::$endpoint.'/register.php?'.http_build_query(['gt' => $this->acckey, 'new_captcha' => '1']))->body;
+        $init = "gt:'$this->acckey', new_captcha:true";
+        $challenge = Client::get(self::$endpoint.'/register.php?'.http_build_query([
+            'gt'            => $this->acckey,
+            'new_captcha'   => '1'
+        ]))->body;
         if (strlen($challenge) == 32) {
-            $init_data[] = "offline:false";
-            $init_data[] = "challenge:'".md5($challenge.$this->seckey)."'";
+            $init .= ",offline:false,challenge:'".md5($challenge.$this->seckey)."'";
         } else {
-            $init_data[] = "offline:true";
-            $init_data[] = "challenge:''";
+            $init .= ",offline:true,challenge:''";
         }
-        $script = "<script src='$this->script'></script>\r\n";
-        $script .= "<script>initGeetest({".implode(',', $init_data)."}, function (captchaObj) {captchaObj.appendTo('#{$attr['id']}');captchaObj.bindForm('#{$attr['id']}');})</script>\r\n";
-        return "$script<$tag $str></$tag>";
+        $script = "initGeetest({$init}, function(o){o.appendTo('#$attr[id]');o.bindForm('#$attr[id]');})";
+        return "<script src='$this->script'></script>\r\n<script>$script</script>\r\n<$tag $str></$tag>";
     }
     
     public function verify(array $value = null)

@@ -4,7 +4,6 @@ namespace framework\driver\crypt;
 /*
  * https://github.com/jedisct1/libsodium-php
  */
-
 class Sodium extends Crypt
 {   
     protected $key;

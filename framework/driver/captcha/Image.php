@@ -30,10 +30,9 @@ class Image
 
     public function render($tag = 'input', $attrs = [])
     {
-        $str = '';
         $attrs['name'] = $this->name;
         foreach ($attrs as $k => $v) {
-            $str = "$k = '$v' ";
+            $str = " $k = '$v'";
         }
         return "<$tag $str></$tag><image src='$this->src' />";
     }

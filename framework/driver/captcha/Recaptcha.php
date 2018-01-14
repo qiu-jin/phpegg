@@ -23,7 +23,6 @@ class Recaptcha
             $attr['class'] = 'g-recaptcha';
         }
         $attr['data-sitekey'] = $this->acckey;
-        $str = '';
         foreach ($attr as $k => $v) {
             $str .= "$k='$v' ";
         }
@@ -34,7 +33,7 @@ class Recaptcha
     {
         $client = Client::post(self::$endpoint)->form([
             'secret'   => $this->seckey,
-            'response' => $value ? $value : Request::post('g-recaptcha-response'),
+            'response' => $value ?? Request::post('g-recaptcha-response'),
             'remoteip' => Request::ip()
         ]);
         $result = $client->response->json();
