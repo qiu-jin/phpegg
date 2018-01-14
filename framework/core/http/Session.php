@@ -13,10 +13,10 @@ class Session
             return;
         }
         self::$init = true;
-        if ($config = Config::get('session')) {
+        if ($config = Config::flash('session')) {
             foreach ($config as $key => $value) {
                 if (in_array($key, ['id', 'name', 'save_path', 'cache_expire', 'cache_limiter'], true)) {
-                    call_user_func("session_$key", $value);
+                    ("session_$key")($value);
                 }
             }
             if (isset($config['cookie_params'])) {

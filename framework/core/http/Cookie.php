@@ -2,6 +2,7 @@
 namespace framework\core\http;
 
 use framework\core\Config;
+use framework\core\Container;
 
 class Cookie
 {
@@ -10,7 +11,7 @@ class Cookie
     private static $serialize;
     private static $unserialize;
     private static $cookie = [];
-    private static $option = [
+    private static $optionss = [
         'expire'    => 0,
         'path'      => '/',
         'domain'    => '',
@@ -25,12 +26,12 @@ class Cookie
             return;
         }
         self::$init = true;
-        if ($config = Config::get('cookie')) {
-            if (isset($config['option'])) {
-                self::$option = array_merge(self::$option, $config['option']);
+        if ($config = Config::flash('cookie')) {
+            if (isset($config['options'])) {
+                self::$options = $config['options'] + self::$options;
             }
             if (isset($config['crypt'])) {
-                self::$crypt = driver('crypt', $config['crypt']);
+                self::$crypt = Container::driver('crypt', $config['crypt']);
                 if (isset($config['crypt_except'])) {
                     self::$crypt_except = $config['crypt_except'];
                 }
@@ -41,11 +42,8 @@ class Cookie
         }
     }
     
-    public static function get($name = null, $default = null)
+    public static function get($name, $default = null)
     {
-        if ($name === null) {
-            return self::getAll();
-        }
         if (isset(self::$cookie[$name])) {
             return self::$cookie[$name];
         }
@@ -55,10 +53,10 @@ class Cookie
         return $default;
     }
     
-    public static function set($name, $value, ...$option)
+    public static function set($name, $value, ...$options)
     {
         self::$cookie[$name] = $value;
-        self::setCookie($name, $value, ...$option);
+        self::setCookie($name, $value, ...$options);
     }
     
     public static function temp($name, $value)
@@ -88,19 +86,12 @@ class Cookie
         self::$cookie = [];
     }
     
-    public static function free()
-    {
-        self::$crypt = null;
-        self::$crypt_except = null;
-        self::$cookie = null;
-    }
-    
-    protected static function getAll()
+    public static function getAll()
     {
         if ($_COOKIE) {
             foreach ($_COOKIE as $name => $value) {
                 if (!isset(self::$cookie[$name])) {
-                    self::$cookie[$name] = self::getValue($name);;
+                    self::$cookie[$name] = self::getValue($name);
                 }
             }
         }
@@ -110,31 +101,34 @@ class Cookie
     protected static function getValue($name)
     {
         $value = $_COOKIE[$name];
-        if (self::$crypt && !in_array($name, self::$crypt_except ,true)) {
+        if (isset(self::$crypt) && !in_array($name, self::$crypt_except, true)) {
             $value = self::$crypt->decrypt($value);
         }
-        if (self::$unserialize) {
+        if (isset(self::$unserialize)) {
             $value = (self::$unserialize)($value);
         }
         return $value;
     }
     
-    protected static function setCookie($name, $value, $expire = null, $path = null, $domain = null, $secure = null, $httponly = null)
-    {
-        foreach (self::$option as $k => $v) {
-            if (!isset($$k)) $$k = $v;
+    protected static function setCookie(
+        $name, $value, $expire = null, $path = null, $domain = null, $secure = null, $httponly = null
+    ) {
+        foreach (self::$options as $k => $v) {
+            if (!isset($$k)) {
+                $$k = $v;
+            }
         }
         if ($value === null) { 
-            $expire = time()-3600;
+            $expire = time() - 3600;
         } else {
-            if (self::$serialize) {
+            if (isset(self::$serialize)) {
                 $value = (self::$serialize)($value);
             }
-            if (self::$crypt && !in_array($name, self::$crypt_except ,true)) {
+            if (isset(self::$crypt) && !in_array($name, self::$crypt_except, true)) {
                 $value = self::$crypt->encrypt($value);
             }
             if ($expire) {
-                $expire = time()+$expire;
+                $expire = time() + $expire;
             }
         }
         return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
