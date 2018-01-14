@@ -16,8 +16,9 @@ class Logger
     const DEBUG     = 'debug';
     
     private static $init;
-    private static $handlers = [];
-    private static $level_handler_name = [];
+    private static $configs;
+    private static $handlers;
+    private static $level_handler_name;
     
     /*
      * 初始化
@@ -36,6 +37,7 @@ class Logger
                     }
                 }
             }
+            self::$configs = $configs;
         }
     }
     
@@ -60,7 +62,7 @@ class Logger
             return self::$handlers[$name];
         }
         if ($name !== null) {
-            return self::$handlers[$name] = Container::driver('logger', $name);
+            return self::$handlers[$name] = Container::driver('logger', self::$configs[$name]);
         }
         return self::$handlers[null] = new class () extends \framework\driver\logger\Logger {
             public function __construct() {}

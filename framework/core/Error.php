@@ -8,15 +8,33 @@ class Error
     const ERROR    = E_USER_ERROR;
     const WARNING  = E_USER_WARNING;
     const NOTICE   = E_USER_NOTICE;
+    
+    private static $error_level_info = [
+        E_ERROR             => [Logger::CRITICAL    , 'E_ERROR'],
+        E_WARNING           => [Logger::WARNING     , 'E_WARNING'],
+        E_PARSE             => [Logger::ALERT       , 'E_PARSE'],
+        E_NOTICE            => [Logger::NOTICE      , 'E_NOTICE'],
+        E_CORE_ERROR        => [Logger::CRITICAL    , 'E_CORE_ERROR'],
+        E_CORE_WARNING      => [Logger::WARNING     , 'E_CORE_WARNING'],
+        E_COMPILE_ERROR     => [Logger::ALERT       , 'E_COMPILE_ERROR'],
+        E_COMPILE_WARNING   => [Logger::WARNING     , 'E_COMPILE_WARNING'],
+        E_USER_ERROR        => [Logger::ERROR       , 'E_USER_ERROR'],
+        E_USER_WARNING      => [Logger::WARNING     , 'E_USER_WARNING'],
+        E_USER_NOTICE       => [Logger::NOTICE      , 'E_USER_NOTICE'],
+        E_STRICT            => [Logger::NOTICE      , 'E_STRICT'],
+        E_RECOVERABLE_ERROR => [Logger::ERROR       , 'E_RECOVERABLE_ERROR'],
+        E_DEPRECATED        => [Logger::NOTICE      , 'E_DEPRECATED'],
+        E_USER_DEPRECATED   => [Logger::NOTICE      , 'E_USER_DEPRECATED'],
+    ];
     // 保存错误信息
-    private static $error;
+    private static $errors;
     
     /*
      * 获取错误信息
      */
     public static function get($all = false)
     {
-        return $all ? self::$error : end(self::$error);
+        return $all ? self::$errors : end(self::$errors);
     }
     
     /*
@@ -77,11 +95,12 @@ class Error
      */
     public static function fatalHandler()
     {
-		$last_error = error_get_last();
-		if ($last_error && ($last_error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR))) {
+		if (($last_error = error_get_last())
+            && ($last_error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR))
+        ) {
             App::exit(5);
             list($level, $prefix) = self::getErrorLevelInfo($last_error['type']);
-            $message = 'Fatal Error '.$prefix.': '.$last_error['message'];
+            $message = "Fatal Error $prefix: $last_error[message]";
             self::record('error.fatal', $last_error['type'], $level, $message, $last_error['file'], $last_error['line']);
             self::response();
 		} else {
@@ -95,17 +114,17 @@ class Error
      */
     private static function response()
     {
-        App::abort(500, APP_DEBUG ? self::$error : null);
+        App::abort(500, APP_DEBUG ? self::$errors : null);
     }
     
     /*
      * 记录错误
      */
-    private static function record($type, $code, $level, $message, $file, $line, $trace = null)
+    private static function record($name, $code, $level, $message, $file, $line, $trace = null)
     {
         $context = compact('file', 'line', 'trace');
-        self::$error[] = compact('level', 'message', 'context');
-        Event::trigger($type, $code, $level, $message, $context);
+        self::$errors[] = compact('level', 'message', 'context');
+        Event::trigger($name, $code, $level, $message, $context);
         Logger::write($level, $message, $context);
     }
     
@@ -114,39 +133,6 @@ class Error
      */
     private static function getErrorLevelInfo($code)
     {
-        switch ($code) {
-            case E_ERROR:
-                return [Logger::CRITICAL, 'E_ERROR'];
-            case E_WARNING:
-                return [Logger::WARNING, 'E_WARNING'];
-            case E_PARSE:
-                return [Logger::ALERT, 'E_PARSE'];
-            case E_NOTICE:
-                return [Logger::NOTICE, 'E_NOTICE'];
-            case E_CORE_ERROR:
-                return [Logger::CRITICAL, 'E_CORE_ERROR'];
-            case E_CORE_WARNING:
-                return [Logger::WARNING, 'E_CORE_WARNING'];
-            case E_COMPILE_ERROR:
-                return [Logger::ALERT, 'E_COMPILE_ERROR'];
-            case E_COMPILE_WARNING:
-                return [Logger::WARNING, 'E_COMPILE_WARNING'];
-            case E_USER_ERROR:
-                return [Logger::ERROR, 'E_USER_ERROR'];
-            case E_USER_WARNING:
-                return [Logger::WARNING, 'E_USER_WARNING'];
-            case E_USER_NOTICE:
-                return [Logger::NOTICE, 'E_USER_NOTICE'];
-            case E_STRICT:
-                return [Logger::NOTICE, 'E_STRICT'];
-            case E_RECOVERABLE_ERROR:
-                return [Logger::ERROR, 'E_RECOVERABLE_ERROR'];
-            case E_DEPRECATED:
-                return [Logger::NOTICE, 'E_DEPRECATED'];
-            case E_USER_DEPRECATED:
-                return [Logger::NOTICE, 'E_USER_DEPRECATED'];
-            default:
-                return [Logger::ERROR, 'UNKNOEN_ERROR'];
-        }
+        return self::$error_level_info[$code] ?? [Logger::ERROR, 'UNKNOEN_ERROR'];
     }
 }
