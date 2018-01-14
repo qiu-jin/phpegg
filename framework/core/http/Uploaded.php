@@ -18,8 +18,9 @@ class Uploaded
         UPLOAD_ERR_CANT_WRITE   => 'UPLOAD_ERR_CANT_WRITE'
     ];
     private static $image_type = [
-        1 => 'GIF', 2 => 'JPG', 3 => 'PNG', 4 => 'SWF',5 => 'PSD', 6 => 'BMP', 7 => 'TIFF', 8 => 'TIFF', 9 => 'JPC',
-        10 => 'JP2', 11 => 'JPX', 12 => 'JB2', 13 => 'SWC', 14 => 'IFF', 15 => 'WBMP', 16 => 'XBM'
+        1 => 'GIF', 2 => 'JPG', 3 => 'PNG', 4 => 'SWF', 5 => 'PSD',
+        6 => 'BMP', 7 => 'TIFF', 8 => 'TIFF', 9 => 'JPC', 10 => 'JP2',
+        11 => 'JPX', 12 => 'JB2', 13 => 'SWC', 14 => 'IFF', 15 => 'WBMP', 16 => 'XBM'
     ];
     
     public function __construct($file, $validate = null)

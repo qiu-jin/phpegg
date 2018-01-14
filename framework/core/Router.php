@@ -6,12 +6,7 @@ class Router
     private static $init;
     // 过滤器
     private static $regex_filters;
-    private static $callable_filters = [
-        'id' => 'Validator::id',
-        'hash' => 'Validator::hash',
-        'email' => 'Validator::email',
-        'mobile' => 'Validator::mobile',
-    ];
+    private static $callable_filters;
     private static $enable_dynamic_call;
     
     /*
@@ -28,7 +23,7 @@ class Router
                 self::$regex_filters = $config['regex_filters'];
             }
             if (isset($config['callable_filters'])) {
-                self::$callable_filters = array_merge(self::$callable_filters, $config['callable_filters']);
+                self::$callable_filters = $config['callable_filters'];
             }
             self::$enable_dynamic_call = $config['enable_dynamic_call'] ?? false;
         }

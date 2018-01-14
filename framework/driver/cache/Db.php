@@ -23,7 +23,7 @@ class Db extends Cache
     
     public function get($key, $default = null)
     {
-        $cache = $this->db->exec("SELECT value FROM $this->table WHERE key = ? AND 'expiration' > ?", [
+        $cache = $this->db->exec("SELECT value FROM $this->table WHERE key = ? AND expiration > ?", [
             $key, time()
         ]);
         return $cache ? $this->unserialize($cache[0]['value']) : $default;
@@ -40,7 +40,7 @@ class Db extends Cache
 
     public function has($key)
     {
-        return (bool) $this->db->exec("SELECT value FROM $this->table WHERE key = ? AND 'expiration' > ?", [
+        return (bool) $this->db->exec("SELECT value FROM $this->table WHERE key = ? AND expiration > ?", [
             $key, time()
         ]);
     }
@@ -53,7 +53,7 @@ class Db extends Cache
     public function getMultiple(array $keys, $default = null)
     {
         $in = implode(",", array_fill(0, count($keys), '?'));
-        $data = $this->db->exec("SELECT key, value FROM $this->table WHERE key IN ($in) AND 'expiration' > ".time(), $keys);
+        $data = $this->db->exec("SELECT key, value FROM $this->table WHERE key IN ($in) AND expiration > ".time(), $keys);
         $caches = array_column($data, 'value', 'key');
         foreach ($keys as $key) {
             $caches[$key] = isset($caches[$key]) ? $this->unserialize($caches[$key]) : $default;

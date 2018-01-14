@@ -127,9 +127,7 @@ class Cookie
             if (isset(self::$crypt) && !in_array($name, self::$crypt_except, true)) {
                 $value = self::$crypt->encrypt($value);
             }
-            if ($expire) {
-                $expire = time() + $expire;
-            }
+            $expire = time() + $expire;
         }
         return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
     }
