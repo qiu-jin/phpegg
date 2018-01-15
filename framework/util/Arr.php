@@ -5,12 +5,12 @@ class Arr
 {
     public static function pull(array &$array, $key, $default = null)
     {
-        if (isset($array[$key])) {
-            $value =  $array[$key];
-            unset($array[$key]);
-            return $value;
+        if (!isset($array[$key])) {
+            return $default;
         }
-        return $default;
+        $value = $array[$key];
+        unset($array[$key]);
+        return $value;
     }
     
     public static function isAssoc(array $array)
@@ -19,32 +19,22 @@ class Arr
         return array_keys($keys) !== $keys;
     }
     
-    public static function fitler(array &$array , array $keys)
+    public static function fitlerKeys(array $array , array $keys)
     {
-        if ($keys) {
-            foreach ($keys as $key) {
-                if (!isset($array[$key])) {
-                    unset($array[$key]);
-                }
+        foreach ($keys as $key) {
+            if (isset($array[$key])) {
+                $arr[$key] = $array[$key];
             }
         }
+        return $arr ?? [];
     }
     
-    public static function firstPair($array)
-    {
-        $value = reset($array);
-        return [key($array), $value];
-    }
-    
-    public static function lastPair($array)
-    {
-        $value = end($array);
-        return [key($array), $value];
-    }
-    
-    public static function indexPair($array, $index = 1)
+    public static function indexKvPair(array $array, int $index)
     {
         $keys = key($array);
+        if ($index < 0) {
+            $index = count($keys) + $index;
+        }
         return isset($keys[$index]) ? [$keys[$index], $array[$keys[$index]]] : null;
     }
 }

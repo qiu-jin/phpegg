@@ -3,7 +3,23 @@ namespace framework\core;
 
 class Validator
 {
-    public static function validate($data, $rules, &$message = null)
+    private static $init;
+    
+    private static $messages;
+    
+    /*
+     * 初始化
+     */
+    public static function init()
+    {
+        if (self::$init) {
+            return;
+        }
+        self::$init = true;
+    }
+    
+    
+    public static function validate($data, array $rules, &$message = null)
     {
         foreach ($rules as $name => $rule)
         {
@@ -34,7 +50,7 @@ class Validator
         return filter_var($var, FILTER_VALIDATE_URL);
     }
     
-    public static function hash($var)
+    public static function hash($var, $length = 32)
     {
         return ;
     }

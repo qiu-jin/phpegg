@@ -40,7 +40,7 @@ class Hash
     
     public static function salt($length = 10, $raw = false)
     {
-        $salt = function_exists('random_bytes') ? random_bytes($length, MCRYPT_DEV_URANDOM) : openssl_random_pseudo_bytes($length);
+        $salt = random_bytes($length, MCRYPT_DEV_URANDOM);
         return $raw ? $salt : bin2hex($salt);
     }
 

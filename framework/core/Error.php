@@ -9,22 +9,22 @@ class Error
     const WARNING  = E_USER_WARNING;
     const NOTICE   = E_USER_NOTICE;
     
-    private static $error_level_info = [
-        E_ERROR             => [Logger::CRITICAL    , 'E_ERROR'],
-        E_WARNING           => [Logger::WARNING     , 'E_WARNING'],
-        E_PARSE             => [Logger::ALERT       , 'E_PARSE'],
-        E_NOTICE            => [Logger::NOTICE      , 'E_NOTICE'],
-        E_CORE_ERROR        => [Logger::CRITICAL    , 'E_CORE_ERROR'],
-        E_CORE_WARNING      => [Logger::WARNING     , 'E_CORE_WARNING'],
-        E_COMPILE_ERROR     => [Logger::ALERT       , 'E_COMPILE_ERROR'],
-        E_COMPILE_WARNING   => [Logger::WARNING     , 'E_COMPILE_WARNING'],
-        E_USER_ERROR        => [Logger::ERROR       , 'E_USER_ERROR'],
-        E_USER_WARNING      => [Logger::WARNING     , 'E_USER_WARNING'],
-        E_USER_NOTICE       => [Logger::NOTICE      , 'E_USER_NOTICE'],
-        E_STRICT            => [Logger::NOTICE      , 'E_STRICT'],
-        E_RECOVERABLE_ERROR => [Logger::ERROR       , 'E_RECOVERABLE_ERROR'],
-        E_DEPRECATED        => [Logger::NOTICE      , 'E_DEPRECATED'],
-        E_USER_DEPRECATED   => [Logger::NOTICE      , 'E_USER_DEPRECATED'],
+    private static $error_info = [
+        E_ERROR             => [Logger::CRITICAL ,'E_ERROR'],
+        E_WARNING           => [Logger::WARNING  ,'E_WARNING'],
+        E_PARSE             => [Logger::ALERT    ,'E_PARSE'],
+        E_NOTICE            => [Logger::NOTICE   ,'E_NOTICE'],
+        E_CORE_ERROR        => [Logger::CRITICAL ,'E_CORE_ERROR'],
+        E_CORE_WARNING      => [Logger::WARNING  ,'E_CORE_WARNING'],
+        E_COMPILE_ERROR     => [Logger::ALERT    ,'E_COMPILE_ERROR'],
+        E_COMPILE_WARNING   => [Logger::WARNING  ,'E_COMPILE_WARNING'],
+        E_USER_ERROR        => [Logger::ERROR    ,'E_USER_ERROR'],
+        E_USER_WARNING      => [Logger::WARNING  ,'E_USER_WARNING'],
+        E_USER_NOTICE       => [Logger::NOTICE   ,'E_USER_NOTICE'],
+        E_STRICT            => [Logger::NOTICE   ,'E_STRICT'],
+        E_RECOVERABLE_ERROR => [Logger::ERROR    ,'E_RECOVERABLE_ERROR'],
+        E_DEPRECATED        => [Logger::NOTICE   ,'E_DEPRECATED'],
+        E_USER_DEPRECATED   => [Logger::NOTICE   ,'E_USER_DEPRECATED'],
     ];
     // 保存错误信息
     private static $errors;
@@ -43,7 +43,6 @@ class Error
     public static function set($message, $code = self::ERROR, $limit = 1)
     {
         $file = $line = $type = $class = $function = null;
-        $level = self::getErrorLevelInfo($code)[0];
         $traces = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         if (isset($traces[$limit])) {
             extract($traces[$limit]);
@@ -52,7 +51,8 @@ class Error
         if (Config::env('STRICT_ERROR_MODE')) {
             throw new \ErrorException($message, $code, $code, $file, $line);
         } else {
-            self::record('error.user', $code, $level, $message, $file, $line);
+            $trace = APP_DEBUG ? array_slice($traces, $limit) : null;
+            self::record('error.user', self::getErrorInfo($code)[0], $code, $message, $file, $line, $trace);
         }
     }
     
@@ -65,9 +65,8 @@ class Error
             if (Config::env('STRICT_ERROR_MODE')) {
                 throw new \ErrorException($message, $code, $code, $file, $line);
             } else {
-                list($level, $prefix) = self::getErrorLevelInfo($code);
-                $message = $prefix.': '.$message;
-                self::record('error.error', $code, $level, $message, $file, $line);
+                list($level, $prefix) = self::getErrorInfo($code);
+                self::record('error.error', $level, $code, "$prefix: $message", $file, $line);
                 if ($level === Logger::CRITICAL || $level === Logger::ALERT || $level === Logger::ERROR ) {
                     App::exit(3);
                     self::response();
@@ -83,10 +82,15 @@ class Error
     public static function exceptionHandler($e)
     {
         App::exit(4);
-        $level = Logger::ERROR;
-        $name  = $e instanceof Exception ? ($e->getClass() ?? 'CoreException') : get_class($e);
-        $message = 'Uncaught '.$name.': '.$e->getMessage();
-        self::record('error.exception', $e->getCode(), $level, $message, $e->getFile(), $e->getLine());
+        self::record(
+            'error.exception',
+            Logger::ERROR,
+            $e->getCode(),
+            sprintf('Uncaught %s: %s', $e instanceof Exception ? $e->getClass() : get_class($e), $e->getMessage()),
+            $e->getFile(),
+            $e->getLine(),
+            APP_DEBUG ? $e->getTrace() : null
+        );
         self::response();
     }
     
@@ -95,17 +99,17 @@ class Error
      */
     public static function fatalHandler()
     {
-		if (($last_error = error_get_last())
-            && ($last_error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR))
+		if (($error = error_get_last())
+            && ($error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR))
         ) {
             App::exit(5);
-            list($level, $prefix) = self::getErrorLevelInfo($last_error['type']);
-            $message = "Fatal Error $prefix: $last_error[message]";
-            self::record('error.fatal', $last_error['type'], $level, $message, $last_error['file'], $last_error['line']);
+            list($level, $prefix) = self::getErrorInfo($error['type']);
+            $message = "Fatal Error $prefix: $error[message]";
+            self::record('error.fatal', $level, $error['type'], $message, $error['file'], $error['line']);
             self::response();
 		} else {
             App::exit(0);
-            self::record('error.fatal', Logger::WARNING, 0, 'Unknown exit', null, null);
+            self::record('error.fatal', Logger::NOTICE, 0, 'Unknown exit', null, null);
 		}
     }
     
@@ -120,19 +124,19 @@ class Error
     /*
      * 记录错误
      */
-    private static function record($name, $code, $level, $message, $file, $line, $trace = null)
+    private static function record($name, $level, $code, $message, $file, $line, $trace = null)
     {
-        $context = compact('file', 'line', 'trace');
+        $context = compact('code', 'file', 'line', 'trace');
         self::$errors[] = compact('level', 'message', 'context');
-        Event::trigger($name, $code, $level, $message, $context);
+        Event::trigger($name, $level, $code, $message, $context);
         Logger::write($level, $message, $context);
     }
     
     /*
      * 获取错误分类信息
      */
-    private static function getErrorLevelInfo($code)
+    private static function getErrorInfo($code)
     {
-        return self::$error_level_info[$code] ?? [Logger::ERROR, 'UNKNOEN_ERROR'];
+        return self::$error_info[$code] ?? [Logger::ERROR, 'UNKNOEN_ERROR'];
     }
 }

@@ -27,7 +27,9 @@ class Container
             'service'   => 1
         ],
         // 闭包
-        'closure'   => [],
+        'closure'   => [
+            'logger'    => Logger::class.'::channel',
+        ],
         // 类
         'class'     => [],
         // 别名

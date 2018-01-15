@@ -13,52 +13,39 @@ class Str
         return $str;
     }
     
-    public static function toCamel($value, $en = '_')
+    public static function toCamel($value, $char = '_')
     {
-        $str = '';
-        $arr = explode($en, $value);
-		foreach($arr as $v){
+		foreach(explode($char, $value) as $v){
 			$str.= ucfirst($v);
 		}
 		return $str;
     }
     
-    public static function toSnake($value, $en = '_')
+    public static function toSnake($value, $char = '_')
     {
-        $str = '';
         $len = strlen($value);
         $value = lcfirst($value);
         for ($i = 0; $i < $len; $i++) {
-            $c = $value{$i};
-            if ($c === strtolower($c)) {
-                $str .= $c;
-            } else {
-                $str .= $en.strtolower($c);
-            }
+            $c = $value[$i];
+            $lower = strtolower($c);
+            $str .= $c === $lower ? $c : $char.$lower;
         }
-        return $str;
+        return $str ?? '';
     }
     
-    public static function indexPos($value, $find, $index = 1)
+    public static function indexPos($value, $find, $index)
     {
         $len = strlen($find);
         $offset = 0;
-        while ($index--) {
+        while ($index) {
             $pos = stripos($value, $find, $offset);
             if ($pos === false) {
                 return false;
             } else {
-                $offset = $pos+$len;
+                $offset = $pos + $len;
             }
+            $index--;
         }
         return $pos;
-    }
-    
-    public static function catHead($value, $find, $index = 1) 
-    {
-        $str = strtok($value, $find);
-        while ($index--) {
-            
-        }
     }
 }

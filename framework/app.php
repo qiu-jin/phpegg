@@ -19,6 +19,7 @@ abstract class App
     // 标示boot方法是否已执行，防止重复执行
     private static $boot;
     /* 标示退出状态
+     * 0 未标识退出
      * 1 用户强制退出，使用exit
      * 2 请求完成并退出
      * 3 错误退出
@@ -111,7 +112,7 @@ abstract class App
         });
         register_shutdown_function(function () {
             try {
-                if (!self::$exit) {
+                if (!isset(self::$exit)) {
                     Error::fatalHandler();
                 }
                 Event::trigger('exit');
@@ -138,7 +139,7 @@ abstract class App
         }
         define('APP_MODE', $app);
         if (in_array($app, self::MODES, true)) {
-            $class = __NAMESPACE__.'\core\app\\'.$app;
+            $class = 'framework\core\app\\'.$app;
         } elseif (is_subclass_of($app, __CLASS__)) {
             $class = $app;
         } else{
@@ -150,8 +151,7 @@ abstract class App
             Config::set('app', $config);
         }
         self::$app = new $class($config);
-        self::$app->dispatch = self::$app->dispatch();
-        Event::trigger('dispatch', self::$app->dispatch);
+        Event::trigger('dispatch', self::$app->dispatch = self::$app->dispatch());
         if (self::$app->dispatch !== false) {
             return self::$app;
         }
