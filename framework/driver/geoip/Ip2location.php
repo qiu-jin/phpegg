@@ -16,7 +16,7 @@ class Ip2location extends Geoip
         isset($config['fields']) && $this->fields = $config['fields'];
     }
     
-    public function handle($ip, $raw = false)
+    protected function handle($ip, $raw = false)
     {
         if ($ip_num = ip2long($ip)) {
             $result = $this->db->exec(sprintf("SELECT %s FROM %s WHERE %u BETWEEN %s AND %s",

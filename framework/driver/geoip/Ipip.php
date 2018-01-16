@@ -23,7 +23,7 @@ class Ipip extends Geoip
         }
     }
     
-    public function dbHandle($ip,  $raw = false)
+    protected function dbHandle($ip,  $raw = false)
     {
         if (!$long = pack('N', ip2long($ip))) {
             return;
@@ -47,7 +47,7 @@ class Ipip extends Geoip
         return $raw ? $result : $this->result(...$result);
     }
     
-    public function apiHandle($ip, $raw = false)
+    protected function apiHandle($ip, $raw = false)
     {
         $client = Client::get(self::$endpoint."/?addr=$ip")->header('Token', $this->token);
         $result = $client->response->json();

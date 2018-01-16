@@ -13,12 +13,13 @@ class Amap extends Geoip
         $this->acckey = $config['acckey'];
     }
     
-    public function handle($ip, $raw = false)
+    protected function handle($ip, $raw = false)
     {
         $client = Client::get(self::$endpoint."?ip=$ip&key=$this->acckey");
         $result = $client->response->json();
         if (isset($result['status'])) {
             if ($result['status'] === '1') {
+                // 高德地图无法定位国外IP
                 if (empty($result['province'])) {
                     return;
                 }
