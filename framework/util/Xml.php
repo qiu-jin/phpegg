@@ -3,41 +3,40 @@ namespace framework\util;
 
 class Xml
 {
-    public static function encode($arr, $root = null)
+    public static function encode($array, $root = null)
     {
-        $xml = new \XmlWriter();  
-        $xml->openMemory();  
-        $xml->startDocument('1.0', 'utf-8');
+        $writer = new \XmlWriter();  
+        $writer->openMemory();  
+        $writer->startDocument('1.0', 'utf-8');
         if ($root) {
-            $xml->startElement($root);
-            self::arrayToXml($xml, $arr);
-            $xml->endElement();  
+            $writer->startElement($root);
+            self::arrayToXml($writer, $array);
+            $writer->endElement();  
         } else {
-            self::arrayToXml($xml, $arr);
+            self::arrayToXml($writer, $array);
         }
-        return $xml->outputMemory(true);  
+        return $writer->outputMemory(true);  
     }
 
-    public static function decode($str, $root = false)
+    public static function decode($xml, $root = false)
     {
-        $obj = simplexml_load_string($str, null, LIBXML_NOCDATA);
-        if ($obj) {
-            $arr = json_decode(json_encode($obj), true);
-            return $root ? [$obj->getName() => $arr] : $arr;
+        if ($object = simplexml_load_string($xml, null, LIBXML_NOCDATA)) {
+            $array = json_decode(json_encode($object), true);
+            return $root ? [$object->getName() => $array] : $array;
         }
         return false;
     }
     
-    private static function arrayToXml($xml, $arr)
+    private static function writeArrayToXml($writer, $array)
     {
-        foreach($arr as $key => $value){
-            $xml->startElement($key);
+        foreach($array as $key => $value){
+            $writer->startElement($key);
             if(is_array($value)){
-                self::arrayToXml($xml, $value);
+                self::arrayToXml($writer, $value);
             } else {
-                $xml->text($value);
+                $writer->text($value);
             }
-            $xml->endElement();
+            $writer->endElement();
         }
     }
 }

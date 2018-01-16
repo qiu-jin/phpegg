@@ -19,19 +19,18 @@ abstract class Geoip
     public function locate($ip, $fitler = false)
     {
         $handle = $this->handle;
-        if ($fitler) {
-            if (empty($this->cache)) {
-                $location = $this->$handle($ip);
-            } else {
-                $location = $this->cache->get($ip);
-                if (!isset($location)) {
-                    $location = $this->$handle($ip);
-                    $this->cache->set($ip, $location);
-                }
-            }
-            return $location && $fitler === true ? $location : $location[$fitler];
-        } else {
+        if ($fitler === false) {
             return $this->$handle($ip, true);
         }
+        if (empty($this->cache)) {
+            $location = $this->$handle($ip);
+        } else {
+            $location = $this->cache->get($ip);
+            if (!isset($location)) {
+                $location = $this->$handle($ip);
+                $this->cache->set($ip, $location);
+            }
+        }
+        return $location && $fitler === true ? $location : $location[$fitler];
     }
 }

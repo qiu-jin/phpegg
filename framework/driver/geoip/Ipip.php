@@ -7,15 +7,17 @@ class Ipip extends Geoip
 {
     protected $db;
     protected $token;
+    protected $reader;
+    protected static $endpoint = 'http://ipapi.ipip.net/find';
 
     protected function init($config)
     {
         if (isset($config['database'])) {
-            $this->handle = 'dbHandle';
-            $this->db = ['database' => $config['database']];
+            $this->handle   = 'dbHandle';
+            $this->db       = fopen($config['database'], 'rb');
         } elseif (isset($config['token'])) {
-            $this->handle = 'apiHandle';
-            $this->token = $config['token'];
+            $this->handle   = 'apiHandle';
+            $this->token    = $config['token'];
         } else {
             throw new \Exception("Invalid configuration");
         }
@@ -23,44 +25,35 @@ class Ipip extends Geoip
     
     public function dbHandle($ip,  $raw = false)
     {
-        if (empty($this->db['fp'])) {
-            $this->db['fp'] = fopen($this->db['database'], 'rb');
-            if ($this->db['fp']) {
-                $this->db['offset'] = unpack('Nlen', fread($this->db['fp'], 4));
-                $this->db['index']  = fread($this->db['fp'], $this->db['offset']['len'] - 4);
-            } else {
-                return false;
-            }
+        if (!$long = pack('N', ip2long($ip))) {
+            return;
         }
-        $long = pack('N', ip2long($ip));
-        if (!$long) return false;
-        $index  = $this->db['index'];
-        $start  = unpack('Vlen', substr($index, strtok($ip, '.') * 4, 4));
-        $index_offset = $index_length = null;
-        $max_comp_len = $this->db['offset']['len'] - 1024 - 4;
-        for ($start = $start['len'] * 8 + 1024; $start < $max_comp_len; $start += 8) {
+        $this->reader['offset'] = unpack('N', fread($this->db, 4));
+        $index = $this->reader['index'] = fread($this->db, $this->reader['offset'][1] - 4);
+        $start = unpack('V', substr($index, strtok($ip, '.') * 4, 4));
+        $max_comp_len = $this->reader['offset'][1] - 1024 - 4;
+        for ($start = $start[1] * 8 + 1024; $start < $max_comp_len; $start += 8) {
             if (substr($index, $start, 4) >= $long) {
-                $index_offset = unpack('Vlen', substr($index, $start + 4, 3)."\x0");
-                $index_length = unpack('Clen', $index{$start + 7});
+                $index_offset = unpack('V', substr($index, $start + 4, 3)."\x0");
+                $index_length = unpack('C', $index[$start + 7]);
                 break;
             }
         }
-        if ($index_offset !== null) {
-            fseek($this->db['fp'], $this->db['offset']['len'] + $index_offset['len'] - 1024);
-            $result = explode("\t", fread($this->db['fp'], $index_length['len']));
-            return $raw ? $result : ['country' => $result[0], 'state' => $result[1], 'city' => $result[2]];
+        if (!isset($index_offset)) {
+            return;
         }
-        return false;
+        fseek($this->db, $this->reader['offset'][1] + $index_offset[1] - 1024);
+        $result = explode("\t", fread($this->db, $index_length[1]));
+        return $raw ? $result : $this->result(...$result);
     }
     
     public function apiHandle($ip, $raw = false)
     {
-        $client = Client::get('http://ipapi.ipip.net/find/?addr='.$ip)->header('Token', $this->token);
+        $client = Client::get(self::$endpoint."/?addr=$ip")->header('Token', $this->token);
         $result = $client->response->json();
         if (isset($result['ret'])) {
             if ($result['ret'] === 'ok') {
-                $data = $result['data'];
-                return $raw ? $data : ['country' => $data[0], 'state' => $data[1], 'city' => $data[2]];
+                return $raw ? $result['data'] : $this->result(...$result['data']);
             } elseif ($result['ret'] === 'err') {
                 return error($result['msg']);
             }
@@ -68,8 +61,13 @@ class Ipip extends Geoip
         return error($client->error);
     }
     
+    protected function result($country, $state, $city)
+    {
+        return compact('country', 'state', 'city');
+    }
+    
     public function __destruct()
     {
-        isset($this->db['fp']) && fclose($this->db['fp']);
+        isset($this->db) && fclose($this->db);
     }
 } 
