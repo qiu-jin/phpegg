@@ -10,8 +10,8 @@ abstract class Sms
     
     public function __construct(array $config)
     {
-        $this->acckey = $config['acckey'];
-        $this->seckey = $config['seckey'];
+        $this->acckey   = $config['acckey'];
+        $this->seckey   = $config['seckey'];
         $this->template = $config['template'];
         isset($config['signname']) && $this->signname = $config['signname'];
     }

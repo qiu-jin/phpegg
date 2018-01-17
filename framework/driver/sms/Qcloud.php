@@ -12,13 +12,23 @@ class Qcloud extends Sms
         $time   = time();
         $random = uniqid();
         $signname = '【'.($signname ?? $this->signname).'】';
-        foreach ($data as $k => $v) {
-            $replace['{'.$k.'}'] = $v;
+        $message = $this->template[$template];
+        if ($data) {
+            foreach ($data as $k => $v) {
+                $replace['{'.$k.'}'] = $v;
+            }
+            $message = strtr($message, $replace);
+        }
+        if (is_array($to)) {
+            $nationcode = $to[0];
+            $to         = $to[1];
+        } else {
+            $nationcode = '86';
         }
         $client = Client::post(self::$endpoint."?sdkappid=$this->acckey&random=$random")->json([
-            'tel'   => ['nationcode' => '86', 'mobile' => $to],
+            'tel'   => ['nationcode' => $nationcode, 'mobile' => $to],
             'type'  => 0,
-            'msg'   => $signname.strtr($this->template[$template], $replace),
+            'msg'   => $signname.$message,
             'sig'   => hash('sha256', "appkey=$this->seckey&random=$random&time=$time&mobile=$to"),
             'time'  => $time,
             'extend'=> '',

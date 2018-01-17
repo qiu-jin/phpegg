@@ -3,8 +3,7 @@ namespace framework\driver\crypt;
 
 abstract class Crypt
 {
-    protected $serialize;
-    protected $unserialize;
+    protected $config = [];
          
     abstract public function encrypt($data);
     
@@ -12,19 +11,16 @@ abstract class Crypt
     
     public function __construct($config)
     {
-        $this->init($config);
-        if (isset($config['serializer'])) {
-            list($this->serialize, $this->unserialize) = $config['serializer'];
-        }
+        $this->config = $config + $this->config;
     }
     
     protected function serialize($data)
     {
-        return $this->serialize ? ($this->serialize)($data) : $data;
+        return isset($this->config['serializer']) ? ($this->config['serializer'][0])($data) : $data;
     }
     
     protected function unserialize($data)
     {
-        return $this->serialize ? ($this->unserialize)($data) : $data;
+        return isset($this->config['serializer']) ? ($this->config['serializer'][1])($data) : $data;
     }
 }

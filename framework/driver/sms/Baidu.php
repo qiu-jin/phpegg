@@ -5,39 +5,44 @@ use framework\core\http\Client;
 
 class Baidu extends Sms
 {
-    protected $endpoint;
+    protected $region;
     protected $expiration;
     protected static $version = 'bce-auth-v1';
+    protected static $endpoint = 'http://sms.%s.baidubce.com/bce/v2';
     
     public function __construct(array $config)
     {
         parent::__construct($config);
-        $this->endpoint = $config['endpoint'] ?? 'http://sms.bj.baidubce.com';
+        $this->region = $config['region'] ?? 'bj';
         $this->expiration = $config['expiration'] ?? 180;
     }
 
     protected function handle($to, $template, $data)
     {
-        $path = '/bce/v2/message';
         $body = json_encode([
             'invoke'            => uniqid(),
             'phoneNumber'       => $to,
             'TemplateCode'      => $this->template[$template],
             'contentVar'        => $data
         ]);
-        $client = Client::post("$endpoint$path")->headers($this->buildHeaders($path, $body))->body($body);
+        $url    = sprintf($this->endpoint, $this->region).'/message';
+        $client = Client::post($url)->headers($this->buildHeaders($url, $body))->body($body);
         $result = $client->response->json();
-        if (isset($result['code']) && $result['code'] === '1000') {
-            return true;
+        if (isset($result['code'])) {
+            if ($result['code'] === '1000') {
+                return true;
+            }
+            return error("[$result[code]]$result[message]");
         }
-        return error($result['message'] ?? $client->error);
+        return error($client->error);
     }
     
-    protected function buildHeaders($path, $body)
+    protected function buildHeaders($url, $body)
     {
         $time = gmdate('Y-m-d\TH:i:s\Z');
+        $parsed_url = parse_url($url);
         $headers = [
-            'Host' => parse_url($this->endpoint, PHP_URL_HOST),
+            'Host' => $parsed_url['host'],
             'Content-Type' => 'application/json',
             'Content-Length' => strlen($body),
             'x-bce-date' => $time,
@@ -51,7 +56,7 @@ class Baidu extends Sms
             $canonicalheaders[] = "$k:".rawurlencode(trim($v));
         }
         $signkey = hash_hmac('sha256', self::$version."/$this->acckey/$time/$this->expiration", $this->seckey);
-        $signature = hash_hmac('sha256', "POST\n$path\n\n".implode("\n", $canonicalheaders), $signkey);
+        $signature = hash_hmac('sha256', "POST\n$parsed_url[path]\n\n".implode("\n", $canonicalheaders), $signkey);
         $sendheaders[] = "Authorization: ".self::$version."/$this->acckey/$time/$this->expiration/".implode(';', $signheaders)."/$signature";
         return $sendheaders;
     }

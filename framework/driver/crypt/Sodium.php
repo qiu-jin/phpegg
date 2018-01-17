@@ -2,27 +2,33 @@
 namespace framework\driver\crypt;
 
 /*
- * https://github.com/jedisct1/libsodium-php
+ * PHP < 7.2 with `pecl install libsodium`
  */
 class Sodium extends Crypt
-{   
-    protected $key;
+{
     protected $nonce;
-    
-    protected function init($config)
-    {
-        $this->key = $config['key'];
-        $this->nonce = $config['nonce'] ?? sodium_crypto_generichash($config['key'], null, 24);
-    }
     
     public function encrypt($data, $raw = false)
     {
-        $secret = sodium_crypto_secretbox($this->serialize($data), $this->nonce, $this->key);
+        $secret = sodium_crypto_secretbox(
+            $this->serialize($data),
+            $this->getNonce(),
+            $this->config['key']
+        );
         return $raw ? $secret : base64_encode($secret);
     }
     
     public function decrypt($data, $raw = false)
     {
-        return $this->unserialize(sodium_crypto_secretbox_open($raw ? $data : base64_decode($data), $this->nonce, $this->key));
+        return $this->unserialize(sodium_crypto_secretbox_open(
+            $raw ? $data : base64_decode($data),
+            $this->getNonce(),
+            $this->config['key']
+        ));
+    }
+    
+    protected function getNonce()
+    {
+        return $this->nonce ?? $this->nonce = sodium_crypto_generichash($this->config['nonce'] ?? '', null, 24);
     }
 }

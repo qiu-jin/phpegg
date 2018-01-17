@@ -45,6 +45,6 @@ class Aliyun extends Sms
             }
             return error("[{$result['Code']}]".$result['Message']);
         }
-        return error($result['Message'] ?? $client->error);
+        return error($client->error);
     }
 }
