@@ -3,9 +3,9 @@ namespace framework\driver\queue\producer;
 
 class Kafka extends Producer
 {
-    protected function init($link)
+    protected function init($connection)
     {
-        $this->queue = $link->newTopic($this->job);
+        $this->queue = $connection->newTopic($this->job);
     }
     
     public function push($value)

@@ -57,7 +57,8 @@ class Baidu extends Sms
         }
         $signkey = hash_hmac('sha256', self::$version."/$this->acckey/$time/$this->expiration", $this->seckey);
         $signature = hash_hmac('sha256', "POST\n$parsed_url[path]\n\n".implode("\n", $canonicalheaders), $signkey);
-        $sendheaders[] = "Authorization: ".self::$version."/$this->acckey/$time/$this->expiration/".implode(';', $signheaders)."/$signature";
+        $shstr = implode(';', $signheaders);
+        $sendheaders[] = "Authorization: ".self::$version."/$this->acckey/$time/$this->expiration/$shstr/$signature";
         return $sendheaders;
     }
 }

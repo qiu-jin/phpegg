@@ -108,7 +108,6 @@ class Http
     
     protected function setfilter($filters)
     {
-        $arr = [];
         foreach ($filters as $filter) {
             $count = count($filter);
             if ($count === 1) {
@@ -117,7 +116,7 @@ class Http
                 $arr[$filter[0]] = $filter[1];
             }
         }
-        return http_build_query($arr);
+        return isset($arr) ? http_build_query($arr) : '';
     }
     
     protected function parseParams($ns, $params)

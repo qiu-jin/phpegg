@@ -24,8 +24,7 @@ class With extends QueryChain
     
     public function get($id = null, $pk = 'id')
     {
-        $data = $this->query->get($id, $pk);
-        if ($data) {
+        if ($data = $this->query->get($id, $pk)) {
             $data = [$data];
             $this->withData(1, $data);
             return $data[0];
@@ -35,8 +34,7 @@ class With extends QueryChain
 
     public function find($limit = 0)
     {
-        $data = $this->query->find($limit);
-        if ($data) {
+        if ($data = $this->query->find($limit)) {
             $count = count($data);
             if ($count > 1 && !array_diff(array_keys($this->option), ['on', 'fields', 'where', 'order'])) {
                 $this->withOptimizeData($count, $data);
@@ -66,8 +64,7 @@ class With extends QueryChain
         if (isset($this->option['fields']) && !in_array($field2, $this->option['fields'])) {
             $this->option['fields'][] = $field2;
         }
-        $with_data = $this->db->exec(...$this->builder::select($this->with, $this->option));
-        if ($with_data) {
+        if ($with_data = $this->db->exec(...$this->builder::select($this->with, $this->option))) {
             foreach ($with_data as $wd) {
                 $sub_data[$wd[$field2]][] = $wd;
             }

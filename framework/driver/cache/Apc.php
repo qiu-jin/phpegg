@@ -14,8 +14,7 @@ class Apc extends Cache
     
     public function get($key, $default = null)
     {
-        $value = apcu_fetch($this->prefix.$key);
-        return $value ? $this->unserialize($value) : $default;
+        return ($value = apcu_fetch($this->prefix.$key)) ? $this->unserialize($value) : $default;
     }
 
     public function has($key)

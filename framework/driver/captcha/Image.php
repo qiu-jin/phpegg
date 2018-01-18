@@ -47,8 +47,7 @@ class Image
     
     public function output($value = null)
     {
-        $builder = new CaptchaBuilder;
-        $builder->build();
+        ($builder = new CaptchaBuilder)->build();
         $this->store::set($this->name, $builder->getPhrase());
         Response::send($builder->output(), 'Content-type: image/jpeg');
     }

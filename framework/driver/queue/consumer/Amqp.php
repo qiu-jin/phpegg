@@ -3,9 +3,9 @@ namespace framework\driver\queue\consumer;
 
 class Amqp extends Consumer
 {
-    protected function init($link)
+    protected function init($connection)
     {
-        $this->queue = new \AMQPQueue(new \AMQPChannel($link)); 
+        $this->queue = new \AMQPQueue(new \AMQPChannel($connection)); 
         $this->queue->setName($this->job);
     }
     

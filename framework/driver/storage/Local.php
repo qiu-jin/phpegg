@@ -27,8 +27,7 @@ class Local extends Storage
     
     public function put($from, $to, $is_buffer = false)
     {
-        $to = $this->path($to);
-        if ($this->ckdir($to)) {
+        if ($this->ckdir($to = $this->path($to))) {
             return $is_buffer ? (bool) file_put_contents($to, $from) : copy($from, $to);
         }
         return false;
@@ -42,14 +41,12 @@ class Local extends Storage
     
     public function copy($from, $to)
     {
-        $to = $this->path($to);
-        return $this->ckdir($to) && copy($this->path($from), $to);
+        return $this->ckdir($to = $this->path($to)) && copy($this->path($from), $to);
     }
     
     public function move($from, $to)
     {
-        $to = $this->path($to);
-        return $this->ckdir($to) && rename($this->path($from), $to);
+        return $this->ckdir($to = $this->path($to)) && rename($this->path($from), $to);
     }
     
     public function delete($from)
@@ -64,7 +61,6 @@ class Local extends Storage
     
     protected function ckdir($path)
     {
-        $dir = dirname($path);
-        return is_dir($dir) || mkdir($dir, 0777);
+        return is_dir($dir = dirname($path)) || mkdir($dir, 0777);
     }
 }

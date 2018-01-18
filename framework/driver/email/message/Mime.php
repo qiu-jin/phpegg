@@ -7,8 +7,6 @@ class Mime
     
     public static function build($option)
     {
-        $mime = '';
-        $addrs = [];
         $mime = ["MIME-Version: 1.0", "Date: ".date("D, j M Y G:i:s O")];
         if (isset($option['from'])) {
             $mime[] = 'From: '.self::buildAddr($option['from']);
@@ -54,7 +52,7 @@ class Mime
             $mime[] = '';
             $mime[] = $option['content'];
         }
-        return [$addrs, implode(self::EOL, $mime)];
+        return [$addrs ?? null, implode(self::EOL, $mime)];
     }
     
     public static function buildAddr($addr)

@@ -6,70 +6,52 @@ use framework\driver\email\message\Mime;
 
 class Smtp extends Email
 {
-    protected $link;
-    protected $host;
-    protected $port;
+    protected $fp;
     protected $debug;
-    protected $username;
-    protected $password;
     
     protected function init($config)
     {
-        $this->host = $config['host'];
-        $this->port = $config['port'] ?? 25;
-        $this->username = $config['username'];
-        $this->password = $config['password'];
+        $this->fp = fsockopen($config['host'], $config['port'] ?? 25, $errno, $error, $config['timeout'] ?? 15);
+        if (!is_resource($this->fp)) {
+            throw new \Exception("Smtp connect error: [$errno]$error");
+        }
+        $this->read();
+        $this->command('EHLO '.$config['host']);
+        $this->command('AUTH LOGIN');
+        $this->command(base64_encode($config['username']));
+        $data = $this->command(base64_encode($config['password']));
+        if (substr($data, 0, 3) !== '235') {
+            throw new \Exception("Smtp auth error: $data");
+        }
         $this->debug = $config['debug'] ?? APP_DEBUG;
     }
     
     public function handle($options)
     {
-        if ($this->connect()) {
-            list($addrs, $mime) = Mime::build($options);
-            $data = $this->command('MAIL FROM: <'.$options['from'][0].'>');
+        list($addrs, $mime) = Mime::build($options);
+        $data = $this->command("MAIL FROM: <{$options['from'][0]}>");
+        if (substr($data, 0, 3) != '250') {
+            return error($data);
+        }
+        foreach ($addrs as $addr) {
+            $data = $this->command("RCPT TO: <$addr>");
             if (substr($data, 0, 3) != '250') {
                 return error($data);
             }
-            foreach ($addrs as $addr) {
-                $data = $this->command("RCPT TO: <$addr>");
-                if (substr($data, 0, 3) != '250') {
-                    return error($data);
-                }
-            }
-            $this->command('DATA');
-            $data = $this->command($mime.Mime::EOL.".");
-            if (substr($data, 0, 3) != '250') {
-                return error($data);
-            }
-            $this->command('QUIT');
-            return true;
         }
-        return false;
-    }
-    
-    protected function connect()
-    {
-        if (!$this->link) {
-            $this->link = fsockopen($this->host, $this->port, $errno, $error, 15);
-            if (!is_resource($this->link)) {
-                return error('connect error '.$errno.': '.$error);
-            }
-            $this->read();
-            $this->command('EHLO '.$this->host);
-            $this->command('AUTH LOGIN');
-            $this->command(base64_encode($this->username));
-            $data = $this->command(base64_encode($this->password));
-            if (substr($data, 0, 3) != '235') {
-                return error($data);
-            }
+        $this->command('DATA');
+        $data = $this->command($mime.Mime::EOL.".");
+        if (substr($data, 0, 3) != '250') {
+            return error($data);
         }
+        $this->command('QUIT');
         return true;
     }
     
     protected function read()
     {
         $res = '';
-        while ($str = fgets($this->link, 1024)) {
+        while ($str = fgets($this->fp, 1024)) {
             $res .= $str;
             if (substr($str, 3, 1) == " ") break;
         }
@@ -82,7 +64,7 @@ class Smtp extends Email
     
     protected function command($cmd)
     {
-        fputs($this->link, $cmd.Mime::EOL);
+        fputs($this->fp, $cmd.Mime::EOL);
         return $this->read();
     }
     
@@ -94,6 +76,6 @@ class Smtp extends Email
     
     public function __destruct()
     {
-        $this->link && fclose($this->link);
+        $this->fp && fclose($this->fp);
     }
 }

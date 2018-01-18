@@ -21,7 +21,7 @@ class S3 extends Storage
         $this->seckey = $config['seckey'];
         $this->region = $config['region'];
         $this->endpoint = $config['endpoint'] ?? 'https://s3.amazonaws.com';
-        $this->domain   = $config['domain'] ?? "$this->endpoint/$this->bucket";
+        $this->domain   = $config['domain']   ?? "$this->endpoint/$this->bucket";
         $this->public_read = $config['public_read'] ?? false;
     }
     
@@ -49,8 +49,7 @@ class S3 extends Storage
             $headers['X-Amz-Content-Sha256'] = hash('sha256', $from);
             return $this->send('PUT', $to, $headers, $methods);
         }
-        $fp = fopen($from, 'r');
-        if ($fp) {
+        if ($fp = fopen($from, 'r')) {
             $methods['stream'] = $fp;
             $headers['Content-Length'] = filesize($from);
             $headers['X-Amz-Content-Sha256'] = hash_file('sha256', $from);
@@ -113,7 +112,8 @@ class S3 extends Storage
                     return true;
             }
         }
-        if ($response->status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
+        // HEAD请求忽略404错误（has stat方法）
+        if ($response->status === 404 && $method === 'HEAD') {
             return false;
         }
         $result = Xml::decode($response->body);

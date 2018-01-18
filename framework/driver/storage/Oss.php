@@ -47,8 +47,7 @@ class Oss extends Storage
             $headers['Content-Md5'] = base64_encode(md5($from, true));
             return $this->send('PUT', $to, $headers, $methods);
         }
-        $fp = fopen($from, 'r');
-        if ($fp) {
+        if ($fp = fopen($from, 'r')) {
             $methods['stream'] = $fp;
             $headers['Content-Length'] = filesize($from);
             $headers['Content-Md5'] = base64_encode(md5_file($from, true));
@@ -110,7 +109,8 @@ class Oss extends Storage
                     return true;
             }
         }
-        if ($response->status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
+        // HEAD请求忽略404错误（has stat方法）
+        if ($response->status === 404 && $method === 'HEAD') {
             return false;
         }
         $result = Xml::decode($response->body);

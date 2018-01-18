@@ -34,7 +34,7 @@ class Recaptcha
         $client = Client::post(self::$endpoint)->form([
             'secret'   => $this->seckey,
             'response' => $value ?? Request::post('g-recaptcha-response'),
-            'remoteip' => Request::ip()
+            'remoteip' => Request::ip(true)
         ]);
         $result = $client->response->json();
         if (isset($result['success']) && $result['success'] === true) {

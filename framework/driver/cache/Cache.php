@@ -5,8 +5,7 @@ use framework\core\Event;
 
 abstract class Cache
 {
-    protected $serialize;
-    protected $unserialize;
+    protected $serializer;
     
     abstract public function get($key, $default);
     
@@ -21,9 +20,7 @@ abstract class Cache
     public function __construct($config)
     {
         $this->init($config);
-        if (isset($config['serializer'])) {
-            list($this->serialize, $this->unserialize) = $config['serializer'];
-        }
+        isset($config['serializer']) && $this->serializer = $config['serializer'];
         if (isset($config['gc_random']) && mt_rand(1, $config['gc_random'][1]) <= $config['gc_random'][0]) {
             Event::on('close', [$this, 'gc']);
         }
@@ -79,11 +76,11 @@ abstract class Cache
     
     protected function serialize($data)
     {
-        return $this->serialize ? ($this->serialize)($data) : $data;
+        return $this->serializer ? ($this->serializer[0])($data) : $data;
     }
     
     protected function unserialize($data)
     {
-        return $this->unserialize ? ($this->unserialize)($data) : $data;
+        return $this->serializer ? ($this->serializer[1])($data) : $data;
     }
 }

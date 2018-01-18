@@ -3,9 +3,9 @@ namespace framework\driver\queue\consumer;
 
 class Kafka extends Consumer
 {
-    protected function init($link)
+    protected function init($connection)
     {
-        $this->queue = $link->newTopic($this->job);
+        $this->queue = $connection->newTopic($this->job);
     }
     
     public function bpop()

@@ -5,7 +5,9 @@ use framework\core\Container;
 
 abstract class Geoip
 {
+    // 缓存实例
     protected $cache;
+    // 处理器，部分驱动有本地数据处理器和在线接口处理器
     protected $handle = 'handle';
     
     public function __construct($config)
@@ -16,6 +18,10 @@ abstract class Geoip
         }
     }
     
+    /*
+     * ip定位
+     * $fitler用于过滤处理结果，false不过滤，true默认过滤，string过滤获取指定值
+     */
     public function locate($ip, $fitler = false)
     {
         $handle = $this->handle;

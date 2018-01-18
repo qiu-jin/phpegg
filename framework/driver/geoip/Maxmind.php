@@ -33,7 +33,6 @@ class Maxmind extends Geoip
         isset($config['type']) && $this->type = $config['type'];
     }
     
-    // 离线文件数据库处理
     protected function dbHandle($ip, $raw = false)
     {
         if ($result = $this->db->get($ip)) {

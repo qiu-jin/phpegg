@@ -46,15 +46,13 @@ class Webdav extends Storage
     
     public function put($from, $to, $is_buffer = false)
     {
-        $to = $this->uri($to);
-        if ($this->ckdir($to)) {
+        if ($this->ckdir($to = $this->uri($to))) {
             $methods['timeout'] = $this->timeout;
             if ($is_buffer) {
                 $methods['body'] = $from;
                 return $this->send('PUT', $to, null, $methods);
             }
-            $fp = fopen($from, 'r');
-            if ($fp) {
+            if ($fp = fopen($from, 'r')) {
                 $methods['stream'] = $fp;
                 $return = $this->send('PUT', $to, null, $methods);
                 fclose($fp);
@@ -78,14 +76,12 @@ class Webdav extends Storage
     
     public function copy($from, $to)
     {
-        $to = $this->uri($to);
-        return $this->ckdir($to) && $this->send('COPY', $this->uri($from), ['Destination: '.$to]);
+        return $this->ckdir($to = $this->uri($to)) && $this->send('COPY', $this->uri($from), ['Destination: '.$to]);
     }
     
     public function move($from, $to)
     {
-        $to = $this->uri($to);
-        return $this->ckdir($to) && $this->send('MOVE', $this->uri($from), ['Destination: '.$to]);
+        return $this->ckdir($to = $this->uri($to)) && $this->send('MOVE', $this->uri($from), ['Destination: '.$to]);
     }
     
     public function delete($from)
@@ -126,7 +122,8 @@ class Webdav extends Storage
                     return true;
             }
         }
-        if ($response->status === 404 && $method === 'HEAD' && !isset($client_methods['returnHeaders'])) {
+        // HEAD请求忽略404错误（has stat方法）
+        if ($response->status === 404 && $method === 'HEAD') {
             return false;
         }
         return error($client->error, 2);

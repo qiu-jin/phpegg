@@ -29,6 +29,6 @@ class Sodium extends Crypt
     
     protected function getNonce()
     {
-        return $this->nonce ?? $this->nonce = sodium_crypto_generichash($this->config['nonce'] ?? '', null, 24);
+        return $this->nonce ?? $this->nonce = sodium_crypto_generichash($this->config['salt'] ?? '', null, 24);
     }
 }

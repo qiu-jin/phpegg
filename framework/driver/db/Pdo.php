@@ -13,19 +13,19 @@ abstract class Pdo extends Db
     
     protected function connect($config)
     {
-        $link = new \PDO($this->dsn($config), $config['username'], $config['password'], $config['options'] ?? null);
+        $connection = new \PDO($this->dsn($config), $config['username'], $config['password'], $config['options'] ?? null);
         if (isset($config['attributes'])) {
             foreach ($config['attributes'] as $attribute => $value) {
-                $link->setAttribute($attribute, $value);
+                $connection->setAttribute($attribute, $value);
             }
         }
         if (isset($this->commands)) {
             foreach ($this->commands as $command) {
-                $link->exec($command);
+                $connection->exec($command);
             }
             $this->commands = null;
         }
-        return $link;
+        return $connection;
     }
     
     public function exec($sql, $params = null)
@@ -34,41 +34,35 @@ abstract class Pdo extends Db
         $cmd = trim(strtoupper(strtok($sql, ' ')), "\t(");
         if ($params) {
             $query = $this->prepareExecute($sql, $params);
-            if ($query) {
-                switch ($cmd) {
-                    case 'SELECT':
-                        return $query->fetchAll(\PDO::FETCH_ASSOC);
-                    case 'INSERT':
-                        return $this->link->lastInsertId();
-                    case 'UPDATE':
-                        return $query->rowCount();
-                    case 'DELETE':
-                        return $query->rowCount();
-                    default:
-                        return $query->fetchAll(\PDO::FETCH_ASSOC);
-                }
+            switch ($cmd) {
+                case 'SELECT':
+                    return $query->fetchAll(\PDO::FETCH_ASSOC);
+                case 'INSERT':
+                    return $this->connection->lastInsertId();
+                case 'UPDATE':
+                    return $query->rowCount();
+                case 'DELETE':
+                    return $query->rowCount();
+                default:
+                    return true;
             }
         } else {
             if ($cmd === 'SELECT') {
-                $query = $this->link->query($sql);
-                if ($query !== false) {
+                if ($query = $this->connection->query($sql)) {
                     return $query->fetchAll(\PDO::FETCH_ASSOC);
                 }
             } elseif ($cmd === 'INSERT' || $cmd === 'UPDATE' || $cmd === 'DELETE') {
-                $affected = $this->link->exec($sql);
-                if ($affected !== false) {
-                    return $cmd === 'INSERT' ? $this->link->lastInsertId() : $affected;
+                if ($affected = $this->connection->exec($sql)) {
+                    return $cmd === 'INSERT' ? $this->connection->lastInsertId() : $affected;
                 }
             } else {
-                $query = $this->link->query($sql);
-                if ($query !== false) {
-                    return $query->fetchAll(\PDO::FETCH_ASSOC);
+                if (($query = $this->connection->query($sql))) {
+                    return true;
                 }
             }
-            $error = $this->link->errorInfo();
+            $error = $this->connection->errorInfo();
             throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
         }
-        return false;
     }
     
     public function query($sql, $params = null)
@@ -77,27 +71,29 @@ abstract class Pdo extends Db
         if ($params) {
             return $this->prepareExecute($sql, $params);
         } else {
-            $query = $this->link->query($sql);
-            if ($query === false) {
-                $error = $this->link->errorInfo();
-                throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
+            if ($query = $this->connection->query($sql)) {
+                return $query;
             }
-            return $query;
+            $error = $this->connection->errorInfo();
+            throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
         }
     }
     
     public function prepareExecute($sql, $params)
     {
-        $query = $this->link->prepare($sql);
-        if ($query->execute($params)) {
-            return $query;
-        } else {
-            $error = $query->errorInfo();
-            if ($error[0] === 'HY093') {
-                throw new \Exception('DB ERROR: Invalid parameter number');
+        if ($query = $this->connection->prepare($sql)) {
+            if ($query->execute($params)) {
+                return $query;
+            } else {
+                $error = $query->errorInfo();
             }
-            throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
+        } else {
+            $error = $this->connection->errorInfo();
         }
+        if ($error[0] === 'HY093') {
+            throw new \Exception('DB ERROR: Invalid parameter number');
+        }
+        throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
     }
     
     public function fetch($query)
@@ -127,32 +123,32 @@ abstract class Pdo extends Db
     
     public function insertId()
     {
-        return $this->link->lastInsertId();
+        return $this->connection->lastInsertId();
     }
 
     public function quote($str)
     {
-        return $this->link->quote($str);
+        return $this->connection->quote($str);
     }
     
     public function begin()
     {
-		return $this->link->beginTransaction();
+		return $this->connection->beginTransaction();
     }
     
     public function rollback()
     {
-        return $this->link->rollBack();
+        return $this->connection->rollBack();
     }
     
     public function commit()
     {
-		return $this->link->commit();
+		return $this->connection->commit();
     }
     
     public function error($query = null)
     {   
-        $error = $query ? $query->errorInfo : $this->link->errorInfo;
+        $error = $query ? $query->errorInfo() : $this->connection->errorInfo();
         return array($error[1], $error[2]);
     }
 }

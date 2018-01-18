@@ -3,9 +3,9 @@ namespace framework\driver\queue\producer;
 
 class Amqp extends Producer
 {
-    protected function init($link)
+    protected function init($connection)
     {
-        $this->queue = new \AMQPExchange(new \AMQPChannel($link)); 
+        $this->queue = new \AMQPExchange(new \AMQPChannel($connection)); 
         $this->queue->setName($this->job);
     }
     

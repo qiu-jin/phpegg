@@ -3,35 +3,32 @@ namespace framework\driver\storage;
 
 class Ftp extends Storage
 {
-    protected $link;
+    protected $connection;
     
     public function __construct($config)
     {
         $port = $config['port'] ?? 21;
         if (empty($config['ssl'])) {
-            $link = ftp_connect($config['host'], $port);
+            $this->connection  = ftp_connect($config['host'], $port);
         } else {
-            $link = ftp_ssl_connect($config['host'], $port);
+            $this->connection  = ftp_ssl_connect($config['host'], $port);
         }
-        if ($link && ftp_login($link, $config['username'], $config['password'])) {
-            if ($config['enable_pasv'] ?? true) {
-                ftp_pasv($link, true);
-            }
-            $this->link = $link;
-            $this->domain = $config['domain'] ?? $config['host'];
-        } else {
+        if (!$this->connection && !ftp_login($this->connection , $config['username'], $config['password'])) {
             throw new \Exception('Ftp connect error');
         }
+        if ($config['enable_pasv'] ?? true) {
+            ftp_pasv($this->connection, true);
+        }
+        $this->domain = $config['domain'] ?? $config['host'];
     }
     
     public function get($from ,$to = null)
     {
         $from = $this->path($from);
         if ($to) {
-            return ftp_get($this->link, $to, $from, 2);
+            return ftp_get($this->connection, $to, $from, 2);
         } else {
-            $fp = fopen('php://memory', 'r+');
-            if (ftp_fget($this->link, $fp, $from, 2)) {
+            if (ftp_fget($this->connection, $fp = fopen('php://memory', 'r+'), $from, 2)) {
                 rewind($fp);
                 $content = stream_get_contents($fp);
                 fclose($fp);
@@ -43,22 +40,20 @@ class Ftp extends Storage
     
     public function has($from)
     {
-        return (bool) @ftp_size($this->link, $this->path($from));
+        return (bool) @ftp_size($this->connection, $this->path($from));
     }
     
     public function put($from, $to, $is_buffer = false)
     {
-        $to = $this->path($to);
-        if ($this->ckdir($to)) {
+        if ($this->ckdir($to = $this->path($to))) {
             if ($is_buffer) {
-                $fp = fopen('php://memory', 'r+');
-                fwrite($fp, $from);
+                fwrite($fp = fopen('php://memory', 'r+'), $from);
                 rewind($fp);
-                $return = ftp_fput($this->link, $to, $fp, 2);
+                $return = ftp_fput($this->connection, $to, $fp, 2);
                 fclose($fp);
                 return $return;
             } else {
-                return ftp_put($this->link, $to, $from, 2);
+                return ftp_put($this->connection, $to, $from, 2);
             }
         }
     }
@@ -67,19 +62,18 @@ class Ftp extends Storage
     {
         $from = $this->path($from);
         return [
-            'size' => ftp_size($this->link, $from),
-            'mtime' => ftp_mdtm($this->link, $from)
+            'size' => ftp_size($this->connection, $from),
+            'mtime' => ftp_mdtm($this->connection, $from)
         ];
     }
     
     public function copy($from, $to)
     {
-        $to = $this->path($to);
-        if ($this->ckdir($to)) {
+        if ($this->ckdir($to = $this->path($to))) {
             $fp = fopen('php://memory', 'r+');
-            if (ftp_fget($this->link, $fp, $this->path($from), 2)) {
+            if (ftp_fget($this->connection, $fp, $this->path($from), 2)) {
                 rewind($fp);
-                $return = ftp_fput($this->link, $to, $fp, 2);
+                $return = ftp_fput($this->connection, $to, $fp, 2);
                 fclose($fp);
                 return $return;
             }
@@ -89,22 +83,26 @@ class Ftp extends Storage
     
     public function move($from, $to)
     {
-        $to = $this->path($to);
-        return $this->ckdir($to) ? ftp_rename($this->link, $this->path($from), $to) : false;
+        return $this->ckdir($to = $this->path($to)) ? ftp_rename($this->connection, $this->path($from), $to) : false;
     }
     
     public function delete($from)
     {
-        return ftp_delete($this->link, $this->path($from));
+        return ftp_delete($this->connection, $this->path($from));
+    }
+    
+    public function getConnection()
+    {
+        return $this->connection;
     }
     
     protected function ckdir($path) {
         $dir = dirname($path);
-        return @ftp_chdir($this->link, $dir) || ftp_mkdir($this->link, $dir);
+        return @ftp_chdir($this->connection, $dir) || ftp_mkdir($this->connection, $dir);
     }
     
     public function __destruct()
     {
-        $this->link && ftp_close($this->link);
+        $this->connection && ftp_close($this->connection);
     }
 }

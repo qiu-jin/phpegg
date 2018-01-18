@@ -14,7 +14,9 @@ class Ipip extends Geoip
     {
         if (isset($config['database'])) {
             $this->handle   = 'dbHandle';
-            $this->db       = fopen($config['database'], 'rb');
+            if (!$this->db  = fopen($config['database'], 'rb')) {
+                throw new \Exception("Database open error");
+            }
         } elseif (isset($config['token'])) {
             $this->handle   = 'apiHandle';
             $this->token    = $config['token'];

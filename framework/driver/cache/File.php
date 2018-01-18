@@ -10,35 +10,30 @@ class File extends Cache
 
     protected function init($config)
     {
-        if (is_dir($config['dir']) && is_writable($config['dir'])) {
-            $this->dir = $config['dir'];
-            if (substr($this->dir, -1) !== '/') {
-                $this->dir .= '/';
-            }
-            $this->ext = $config['ext'] ?? '.cache.txt';
-            $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
-        } else {
+        if (!is_dir($config['dir']) || !is_writable($config['dir'])) {
             throw new \Exception('Cache dir is not writable');
         }
+        $this->dir = $config['dir'];
+        if (substr($this->dir, -1) !== '/') {
+            $this->dir .= '/';
+        }
+        $this->ext = $config['ext'] ?? '.cache.txt';
+        $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
     }
     
     public function get($key, $default = null)
     {
-        $file = $this->filename($key);
-        if (is_file($file)) {
-            $fp = fopen($file, 'r');
-            if ($fp) {
-                $expiration = (int) trim(fgets($fp));
-                if($expiration === '0' || $expiration < time()){
-                    $data = '';
-                    while (!feof($fp)) {
-                      $data .= fread($fp, 1024);
-                    }
-                    fclose($fp);
-                    return $this->unserialize($data);
-                } else {
-                    fclose($fp);
+        if (is_file($file = $this->filename($key)) && ($fp = fopen($file, 'r'))) {
+            $expiration = (int) trim(fgets($fp));
+            if($expiration === '0' || $expiration < time()){
+                $data = '';
+                while (!feof($fp)) {
+                    $data .= fread($fp, 1024);
                 }
+                fclose($fp);
+                return $this->unserialize($data);
+            } else {
+                fclose($fp);
             }
         }
         return $default;
@@ -46,8 +41,7 @@ class File extends Cache
     
     public function set($key, $value, $ttl = null)
     {
-        $fp = fopen($this->filename($key), 'w');
-        if ($fp) {
+        if ($fp = fopen($this->filename($key), 'w')) {
             if (flock($fp, LOCK_EX)) {
                 $expiration = $ttl ? $ttl + time() : 0;
                 fwrite($fp, "$expiration".PHP_EOL);
@@ -65,10 +59,8 @@ class File extends Cache
 
     public function has($key)
     {
-        $file = $this->filename($key);
-        if (is_file($file)) {
-            $fp = fopen($file, 'r');
-            if ($fp) {
+        if (is_file($file = $this->filename($key))) {
+            if ($fp = fopen($file, 'r')) {
                 $expiration = (int) trim(fgets($fp));
                 fclose($fp);
                 return $expiration === '0' || $expiration < time();
@@ -79,15 +71,13 @@ class File extends Cache
     
     public function delete($key)
     {
-        $file = $this->filename($key);
-        return is_file($file) && unlink($file);
+        return is_file($file = $this->filename($key)) && unlink($file);
     }
     
     public function clear()
     {
-        $ch = opendir($this->dir);
-        if ($ch) {
-            while (($file = readdir($ch)) !== false) {
+        if ($od = opendir($this->dir)) {
+            while (($file = readdir($od)) !== false) {
                 if (is_file($this->dir.$file)) {
                     unlink($this->dir.$file);
                 }
@@ -100,11 +90,10 @@ class File extends Cache
     
     public function gc()
     {
-        if ($ch = opendir($this->dir)) {
+        if ($od = opendir($this->dir)) {
             $maxtime = time() - $this->gc_maxlife;
-            while (($item = readdir($ch)) !== false) {
-                $file = $this->dir.$item;
-                if (is_file($file) && $maxtime > filemtime($file)) {
+            while (($item = readdir($od)) !== false) {
+                if (is_file($file = $this->dir.$item) && $maxtime > filemtime($file)) {
                     unlink($file);
                 }
             }

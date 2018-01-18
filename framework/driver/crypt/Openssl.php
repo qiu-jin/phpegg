@@ -44,13 +44,13 @@ class Openssl extends Crypt
     
     public function privateEncrypt($data)
     {
-        $key = openssl_get_publickey($this->config['privatekey']);
+        $key = openssl_get_privatekey($this->config['privatekey']);
         return openssl_private_encrypt($this->serialize($data), $res, $key) ? $res : false;
     }
     
     public function privateDecrypt($data)
     {
-        $key = openssl_get_publickey($this->config['privatekey']);
+        $key = openssl_get_privatekey($this->config['privatekey']);
         return openssl_private_decrypt($data, $res, $key) ? $this->unserialize($res) : false;
     }
     
@@ -62,6 +62,6 @@ class Openssl extends Crypt
         if (($len = openssl_cipher_iv_length($this->config['method'])) === 0) {
             return $this->iv = '';
         }
-        return $this->iv = substr(openssl_digest($this->config['iv'] ?? '', 'MD5', true), 0, $len);
+        return $this->iv = substr(openssl_digest($this->config['salt'] ?? '', 'MD5', true), 0, $len);
     }
 }

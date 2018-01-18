@@ -77,7 +77,9 @@ class Builder
                 if ($count === 2) {
                     $select[] = self::keywordEscape($field[0]).' AS '.self::keywordEscape($field[1]);
                 } elseif ($count === 3){
-                    $select[] = "$field[0](".($field[1] === '*' ? '*' : self::keywordEscape($field[1])).") AS ".self::keywordEscape($field[2]);
+                    $select[] = "$field[0](".(
+                        $field[1] === '*' ? '*' : self::keywordEscape($field[1])).") AS ".self::keywordEscape($field[2]
+                    );
                 } else {
                     throw new \Exception('SQL Field ERROR: '.var_export($field, true));
                 }
@@ -129,7 +131,8 @@ class Builder
             if ($order[0] === false) {
                 $items[] = static::ORDER_RANDOM;
             } else {
-                $field = isset($order[2]) ? self::keywordEscapePair($order[2], $order[0]) : self::keywordEscape($order[0]);
+                $field = isset($order[2]) ? self::keywordEscapePair($order[2], $order[0])
+                                          : self::keywordEscape($order[0]);
                 $items[] = $order[1] ? "$field DESC" : $field;
             }
         }
@@ -189,6 +192,7 @@ class Builder
     
     public static function keywordEscapePair($kw1, $kw2)
     {
-        return static::KEYWORD_ESCAPE_LEFT.$kw1.static::KEYWORD_ESCAPE_RIGHT.'.'.static::KEYWORD_ESCAPE_LEFT.$kw2.static::KEYWORD_ESCAPE_RIGHT;
+        return static::KEYWORD_ESCAPE_LEFT.$kw1.static::KEYWORD_ESCAPE_RIGHT.'.'.
+               static::KEYWORD_ESCAPE_LEFT.$kw2.static::KEYWORD_ESCAPE_RIGHT;
     }
 }

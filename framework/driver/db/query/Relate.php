@@ -29,8 +29,7 @@ class Relate extends QueryChain
     
     public function get($id = null, $pk = 'id')
     {
-        $data = $this->query->get($id, $pk);
-        if ($data) {
+        if ($data = $this->query->get($id, $pk)) {
             $data = [$data];
             $this->withSubData($data);
             return $data[0];
@@ -61,8 +60,7 @@ class Relate extends QueryChain
             $field1  = ['id', $this->table.'_id'];
             $field2  = ['id', $this->with.'_id'];
         }
-        $in_data = array_unique(array_column($data, $field1[0]));
-        if ($in_data) {
+        if ($in_data = array_unique(array_column($data, $field1[0]))) {
             $params = [];
             $sql = $this->builder::whereItem($params, $field1[1], 'IN', $in_data);
             $sql = 'SELECT '.$this->builder::keywordEscape($field1[1]).', '.$this->builder::keywordEscape($field2[1]).' FROM '.$this->builder::keywordEscape($related).' WHERE '.$sql;

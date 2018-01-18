@@ -7,50 +7,50 @@ class Mysqli extends Db
 {
     protected function connect($config)
     {
-        $link = new \mysqli($config['host'], 
-                            $config['username'], 
-                            $config['password'], 
-                            $config['dbname'], 
-                            $config['port'] ?? '3306', 
-                            $config['socket'] ?? null
-                        );
-        if ($link->connect_error) {
-            throw new \Exception("MySQL Server Connect Error $link->connect_errno: $link->connect_error");
+        $connection = new \mysqli(
+            $config['host'], 
+            $config['username'], 
+            $config['password'], 
+            $config['dbname'], 
+            $config['port'] ?? '3306', 
+            $config['socket'] ?? null
+        );
+        if ($connection->connect_error) {
+            throw new \Exception("Server Connect Error [$connection->connect_errno]$connection->connect_error");
         }
         if (isset($config['charset'])) {
-            $link->set_charset($config['charset']);
+            $connection->set_charset($config['charset']);
         }
         if (isset($config['options'])) {
             foreach ($config['options'] as $option => $value) {
-                $link->options($option, $value);
+                $connection->options($option, $value);
             }
         }
-        $link->query("SET sql_mode=''");
-        return $link;
+        $connection->query("SET sql_mode=''");
+        return $connection;
     }
     
     public function switch($dbname, callable $call)
     {
         $raw_dbname = $this->dbname;
         try {
-            if ($this->link->select_db($dbname)) {
+            if ($this->connection->select_db($dbname)) {
                 $this->dbname = $dbname;
                 return $call($this);
             }
         } finally {
             $this->dbname = $raw_dbname;
-            $this->link->select_db($raw_dbname);
+            $this->connection->select_db($raw_dbname);
         }
     }
     
     public function async($sql)
     {
         $this->debug && DBDebug::write($sql);
-        $query = $this->link->query($sql, MYSQLI_ASYNC);
-        if ($query) {
+        if ($query = $this->connection->query($sql, MYSQLI_ASYNC)) {
             return $query;
         }
-        throw new \Exception('DB ERROR: ['.$this->link->errno.']'.$this->link->error);
+        throw new \Exception('DB ERROR: ['.$this->connection->errno.']'.$this->connection->error);
     }
     
     public function exec($sql, array $params = null, $is_assoc = false)
@@ -69,27 +69,25 @@ class Mysqli extends Db
                 case 'DELETE':
                     return $query->affected_rows;
                 default:
-                    return $query->get_result()->fetch_all(MYSQLI_ASSOC);
+                    return true;
             }
         } else {
-            $query = $this->link->query($sql);
-            if (!$query) {
-                throw new \Exception('SQL ERROR: ['.$this->link->errno.']'.$this->link->error);
+            if (!$query = $this->connection->query($sql)) {
+                throw new \Exception('DB ERROR: ['.$this->connection->errno.']'.$this->connection->error);
             }
             switch ($cmd) {
                 case 'SELECT':
                     return $query->fetch_all(MYSQLI_ASSOC);
                 case 'INSERT':
-                    return $this->link->insert_id;
+                    return $this->connection->insert_id;
                 case 'UPDATE':
-                    return $this->link->affected_rows;
+                    return $this->connection->affected_rows;
                 case 'DELETE':
-                    return $this->link->affected_rows;
+                    return $this->connection->affected_rows;
                 default:
-                    return $query->fetch_all(MYSQLI_ASSOC);
+                    return (bool) $query;
             }
         }
-        return false;
     }
     
     public function query($sql, array $params = null, $is_assoc = false)
@@ -98,11 +96,10 @@ class Mysqli extends Db
         if ($params) {
             return $this->prepareExecute($sql, $params, $is_assoc)->get_result();
         } else {
-            $query = $this->link->query($sql);
-            if ($query) {
+            if ($query = $this->connection->query($sql)) {
                 return $query;
             }
-            throw new \Exception('DB ERROR: ['.$this->link->errno.']'.$this->link->error);
+            throw new \Exception('DB ERROR: ['.$this->connection->errno.']'.$this->connection->error);
         }
     }
     
@@ -110,34 +107,33 @@ class Mysqli extends Db
     {
         $bind_params = [];
         if ($is_assoc) {
-            $str = '';
             if (preg_match_all('/\:(\w+)/', $sql, $matchs, PREG_OFFSET_CAPTURE)) {
+                $str = '';
                 $start = 0;
                 foreach ($matchs[0] as $i => $match) {
                     $str .= substr($sql, $start, $match[1]-$start).'?';
                     $bind_params[] = &$params[$matchs[1][$i][0]];
                     $start = strlen($match[0]) + $match[1];
                 }
-                if ($start < strlen($sql)) $str .= substr($sql, $start);
+                if ($start < strlen($sql)) {
+                    $str .= substr($sql, $start);
+                }
+                $sql = $str;
             }
-            $sql = $str;
         } else {
             foreach ($params as $k => $v) {
                 $bind_params[] = &$params[$k];
             }
         }
-        $query = $this->link->prepare($sql);
-        if ($query) {
-            $type = str_pad('', count($bind_params), 's');
+        if ($query = $this->connection->prepare($sql)) {
+            $type  = str_pad('', count($bind_params), 's');
             array_unshift($bind_params, $type);
             $query->bind_param(...$bind_params);
-            if (!$query->execute()) {
-                throw new \Exception('DB ERROR: ['.$this->link->errno.']'.$this->link->error);
+            if ($query->execute()) {
+                return $query;
             }
-            return $query;
-        } else {
-            throw new \Exception('DB ERROR: ['.$this->link->errno.']'.$this->link->error);
         }
+        throw new \Exception('DB ERROR: ['.$this->connection->errno.']'.$this->connection->error);
     }
     
     public function fetch($query)
@@ -162,29 +158,29 @@ class Mysqli extends Db
     
     public function affectedRows($query = null)
     {
-        return $query ? $query->affected_rows : $this->link->affected_rows;
+        return $query ? $query->affected_rows : $this->connection->affected_rows;
     }
     
     public function insertId()
     {
-        return $this->link->insert_id;
+        return $this->connection->insert_id;
     }
 
     public function quote($str)
     {
-        return "'".$this->link->escape_string($str)."'";
+        return "'".$this->connection->escape_string($str)."'";
     }
     
     public function begin()
     {
-		$this->link->autocommit(false);
-		return $this->link->begin_transaction();
+		$this->connection->autocommit(false);
+		return $this->connection->begin_transaction();
     }
     
     public function rollback()
     {
-		if ($this->link->rollback()) {
-			$this->link->autocommit(true);
+		if ($this->connection->rollback()) {
+			$this->connection->autocommit(true);
 			return true;
 		}
         return false;
@@ -192,8 +188,8 @@ class Mysqli extends Db
     
     public function commit()
     {
-		if ($this->link->commit()) {
-			$this->link->autocommit(true);
+		if ($this->connection->commit()) {
+			$this->connection->autocommit(true);
 			return true;
 		}
 		return false;
@@ -201,7 +197,7 @@ class Mysqli extends Db
     
     public function error($query = null)
     {
-        $q = $query ?? $this->link;
+        $q = $query ?? $this->connection;
         return array($q->errno, $q->error);
     }
     
@@ -212,6 +208,6 @@ class Mysqli extends Db
 
     public function __destruct()
     {
-        $this->link->close();
+        $this->connection->close();
     }
 }

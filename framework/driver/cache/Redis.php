@@ -2,72 +2,69 @@
 namespace framework\driver\cache;
 
 /*
- * https://github.com/phpredis/phpredis
+ * https://github.com/phpconnection/phpconnection
  */
 class Redis extends Cache
 {
-    protected $redis;
+    protected $connection;
     
     protected function init($config)
     {
-        $redis = new \Redis();
-        if ($redis->connect($config['host'], $config['port'] ?? 6379)) {
-            if (isset($config['database'])) {
-                $redis->select($config['database']);
-            }
-            $this->redis = $redis;
-        } else {
+        $this->connection = new \Redis();
+        if (!$this->connection->connect($config['host'], $config['port'] ?? 6379)) {
             throw new \Exception('Redis connect error');
+        }
+        if (isset($config['database'])) {
+            $this->connection->select($config['database']);
         }
     }
     
     public function get($key, $default = null)
     {
-        $value = $this->redis->get($key);
-        return $value ? $this->unserialize($value) : $default;
+        return ($value = $this->connection->get($key)) ? $this->unserialize($value) : $default;
     }
     
     public function has($key)
     {
-        return $this->redis->exists($key);
+        return $this->connection->exists($key);
     }
     
     public function set($key, $value, $ttl = null)
     {
         if ($ttl) {
-            return $this->redis->setex($key, $ttl, $this->serialize($value));
+            return $this->connection->setex($key, $ttl, $this->serialize($value));
         } else {
-            return $this->redis->set($key, $this->serialize($value)); 
+            return $this->connection->set($key, $this->serialize($value)); 
         }
     }
 
     public function delete($key)
     {
-        return $this->redis->del($key);
+        return $this->connection->del($key);
     }
     
     public function increment($key, $value = 1)
     {
-        return $value > 1 ? $this->redis->incrBy($key, $value) : $this->redis->incr($key);
+        return $value > 1 ? $this->connection->incrBy($key, $value) : $this->connection->incr($key);
     }
     
     public function decrement($key, $value = 1)
     {
-        return $value > 1 ? $this->redis->decrBy($key, $value) : $this->redis->decr($key);
+        return $value > 1 ? $this->connection->decrBy($key, $value) : $this->connection->decr($key);
     }
     
     public function clear()
     {
-        return $this->redis->flushdb();
+        return $this->connection->flushdb();
     }
     
     public function getConnection()
     {
-        return $this->redis;
+        return $this->connection;
     }
     
     public function __destruct()
     {
-        $this->redis->close();
+        $this->connection->close();
     }
 }

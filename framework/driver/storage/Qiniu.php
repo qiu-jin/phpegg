@@ -61,8 +61,7 @@ class Qiniu extends Storage
     
     public function stat($from)
     {
-        $stat = $this->send(self::$endpoint, '/stat/'.$this->encode($from), null, 'GET');
-        if ($stat) {
+        if ($stat = $this->send(self::$endpoint, '/stat/'.$this->encode($from), null, 'GET')) {
             $stat = jsondecode($stat);
             return [
                 'type'  => $stat['mimeType'],
@@ -112,6 +111,7 @@ class Qiniu extends Storage
         if ($response->status === 200) {
             return $method === 'GET' ? $response->body : true;
         }
+        // 忽略404错误（has stat方法）
         if ($response->status === 404 && strtok($path, '/') === 'stat') {
             return false;
         }

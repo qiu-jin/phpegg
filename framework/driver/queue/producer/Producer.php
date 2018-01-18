@@ -5,27 +5,24 @@ abstract class Producer
 {
     protected $job;
     protected $queue;
-    protected $serialize;
-    protected $unserialize;
+    protected $serializer;
     
     abstract public function push($value);
     
-    public function __construct($link, $job, $serializer)
+    public function __construct($connection, $job, $serializer)
     {
         $this->job = $job;
-        $this->init($link);
-        if (isset($serializer)) {
-            list($this->serialize, $this->unserialize) = $serializer;
-        }
+        $this->init($connection);
+        $this->serializer = $serializer;
     }
     
     protected function serialize($data)
     {
-        return $this->serialize ? ($this->serialize)($data) : $data;
+        return $this->serializer ? ($this->serialize[0])($data) : $data;
     }
     
     protected function unserialize($data)
     {
-        return $this->unserialize ? ($this->unserialize)($data) : $data;
+        return $this->serializer ? ($this->serializer[1])($data) : $data;
     }
 }

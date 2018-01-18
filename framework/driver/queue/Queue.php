@@ -3,10 +3,10 @@ namespace framework\driver\queue;
 
 abstract class Queue
 {
-    protected $link;
     protected $role;
     protected $config;
     protected $instance;
+    protected $connection;
     
     public function __construct($config)
     {

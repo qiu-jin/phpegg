@@ -3,10 +3,10 @@ namespace framework\driver\queue\consumer;
 
 class Beanstalkd extends Consumer
 {   
-    protected function init($link)
+    protected function init($connection)
     {
-        $link->watch($this->job);
-        $this->queue = $link;
+        $connection->watch($this->job);
+        $this->queue = $connection;
     }
     
     public function bpop()

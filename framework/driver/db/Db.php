@@ -6,12 +6,12 @@ use framework\core\Container;
 abstract class Db
 {
     protected $sql;
-    protected $link;
     protected $debug;
-    protected $cache;
     protected $fields;
     protected $dbname;
-    protected $cache_config;
+    protected $connection;
+    protected $fields_cache;
+    protected $fields_cache_config;
     
     const BUILDER = builder\Builder::class;
     
@@ -44,14 +44,12 @@ abstract class Db
     
     public function __construct($config)
     {
-        $this->link = $this->connect($config);
-        if (isset($config['cache'])) {
-            $this->cache_config = $config['cache'];
+        $this->connection = $this->connect($config);
+        $this->dbname = $config['dbname'];
+        $this->debug  = !empty($config['debug']) || APP_DEBUG;
+        if (isset($config['fields_cache'])) {
+            $this->fields_cache_config = $config['fields_cache'];
         }
-        if (isset($config['dbname'])) {
-            $this->dbname = $config['dbname'];
-        }
-        $this->debug = !empty($config['debug']) || APP_DEBUG;
     }
     
     public function __get($name)
@@ -81,19 +79,17 @@ abstract class Db
         if (isset($this->fields[$table])) {
             return $this->fields[$table];
         } else {
-            if (isset($this->cache_config)) {
-                if (!isset($this->cache)) {
-                    $this->cache = Container::driver('cache', $this->cache_config);
+            if (isset($this->fields_cache_config)) {
+                if (!isset($this->fields_cache)) {
+                    $this->fields_cache = Container::driver('cache', $this->fields_cache_config);
                 }
-                $key = "_db_$this->dbname$table";
-                $fields = $this->cache->get($key);
-                if ($fields) {
+                if ($fields = $this->fields_cache->get($key = "_db_$this->dbname$table")) {
                     return $fields;
                 }
             }
             $fields = $this->getFields($table);
-            if (isset($this->cache)) {
-                $this->cache->set($key, $fields);
+            if (isset($this->fields_cache)) {
+                $this->fields_cache->set($key, $fields);
             }
             return $this->fields[$table] = $fields;
         }
@@ -106,7 +102,7 @@ abstract class Db
     
     public function getConnection()
     {
-        return $this->link;
+        return $this->connection;
     }
     
     /*

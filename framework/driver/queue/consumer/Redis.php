@@ -3,9 +3,9 @@ namespace framework\driver\queue\consumer;
 
 class Redis extends Consumer
 {
-    protected function init($link)
+    protected function init($connection)
     {
-        $this->queue = $link;
+        $this->queue = $connection;
     }
     
     public function pop()
