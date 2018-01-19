@@ -14,7 +14,7 @@ class S3 extends Storage
     protected $endpoint;
     protected $public_read;
     
-    public function __construct($config)
+    protected function init($config)
     {
         $this->bucket = $config['bucket'];
         $this->acckey = $config['acckey'];
@@ -27,9 +27,9 @@ class S3 extends Storage
     
     public function get($from, $to = null)
     {
-        $methods['timeout'] = $this->timeout;
+        $methods['timeout'] = [$this->timeout];
         if ($to) {
-            $methods['save'] = $to;
+            $methods['save'] = [$to];
         }
         return $this->send('GET', $from, null, $methods, !$this->public_read);
     }
@@ -41,16 +41,16 @@ class S3 extends Storage
     
     public function put($from, $to, $is_buffer = false)
     {
-        $client_methods['timeout'] = $this->timeout;
+        $methods['timeout'] = [$this->timeout];
         $headers['Content-Type'] = File::mime($from, $is_buffer);
         if ($is_buffer) {
-            $methods['body'] = $from;
+            $methods['body'] = [$from];
             $headers['Content-Length'] = strlen($from);
             $headers['X-Amz-Content-Sha256'] = hash('sha256', $from);
             return $this->send('PUT', $to, $headers, $methods);
         }
         if ($fp = fopen($from, 'r')) {
-            $methods['stream'] = $fp;
+            $methods['stream'] = [$fp];
             $headers['Content-Length'] = filesize($from);
             $headers['X-Amz-Content-Sha256'] = hash_file('sha256', $from);
             $return = $this->send('PUT', $to, $headers, $methods);
@@ -63,7 +63,7 @@ class S3 extends Storage
     public function stat($from)
     {
         $stat = $this->send('HEAD', $from, null, [
-            'returnHeaders' => true, 'curlopt' => [CURLOPT_NOBODY, true]
+            'returnHeaders' => [true], 'curlopt' => [CURLOPT_NOBODY, true]
         ], !$this->public_read);
         return $stat ? [
             'type'  => $stat['Content-Type'],
@@ -87,13 +87,13 @@ class S3 extends Storage
         return $this->send('DELETE', $from);
     }
     
-    protected function send($method, $path, $headers = [], $client_methods = [], $auth = true)
+    protected function send($method, $path, $headers = null, $client_methods = null, $auth = true)
     {
         $path = $this->path($path);
         $client = new Client($method, "$this->endpoint/$this->bucket$path");
         if ($client_methods) {
             foreach ($client_methods as $client_method => $params) {
-                $client->$client_method(... (array) $params);
+                $client->$client_method(...$params);
             }
         }
         if ($auth) {
@@ -124,32 +124,31 @@ class S3 extends Storage
     {
         $headers['Host'] = parse_url($this->endpoint, PHP_URL_HOST);
         $headers['X-Amz-Date'] = gmdate('Ymd\THis\Z');
-        if (empty($headers['X-Amz-Content-Sha256'])) {
+        if (!isset($headers['X-Amz-Content-Sha256'])) {
             $headers['X-Amz-Content-Sha256'] = hash('sha256', '');
         }
         ksort($headers);
-        $tmparr = [];
-        $sendheaders = [];
         $canonicalheaders = '';
         foreach ($headers as $k => $v) {
-            $sendheaders[] = "$k: $v";
+            $setheaders[] = "$k: $v";
             $k = strtolower($k);
             $v = trim($v);
-            $tmparr[] = $k;
+            $headerkeys[] = $k;
             $canonicalheaders .= "$k:$v\n";
         }
-        $signheaders = implode(';', $tmparr);
-        $str = "$method\n/$this->bucket$path\n\n$canonicalheaders\n$signheaders\n".$headers['X-Amz-Content-Sha256'];
-        $date = substr($headers['X-Amz-Date'], 0, 8);
-        $scope = "$date/$this->region/s3/aws4_request";
-        $signstr = "AWS4-HMAC-SHA256\n{$headers['X-Amz-Date']}\n$scope\n".hash('sha256', $str);
-
-        $datekey    = hash_hmac('sha256', $date, "AWS4$this->seckey", true);
-        $regionkey  = hash_hmac('sha256', $this->region, $datekey, true);
-        $servicekey = hash_hmac('sha256', 's3', $regionkey, true);
-        $signkey    = hash_hmac('sha256', 'aws4_request', $servicekey, true);
-        $signature  = hash_hmac('sha256', $signstr, $signkey);
-        $sendheaders[] = "Authorization: AWS4-HMAC-SHA256 Credential=$this->acckey/$scope,SignedHeaders=$signheaders,Signature=$signature";
-        return $sendheaders;
+        $signedheaders  = implode(';', $headerkeys);
+        $str            = "$method\n/$this->bucket$path\n\n$canonicalheaders\n$signedheaders\n"
+                        . $headers['X-Amz-Content-Sha256'];
+        $date           = substr($headers['X-Amz-Date'], 0, 8);
+        $scope          = "$date/$this->region/s3/aws4_request";
+        $signstr        = "AWS4-HMAC-SHA256\n{$headers['X-Amz-Date']}\n$scope\n".hash('sha256', $str);
+        $datekey        = hash_hmac('sha256', $date, "AWS4$this->seckey", true);
+        $regionkey      = hash_hmac('sha256', $this->region, $datekey, true);
+        $servicekey     = hash_hmac('sha256', 's3', $regionkey, true);
+        $signkey        = hash_hmac('sha256', 'aws4_request', $servicekey, true);
+        $signature      = hash_hmac('sha256', $signstr, $signkey);
+        $setheaders[]   = "Authorization: AWS4-HMAC-SHA256 Credential=$this->acckey/$scope,"
+                        . "SignedHeaders=$signedheaders,Signature=$signature";
+        return $setheaders;
     }
 }

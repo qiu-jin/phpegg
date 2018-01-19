@@ -21,7 +21,10 @@ abstract class Cache
     {
         $this->init($config);
         isset($config['serializer']) && $this->serializer = $config['serializer'];
-        if (isset($config['gc_random']) && mt_rand(1, $config['gc_random'][1]) <= $config['gc_random'][0]) {
+        if (isset($config['gc_random'])
+            && method_exists($this, 'gc')
+            && mt_rand(1, $config['gc_random'][1]) <= $config['gc_random'][0]
+        ) {
             Event::on('close', [$this, 'gc']);
         }
     }

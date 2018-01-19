@@ -5,7 +5,7 @@ class Memcached extends Cache
 {
     protected $connection;
     
-    protected function init($config)
+    public function __construct($config)
     {
         $connection = new \Memcached;
         if (isset($config['options'])) {
@@ -28,7 +28,7 @@ class Memcached extends Cache
     
     public function get($key, $default = null)
     {
-        return ($value = $this->connection->get($key)) ? $this->unserialize($value) : $default;
+        return ($value = $this->connection->get($key)) ? $value : $default;
     }
     
     public function has($key)
@@ -38,7 +38,7 @@ class Memcached extends Cache
     
     public function set($key, $value, $ttl = null)
     {
-        return $this->connection->set($key, $this->serialize($value), $ttl ?? 0);
+        return $this->connection->set($key, $value, $ttl ?? 0);
     }
 
     public function delete($key)
@@ -48,9 +48,11 @@ class Memcached extends Cache
     
     public function getMultiple(array $keys, $default = null)
     {
-        if (($caches = $this->connection->getMulti($keys)) && $this->unserializer) {
-            foreach ($caches as $k => $v) {
-                $caches[$k] = $v ? $this->unserialize($v) : $default;
+        if (($caches = $this->connection->getMulti($keys)) && $default !== null) {
+            foreach ($keys as $k) {
+                if (!isset($caches[$k])) {
+                    $caches[$k] = $default;
+                }
             }
         }
         return $caches;
@@ -58,11 +60,6 @@ class Memcached extends Cache
     
     public function setMultiple(array $values, $ttl = null)
     {
-        if ($this->serialize) {
-            array_walk($values, function($value) {
-                $value = $this->serialize($value);
-            });
-        }
         return $this->connection->setMulti($values, $ttl ?? 0);
     }
     

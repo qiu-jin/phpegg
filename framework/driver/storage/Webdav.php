@@ -20,7 +20,7 @@ class Webdav extends Storage
     protected $public_read;
     protected $auto_create_dir;
     
-    public function __construct($config)
+    protected function init($config)
     {
         $this->endpoint = $config['endpoint'];
         $this->username = $config['username'];
@@ -32,9 +32,9 @@ class Webdav extends Storage
     
     public function get($from, $to = null)
     {
-        $methods['timeout'] = $this->timeout;
+        $methods['timeout'] = [$this->timeout];
         if ($to) {
-            $methods['save'] = $to;
+            $methods['save'] = [$to];
         }
         return $this->send('GET', $this->uri($from), null, $methods, !$this->public_read);
     }
@@ -47,13 +47,13 @@ class Webdav extends Storage
     public function put($from, $to, $is_buffer = false)
     {
         if ($this->ckdir($to = $this->uri($to))) {
-            $methods['timeout'] = $this->timeout;
+            $methods['timeout'] = [$this->timeout];
             if ($is_buffer) {
-                $methods['body'] = $from;
+                $methods['body'] = [$from];
                 return $this->send('PUT', $to, null, $methods);
             }
             if ($fp = fopen($from, 'r')) {
-                $methods['stream'] = $fp;
+                $methods['stream'] = [$fp];
                 $return = $this->send('PUT', $to, null, $methods);
                 fclose($fp);
                 return $return;
@@ -65,7 +65,7 @@ class Webdav extends Storage
     public function stat($from)
     {
         $stat = $this->send('HEAD', $this->uri($from), null, [
-            'returnHeaders' => true, 'curlopt' => [CURLOPT_NOBODY, true]
+            'returnHeaders' => [true], 'curlopt' => [CURLOPT_NOBODY, true]
         ], !$this->public_read);
         return $stat ? [
             'type'  => $stat['Content-Type'],
@@ -89,12 +89,12 @@ class Webdav extends Storage
         return $this->send('DELETE', $this->uri($from));
     }
     
-    protected function send($method, $url, $headers = [], $client_methods = [], $auth = true)
+    protected function send($method, $url, $headers = null, $client_methods = null, $auth = true)
     {
         $client = new Client($method, $url);
         if ($client_methods) {
             foreach ($client_methods as $client_method => $params) {
-                $client->$client_method(... (array) $params);
+                $client->$client_method(...$params);
             }
         }
         if ($auth) {

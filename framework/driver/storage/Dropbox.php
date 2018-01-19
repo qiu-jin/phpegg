@@ -6,9 +6,9 @@ use framework\core\http\Client;
 class Dropbox extends Storage
 {
     protected $acckey;
-    protected static $endpoint = 'https://%s.dropboxapi.com/2/files';
+    protected static $endpoint = 'https://%s.dropboxapi.com/2/files/';
     
-    public function __construct($config)
+    protected function init($config)
     {
         $this->acckey = $config['acckey'];
     }
@@ -16,11 +16,10 @@ class Dropbox extends Storage
     public function get($from, $to = null)
     {
         $response = $this->send('download', ['path' => $this->path($from)]);
-        if (!$this->result(json_decode($response->headers['Dropbox-API-Result']))) {
+        if (!$this->result(jsondecode($response->headers['dropbox-api-result']))) {
             return false;
         }
-        return $to ? (bool) file_put_contents($to, $response->body) : $response->body;
-        
+        return $to === null ? $response->body : (bool) file_put_contents($to, $response->body);
     }
     
     public function has($from)
@@ -30,23 +29,28 @@ class Dropbox extends Storage
     
     public function put($from, $to, $is_buffer = false)
     {
-        $data = $is_buffer ? $from : file_get_contents($from);
-        return $this->result($this->send('upload', ['path' => $this->path($to), 'mode' => 'overwrite'], $data)->json());
+        $params = ['path' => $this->path($to), 'mode' => 'overwrite'];
+        return $this->result($this->send('upload', $params, $is_buffer ? $from : file_get_contents($from))->json());
     }
 
     public function stat($from)
     {
-        return $this->result($this->send('get_metadata', ['path' => $this->path($from)])->json(), false);
+        return ($stat = $this->result($this->send('get_metadata', ['path' => $this->path($from)])->json(), false)) ? [
+            'size'  => (int) $stat['size'],
+            'mtime' => strtotime($stat['server_modified']),
+        ] : false;
     }
     
     public function copy($from, $to)
     {
-        return $this->result($this->send('copy_v2', ['from_path' => $this->path($from), 'to_path' => $this->path($to)])->json());
+        $params = ['from_path' => $this->path($from), 'to_path' => $this->path($to)];
+        return $this->result($this->send('copy_v2', $params)->json());
     }
     
     public function move($from, $to)
     {
-        return $this->result($this->send('move_v2', ['from_path' => $this->path($from), 'to_path' => $this->path($to)])->json());
+        $params = ['from_path' => $this->path($from), 'to_path' => $this->path($to)];
+        return $this->result($this->send('move_v2', $params)->json());
     }
     
     public function delete($from)
@@ -56,17 +60,24 @@ class Dropbox extends Storage
     
     protected function send($path, $params, $binary = null)
     {
-        $endpoint = sprintf(self::$endpoint, $binary === null ? 'api' : 'content');
-        $client   = new Client('POST', $endpoint.$path);
-        if ($binary === null) {
+        $headers[] = "Authorization: Bearer $this->acckey";
+        if ($path === 'upload' || $path === 'download') {
+            $type = 'content';
+            $headers[] = 'Dropbox-API-Arg: '.json_encode($params);
+        } else {
+            $type = 'api';
+        }
+        $client = new Client('POST', sprintf(self::$endpoint, $type).$path);
+        if ($type === 'api') {
             $client->json($params);
         } elseif($path === 'upload') {
             $client->body($binary, 'application/octet-stream');
+            $client->timeout($this->timeout);
         } elseif($path === 'download') {
             $client->returnHeaders();
+            $client->timeout($this->timeout);
         }
-        $client->header('Authorization', "Bearer $this->acckey");
-        if (($response = $client->response)->status === 200) {
+        if (($response = $client->headers($headers)->response)->status === 200) {
             return $response;
         }
         return error($client->error, 2);

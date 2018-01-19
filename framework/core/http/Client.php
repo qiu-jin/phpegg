@@ -318,12 +318,12 @@ class Client
                 return $this->body ? jsondecode($this->body) : false;
             }
         };
-        if (empty($this->request->curlopts[CURLOPT_HEADER])) {
+        $this->response->status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
+        if (empty($this->request->curlopts[CURLOPT_HEADER]) || $content === false) {
             $this->response->body = $content;
         } else {
             $this->responseWithHeaders($content);
         }
-        $this->response->status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
         if (!($this->response->status >= 200 && $this->response->status < 300)) {
             $this->error();
         }

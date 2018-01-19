@@ -1,6 +1,7 @@
 <?php
 use framework\App;
 use framework\core\Error;
+use framework\core\Getter;
 use framework\core\Logger;
 use framework\core\Config;
 use framework\core\Container;
@@ -26,6 +27,14 @@ function logger($name = null)
 function make($name)
 {
     return Container::make($name);
+}
+
+function getter()
+{
+    static $getter;
+    return $getter ?? $getter = new class () {
+        use Getter;
+    };
 }
 
 function db($name = null)

@@ -13,7 +13,7 @@ class Oss extends Storage
     protected $endpoint;
     protected $public_read;
     
-    public function __construct($config)
+    protected function init($config)
     {
         $this->bucket = $config['bucket'];
         $this->acckey = $config['acckey'];
@@ -25,9 +25,9 @@ class Oss extends Storage
     
     public function get($from, $to = null)
     {
-        $methods['timeout'] = $this->timeout;
+        $methods['timeout'] = [$this->timeout];
         if ($to) {
-            $methods['save'] = $to;
+            $methods['save'] = [$to];
         }
         return $this->send('GET', $from, null, $methods, !$this->public_read);
     }
@@ -39,16 +39,16 @@ class Oss extends Storage
     
     public function put($from, $to, $is_buffer = false)
     {
-        $methods['timeout'] = $this->timeout;
+        $methods['timeout'] = [$this->timeout];
         $headers['Content-Type'] = File::mime($from, $is_buffer);
         if ($is_buffer) {
-            $methods['body'] = $from;
+            $methods['body'] = [$from];
             $headers['Content-Length'] = strlen($from);
             $headers['Content-Md5'] = base64_encode(md5($from, true));
             return $this->send('PUT', $to, $headers, $methods);
         }
         if ($fp = fopen($from, 'r')) {
-            $methods['stream'] = $fp;
+            $methods['stream'] = [$fp];
             $headers['Content-Length'] = filesize($from);
             $headers['Content-Md5'] = base64_encode(md5_file($from, true));
             $return = $this->send('PUT', $to, $headers, $methods);
@@ -60,7 +60,7 @@ class Oss extends Storage
     public function stat($from)
     {
         $stat = $this->send('HEAD', $from, null, [
-            'returnHeaders' => true, 'curlopt' => [CURLOPT_NOBODY, true]
+            'returnHeaders' => [true], 'curlopt' => [CURLOPT_NOBODY, true]
         ], !$this->public_read);
         return $stat ? [
             'type'  => $stat['Content-Type'],
@@ -84,13 +84,13 @@ class Oss extends Storage
         return $this->send('DELETE', $from);
     }
     
-    protected function send($method, $path, $headers = [], $client_methods = [], $auth = true)
+    protected function send($method, $path, $headers = null, $client_methods = null, $auth = true)
     {
         $path = $this->path($path);
         $client = new Client($method, 'http://'.$this->bucket.'.'.$this->endpoint.$path);
         if ($client_methods) {
             foreach ($client_methods as $client_method => $params) {
-                $client->$client_method(... (array) $params);
+                $client->$client_method(...$params);
             }
         }
         if ($auth) {
@@ -120,13 +120,13 @@ class Oss extends Storage
     protected function setHeaders($method, $path, $headers)
     {
         $headers['Date'] = gmdate('D, d M Y H:i:s').' GMT';
-        $str = "$method\n";
-        $str .= isset($headers['Content-Md5']) ? $headers['Content-Md5']."\n" : "\n";
-        $str .= isset($headers['Content-Type']) ? $headers['Content-Type']."\n" : "\n";
-        $str .= $headers['Date']."\n";
-        $str .= isset($headers['x-oss-copy-source']) ? 'x-oss-copy-source:'.$headers['x-oss-copy-source']."\n" : "";
-        $str .= '/'.$this->bucket.$path;
-        $sendheaders[] = "Authorization: OSS $this->acckey:".base64_encode(hash_hmac('sha1', $str, $this->seckey, true));
+        $str = "$method\n"
+             . ($headers['Content-Md5'] ?? '')."\n"
+             . ($headers['Content-Type'] ?? '')."\n"
+             . $headers['Date']."\n"
+             . isset($headers['x-oss-copy-source']) ? 'x-oss-copy-source:'.$headers['x-oss-copy-source']."\n" : ''
+             . '/'.$this->bucket.$path;
+        $headers['Authorization'] = "OSS $this->acckey:".base64_encode(hash_hmac('sha1', $str, $this->seckey, true));
         foreach ($headers as $k => $v) {
             $sendheaders[] = "$k: $v";
         }

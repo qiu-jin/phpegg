@@ -7,7 +7,7 @@ use framework\core\http\Client;
 abstract class Storage
 {
     protected $domain;
-    protected $timeout = 60;
+    protected $timeout = 0;
     
     /* 
      * 读取文件（文件不存在会触发错误或异常）
@@ -50,6 +50,13 @@ abstract class Storage
      * 删除storage文件
      */
     abstract public function delete($from);
+    
+    
+    public function __construct($config)
+    {
+        $this->init($config);
+        isset($config['timeout']) && $this->timeout = $config['timeout'];
+    }
     
     /* 
      * 获取storage文件访问url

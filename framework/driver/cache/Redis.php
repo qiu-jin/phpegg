@@ -8,7 +8,7 @@ class Redis extends Cache
 {
     protected $connection;
     
-    protected function init($config)
+    public function __construct($config)
     {
         $this->connection = new \Redis();
         if (!$this->connection->connect($config['host'], $config['port'] ?? 6379)) {
@@ -21,7 +21,7 @@ class Redis extends Cache
     
     public function get($key, $default = null)
     {
-        return ($value = $this->connection->get($key)) ? $this->unserialize($value) : $default;
+        return ($value = $this->connection->get($key)) ? $value : $default;
     }
     
     public function has($key)
@@ -32,9 +32,9 @@ class Redis extends Cache
     public function set($key, $value, $ttl = null)
     {
         if ($ttl) {
-            return $this->connection->setex($key, $ttl, $this->serialize($value));
+            return $this->connection->setex($key, $ttl, $value);
         } else {
-            return $this->connection->set($key, $this->serialize($value)); 
+            return $this->connection->set($key, $value); 
         }
     }
 

@@ -23,6 +23,7 @@ trait Getter
         throw new \Exception('Undefined property: '.__CLASS__.'::$'.$name);
     }
     
+    /*
     private function __makeNs($ns)
     {
         return new class($ns, $depth) {
@@ -42,4 +43,5 @@ trait Getter
             }
         };
     }
+    */
 }

@@ -133,22 +133,6 @@ class Container
         }
         return false;
     }
-    
-    protected static function makeModel($type, ...$ns)
-    {
-        $depth = self::$providers['model'][$type];
-        return $ns ? self::makeModelInstance($type, ...$ns) : self::makeNs([$type], $depth);
-    }
-
-    protected static function makeDriver($type, $index = null)
-    {
-        if ($index) {
-            return self::makeDriverInstance($type, Config::get("$type.$index"));
-        } else {
-            list($index, $config) = Config::firstPair($type);
-            return self::$instances["$type.$index"] ?? self::makeDriverInstance($type, $config);
-        }
-    }
 
     protected static function makeClass($name)
     {
@@ -186,6 +170,22 @@ class Container
         };
     }
     
+    protected static function makeModel($type, ...$ns)
+    {
+        $depth = self::$providers['model'][$type];
+        return $ns ? self::makeModelInstance($type, ...$ns) : self::makeNs([$type], $depth);
+    }
+
+    protected static function makeDriver($type, $index = null)
+    {
+        if ($index) {
+            return self::makeDriverInstance($type, Config::get("$type.$index"));
+        } else {
+            list($index, $config) = Config::firstPair($type);
+            return self::$instances["$type.$index"] ?? self::makeDriverInstance($type, $config);
+        }
+    }
+    
     protected static function makeModelInstance($type, ...$ns)
     {
         $class = 'app\\'.$type.'\\'.implode('\\', $ns);
@@ -194,7 +194,7 @@ class Container
     
     protected static function makeDriverInstance($type, $config)
     {
-        $class = 'framework\driver\\'.$type.'\\'.ucfirst($config['driver']);
+        $class = "framework\driver\\$type\\".ucfirst($config['driver']);
         return new $class($config);
     }
     

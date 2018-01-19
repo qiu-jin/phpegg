@@ -60,7 +60,7 @@ class Sftp extends Storage
     
     public function delete($from)
     {
-        return ssh2_sftp_unconnection($this->sftp, $this->path($from));
+        return ssh2_sftp_unlink($this->sftp, $this->path($from));
     }
     
     public function getConnection()

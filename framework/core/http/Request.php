@@ -17,11 +17,12 @@ class Request
             return;
         }
         self::$init = true;
-        self::$request = new \stdClass();
-        self::$request->get =& $_GET;
-        self::$request->post =& $_POST;
-        self::$request->server =& $_SERVER;
-        self::$request->params =& $_REQUEST;
+        self::$request = (object) [
+            'get'   => &$_GET,
+            'post'  => &$_POST,
+            'server'=> &$_SERVER,
+            'params'=> &$_REQUEST
+        ];
         Event::on('exit', __CLASS__.'::free');
         Event::trigger('request', self::$request);
     }

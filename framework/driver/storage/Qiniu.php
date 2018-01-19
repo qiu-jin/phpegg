@@ -12,7 +12,7 @@ class Qiniu extends Storage
     protected $public_read;
     protected static $endpoint = 'https://rs.qbox.me';
     
-    public function __construct($config)
+    protected function init($config)
     {
         $this->bucket = $config['bucket'];
         $this->domain = $config['domain'];
@@ -26,9 +26,9 @@ class Qiniu extends Storage
 
     public function get($from, $to = null)
     {
-        $methods['timeout'] = $this->timeout;
+        $methods['timeout'] = [$this->timeout];
         if ($to) {
-            $methods['save'] = $to;
+            $methods['save'] = [$to];
         }
         $url = $this->domain.parent::path($from);
         if (!$this->public_read) {
@@ -50,12 +50,12 @@ class Qiniu extends Storage
             'deadline'  => time() + 3600
         ]));
         return $this->send("https://up{$this->region}.qbox.me", null, [
-            'timeout'   => $this->timeout,
+            'timeout'   => [$this->timeout],
             'form'      => [[
                 'token' => $this->sign($str).":$str", 
                 'key'   => $to
             ]],
-            $is_buffer ? 'buffer' : 'file' => ['file', $from]
+            ($is_buffer ? 'buffer' : 'file') => ['file', $from]
         ]);
     }
     
@@ -96,19 +96,18 @@ class Qiniu extends Storage
         return parent::fetch($from, $to);
     }
     
-    protected function send($host, $path, $client_methods = [], $method = 'POST')
+    protected function send($host, $path, $client_methods = null, $method = 'POST')
     {
         $client = new Client($method, $host.$path);
         if ($client_methods) {
             foreach ($client_methods as $client_method => $params) {
-                $client->$client_method(... (array) $params);
+                $client->$client_method(...$params);
             }
         }
         if ($path) {
             $client->header('Authorization', 'QBox '.$this->sign($path."\n"));
         }
-        $response = $client->response;
-        if ($response->status === 200) {
+        if (($response = $client->response)->status === 200) {
             return $method === 'GET' ? $response->body : true;
         }
         // 忽略404错误（has stat方法）
