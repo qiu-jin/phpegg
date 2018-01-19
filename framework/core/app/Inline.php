@@ -65,10 +65,10 @@ class Inline extends App
         if ($code >= 100 && $code < 1000) {
             Response::status($code);
         }
-        if ($this->config['enable_view']) {
-            Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
-        } else {
+        if (empty($this->config['enable_view'])) {
             Response::json(['error' => compact('code', 'message')], false);
+        } else {
+            Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
         }
     }
     

@@ -71,7 +71,7 @@ class Standard extends App
 
     protected function call()
     {
-        extract($this->dispatch, EXTR_SKIP);
+        extract($this->dispatch);
         if ($param_mode) {
             $reflection_method = $this->reflection_method ?? new \ReflectionMethod($controller, $action);
             if ($param_mode === 1) {

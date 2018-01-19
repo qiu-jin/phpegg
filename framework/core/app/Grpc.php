@@ -94,7 +94,7 @@ class Grpc extends App
     protected function readParams()
     {
         if (($body = Request::body()) && strlen($body) > 5) {
-            extract(unpack('Cencode/Nzise/a*message', $body), EXTR_SKIP);
+            extract(unpack('Cencode/Nzise/a*message', $body));
             if ($zise === strlen($message)) {
                 return $message;
             }

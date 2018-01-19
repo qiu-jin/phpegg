@@ -78,7 +78,7 @@ class Rest extends App
         if ($this->config['parse_request_to_post']) {
             $this->setPostParams();
         }
-        extract($this->dispatch, EXTR_SKIP);
+        extract($this->dispatch);
         if ($param_mode) {
             $reflection_method = new \ReflectionMethod($controller, $action);
             if ($param_mode === 1) {

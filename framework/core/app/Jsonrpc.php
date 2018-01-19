@@ -119,7 +119,7 @@ class Jsonrpc extends App
     
     protected function handle($dispatch)
     {
-        extract($dispatch, EXTR_SKIP);
+        extract($dispatch);
         if (!$this->config['param_mode']) {
             Request::set('post', $params);
             return ['result' => $controller_instance->$action()];
