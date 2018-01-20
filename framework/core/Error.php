@@ -41,17 +41,20 @@ class Error
      */
     public static function set($message, $code = self::ERROR, $limit = 1)
     {
-        $file = $line = $type = $class = $function = null;
-        $traces = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        $file = $line = $trace = null;
+        $traces = debug_backtrace(APP_DEBUG ? DEBUG_BACKTRACE_PROVIDE_OBJECT : DEBUG_BACKTRACE_IGNORE_ARGS);
         if (isset($traces[$limit])) {
+            $type = $class = $function = '';
             extract($traces[$limit]);
             $message = "$class$type$function() $message";
+            if (APP_DEBUG) {
+                $trace = array_slice($traces, $limit);
+            }
         }
+        list($level, $prefix) = self::getErrorInfo($code);
+        self::record('error.user', $level, $code, "User Error: [$prefix] $message", $file, $line, $trace);
         if (Config::env('STRICT_ERROR_MODE')) {
-            throw new \ErrorException($message, $code, $code, $file, $line);
-        } else {
-            $trace = APP_DEBUG ? array_slice($traces, $limit) : null;
-            self::record('error.user', self::getErrorInfo($code)[0], $code, $message, $file, $line, $trace);
+            self::response();
         }
     }
     
@@ -61,11 +64,11 @@ class Error
     public static function errorHandler($code, $message, $file = null, $line = null)
     {
         if (error_reporting() & $code) {
+            list($level, $prefix) = self::getErrorInfo($code);
             if (Config::env('STRICT_ERROR_MODE')) {
-                throw new \ErrorException($message, $code, $code, $file, $line);
+                throw new \ErrorException("[$prefix] $message", $code, $code, $file, $line);
             } else {
-                list($level, $prefix) = self::getErrorInfo($code);
-                self::record('error.error', $level, $code, "$prefix: $message", $file, $line);
+                self::record('error.error', $level, $code, "Error $prefix: $message", $file, $line);
                 if ($level === Logger::CRITICAL || $level === Logger::ALERT || $level === Logger::ERROR ) {
                     App::exit(3);
                     self::response();
@@ -103,21 +106,13 @@ class Error
         ) {
             App::exit(5);
             list($level, $prefix) = self::getErrorInfo($error['type']);
-            $message = "Fatal Error $prefix: $error[message]";
+            $message = "Fatal Error: [$prefix] $error[message]";
             self::record('error.fatal', $level, $error['type'], $message, $error['file'], $error['line']);
             self::response();
 		} else {
             App::exit(0);
             self::record('error.fatal', Logger::NOTICE, 0, 'Unknown exit', null, null);
 		}
-    }
-    
-    /*
-     * 响应错误给客户端
-     */
-    private static function response()
-    {
-        App::abort(500, APP_DEBUG ? self::$errors : null);
     }
     
     /*
@@ -129,6 +124,14 @@ class Error
         self::$errors[] = compact('level', 'message', 'context');
         Event::trigger($name, $level, $code, $message, $context);
         Logger::write($level, $message, $context);
+    }
+    
+    /*
+     * 响应错误给客户端
+     */
+    private static function response()
+    {
+        App::abort(500, APP_DEBUG ? self::$errors : null);
     }
     
     /*
