@@ -99,7 +99,7 @@ function abort($code = null, $message = null)
 
 function error($message, $limit = 1)
 {
-    return (bool) Error::set($message, E_USER_ERROR, $limit+1);
+    Error::trigger($message, E_USER_ERROR, $limit + 1);
 }
 
 function instance($class, ...$params)
