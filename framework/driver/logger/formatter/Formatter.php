@@ -6,32 +6,35 @@ use framework\core\http\Request;
 class Formatter
 {
     private $format;
-    private $replace = [];
+    private $replace;
+    private $options = [
+        'proxy_ip'      => false,
+        'date_format'   => 'Y-m-d H:i:s',
+    ];
     
-    public function __construct($format)
+    public function __construct($format, array $options = null)
     {
-        $this->format = $format;
+        $this->format  = $format;
+        if ($options) {
+            $this->options = $options + $this->options;
+        }
         if (preg_match_all('/\{(\w+)\}/', $format , $matchs)) {
             foreach (array_unique($matchs[1]) as $var) {
                 if (method_exists($this, $var)) {
                     $this->replace['{'.$var.'}'] = $this->$var();
                 } else {
-                    $this->replace['{'.$var.'}'] = '';
+                    $this->replace['{'.$var.'}'] = '{'.$var.'}';
                 }
             }
         }
     }
     
-    public function _get($name)
+    public function make($level, $message, $context = null)
     {
-        return $this->$name ?? $this->$name = $this->$name();
-    }
-    
-    public function make($level, $message, $context)
-    {
-        $replace = $this->replace;
-        $replace['{level}'] = $level;
-        $replace['{message}'] = $message;
+        $replace = [
+            '{level}'   => $level,
+            '{message}' => $message
+        ] + $this->replace;
         if ($context) {
             foreach ($context as $k => $v) {
                 $replace['{'.$k.'}'] = $v;
@@ -40,37 +43,37 @@ class Formatter
         return strtr($this->format, $replace);
     }
     
-    private static function ip()
+    private function ip()
     {
-        return Request::ip();
+        return Request::ip($this->options['proxy_ip']);
     }
     
-    private static function pid()
+    private function pid()
     {
         return getmypid();
     }
     
-    private static function uuid()
+    private function uuid()
     {
         return uniqid();
     }
     
-    private static function time()
+    private function time()
     {
         return time();
     }
     
-    private static function date()
+    private function date()
     {
-        return date("Y-m-d H:i:s");
+        return date($this->options['date_format']);
     }
     
-    private static function url()
+    private function url()
     {
         return Request::url();
     }
     
-    private static function referrer()
+    private function referrer()
     {
         return Request::header('referrer');
     }

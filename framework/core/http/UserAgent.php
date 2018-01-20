@@ -5,27 +5,27 @@ class UserAgent
 {
     private $agent;
     private static $macths = [
-        'win' => 'Windows NT',
-        'mac' => 'Mac OS X',
-        'linux' => 'Linux',
-        'chromeos' => 'CrOS',
+        'win'       => 'Windows NT',
+        'mac'       => 'Mac OS X',
+        'linux'     => 'Linux',
+        'chromeos'  => 'CrOS',
         
-        'edge' => 'Edge',
-        'chrome' => 'Chrome',
-        'firefox' => 'Firefox',
+        'edge'      => 'Edge',
+        'chrome'    => 'Chrome',
+        'firefox'   => 'Firefox',
         
-        'android' => 'Android',
-        'weixin' => 'Weixin',
+        'android'   => 'Android',
+        'weixin'    => 'Weixin',
         
-        'ipad'  => 'iPad',
-        'ipod'  => 'iPod',
-        'iphone'  => 'iPhone',
+        'ipad'      => 'iPad',
+        'ipod'      => 'iPod',
+        'iphone'    => 'iPhone',
     ];
     private static $regex_macths = [
-        'ie' => 'MSIE|IEMobile|MSIEMobile|Trident\/[.0-9]+',
-        'ios' => '\biPhone.*Mobile|\biPod|\biPad',
-        'safari' => 'Version\/.+ Safari',
-        'opera' => 'Opera|OPR',
+        'ie'        => 'MSIE|IEMobile|MSIEMobile|Trident\/[.0-9]+',
+        'ios'       => '\biPhone.*Mobile|\biPod|\biPad',
+        'safari'    => 'Version\/.+ Safari',
+        'opera'     => 'Opera|OPR',
     ];
     
     public function __construct($agent)
@@ -40,32 +40,29 @@ class UserAgent
             return $this->macth(self::$macths[$name]);
         } elseif (self::$regex_macths[$name]) {
             return $this->macth(self::$regex_macths[$name], true);
-        } elseif (method_exists($this, 'is'.ucfirst($name))) {
-            $method = 'is'.ucfirst($name);
-            return $this->$method();
         }
-        return null;
     }
     
     public function macth($role, $regex = false)
     {
-        return $regex ? (bool) preg_match("/($role)/i", $this->agent) : stripos($this->agent, $role) !== false;
+        return $regex ? (bool) preg_match("/($role)/i", $this->agent) 
+                      : stripos($this->agent, $role) !== false;
     }
 
-    public function __call($name, $params = [])
+    public function __call($method, $params = [])
     {
-        if (strlen($name) > 2 && substr($name, 0, 2) === 'is') {
-            $ret = $this->is(substr($name, 2));
-            if (isset($ret)) {
+        if (strlen($method) > 2 && substr($method, 0, 2) === 'is') {
+            if (($ret = $this->is(substr($method, 2))) !== null) {
                 return $ret;
             }
         }
-        throw new \Exception('Not support method: '.$name);
+        throw new \Exception('Call to undefined method '.__CLASS__."::$method");
     }
     
     public function isMoblie()
     {
-        return $this->macth('Moblie') || $this->macth(self::$macths['android']) || $this->macth(self::$regex_macths['ios'], true);
+        return $this->macth('Moblie') || $this->macth(self::$macths['android']) 
+                                      || $this->macth(self::$regex_macths['ios'], true);
     }
     
     public function isTablet()

@@ -6,7 +6,7 @@ class Apc extends Cache
     protected $prefix;
     protected $global_clear;
     
-    protected function init($config)
+    public function __construct($config)
     {
         $this->prefix = $config['prefix'];
         $this->global_clear = $config['global_clear'] ?? false;
@@ -14,7 +14,7 @@ class Apc extends Cache
     
     public function get($key, $default = null)
     {
-        return ($value = apcu_fetch($this->prefix.$key)) ? $this->unserialize($value) : $default;
+        return ($value = apcu_fetch($this->prefix.$key)) ? $value : $default;
     }
 
     public function has($key)
@@ -24,7 +24,7 @@ class Apc extends Cache
     
     public function set($key, $value, $ttl = null)
     {
-        return apcu_store($this->prefix.$key, $this->serialize($value), $ttl ?? 0);
+        return apcu_store($this->prefix.$key, $value, $ttl ?? 0);
     }
     
     public function delete($key)

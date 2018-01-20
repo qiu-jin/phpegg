@@ -12,7 +12,7 @@ abstract class Logger
     {
         $this->init($config);
         if (isset($config['format'])) {
-            $this->formatter = new Formatter($config['format']);
+            $this->formatter = new Formatter($config['format'], $config['format_options'] ?? null);
         }
     }
     
