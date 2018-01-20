@@ -3,23 +3,23 @@ namespace framework\core;
 
 class Exception extends \Exception
 {
-    protected $class = __CLASS__;
+    protected $data;
+    protected $class;
     
-    public function __construct($message, $class = null)
+    public function __construct($message, $class = null, $data = null)
     {
-        if ($class !== null) {
-            $this->class = $class;
-        }
+        $this->data     = $data;
+        $this->class    = $class;
         $this->message  = $message;
+    }
+    
+    public function getData()
+    {
+        return $this->data;
     }
     
     public function getClass()
     {
-        return $this->class;
-    }
-    
-    public function setClass($class)
-    {
-        $this->class = $class;
+        return $this->class ?? __CLASS__;
     }
 }

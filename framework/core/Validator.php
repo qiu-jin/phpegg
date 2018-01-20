@@ -18,7 +18,6 @@ class Validator
         self::$init = true;
     }
     
-    
     public static function validate($data, array $rules, &$message = null)
     {
         foreach ($rules as $name => $rule)
@@ -48,11 +47,6 @@ class Validator
     public static function url($var)
     {
         return filter_var($var, FILTER_VALIDATE_URL);
-    }
-    
-    public static function hash($var, $length = 32)
-    {
-        return ;
     }
     
     public static function email($var)

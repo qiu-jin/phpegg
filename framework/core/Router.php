@@ -34,8 +34,7 @@ class Router
      */
     public static function dispatch($path, $ruotes, $param_mode = 0, $method = null)
     {
-        $result = self::route($path, $ruotes, $method);
-        return $result ? self::parse($reslut, $param_mode) : false;
+        return ($result = self::route($path, $ruotes, $method)) ? self::parse($reslut, $param_mode) : false;
     }
     
     /*

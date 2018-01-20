@@ -44,7 +44,7 @@ class Error
     public static function trigger($message, $code = self::ERROR, $limit = 1)
     {
         $file = $line = $trace = null;
-        $traces = debug_backtrace(APP_DEBUG ? 1 : 2);
+        $traces = debug_backtrace(0);
         if (isset($traces[$limit])) {
             $type = $class = $function = '';
             extract($traces[$limit]);
@@ -56,9 +56,8 @@ class Error
         list($level, $prefix) = self::getErrorInfo($code);
         if (Config::env('STRICT_ERROR_MODE')) {
             throw new UserErrorException("[$prefix] $message", $code, $file, $line, $trace);
-        } else {
-            self::record('error.user', $level, $code, "User Error: [$prefix] $message", $file, $line, $trace);
         }
+        self::record('error.user', $level, $code, "User Error: [$prefix] $message", $file, $line, $trace);
     }
     
     /*
@@ -70,10 +69,8 @@ class Error
             list($level, $prefix) = self::getErrorInfo($code);
             if (Config::env('STRICT_ERROR_MODE')) {
                 throw new \ErrorException("[$prefix] $message", 0, $code, $file, $line);
-            } else {
-                $trace = debug_backtrace(APP_DEBUG ? 1 : 2);
-                self::record('error.error', $level, $code, "Error: [$prefix] $message", $file, $line, $trace);
             }
+            self::record('error.error', $level, $code, "Error: [$prefix] $message", $file, $line, debug_backtrace(0));
         }
     }
     
@@ -87,7 +84,7 @@ class Error
             'error.exception',
             Logger::ERROR,
             $e->getCode(),
-            sprintf('Uncaught %s: %s', $e instanceof Exception ? $e->getClass() : get_class($e), $e->getMessage()),
+            sprintf('Uncaught %s: %s', get_class($e), $e->getMessage()),
             $e->getFile(),
             $e->getLine(),
             APP_DEBUG ? ($e instanceof UserErrorException ? $e->getUserTrace() : $e->getTrace()) : null
