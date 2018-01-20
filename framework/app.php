@@ -161,7 +161,7 @@ abstract class App
     /*
      * 退出应用
      */
-    public static function exit($status = 1)
+    public static function exit(int $status = 1)
     {
         if ($status === 1) {
             if (!isset(self::$exit)) {

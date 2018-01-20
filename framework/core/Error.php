@@ -8,7 +8,8 @@ class Error
     const ERROR    = E_USER_ERROR;
     const WARNING  = E_USER_WARNING;
     const NOTICE   = E_USER_NOTICE;
-    
+    // 保存错误信息
+    private static $errors;
     private static $error_info = [
         E_ERROR             => [Logger::CRITICAL ,'E_ERROR'],
         E_WARNING           => [Logger::WARNING  ,'E_WARNING'],
@@ -26,8 +27,6 @@ class Error
         E_DEPRECATED        => [Logger::NOTICE   ,'E_DEPRECATED'],
         E_USER_DEPRECATED   => [Logger::NOTICE   ,'E_USER_DEPRECATED'],
     ];
-    // 保存错误信息
-    private static $errors;
     
     /*
      * 获取错误信息
