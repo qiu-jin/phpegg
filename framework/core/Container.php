@@ -4,6 +4,7 @@ namespace framework\core;
 class Container
 {
     protected static $init;
+    // 
     protected static $providers = [
         // 驱动
         'driver'    => [
@@ -35,6 +36,7 @@ class Container
         // 别名
         'alias'     => [],
     ];
+    // 
     protected static $instances;
 
     public static function init()
@@ -112,8 +114,15 @@ class Container
         if (is_array($name)) {
             return self::makeDriverInstance($type, $name);
         }
-        $index = "$type.$name";
-        return self::$instances[$index] ?? self::$instances[$index] = self::makeDriver($type, $name);
+        return self::$instances["$type.$name"] ?? self::$instances["$type.$name"] = self::makeDriver($type, $name);
+    }
+    
+    public static function makeAlias($name)
+    {
+        $params = explode('.', self::$providers['alias'][$name]);
+        if (($type = self::getProviderType($params[0])) !== 'alias') {
+            return self::{"make$type"}(...$params);
+        }
     }
 
     public static function makeClass($name)
@@ -124,15 +133,7 @@ class Container
 
     public static function makeClosure($name)
     {
-        return self::$providers['closure'][$name]();
-    }
-    
-    public static function makeAlias($name)
-    {
-        $params = explode('.', self::$providers['alias'][$name]);
-        if (($type = self::getProviderType($params[0])) !== 'alias') {
-            return self::{"make$type"}(...$params);
-        }
+        return is_object($object = self::$providers['closure'][$name]()) ? $object : null;
     }
     
     public static function makeModel($type, ...$ns)

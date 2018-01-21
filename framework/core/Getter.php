@@ -7,9 +7,9 @@ trait Getter
 {
     public function __get($name)
     {
-        $providers = \app\env\GETTER_PROVIDERS_NAME;
-        if (isset($this->$providers) && isset($this->$providers[$name])) {
-            $value = $this->$providers[$name];
+        $gpn = \app\env\GETTER_PROVIDERS_NAME;
+        if (isset($this->$gpn) && isset($this->$gpn[$name])) {
+            $value = $this->$gpn[$name];
             if (is_string($value)) {
                 return $this->$name = Container::make($value);
             } elseif (is_array($value)) {
@@ -20,7 +20,7 @@ trait Getter
         } else {
             if ($type = Container::getProviderType($name)) {
                 if ($type === 'model') {
-                    return $this->$name = $this->__makeNs($name,  Container::getProviderValue('model', $name));
+                    return $this->$name = $this->__makeModelNs($name, Container::getProviderValue('model', $name));
                 } else {
                     return $this->$name = Container::{"make$type"}($name);
                 }
@@ -29,7 +29,7 @@ trait Getter
         throw new \Exception('Undefined property: '.__CLASS__.'::$'.$name);
     }
     
-    private static function __makeNs($ns, $depth)
+    private static function __makeModelNs($ns, $depth)
     {
         return new class($ns, $depth) {
             protected $__ns;
