@@ -122,61 +122,48 @@ class Container
     {
         $ns = explode('.', $name);
         if (isset(self::$providers['model'][$ns[0]])) {
-            return self::$instances[$name] ?? self::$instances[$name] = self::makeModelInstance(...$ns);
+            return self::$instances[$name] ?? self::$instances[$name] = self::makeModel(...$ns);
         }
     }
     
-    public static function hasProvider($name)
+    public static function getProviderType($name)
     {
         foreach (self::$providers as $type => $provider) {
-            if (isset($provider[$name])) return $type;
+            if (isset($provider[$name])) {
+                return $type;
+            }
         }
         return false;
     }
+    
+    public static function getProviderValue($type, $name)
+    {
+        return self::$providers[$type][$name] ?? null;
+    }
 
-    protected static function makeClass($name)
+    public static function makeClass($name)
     {
         $value = self::$providers['class'][$name];
         return new $value[0](...array_slice($value, 1));
     }
 
-    protected static function makeClosure($name)
+    public static function makeClosure($name)
     {
         return self::$providers['closure'][$name]();
     }
     
-    protected static function makeAlias($name)
+    public static function makeAlias($name)
     {
         return self::get(self::$providers['alias'][$name]);
     }
     
-    protected static function makeNs($ns, $depth)
+    public static function makeModel($type, ...$ns)
     {
-        return new class($ns, $depth) {
-            protected $__ns;
-            protected $__depth;
-            public function __construct($ns, $depth) {
-                $this->__ns = $ns;
-                $this->__depth = $depth - 1;
-            }
-            public function __get($name) {
-                $this->__ns[] = $name;
-                if ($this->__depth > 0) {
-                    return $this->$name = new self($this->__ns, $this->__depth);
-                } else {
-                    return $this->$name = Container::model(implode('.', $this->__ns));
-                }
-            }
-        };
-    }
-    
-    protected static function makeModel($type, ...$ns)
-    {
-        $depth = self::$providers['model'][$type];
-        return $ns ? self::makeModelInstance($type, ...$ns) : self::makeNs([$type], $depth);
+        $class = 'app\\'.$type.'\\'.implode('\\', $ns);
+        return new $class(); 
     }
 
-    protected static function makeDriver($type, $index = null)
+    public static function makeDriver($type, $index = null)
     {
         if ($index) {
             return self::makeDriverInstance($type, Config::get("$type.$index"));
@@ -186,13 +173,7 @@ class Container
         }
     }
     
-    protected static function makeModelInstance($type, ...$ns)
-    {
-        $class = 'app\\'.$type.'\\'.implode('\\', $ns);
-        return new $class(); 
-    }
-    
-    protected static function makeDriverInstance($type, $config)
+    public static function makeDriverInstance($type, $config)
     {
         $class = "framework\driver\\$type\\".ucfirst($config['driver']);
         return new $class($config);

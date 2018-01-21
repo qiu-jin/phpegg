@@ -17,20 +17,25 @@ trait Getter
             } elseif ($value instanceof \Closure) {
                 return $this->$name = $value();
             }
-        } elseif ($object = Container::make($name)) {
-            return $this->$name = $object;
+        } else {
+            if ($provider_type = Container::getProviderType($name)) {
+                if ($provider_type === 'model') {
+                    return $this->$name = $this->__makeNs($name,  Container::getProviderValue('model', $name));
+                } else {
+                    return $this->$name = Container::{"make$provider_type"}($name);
+                }
+            }
         }
         throw new \Exception('Undefined property: '.__CLASS__.'::$'.$name);
     }
     
-    /*
-    private function __makeNs($ns)
+    private static function __makeNs($ns, $depth)
     {
         return new class($ns, $depth) {
             protected $__ns;
             protected $__depth;
             public function __construct($ns, $depth) {
-                $this->__ns = $ns;
+                $this->__ns[] = $ns;
                 $this->__depth = $depth - 1;
             }
             public function __get($name) {
@@ -38,10 +43,9 @@ trait Getter
                 if ($this->__depth > 0) {
                     return $this->$name = new self($this->__ns, $this->__depth);
                 } else {
-                    return $this->$name = Container::model(implode('\\', $this->__ns));
+                    return $this->$name = Container::model(implode('.', $this->__ns));
                 }
             }
         };
     }
-    */
 }
