@@ -18,11 +18,11 @@ trait Getter
                 return $this->$name = $value();
             }
         } else {
-            if ($provider_type = Container::getProviderType($name)) {
-                if ($provider_type === 'model') {
+            if ($type = Container::getProviderType($name)) {
+                if ($type === 'model') {
                     return $this->$name = $this->__makeNs($name,  Container::getProviderValue('model', $name));
                 } else {
-                    return $this->$name = Container::{"make$provider_type"}($name);
+                    return $this->$name = Container::{"make$type"}($name);
                 }
             }
         }

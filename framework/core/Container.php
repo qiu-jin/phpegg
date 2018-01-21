@@ -70,30 +70,22 @@ class Container
     
     public static function delete($name)
     {
-        if (isset(self::$instances[$name])) {
-            unset(self::$instances[$name]);
-        }
+        if (isset(self::$instances[$name])) unset(self::$instances[$name]);
     }
     
-    public static function bind($name, $value)
+    public static function bindAlias($name, $value)
     {
-        switch (gettype($value)) {
-            case 'array':
-                self::$providers['class'][$name] = $value;
-                return;
-            case 'string':
-                if (strcasecmp($name, $value) !== 0) {
-                    self::$providers['alias'][$name] = $value;
-                    return;
-                }
-                throw new \Exception("Alias same name");
-            case 'object':
-                if ($value instanceof \Closure) {
-                    self::$providers['closure'][$name] = $value;
-                    return;
-                }
-        }
-        throw new \Exception("Bind illegal type to $name");
+        self::$providers['alias'][$name] = $value;
+    }
+    
+    public static function bindClass($name, $value)
+    {
+        self::$providers['class'][$name] = $value;
+    }
+    
+    public static function bindClosure($name, $value)
+    {
+        self::$providers['closure'][$name] = $value;
     }
     
     public static function make($name)
@@ -102,20 +94,9 @@ class Container
             return self::$instances[$name];
         }
         $params = explode('.', $name);
-        foreach (self::$providers as $type => $provider) {
-            if (isset($provider[$params[0]])) {
-                return self::$instances[$name] = self::{'make'.ucfirst($type)}(...$params);
-            }
+        if ($type = self::getProviderType($params[0])) {
+            return self::$instances[$name] = self::{"make$type"}(...$params);
         }
-    }
-    
-    public static function driver($type, $name = null)
-    {
-        if (is_array($name)) {
-            return self::makeDriverInstance($type, $name);
-        }
-        $index = $name ? "$type.$name" : $type;
-        return self::$instances[$index] ?? self::$instances[$index] = self::makeDriver($type, $name);
     }
     
     public static function model($name)
@@ -126,19 +107,13 @@ class Container
         }
     }
     
-    public static function getProviderType($name)
+    public static function driver($type, $name = null)
     {
-        foreach (self::$providers as $type => $provider) {
-            if (isset($provider[$name])) {
-                return $type;
-            }
+        if (is_array($name)) {
+            return self::makeDriverInstance($type, $name);
         }
-        return false;
-    }
-    
-    public static function getProviderValue($type, $name)
-    {
-        return self::$providers[$type][$name] ?? null;
+        $index = "$type.$name";
+        return self::$instances[$index] ?? self::$instances[$index] = self::makeDriver($type, $name);
     }
 
     public static function makeClass($name)
@@ -154,7 +129,10 @@ class Container
     
     public static function makeAlias($name)
     {
-        return self::get(self::$providers['alias'][$name]);
+        $params = explode('.', self::$providers['alias'][$name]);
+        if (($type = self::getProviderType($params[0])) !== 'alias') {
+            return self::{"make$type"}(...$params);
+        }
     }
     
     public static function makeModel($type, ...$ns)
@@ -177,6 +155,20 @@ class Container
     {
         $class = "framework\driver\\$type\\".ucfirst($config['driver']);
         return new $class($config);
+    }
+    
+    public static function getProviderType($name)
+    {
+        foreach (self::$providers as $type => $provider) {
+            if (isset($provider[$name])) {
+                return $type;
+            }
+        }
+    }
+    
+    public static function getProviderValue($type, $name)
+    {
+        return self::$providers[$type][$name] ?? null;
     }
     
     public static function free()
