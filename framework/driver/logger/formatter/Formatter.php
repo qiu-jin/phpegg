@@ -21,7 +21,7 @@ class Formatter
         if (preg_match_all('/\{(\w+)\}/', $format , $matchs)) {
             foreach (array_unique($matchs[1]) as $var) {
                 if (method_exists($this, $var)) {
-                    $this->replace['{'.$var.'}'] = $this->$var();
+                    $this->replace['{'.$var.'}'] = $this->{"get$var"}();
                 } else {
                     $this->replace['{'.$var.'}'] = '{'.$var.'}';
                 }
@@ -43,37 +43,37 @@ class Formatter
         return strtr($this->format, $replace);
     }
     
-    private function ip()
+    private function getIp()
     {
         return Request::ip($this->options['proxy_ip']);
     }
     
-    private function pid()
+    private function getPid()
     {
         return getmypid();
     }
     
-    private function uuid()
+    private function getUuid()
     {
         return uniqid();
     }
     
-    private function time()
+    private function getTime()
     {
         return time();
     }
     
-    private function date()
+    private function getDate()
     {
         return date($this->options['date_format']);
     }
     
-    private function url()
+    private function getUrl()
     {
         return Request::url();
     }
     
-    private function referrer()
+    private function getReferrer()
     {
         return Request::header('referrer');
     }

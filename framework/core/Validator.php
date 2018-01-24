@@ -1,42 +1,74 @@
 <?php
 namespace framework\core;
 
+use framework\App;
+
 class Validator
 {
-    private static $init;
+    private $rule;
+    private $error;
+    private $message = [
+        'require'   => ':name require',
+        'id'        => ':name must be id',
+        'ip'        => ':name must be ip',
+        'email'     => ':name must be email',
+        'mobile'    => ':name must be mobile'
+    ];
     
-    private static $messages;
-    
-    /*
-     * 初始化
-     */
-    public static function init()
+    public function __construct($rule, array $message = null)
     {
-        if (self::$init) {
-            return;
+        if ($rule) {
+            $this->rule = $rule;
         }
-        self::$init = true;
+        if ($message) {
+            $this->message = $message + $this->message;
+        }
     }
     
-    public static function validate($data, array $rules, &$message = null)
+    public function check(array $data, $fall_continue = false)
     {
-        foreach ($rules as $name => $rule)
-        {
-            $items = explode('|', $rule);
-            foreach ($items as $item) {
-                $method = explode(':', $rule);
-                if (!self::{array_shift($method)}($data[$name], ...$method)) {
-                    $message = $name;
-                    return false;
+        foreach ($this->rule as $name => $rule) {
+            if (!isset($data[$name])) {
+                $data[$name] = null;
+            }
+            foreach (explode('|', $rule) as $item) {
+                $params = explode(':', $item);
+                $method = array_shift($params);
+                if (!self::{$method}($data[$name], ...$params)) {
+                    $this->error[$name] = $thus->message[$method];
+                    if (!$fall_continue) {
+                        return false;
+                    }
+                    break;
                 }
             }
         }
-        return true;
+        return !isset($this->error);
     }
     
+    public function fallback()
+    {
+        App::abort(400, $this->error);
+    }
+    
+    public function run()
+    {
+        $this->check() || self::$auth->fallback() === true || App::exit();
+    }
+    
+    public function error()
+    {
+        return $this->error;
+    }
+    
+    public static function require($var)
+    {
+        return isset($var);
+    }
+
     public static function id($var)
     {
-        return is_numeric($var) && is_int($var+0) && $var > 0;
+        return is_numeric($var) && is_int($var + 0) && $var > 0;
     }
     
     public static function ip($var)

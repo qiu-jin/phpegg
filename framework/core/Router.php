@@ -115,7 +115,7 @@ class Router
                     return false;
                 case ':':
                     if ($name = substr($unit, 1)) {
-                        if (isset(self::$callable_filters[$name]) && call_user_func(self::$callable_filters[$name], $path[$i])) {
+                        if (isset(self::$callable_filters[$name]) && self::$callable_filters[$name]($path[$i])) {
                             $macth[] = $path[$i];
                             break;
                         }
@@ -124,7 +124,9 @@ class Router
                 case '{':
                     if (substr($unit, -1) === '}') {
                         $name = substr($unit, 1, -1);
-                        if (isset(self::$regex_filters[$name]) && preg_match('/^'.self::$regex_filters[$name].'$/i', $path[$i])) {
+                        if (isset(self::$regex_filters[$name])
+                            && preg_match('/^'.self::$regex_filters[$name].'$/i', $path[$i])
+                        ) {
                             $macth[] = $path[$i];
                             break;
                         }

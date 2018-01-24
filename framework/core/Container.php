@@ -28,9 +28,7 @@ class Container
             'service'   => 1
         ],
         // 闭包
-        'closure'   => [
-            'logger'    => Logger::class.'::channel',
-        ],
+        'closure'   => [],
         // 类
         'class'     => [],
         // 别名
@@ -114,7 +112,8 @@ class Container
         if (is_array($name)) {
             return self::makeDriverInstance($type, $name);
         }
-        return self::$instances["$type.$name"] ?? self::$instances["$type.$name"] = self::makeDriver($type, $name);
+        $key = "$type.$name";
+        return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($type, $name);
     }
     
     public static function makeAlias($name)

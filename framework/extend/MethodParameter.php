@@ -1,9 +1,11 @@
 <?php
 namespace framework\extend;
 
+use framework\core\Validator;
+
 class MethodParameter
 {
-    public static function BindKvParams($reflection_method, $params, $default_null = false)
+    public static function bindKvParams($reflection_method, $params, $default_null = false)
     {
         if ($reflection_method->getnumberofparameters() > 0) {
             foreach ($reflection_method->getParameters() as $param) {
@@ -21,7 +23,7 @@ class MethodParameter
         return $new_params ?? [];
     }
     
-    public static function BindListParams($reflection_method, $params, $default_null = false)
+    public static function bindListParams($reflection_method, $params, $default_null = false)
     {
         $count = count($params);
         $number = $reflection_method->getnumberofparameters();
@@ -38,5 +40,10 @@ class MethodParameter
             }
         }
         return $params;
+    }
+    
+    public static function validateParams($validator, $params)
+    {
+        
     }
 }
