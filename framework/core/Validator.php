@@ -5,14 +5,15 @@ use framework\App;
 
 class Validator
 {
+    private $data;
     private $rule;
     private $error;
     private $message = [
-        'require'   => ':name require',
-        'id'        => ':name must be id',
-        'ip'        => ':name must be ip',
-        'email'     => ':name must be email',
-        'mobile'    => ':name must be mobile'
+        'require'   => '{name} require',
+        'id'        => '{name} must be id',
+        'ip'        => '{name} must be ip',
+        'email'     => '{name} must be email',
+        'mobile'    => '{name} must be mobile'
     ];
     
     public function __construct($rule, array $message = null)
@@ -25,7 +26,7 @@ class Validator
         }
     }
     
-    public function check(array $data, $fall_continue = false)
+    public function check($fall_continue = false)
     {
         foreach ($this->rule as $name => $rule) {
             if (!isset($data[$name])) {
@@ -35,7 +36,9 @@ class Validator
                 $params = explode(':', $item);
                 $method = array_shift($params);
                 if (!self::{$method}($data[$name], ...$params)) {
-                    $this->error[$name] = $thus->message[$method];
+                    $this->error[$name] = strtr($this->message[$method], [
+                        '{name}' => $name
+                    ]);
                     if (!$fall_continue) {
                         return false;
                     }
@@ -51,9 +54,9 @@ class Validator
         App::abort(400, $this->error);
     }
     
-    public function run()
+    public function run($data)
     {
-        $this->check() || self::$auth->fallback() === true || App::exit();
+        $this->check($data) || $this->fallback() === true || App::exit();
     }
     
     public function error()
@@ -61,47 +64,52 @@ class Validator
         return $this->error;
     }
     
+    public static function validate()
+    {
+
+    }
+    
     public static function require($var)
     {
         return isset($var);
     }
 
-    public static function id($var)
+    public static function checkId($var)
     {
         return is_numeric($var) && is_int($var + 0) && $var > 0;
     }
     
-    public static function ip($var)
+    public static function checkIp($var)
     {
         return filter_var($var, FILTER_VALIDATE_IP);
     }
     
-    public static function url($var)
+    public static function checkUrl($var)
     {
         return filter_var($var, FILTER_VALIDATE_URL);
     }
     
-    public static function email($var)
+    public static function checkEmail($var)
     {
         return filter_var($var, FILTER_VALIDATE_EMAIL);
     }
     
-    public static function mobile($var)
+    public static function checkMobile($var)
     {
         return preg_match('/^1[34578]\d{9}$/', $var);
     }
     
-    public static function min($var, $min)
+    public static function checkMin($var, $min)
     {
         return strlen($var) >= $min;
     }
     
-    public static function max($var, $max)
+    public static function checkMax($var, $max)
     {
         return strlen($var) <= $max;
     }
 
-    public static function between($var, $min, $max)
+    public static function checkBetween($var, $min, $max)
     {
         $len = strlen($var);
         return $len >= $min && $len <= $max;

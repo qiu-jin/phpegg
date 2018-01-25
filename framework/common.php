@@ -5,6 +5,7 @@ use framework\core\Getter;
 use framework\core\Logger;
 use framework\core\Config;
 use framework\core\Container;
+use framework\core\Validator;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\extend\debug\Debug;
@@ -82,6 +83,11 @@ function view($path, array $vars = null)
     return Response::view($path, $vars);
 }
 
+function validate($rule, $message = null)
+{
+    return new Validator($rule, $message);
+}
+
 function dd(...$vars)
 {
     Response::send(Debug::dump(...$vars));
@@ -127,11 +133,6 @@ function jsondecode($data)
     return json_decode($data, true);
 }
 
-function is_php_file($file)
-{
-    return (extension_loaded('opcache') && opcache_is_script_cached($file)) || is_file($file);
-}
-
 function __include($file)
 {
     return include $file;
@@ -142,3 +143,9 @@ function __require($file)
     return require $file;
 }
 
+define('OPCACHE_LOADED', extension_loaded('opcache'));
+
+function is_php_file($file)
+{
+    return (OPCACHE_LOADED && opcache_is_script_cached($file)) || is_file($file);
+}

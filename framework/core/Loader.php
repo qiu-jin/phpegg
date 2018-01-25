@@ -38,7 +38,7 @@ class Loader
             }
         }
         if ($vendor = Config::env('VENDOR_DIR')) {
-            self::import($vendor.'autoload');  
+            self::import($vendor.'autoload', false);  
         }
         spl_autoload_register(__CLASS__.'::autoload', true, true);
     }
@@ -60,7 +60,7 @@ class Loader
                 return;
             case 'files':
                 foreach ($rules as $name) {
-                    self::import($name);
+                    self::import($name, false);
                 }
                 return;
         }
@@ -83,9 +83,12 @@ class Loader
     /*
      * 加载php文件，忽略.php后缀
      */
-    private static function import($name)
+    private static function import($name, $check = true)
     {
-        __include("$name.php");
+        $file = "$name.php";
+        if (!$check || is_php_file($file)) {
+            __include($file);
+        }
     }
 }
 Loader::init();
