@@ -112,7 +112,7 @@ class Container
         if (is_array($name)) {
             return self::makeDriverInstance($type, $name);
         }
-        $key = "$type.$name";
+        $key = $name ? $type : "$type.$name";
         return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($type, $name);
     }
     
@@ -145,10 +145,10 @@ class Container
     {
         if ($index) {
             return self::makeDriverInstance($type, Config::get("$type.$index"));
-        } else {
-            list($index, $config) = Config::firstPair($type);
-            return self::$instances["$type.$index"] ?? self::makeDriverInstance($type, $config);
         }
+        list($index, $config) = Config::firstPair($type);
+        $key = "$type.$index";
+        return self::$instances[$key] ?? self::$instances[$key] = self::makeDriverInstance($type, $config);
     }
     
     public static function makeDriverInstance($type, $config)

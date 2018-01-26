@@ -64,9 +64,16 @@ class Validator
         return $this->error;
     }
     
-    public static function validate()
+    public static function validate($value, $rule)
     {
-
+        foreach (explode('|', $rule) as $item) {
+            $params = explode(':', $item);
+            $method = array_shift($params);
+            if (!self::{$method}($value, ...$params)) {
+                return false;
+            }
+        }
+        return true;
     }
     
     public static function require($var)

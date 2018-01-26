@@ -30,14 +30,6 @@ function make($name)
     return Container::make($name);
 }
 
-function getter()
-{
-    static $getter;
-    return $getter ?? $getter = new class () {
-        use Getter;
-    };
-}
-
 function db($name = null)
 {
     return Container::driver('db', $name);
@@ -141,6 +133,14 @@ function __include($file)
 function __require($file)
 {
     return require $file;
+}
+
+function getter()
+{
+    static $getter;
+    return $getter ?? $getter = new class () {
+        use Getter;
+    };
 }
 
 define('OPCACHE_LOADED', extension_loaded('opcache'));
