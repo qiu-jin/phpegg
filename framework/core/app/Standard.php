@@ -75,9 +75,9 @@ class Standard extends App
     {
         extract($this->dispatch);
         if ($param_mode) {
-            $reflection_method = $this->reflection_method ?? new \ReflectionMethod($controller, $action);
+            $rm = $this->reflection_method ?? new \ReflectionMethod($controller, $action);
             if ($param_mode === 1) {
-                $params = MethodParameter::bindListParams($reflection_method, $params, $this->config['missing_params_to_null']);
+                $params = MethodParameter::bindListParams($rm, $params, $this->config['missing_params_to_null']);
             } elseif ($param_mode === 2) {
                 if (isset($this->config['bind_request_params'])) {
                     foreach ($this->config['bind_request_params'] as $param) {
@@ -86,7 +86,7 @@ class Standard extends App
                         }
                     }
                 }
-                $params = MethodParameter::bindKvParams($reflection_method, $params, $this->config['missing_params_to_null']);
+                $params = MethodParameter::bindKvParams($rm, $params, $this->config['missing_params_to_null']);
             }
             if ($params === false) {
                 self::abort(400, 'Missing argument');
@@ -121,7 +121,6 @@ class Standard extends App
      */
     protected function defaultDispatch($path) 
     {
-        $params     = [];
         $count      = count($path);
         $depth      = $this->config['controller_depth'];
         $param_mode = $this->config['default_dispatch_param_mode'];
@@ -147,23 +146,20 @@ class Standard extends App
                 $controller = $this->dispatch['route'][0];
             } else {
                 if ($depth > 0) {
-                    if ($count > $depth) {
+                    if ($count >= $depth) {
+                        $controller_array = array_slice($path, 0, $depth);
                         if ($count == $depth + 1) {
-                            $action = array_pop($path);
-                            $controller_array = $path;
+                            $action = $path[$depth];
+                        } elseif ($count === $depth) {
+                            if (isset($this->config['default_dispatch_default_action'])) {
+                                $action = $this->config['default_dispatch_default_action'];
+                            }
                         } else {
                             if ($param_mode > 0) {
                                 $action = $path[$depth];
-                                $controller_array = array_slice($path, 0, $depth);
                                 $params = array_slice($path, $depth + 1);
-                                if ($param_mode === 2) {
-                                    $params = $this->getKvParams($params);
-                                }
                             }
                         }
-                    } elseif ($count === $depth && isset($this->config['default_dispatch_default_action'])) {
-                        $action = $this->config['default_dispatch_default_action'];
-                        $controller_array = $path;
                     }
                 } elseif ($count > 1) {
                     if ($param_mode !== 0) {
@@ -176,7 +172,9 @@ class Standard extends App
                     return;
                 }
                 if (isset($this->config['default_dispatch_to_camel'])) {
-                    $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
+                    if (isset($action)) {
+                        $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
+                    }
                     $controller_array[] = Str::toCamel(array_pop($controller_array), $this->config['default_dispatch_to_camel']);
                 }
                 $controller = implode('\\', $controller_array);
@@ -187,11 +185,19 @@ class Standard extends App
                 }
             }
         }
-        if ($action[0] !== '_'
-            && ($class = $this->getControllerClass($controller, isset($check)))
-            && is_callable([$controller_instance = new $class(), $action])
-        ) {
-            return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
+        if ($class = $this->getControllerClass($controller, isset($check))) {
+            if (isset($action) && $action[0] !== '_' && is_callable([$controller_instance = new $class(), $action])) {
+                if (isset($params)) {
+                    if ($param_mode === 2) {
+                        $params = $this->getKvParams($params);
+                    }
+                } else {
+                    $params = [];
+                }
+                return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
+            } elseif (isset($this->config['route_dispatch_action_routes']) && isset($controller_array) && $depth > 0) {
+                return $this->actionRouteDispatch($param_mode, $controller, array_slice($path, $depth), $class);
+            }
         }
     }
     
@@ -220,19 +226,12 @@ class Standard extends App
                         'param_mode'            => $param_mode
                     ];
                 }
+                if (isset($this->config['route_dispatch_action_routes'])
+                    && ($action_route_dispatch = $this->actionRouteDispatch($param_mode, ...$dispatch))
+                ) {
+                    return $action_route_dispatch;
+                }
                 $this->dispatch = ['route' => $dispatch];
-            }
-        }
-        if (isset($this->config['route_dispatch_action_routes'])) {
-            if (isset($this->dispatch['route'])) {
-                return $this->actionRouteDispatch($param_mode, ...$this->dispatch['route']);
-            }
-            if (($depth = $this->config['controller_depth']) < 1) {
-                throw new \Exception('If enable action route, must controller_depth > 0');
-            }
-            if (count($path) >= $depth) {
-                $controller = implode('\\', array_slice($path, 0, $depth));
-                return $this->actionRouteDispatch($param_mode, $controller, array_slice($path, $depth));
             }
         }
     }
@@ -240,9 +239,12 @@ class Standard extends App
     /*
      * Action 路由调度
      */
-    protected function actionRouteDispatch($param_mode, $controller, $path)
+    protected function actionRouteDispatch($param_mode, $controller, $path, $class = null)
     {
-        if (($vars = get_class_vars($class = $this->getControllerClass($controller)))
+        if ($class === null) {
+            $class = $this->getControllerClass($controller);
+        }
+        if (($vars = get_class_vars($class))
             && isset($vars[$this->config['route_dispatch_action_routes']])
             && ($dispatch = Router::dispatch($path, $vars[$this->config['route_dispatch_action_routes']], $param_mode))
         ) {

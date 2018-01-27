@@ -80,9 +80,9 @@ class Rest extends App
         }
         extract($this->dispatch);
         if ($param_mode) {
-            $reflection_method = new \ReflectionMethod($controller, $action);
+            $rm = new \ReflectionMethod($controller, $action);
             if ($param_mode === 1) {
-                $params = MethodParameter::bindListParams($reflection_method, $params);
+                $params = MethodParameter::bindListParams($rm, $params);
             } elseif ($param_mode === 2) {
                 if (isset($this->config['bind_request_params'])) {
                     foreach ($this->config['bind_request_params'] as $param) {
@@ -91,13 +91,13 @@ class Rest extends App
                         }
                     }
                 }
-                $params = MethodParameter::bindKvParams($reflection_method, $params);
+                $params = MethodParameter::bindKvParams($rm, $params);
             }
             if ($params === false) {
                 self::abort(400, 'Missing argument');
             }
         }
-        return $ccontroller_instance->$action(...$params);
+        return $controller_instance->$action(...$params);
     }
     
     protected function error($code = null, $message = null)
@@ -158,16 +158,18 @@ class Rest extends App
                 return;
             }
         }
-        if (($class = $this->getControllerClass($controller, isset($check)))
-            && is_callable([$ccontroller_instance = new $class(), $this->method])
-        ) {
-            return [
-                'controller'            => $controller,
-                'ccontroller_instance'  => $ccontroller_instance,
-                'action'                => $this->method,
-                'params'                => $params ?? [],
-                'param_mode'            => $param_mode
-            ];
+        if ($class = $this->getControllerClass($controller, isset($check))) {
+            if (is_callable([$controller_instance = new $class(), $this->method])) {
+                return [
+                    'controller'            => $controller,
+                    'controller_instance'   => $controller_instance,
+                    'action'                => $this->method,
+                    'params'                => $params ?? [],
+                    'param_mode'            => $param_mode
+                ];
+            } elseif (isset($this->config['route_dispatch_action_routes']) && !isset($this->dispatch['route'])) {
+                return $this->actionRouteDispatch($param_mode, $controller, $params, $class);
+            }
         }
     }
     
@@ -196,17 +198,20 @@ class Rest extends App
         } else {
             return;
         }
-        if (($dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method))
-            && ($class = $this->getControllerClass($controller, isset($check)))
-            && is_callable([$controller_instance = new $class(), $dispatch[0]])
-        ) {
-            return [
-                'controller'            => $controller,
-                'controller_instance'   => $controller_instance,
-                'action'                => $dispatch[0],
-                'params'                => $dispatch[1],
-                'param_mode'            => 0
-            ];
+        if ($class = $this->getControllerClass($controller, isset($check))) {
+            if (($dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method))
+                && is_callable([$controller_instance = new $class(), $dispatch[0]])
+            ) {
+                return [
+                    'controller'            => $controller,
+                    'controller_instance'   => $controller_instance,
+                    'action'                => $dispatch[0],
+                    'params'                => $dispatch[1],
+                    'param_mode'            => 0
+                ];
+            } elseif (isset($this->config['route_dispatch_action_routes']) && !isset($this->dispatch['route'])) {
+                return $this->actionRouteDispatch(0, $controller, $action_path, $class);
+            }
         }
     }
     
@@ -232,19 +237,12 @@ class Rest extends App
                         'param_mode'            => $param_mode
                     ];
                 }
+                if (isset($this->config['route_dispatch_action_routes'])
+                    && ($action_route_dispatch = $this->actionRouteDispatch($param_mode, ...$dispatch))
+                ) {
+                    return $action_route_dispatch;
+                }
                 $this->dispatch = ['route' => $dispatch];
-            }
-        }
-        if ($this->config['route_dispatch_action_routes']) {
-            if (isset($this->dispatch['route'])) {
-                return $this->actionRouteDispatch($param_mode, ...$this->dispatch['route']);
-            }
-            if (($depth = $this->config['controller_depth']) < 1) {
-                throw new \Exception('If enable action route, must controller_depth > 0');
-            }
-            if (count($path) >= $depth) {
-                $controller = implode('\\', array_slice($path, 0, $depth));
-                return $this->actionRouteDispatch($param_mode, $controller, array_slice($path, $depth));
             }
         }
     }
@@ -252,9 +250,12 @@ class Rest extends App
     /*
      * Action 路由调度
      */
-    protected function actionRouteDispatch($param_mode, $controller, $path)
+    protected function actionRouteDispatch($param_mode, $controller, $path, $class = null)
     {
-        if (($vars = get_class_vars($class = $this->getControllerClass($controller)))
+        if ($class === null) {
+            $class = $this->getControllerClass($controller);
+        }
+        if (($vars = get_class_vars($class))
             && isset($vars[$this->config['route_dispatch_action_routes']])
             && ($dispatch = Router::dispatch($path, $vars[$this->config['route_dispatch_action_routes']], $param_mode))
         ) {
