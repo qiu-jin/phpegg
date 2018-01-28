@@ -147,6 +147,7 @@ class Standard extends App
             } else {
                 if ($depth > 0) {
                     if ($count >= $depth) {
+                        $allow_action_route = true;
                         $controller_array = array_slice($path, 0, $depth);
                         if ($count == $depth + 1) {
                             $action = $path[$depth];
@@ -195,7 +196,7 @@ class Standard extends App
                     $params = [];
                 }
                 return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
-            } elseif (isset($this->config['route_dispatch_action_routes']) && isset($controller_array) && $depth > 0) {
+            } elseif (isset($this->config['route_dispatch_action_routes']) && isset($allow_action_route)) {
                 return $this->actionRouteDispatch($param_mode, $controller, array_slice($path, $depth), $class);
             }
         }

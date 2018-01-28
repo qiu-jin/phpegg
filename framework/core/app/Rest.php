@@ -167,9 +167,13 @@ class Rest extends App
                     'params'                => $params ?? [],
                     'param_mode'            => $param_mode
                 ];
-            } elseif (isset($this->config['route_dispatch_action_routes']) && !isset($this->dispatch['route'])) {
-                return $this->actionRouteDispatch($param_mode, $controller, $params, $class);
+            } elseif (isset($this->config['route_dispatch_action_routes'])
+                && !isset($this->dispatch)
+                && ($action_route_dispatch = $this->actionRouteDispatch($param_mode, $controller, $params, $class))
+            ) {
+                return $action_route_dispatch;
             }
+            $this->dispatch = ['default' => $controller];
         }
     }
     
@@ -209,9 +213,13 @@ class Rest extends App
                     'params'                => $dispatch[1],
                     'param_mode'            => 0
                 ];
-            } elseif (isset($this->config['route_dispatch_action_routes']) && !isset($this->dispatch['route'])) {
-                return $this->actionRouteDispatch(0, $controller, $action_path, $class);
+            } elseif (isset($this->config['route_dispatch_action_routes'])
+                && !isset($this->dispatch)
+                && ($action_route_dispatch = $this->actionRouteDispatch(0, $controller, $action_path, $class))
+            ) {
+                return $action_route_dispatch;
             }
+            $this->dispatch = ['resource' => $controller];
         }
     }
     
