@@ -123,8 +123,7 @@ class Rest extends App
         $depth      = $this->config['controller_depth'];
         $param_mode = $this->config['default_dispatch_param_mode'];
         if (isset($this->dispatch['route'])) {
-            $controller = $this->dispatch['route'][0];
-            $params = $this->dispatch['route'][1];
+            list($controller, $params) = $this->dispatch['route'];
         } else {
             if ($depth > 0) {
                 if ($count < $depth) {
@@ -138,17 +137,11 @@ class Rest extends App
                     }
                     $controller_array = array_slice($path, 0, $depth);
                     $params = array_slice($path, $depth);
-                    if ($param_mode === 2) {
-                        $params = $this->getKvParams($params);
-                    }
                 }
-            } else {
-                if ($param_mode !== 0) {
-                    throw new \Exception('If param_mode > 0, must controller_depth > 0');
-                }
+            } elseif ($param_mode === 0) {
                 $controller_array = $path;
             }
-            if (!empty($this->config['default_dispatch_to_camel'])) {
+            if (isset($this->config['default_dispatch_to_camel'])) {
                 $controller_array[] = Str::toCamel(array_pop($controller_array), $this->config['default_dispatch_to_camel']);
             }
             $controller = implode('\\', $controller_array);
@@ -160,11 +153,18 @@ class Rest extends App
         }
         if ($class = $this->getControllerClass($controller, isset($check))) {
             if (is_callable([$controller_instance = new $class(), $this->method])) {
+                if (isset($params)) {
+                    if ($param_mode === 2) {
+                        $params = $this->getKvParams($params);
+                    }
+                } else {
+                    $params = [];
+                }
                 return [
                     'controller'            => $controller,
                     'controller_instance'   => $controller_instance,
                     'action'                => $this->method,
-                    'params'                => $params ?? [],
+                    'params'                => $params,
                     'param_mode'            => $param_mode
                 ];
             } elseif (isset($this->config['route_dispatch_action_routes'])
@@ -183,7 +183,7 @@ class Rest extends App
     protected function resourceDispatch($path)
     {
         if (($depth = $this->config['controller_depth']) < 1) {
-            throw new \Exception('If use resource_dispatch, must controller_depth > 0');
+            throw new \Exception('If use resource dispatch, must controller_depth > 0');
         }
         if (isset($this->dispatch['route'])) {
             $controller = $this->dispatch['route'][0];

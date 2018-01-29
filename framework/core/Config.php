@@ -150,7 +150,7 @@ class Config
     }
     
     /*
-     * 从目录中导入文件
+     * 从配置目录中导入子配置文件
      */
     private static function load($name)
     {

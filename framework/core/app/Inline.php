@@ -101,6 +101,8 @@ class Inline extends App
             }
         } elseif (isset($this->config['default_dispatch_index'])) {
             $controller = $this->config['default_dispatch_index'];
+        } else {
+            return;
         }
         return [
             'controller'        => $controller,

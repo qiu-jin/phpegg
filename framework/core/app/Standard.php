@@ -54,7 +54,7 @@ class Standard extends App
         // 路由调度的路由表，如果值为字符串则作为PHP文件include
         'route_dispatch_routes' => null,
         // 路由调度是否允许访问受保护的方法
-        'route_dispatch_protected_access' => false,
+        'route_dispatch_access_protected' => false,
         // 设置动作路由属性名，为null则不启用动作路由
         'route_dispatch_action_routes' => null,
     ];
@@ -140,9 +140,6 @@ class Standard extends App
                     $action = array_shift($this->dispatch['route'][1]);
                     $params = $this->dispatch['route'][1];
                 }
-                if (isset($this->config['default_dispatch_to_camel'])) {
-                    $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
-                }
                 $controller = $this->dispatch['route'][0];
             } else {
                 if ($depth > 0) {
@@ -162,10 +159,7 @@ class Standard extends App
                             }
                         }
                     }
-                } elseif ($count > 1) {
-                    if ($param_mode !== 0) {
-                        throw new \Exception('If param_mode > 0, must controller_depth > 0');
-                    }
+                } elseif ($count > 1 && $param_mode === 0) {
                     $action = array_pop($path);
                     $controller_array = $path;
                 }
@@ -173,9 +167,6 @@ class Standard extends App
                     return;
                 }
                 if (isset($this->config['default_dispatch_to_camel'])) {
-                    if (isset($action)) {
-                        $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
-                    }
                     $controller_array[] = Str::toCamel(array_pop($controller_array), $this->config['default_dispatch_to_camel']);
                 }
                 $controller = implode('\\', $controller_array);
@@ -184,6 +175,9 @@ class Standard extends App
                 } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
                     return;
                 }
+            }
+            if (isset($this->config['default_dispatch_to_camel']) && isset($action)) {
+                $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
             }
         }
         if ($class = $this->getControllerClass($controller, isset($check))) {
@@ -216,7 +210,7 @@ class Standard extends App
                 if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->getControllerClass($controller);
-                    if ($this->config['route_dispatch_protected_access']) {
+                    if ($this->config['route_dispatch_access_protected']) {
                         $this->checkMethodAccessible($class, $action);
                     }
                     return [
@@ -249,7 +243,7 @@ class Standard extends App
             && isset($vars[$this->config['route_dispatch_action_routes']])
             && ($dispatch = Router::dispatch($path, $vars[$this->config['route_dispatch_action_routes']], $param_mode))
         ) {
-            if ($this->config['route_dispatch_protected_access']) {
+            if ($this->config['route_dispatch_access_protected']) {
                 $this->checkMethodAccessible($class, $dispatch[0]);
             }
             return [
