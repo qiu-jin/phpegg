@@ -32,6 +32,8 @@ class Grpc extends App
         'service_schemes'       => null,
         // 忽略service类名前缀
         'ignore_service_prefix' => 0,
+        // 检查响应数据类型（键值参数模式下有效）
+        'check_response_type'   => false,
         // 请求scheme格式
         'request_scheme_format' => '{service}{method}Request',
         // 响应scheme格式
@@ -117,12 +119,22 @@ class Grpc extends App
                 return MethodParameter::bindKvParams($ref, get_object_vars($this));
             }, $request_object, $request_class)($reflection_method);
             $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}(...$params);
-            return \Closure::bind(function (array $params) {
-                foreach ($params as $k => $v) {
-                    $this->$k = $v;
+            if ($this->config['check_response_type']) {
+                $response_object = new $response_class;
+                foreach (get_class_methods($response_class) as $method) {
+                    if (strpos($method, 'set') === 0 && ($m = strtolower(substr($method, 3))) && isset($return[$m])) {
+                        $response_object->$method($return[$m]);
+                    }
                 }
-                return $this;
-            }, new $response_class, $response_class)($return);
+                return $response_object;
+            } else {
+                return \Closure::bind(function (array $params) {
+                    foreach ($params as $k => $v) {
+                        $this->$k = $v;
+                    }
+                    return $this;
+                }, new $response_class, $response_class)($return);
+            }
         }
         self::abort(500, 'Illegal message scheme class');
     }
