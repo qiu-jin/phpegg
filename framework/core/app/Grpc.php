@@ -73,12 +73,11 @@ class Grpc extends App
                 Loader::add($type, $rules);
             }
         }
-        $reflection_method = new \ReflectionMethod($this->dispatch['controller'], $this->dispatch['action']);
-        if ($this->config['param_mode']) {
-            return $this->callWithReqResParams($reflection_method);
-        } else {
-            return $this->callWithKvParams($reflection_method);
+        $rm = new \ReflectionMethod($this->dispatch['controller'], $this->dispatch['action']);
+        if ($return = $this->config['param_mode'] ? $this->callWithReqResParams($rm) : $this->callWithKvParams($rm)) {
+            return $return;
         }
+        self::abort(500, 'Illegal message scheme class');
     }
     
     protected function error($code = null, $message = null)
@@ -122,7 +121,7 @@ class Grpc extends App
             if ($this->config['check_response_type']) {
                 $response_object = new $response_class;
                 foreach (get_class_methods($response_class) as $method) {
-                    if (strpos($method, 'set') === 0 && ($m = strtolower(substr($method, 3))) && isset($return[$m])) {
+                    if (strpos($method, 'set') === 0 && ($m = lcfirst(substr($method, 3))) && isset($return[$m])) {
                         $response_object->$method($return[$m]);
                     }
                 }
@@ -136,7 +135,6 @@ class Grpc extends App
                 }, new $response_class, $response_class)($return);
             }
         }
-        self::abort(500, 'Illegal message scheme class');
     }
     
     protected function callWithReqResParams($reflection_method)
@@ -155,6 +153,5 @@ class Grpc extends App
                 return $response_object;
             }
         }
-        self::abort(500, 'Illegal message scheme class');
     }
 }
