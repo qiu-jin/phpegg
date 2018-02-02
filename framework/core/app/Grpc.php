@@ -73,7 +73,7 @@ class Grpc extends App
                 Loader::add($type, $rules);
             }
         }
-        $rm = new \ReflectionMethod($this->dispatch['controller'], $this->dispatch['action']);
+        $rm = new \ReflectionMethod($this->dispatch['controller_instance'], $this->dispatch['action']);
         if ($return = $this->config['param_mode'] ? $this->callWithReqResParams($rm) : $this->callWithKvParams($rm)) {
             return $return;
         }
@@ -87,9 +87,10 @@ class Grpc extends App
     
     protected function response($return)
     {
-        $size = $return->byteSize();
+        $data = $return->serializeToString();
+        $size = strlen($data);
         Response::header('grpc-status', '0');
-        Response::send(pack('C1N1a'.$size, 0, $size, $return->serializeToString()), null, false);
+        Response::send(pack('C1N1a'.$size, 0, $size, $data), null, false);
     }
     
     protected function readParams()
@@ -115,7 +116,10 @@ class Grpc extends App
             $request_object = new $request_class;
             $request_object->mergeFromString($this->readParams());
             $params = \Closure::bind(function ($ref) {
-                return MethodParameter::bindKvParams($ref, get_object_vars($this));
+                foreach (array_keys(get_class_vars(get_class($this))) as $k) {
+                    $params[$k] = $this->$k;
+                }
+                return MethodParameter::bindKvParams($ref, $params);
             }, $request_object, $request_class)($reflection_method);
             $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}(...$params);
             if ($this->config['check_response_type']) {
@@ -128,8 +132,10 @@ class Grpc extends App
                 return $response_object;
             } else {
                 return \Closure::bind(function (array $params) {
-                    foreach ($params as $k => $v) {
-                        $this->$k = $v;
+                    foreach (array_keys(get_class_vars(get_class($this))) as $k) {
+                        if (isset($params[$k])) {
+                            $this->$k = $params[$k];
+                        }
                     }
                     return $this;
                 }, new $response_class, $response_class)($return);

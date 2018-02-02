@@ -67,7 +67,7 @@ class Jsonrpc
         if ($result) {
             return $result;
         }
-        if ($error = $client->error)) {
+        if ($error = $client->error) {
             error("-32000: Internet error [$error->code]$error->message");
         } else {
             error('-32603: nvalid JSON-RPC response');

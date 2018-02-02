@@ -70,12 +70,11 @@ class Grpc
     {
         return \Closure::bind(function ($params) {
             $i = 0;
-            foreach ($this as $k => $v) {
-                if (!isset($params[$i])) {
-                    break;
+            foreach (array_keys(get_class_vars(get_class($this))) as $k) {
+                if (isset($params[$i])) {
+                    $this->$k = $params[$i];
+                    $i++;
                 }
-                $this->$k = $params[$i];
-                $i++;
             }
             return $this;
         }, new $request, $request)($params);
@@ -84,7 +83,10 @@ class Grpc
     public function responseToArray($response)
     {
         return \Closure::bind(function () {
-            return get_object_vars($this);
+            foreach (array_keys(get_class_vars(get_class($this))) as $k) {
+                $return[$k] = $this->$k;
+            }
+            return $return;
         }, $response, $response)();
     }
 }

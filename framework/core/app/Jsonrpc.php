@@ -124,11 +124,11 @@ class Jsonrpc extends App
             Request::set('post', $params);
             return ['result' => $controller_instance->$action()];
         }
-        $reflection_method = $this->getReflectionMethod($controller, $action);
+        $rm = $this->getReflectionMethod($controller_instance, $controller, $action);
         if ($this->config['param_mode'] === 1) {
-            $params = MethodParameter::bindListParams($reflection_method, $params);
+            $params = MethodParameter::bindListParams($rm, $params);
         } elseif ($this->config['param_mode'] === 2) {
-            $params = MethodParameter::bindKvParams($reflection_method, $params);
+            $params = MethodParameter::bindKvParams($rm, $params);
         }
         if ($params === false) {
             return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
@@ -196,7 +196,7 @@ class Jsonrpc extends App
                     return compact('id', 'action', 'controller', 'controller_instance', 'params');
                 }
             }
-            $error = ['code' => -32601, 'message' => 'Method not found'];
+            $error = ['code' => -32601, 'message' => "Method not found $item[method]"];
         } else {
             $error = ['code' => -32600, 'message' => 'Invalid Request'];
         }
@@ -214,21 +214,21 @@ class Jsonrpc extends App
         }
         if ($class = $this->getControllerClass($controller, isset($check))) {
             if (!$this->is_batch_call) {
-                return $class;
+                return new $class;
             }
             return $this->controller_instances[$class] ?? $this->controller_instances[$class] = new $class();
         }
     }
     
-    protected function getReflectionMethod($controller, $action)
+    protected function getReflectionMethod($controller_instance, $controller, $action)
     {
         if (!$this->is_batch_call) {
-            return new \ReflectionMethod($controller, $action);
+            return new \ReflectionMethod($controller_instance, $action);
         }
         if (isset($this->controller_reflection_methods[$controller][$action])) {
             return $this->controller_reflection_methods[$controller][$action];
         }
-        return $this->controller_reflection_methods[$controller][$action] = new \ReflectionMethod($controller, $action);
+        return $this->controller_reflection_methods[$controller][$action] = new \ReflectionMethod($controller_instance, $action);
     }
     
     protected function addJob($dispatch)
@@ -257,6 +257,6 @@ class Jsonrpc extends App
             'file' => $e->getFile(),
             'line' => $e->getLine()
         ]);
-        return ['code' => $e->getCode() ?? -32000, 'message' => $message];
+        return ['code' => $e->getCode() ?: -32000, 'message' => $message];
     }
 }

@@ -75,7 +75,7 @@ class Standard extends App
     {
         extract($this->dispatch);
         if ($param_mode) {
-            $rm = $this->reflection_method ?? new \ReflectionMethod($controller, $action);
+            $rm = $this->reflection_method ?? new \ReflectionMethod($controller_instance, $action);
             if ($param_mode === 1) {
                 $params = MethodParameter::bindListParams($rm, $params, $this->config['missing_params_to_null']);
             } elseif ($param_mode === 2) {

@@ -20,10 +20,11 @@ class Formatter
         }
         if (preg_match_all('/\{(\w+)\}/', $format , $matchs)) {
             foreach (array_unique($matchs[1]) as $var) {
-                if (method_exists($this, $var)) {
-                    $this->replace['{'.$var.'}'] = $this->{"get$var"}();
+                $method = "get$var";
+                if (method_exists($this, $method)) {
+                    $this->replace['{'.$var.'}'] = $this->$method();
                 } else {
-                    $this->replace['{'.$var.'}'] = '{'.$var.'}';
+                    $this->replace['{'.$var.'}'] = '';
                 }
             }
         }

@@ -40,8 +40,9 @@ class GrpcSimple
         $request_class  = strtr($this->options['request_scheme_format'], $replace);
         $request_object = $this->rpc->arrayToRequest($request_class, $params);
         $url    = $this->options['endpoint'].'/'.implode('.', $this->ns).'/'.$method;
-        $size   = $request_object->byteSize();
-        $body   = pack('C1N1a'.$size, 0, $size, $request_object->serializeToString());
+        $data   = $request_object->serializeToString();
+        $size   = strlen($data);
+        $body   = pack('C1N1a'.$size, 0, $size, $data);
         $client = Client::post($url)->body($body);
         if (!empty($this->options['simple_mode_enable_http2'])) {
             $client->curlopt(CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);

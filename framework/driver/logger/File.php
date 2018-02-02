@@ -15,11 +15,11 @@ class File extends Logger
         if ($this->formatter) {
             $log = $this->formatter->make($level, $message, $context);
         } else {
-            $log = "[$level] $message".PHP_EOL;
+            $log = "[$level] $message";
             if ($context) {
-                $log .= var_export($context, true).PHP_EOL;
+                $log .= PHP_EOL.var_export($context, true);
             }
         }
-        error_log($log, 3, $this->logfile);
+        error_log($log.PHP_EOL, 3, $this->logfile);
     }
 }

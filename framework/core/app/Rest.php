@@ -80,7 +80,7 @@ class Rest extends App
         }
         extract($this->dispatch);
         if ($param_mode) {
-            $rm = new \ReflectionMethod($controller, $action);
+            $rm = new \ReflectionMethod($controller_instance, $action);
             if ($param_mode === 1) {
                 $params = MethodParameter::bindListParams($rm, $params);
             } elseif ($param_mode === 2) {
