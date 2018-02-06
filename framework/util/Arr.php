@@ -19,6 +19,18 @@ class Arr
         return array_keys($keys) !== $keys;
     }
     
+    public static function field(array $array, $field)
+    {
+        foreach (explode('.', $field) as $tok) {
+            if (isset($array[$tok])) {
+                $array = $array[$tok];
+            } else {
+                return null;
+            }
+        }
+        return $array;
+    }
+
     public static function fitlerKeys(array $array , array $keys)
     {
         foreach ($keys as $key) {

@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\rpc;
 
+use framework\util\Arr;
 use framework\util\Str;
 use framework\core\http\Client;
 
@@ -25,6 +26,10 @@ class Http
         //'requset_encode'    => null,
         // 响应内容解码
         //'response_decode'   => null,
+        // 响应结果字段
+        //'response_result_field'   => null,
+        //'error_code_field'        => null,
+        //'error_message_field'     => null,
     ];
 
     public function __construct($config)
@@ -97,8 +102,14 @@ class Http
     {
         $response = $client->response;
         if ($response->status >= 200 && $response->status < 300) {
-            $body = $response->body;
-            return isset($this->config['response_decode']) ? $this->config['response_decode']($body) : $body;
+            $result = $response->body;
+            if (isset($this->config['response_decode'])) {
+                $result = $this->config['response_decode']($result);
+            }
+            if (isset($this->config['response_result_field'])) {
+                $result = Arr::field($result, $this->config['response_result_field']);
+            }
+            return $result;
         }
         if ($ignore_error) {
             return false;
