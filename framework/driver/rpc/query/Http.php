@@ -64,7 +64,7 @@ class Http
         if (isset($this->callback)) {
             return $$this->callback($client);
         } else {
-            return $this->rpc->responseHandle($client, false);
+            return $this->rpc->responseHandle($client);
         }
     }
 }

@@ -28,6 +28,7 @@ class Http
         //'response_decode'   => null,
         // 响应结果字段
         //'response_result_field'   => null,
+        //'response_ignore_error'   => null,
         //'error_code_field'        => null,
         //'error_message_field'     => null,
     ];
@@ -98,7 +99,7 @@ class Http
         return $client;
     }
     
-    public function responseHandle($client, $ignore_error = true)
+    public function responseHandle($client)
     {
         $response = $client->response;
         if ($response->status >= 200 && $response->status < 300) {
@@ -107,14 +108,23 @@ class Http
                 $result = $this->config['response_decode']($result);
             }
             if (isset($this->config['response_result_field'])) {
-                $result = Arr::field($result, $this->config['response_result_field']);
+                if (($result = Arr::field($result, $this->config['response_result_field'])) !== null) {
+                    return $result;
+                }
+            } else {
+                return $result;
             }
-            return $result;
         }
-        if ($ignore_error) {
+        if (!empty($this->config['response_ignore_error'])) {
             return false;
         }
-        return error($client->error, 2);
+        if (isset($this->config['error_code_field'])) {
+            $error_code = Arr::field($result, $this->config['error_code_field']);
+        }
+        if (isset($this->config['error_message_field'])) {
+            $error_message = Arr::field($result, $this->config['error_message_field']);
+        }
+        return error(isset($error_code) ? "[$error_code]".($error_message ?? '')  : $client->error, 2);
     }
     
     protected function setfilter($filters)
