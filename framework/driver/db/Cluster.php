@@ -4,31 +4,17 @@ namespace framework\driver\db;
 
 class Cluster extends Mysqli
 {
-    protected $work_link;
-    protected $read_link;
-    protected $wirte_link;
+    protected $work_connection;
+    protected $read_connection;
+    protected $wirte_connection;
     
     public function __construct($config)
     {
         $this->config = $config;
         $config['host'] = $config['read'];
-        $this->link = $this->connect($config);
-        $this->work_link = $this->link;
-        $this->read_link = $this->link;
-    }
-    
-    public function link($is_wirte = true)
-    {
-        if ($is_wirte) {
-            if (empty($this->wirte_link)) {
-                $config = $this->config;
-                $config['host'] = $config['wirte'];
-                $this->wirte_link = $this->connect($config);
-            }
-            return $this->wirte_link;
-        } else {
-            return $this->read_link;
-        }
+        $this->connection = $this->connect($config);
+        $this->work_connection = $this->connection;
+        $this->read_connection = $this->connection;
     }
     
     public function exec($sql, $params = null)
@@ -43,40 +29,46 @@ class Cluster extends Mysqli
     
     public function prepare($sql)
     {
-        return $this->link($this->isWirte($sql))->prepare($sql);
+        return $this->getConnection($this->isWirte($sql))->prepare($sql);
     }
     
-    public function insert_id()
+    public function insertId()
     {
-        return $this->link()->lastInsertId();
+        return $this->getConnection()->lastInsertId();
     }
     
     public function begin()
     {
-		return $this->link()->beginTransaction();
+		return $this->getConnection()->beginTransaction();
     }
     
     public function rollback()
     {
-        return $this->link()->rollBack();
+        return $this->getConnection()->rollBack();
     }
     
     public function commit()
     {
-		return $this->link()->commit();
+		return $this->getConnection()->commit();
     }
     
     public function error($query = null)
     {
-        return parent::error($query ? $query : $this->work_link);
+        return parent::error($query ? $query : $this->work_connection);
     }
     
-    public function close()
+    public function getConnection($is_wirte = true)
     {
-        $this->link  = null;
-        $this->work_link  = null;
-        $this->read_link  = null;
-        $this->wirte_link = null;
+        if ($is_wirte) {
+            if (isset($this->wirte_connection)) {
+                return $this->wirte_connection;
+            }
+            $config = $this->config;
+            $config['host'] = $config['wirte'];
+            return $this->wirte_connection = $this->connect($config);
+        } else {
+            return $this->read_connection;
+        }
     }
     
     protected function isWirte(&$sql)
@@ -86,21 +78,28 @@ class Cluster extends Mysqli
     
     protected function callMethod($method, $sql, $params)
     {
-        $method = 'parent::'.$method;
         if ($this->isWirte($sql)) {
-            $this->link = $this->link();
-            $this->work_link = $this->link;
+            $this->connection = $this->getConnection();
+            $this->work_connection = $this->connection;
             try {
-                $return = $method($sql, $params);
-                $this->link = $this->read_link;
+                $return = parent::{$method}($sql, $params);
+                $this->connection = $this->read_connection;
                 return $return;
             } catch (\Exception $e) {
-                $this->link = $this->read_link;
+                $this->connection = $this->read_connection;
                 throw $e;
             }
         } else {
-            $this->work_link = $this->link;
-            return $method($sql, $params);
+            $this->work_connection = $this->connection;
+            return $parent::{$method}($sql, $params);
         }
+    }
+    
+    public function __destruct()
+    {
+        $this->connection       = null;
+        $this->work_connection  = null;
+        $this->read_connection  = null;
+        $this->wirte_connection = null;
     }
 }

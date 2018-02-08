@@ -5,10 +5,10 @@ use framework\App;
 
 class Validator
 {
-    private $data;
-    private $rule;
-    private $error;
-    private $message = [
+    protected $data;
+    protected $rule;
+    protected $error;
+    protected $message = [
         'require'   => '{name} require',
         'id'        => '{name} must be id',
         'ip'        => '{name} must be ip',
@@ -35,10 +35,8 @@ class Validator
             foreach (explode('|', $rule) as $item) {
                 $params = explode(':', $item);
                 $method = array_shift($params);
-                if (!self::{$method}($data[$name], ...$params)) {
-                    $this->error[$name] = strtr($this->message[$method], [
-                        '{name}' => $name
-                    ]);
+                if (!self::{'check'.$method}($data[$name], ...$params)) {
+                    $this->error[$name] = strtr($this->message[$method], ['{name}' => $name]);
                     if (!$fall_continue) {
                         return false;
                     }
@@ -66,17 +64,10 @@ class Validator
     
     public static function validate($value, $rule)
     {
-        foreach (explode('|', $rule) as $item) {
-            $params = explode(':', $item);
-            $method = array_shift($params);
-            if (!self::{$method}($value, ...$params)) {
-                return false;
-            }
-        }
-        return true;
+
     }
     
-    public static function require($var)
+    public static function checkRequire($var)
     {
         return isset($var);
     }

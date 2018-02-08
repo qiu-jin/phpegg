@@ -62,7 +62,7 @@ abstract class Db
         return new query\Query($this, $name);
     }
 
-    public function action(callable $call)
+    public function transaction(callable $call)
     {
         try {
             $this->begin();

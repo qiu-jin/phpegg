@@ -32,10 +32,7 @@ class Formatter
     
     public function make($level, $message, $context = null)
     {
-        $replace = [
-            '{level}'   => $level,
-            '{message}' => $message
-        ] + $this->replace;
+        $replace = ['{level}' => $level, '{message}' => $message] + $this->replace;
         if ($context) {
             foreach ($context as $k => $v) {
                 $replace['{'.$k.'}'] = $v;

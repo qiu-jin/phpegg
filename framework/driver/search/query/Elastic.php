@@ -57,7 +57,6 @@ class Elastic
     
     public function delete($query, $options = null)
     {
-
         if (!is_array($query)) {
             $result = $this->call('DELETE', $query, $options);
         } else {
