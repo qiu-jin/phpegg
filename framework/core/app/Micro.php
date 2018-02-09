@@ -4,6 +4,7 @@ namespace framework\core\app;
 use framework\App;
 use framework\core\Getter;
 use framework\core\Router;
+use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\response;
 
@@ -62,11 +63,14 @@ class Micro extends App
     
     protected function error($code = null, $message = null)
     {
-        Response::status($code ?: 500);
-        Response::send("Error[$code]:\r\n".var_export($message, true), null, false);
+        Response::status(isset(Status::CODE[$code]) ? $code : 500);
+        Response::json(['error' => compact('code', 'message')], false);
     }
     
-    protected function response($return = null) {}
+    protected function response($return = null)
+    {
+        Response::json($return, false);
+    }
     
     protected function defaultDispatch()
     {

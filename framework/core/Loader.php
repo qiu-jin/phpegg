@@ -71,9 +71,9 @@ class Loader
      */
     private static function autoload($class)
     {
-        if(($prefix = strstr($class, '\\', true)) && isset(self::$class_prefix[$prefix])) {
+        if (($prefix = strstr($class, '\\', true)) && isset(self::$class_prefix[$prefix])) {
             self::import(self::$class_prefix[$prefix].substr(strstr(strtr($class, '\\', '/'), '/'), 1));
-        } elseif(isset(self::$class_map[$class])) {
+        } elseif (isset(self::$class_map[$class])) {
             self::import(self::$class_map[$class]);
         } elseif (isset(self::$class_alias[$class])) {
             class_alias(self::$class_alias[$class], $class);

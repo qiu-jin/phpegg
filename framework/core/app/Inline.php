@@ -3,9 +3,10 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\core\View;
-use framework\core\Router;
 use framework\core\Config;
 use framework\core\Getter;
+use framework\core\Router;
+use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
@@ -62,7 +63,7 @@ class Inline extends App
 
     protected function error($code = null, $message = null)
     {
-        if ($code >= 100 && $code < 1000) {
+        if (isset(Status::CODE[$code])) {
             Response::status($code);
         }
         if (empty($this->config['enable_view'])) {
@@ -75,7 +76,7 @@ class Inline extends App
     protected function response($return = null)
     {
         if (empty($this->config['enable_view'])) {
-            Response::json($return, false);
+            Response::json(['result' => $return], false);
         } else {
             Response::view('/'.$this->dispatch['controller'], $return, false);
         }

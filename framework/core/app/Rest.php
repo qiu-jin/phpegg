@@ -6,6 +6,7 @@ use framework\util\Str;
 use framework\util\Xml;
 use framework\core\Config;
 use framework\core\Router;
+use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\extend\MethodParameter;
@@ -102,13 +103,13 @@ class Rest extends App
     
     protected function error($code = null, $message = null)
     {
-        Response::status($code ?: 500);
+        Response::status(isset(Status::CODE[$code]) ? $code : 500);
         Response::json(['error' => compact('code', 'message')], false);
     }
     
     protected function response($return = null)
     {
-        Response::json(['result' => $return], false);
+        Response::json($return, false);
     }
     
     /*

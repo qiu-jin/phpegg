@@ -6,6 +6,7 @@ use framework\util\Str;
 use framework\core\View;
 use framework\core\Config;
 use framework\core\Router;
+use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\extend\MethodParameter;
@@ -97,7 +98,7 @@ class Standard extends App
     
     protected function error($code = null, $message = null)
     {
-        if ($code >= 100 && $code < 1000) {
+        if (isset(Status::CODE[$code])) {
             Response::status($code);
         }
         if ($this->config['enable_view']) {
@@ -112,7 +113,7 @@ class Standard extends App
         if ($this->config['enable_view']) {
             Response::view($this->getViewPath(), $return, false);
         } else {
-            Response::json($return, false);
+            Response::json(['result' => $return], false);
         }
     }
     
