@@ -48,11 +48,11 @@ class Inline extends App
     {
         if (empty($this->config['enable_getter'])) {
             $call = static function($__file, $_PARAMS) {
-                return require($__file);
+                return require $__file;
             };
         } else {
             $call = \Closure::bind(function($__file, $_PARAMS) {
-                return require($__file);
+                return require $__file;
             }, new class() {
                 use Getter;
             });

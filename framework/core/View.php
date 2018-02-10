@@ -51,7 +51,7 @@ class View
         ob_start();
         (static function($__file, $__vars) {
             extract($__vars, EXTR_SKIP);
-            require($__file);
+            require $__file;
         })(self::file($tpl), self::$view->vars ? $vars + self::$view->vars : $vars);
         return ob_get_clean();
     }
@@ -116,7 +116,7 @@ class View
     {   
         if (isset(self::$config['error'][$code])) {
             return self::render(self::$config['error'][$code], compact('code', 'message'));
-        } elseif ($code === 404) {
+        } elseif ($code == 404) {
             return ViewError::render404($message);
         } else {
             return ViewError::renderError($message);
@@ -151,7 +151,7 @@ class View
             if ($is_relative_path) {
                 return self::$config['template']['dir'].$tpl.$ext;
             } else {
-                return self::$config['template']['dir'].substr($path, strlen(self::$config['dir'])+1).$ext;
+                return self::$config['template']['dir'].substr($path, strlen(self::$config['dir']) + 1).$ext;
             }
         }
     }

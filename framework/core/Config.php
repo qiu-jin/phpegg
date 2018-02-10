@@ -40,19 +40,18 @@ class Config
      */
     public static function get($name, $default = null)
     {
-        $prefix = strtok($name, '.');
-        if (self::check($prefix)) {
-            $value = self::$configs[$prefix];
-            while ($tok = strtok('.')) {
-                if (isset($value[$tok])) {
-                    $value = $value[$tok];
-                } else {
-                    return $default;
-                }
-            }
-            return $value;
+        if (!self::check($prefix = strtok($name, '.'))) {
+            return $default;
         }
-        return $default;
+        $value = self::$configs[$prefix];
+        while ($tok = strtok('.')) {
+            if (isset($value[$tok])) {
+                $value = $value[$tok];
+            } else {
+                return $default;
+            }
+        }
+        return $value;
     }
     
     /*
@@ -60,19 +59,18 @@ class Config
      */
     public static function has($name)
     {
-        $prefix = strtok($name, '.');
-        if (self::check($prefix)) {
-            $value = self::$configs[$prefix];
-            while ($tok = strtok('.')) {
-                if (isset($value[$tok])) {
-                    $value = $value[$tok];
-                } else {
-                    return false;
-                }
-            }
-            return true;
+        if (!self::check($prefix = strtok($name, '.'))) {
+            return false;
         }
-        return false;
+        $value = self::$configs[$prefix];
+        while ($tok = strtok('.')) {
+            if (isset($value[$tok])) {
+                $value = $value[$tok];
+            } else {
+                return false;
+            }
+        }
+        return true;
     }
     
     /*

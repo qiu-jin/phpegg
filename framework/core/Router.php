@@ -53,8 +53,11 @@ class Router
         if (!$param_mode || empty($call_match[3])) {
             $params = $macth;
         } else {
-            $param_method = $param_mode === 2 ? 'parseKvParams' : 'parseListParams';
-            $params = self::{$param_method}($call_match[3], $macth);
+            if ($param_mode === 2) {
+                $params = self::parseKvParams($call_match[3], $macth);
+            } else {
+                $params = self::parseListParams($call_match[3], $macth);
+            }
         }
         return [$call, $params];
     }
@@ -212,7 +215,7 @@ class Router
         foreach (explode(',', $rules) as $rule) {
             $rule = trim($rule);
             if ($rule[0] === '$') {
-                $index = substr($rule, 1)-1;
+                $index = substr($rule, 1) - 1;
                 if (isset($macth[$index])) {
                     $params[] = $macth[$index];
                 } 
@@ -232,7 +235,7 @@ class Router
             $k = trim($k);
             $v = trim($v);
             if ($v[0] === '$') {
-                $index = substr($v, 1)-1;
+                $index = substr($v, 1) - 1;
                 if (isset($macth[$index])) {
                     $params[$k] = $macth[$index];
                 } else {

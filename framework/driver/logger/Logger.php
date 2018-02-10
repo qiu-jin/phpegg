@@ -28,41 +28,41 @@ abstract class Logger
     
     public function emergency($message, $context = null)
     {
-        $this->write('emergency', $message, $context);
+        $this->write(__FUNCTION__, $message, $context);
     }
     
     public function alert($message, $context = null)
     {
-        $this->write('alert', $message, $context);
+        $this->write(__FUNCTION__, $message, $context);
     }
     
     public function critical($message, $context = null)
     {
-        $this->write('critical', $message, $context);
+        $this->write(__FUNCTION__, $message, $context);
     }
     
     public function error($message, $context = null)
     {
-        $this->write('error', $message, $context);
+        $this->write(__FUNCTION__, $message, $context);
     }
     
     public function warning($message, $context = null)
     {
-        $this->write('warning', $message, $context);
+        $this->write(__FUNCTION__, $message, $context);
     }
     
     public function notice($message, $context = null)
     {
-        $this->write('notice', $message, $context);
+        $this->write(__FUNCTION__, $message, $context);
     }
     
     public function info($message, $context = null)
     {
-        $this->write('info', $message, $context);
+        $this->write(__FUNCTION__, $message, $context);
     }
     
     public function debug($message, $context = null)
     {
-        $this->write('debug', $message, $context);
+        $this->write(__FUNCTION__, $message, $context);
     }
 }

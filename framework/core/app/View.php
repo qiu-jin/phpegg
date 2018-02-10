@@ -4,7 +4,7 @@ namespace framework\core\app;
 use framework\App;
 use framework\core\Config;
 use framework\core\Getter;
-use framework\core\ViewModel;
+use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\core\View as CoreView;
@@ -44,21 +44,22 @@ class View extends App
     protected function call()
     {
         ob_start();
-        if (isset($this->config['boot_vars_call'])) {
-            $vars = $this->config['boot_vars_call']();
-        }
         $type = $this->config['enable_pjax'] && Response::isPjax() ? 'block' : 'file';
+        $vars = isset($this->config['boot_vars_call']) ? $this->config['boot_vars_call']() : [];
         (\Closure::bind(function($__file, $__vars) {
             extract($__vars, EXTR_SKIP);
             return require($__file);
         }, new class() {
             use Getter;
-        }))(CoreView::{$type}($this->dispatch['view']), $vars ?? []);
+        }))(CoreView::{$type}($this->dispatch['view']), $vars);
         return ob_get_clean();
     }
     
     protected function error($code = null, $message = null)
     {
+        if (isset(Status::CODE[$code])) {
+            Response::status($code);
+        }
         Response::send(CoreView::error($code, $message), 'text/html; charset=UTF-8');
     }
     
