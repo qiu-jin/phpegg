@@ -102,7 +102,7 @@ class Standard extends App
             Response::status($code);
         }
         if ($this->config['enable_view']) {
-            Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
+            Response::html(View::error($code, $message), false);
         } else {
             Response::json(['error' => compact('code', 'message')], false);
         }

@@ -7,18 +7,18 @@ use framework\core\Container;
 class Cookie
 {
     private static $init;
-    private static $crypt;
-    private static $serialize;
-    private static $unserialize;
-    private static $cookie = [];
-    private static $optionss = [
-        'expire'    => 0,
+    private static $cookie;
+    private static $options = [
+        'lifetime'  => 0,
         'path'      => '/',
         'domain'    => '',
         'secure'    => false,
         'httponly'  => false
     ];
+    private static $serializer;
+    private static $crypt_config;
     private static $crypt_except = ['PHPSESSID'];
+    private static $crypt_handler;
     
     public static function init()
     {
@@ -31,13 +31,13 @@ class Cookie
                 self::$options = $config['options'] + self::$options;
             }
             if (isset($config['crypt'])) {
-                self::$crypt = Container::driver('crypt', $config['crypt']);
+                self::$crypt_config = $config['crypt'];
                 if (isset($config['crypt_except'])) {
                     self::$crypt_except = $config['crypt_except'];
                 }
             }
             if (isset($config['serializer'])) {
-                list(self::$serialize, self::$unserialize) = $config['serializer'];
+                self::$serializer = $config['serializer'];
             }
         }
     }
@@ -59,11 +59,6 @@ class Cookie
         self::setCookie($name, $value, ...$options);
     }
     
-    public static function temp($name, $value)
-    {
-        self::$cookie[$name] = $value;
-    }
-    
     public static function forever($name, $value)
     {
         self::$cookie[$name] = $value;
@@ -83,7 +78,7 @@ class Cookie
             self::setCookie($name, null);
         }
         $_COOKIE = [];
-        self::$cookie = [];
+        self::$cookie = null;
     }
     
     public static function getAll()
@@ -98,20 +93,8 @@ class Cookie
         return self::$cookie;
     }
     
-    protected static function getValue($name)
-    {
-        $value = $_COOKIE[$name];
-        if (isset(self::$crypt) && !in_array($name, self::$crypt_except, true)) {
-            $value = self::$crypt->decrypt($value);
-        }
-        if (isset(self::$unserialize)) {
-            $value = (self::$unserialize)($value);
-        }
-        return $value;
-    }
-    
     protected static function setCookie(
-        $name, $value, $expire = null, $path = null, $domain = null, $secure = null, $httponly = null
+        $name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null
     ) {
         foreach (self::$options as $k => $v) {
             if (!isset($$k)) {
@@ -121,15 +104,32 @@ class Cookie
         if ($value === null) { 
             $expire = time() - 3600;
         } else {
-            if (isset(self::$serialize)) {
-                $value = (self::$serialize)($value);
+            if (isset(self::$serializer)) {
+                $value = (self::$serializer[0])($value);
             }
             if (isset(self::$crypt) && !in_array($name, self::$crypt_except, true)) {
-                $value = self::$crypt->encrypt($value);
+                $value = self::getCryptHandler()->encrypt($value);
             }
-            $expire = time() + $expire;
+            $expire = time() + $lifetime;
         }
         return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
+    }
+    
+    protected static function getValue($name)
+    {
+        $value = $_COOKIE[$name];
+        if (isset(self::$crypt) && !in_array($name, self::$crypt_except, true)) {
+            $value = self::getCryptHandler()->decrypt($value);
+        }
+        if (isset(self::$serializer)) {
+            $value = (self::$serializer[1])($value);
+        }
+        return $value;
+    }
+    
+    protected static function getCryptHandler()
+    {
+        return self::$crypt_handler ?? self::$crypt_handler = Container::driver('crypt', self::$crypt_config);
     }
 }
 Cookie::init();

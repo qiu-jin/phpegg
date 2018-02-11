@@ -84,13 +84,19 @@ class Response
     }
     
     /*
+     * 设置响应html
+     */
+    public static function html($html, $exit = true)
+    {
+        self::send($html, 'text/html; charset=UTF-8', $exit);
+    }
+    
+    /*
      * 设置视图响应
      */
     public static function view($tpl, $vars = null, $exit = true)
     {
-        self::$response->headers['Content-Type'] = 'text/html; charset=UTF-8';
-        self::$response->body = View::render($tpl, $vars);
-        if ($exit) App::exit();
+        self::send(View::render($tpl, $vars), 'text/html; charset=UTF-8', $exit);
     }
     
     /*
@@ -98,20 +104,7 @@ class Response
      */
     public static function json($data, $exit = true)
     {
-        self::$response->headers['Content-Type'] = 'application/json; charset=UTF-8';
-        self::$response->body = jsonencode($data);
-        if ($exit) App::exit();
-    }
-    
-    /*
-     * 设置响应重定向
-     */
-    public static function redirect($url, $permanently = false, $exit = true)
-    {
-        self::$response->status = $permanently ? 301 : 302;
-        self::$response->headers['Location'] = $url;
-        if (isset(self::$response->body)) self::$response->body = null;
-        if ($exit) App::exit();
+        self::send(jsonencode($data), 'application/json; charset=UTF-8', $exit);
     }
     
     /*
@@ -123,7 +116,22 @@ class Response
             self::$response->headers['Content-Type'] = $type;
         }
         self::$response->body = $body;
-        if ($exit) App::exit();
+        if ($exit) {
+            App::exit();
+        }
+    }
+    
+    /*
+     * 设置响应重定向
+     */
+    public static function redirect($url, $permanently = false, $exit = true)
+    {
+        self::$response->status = $permanently ? 301 : 302;
+        self::$response->headers['Location'] = $url;
+        self::$response->body = null;
+        if ($exit) {
+            App::exit();
+        }
     }
     
     /*

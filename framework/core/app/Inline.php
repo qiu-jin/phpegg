@@ -69,7 +69,7 @@ class Inline extends App
         if (empty($this->config['enable_view'])) {
             Response::json(['error' => compact('code', 'message')], false);
         } else {
-            Response::send(View::error($code, $message), 'text/html; charset=UTF-8', false);
+            Response::html(View::error($code, $message), false);
         }
     }
     

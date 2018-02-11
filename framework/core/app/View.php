@@ -14,12 +14,12 @@ class View extends App
     protected $config = [
         // 调度模式，支持default route组合
         'dispatch_mode'     => ['default'],
-        // 是否启用pjax
-        'enable_pjax'       => false,
+        // 视图模型名称空间
+        'viewmodel_ns'      => 'viewmodel',
         // 视图初始变量
         'boot_vars_call'    => null,
-        // 视图模型名称空间
-        'view_model_ns'     => 'viewmodel',
+        // 是否启用pjax
+        'enable_pjax'       => false,
         // 默认调度的视图，为空不限制
         'default_dispatch_views' => null,
         // 默认调度的缺省调度
@@ -60,12 +60,12 @@ class View extends App
         if (isset(Status::CODE[$code])) {
             Response::status($code);
         }
-        Response::send(CoreView::error($code, $message), 'text/html; charset=UTF-8');
+        Response::html(CoreView::error($code, $message), false);
     }
     
     protected function response($return)
     {
-        Response::send($return, 'text/html; charset=UTF-8');
+        Response::html($return, false);
     }
     
     protected function defaultDispatch($path) 
