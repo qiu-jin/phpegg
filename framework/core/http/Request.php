@@ -52,7 +52,7 @@ class Request
      */
     public static function get($name = null, $default = null)
     {
-        return $name === null ? self::$request->get : self::$request->get[$name] ?? $default;
+        return $name === null ? self::$request->get : (self::$request->get[$name] ?? $default);
     }
     
     /*
@@ -60,7 +60,7 @@ class Request
      */
     public static function post($name = null, $default = null)
     {
-        return $name === null ? self::$request->post : self::$request->post[$name] ?? $default;
+        return $name === null ? self::$request->post : (self::$request->post[$name] ?? $default);
     }
     
     /*
@@ -76,7 +76,7 @@ class Request
      */
     public static function param($name = null, $default = null)
     {
-       return $name === null ? self::$request->params : self::$request->params[$name] ?? $default;
+       return $name === null ? self::$request->params : (self::$request->params[$name] ?? $default);
     }
     
     /*

@@ -42,8 +42,11 @@ class Cookie
         }
     }
     
-    public static function get($name, $default = null)
+    public static function get($name = null, $default = null)
     {
+        if ($name === null) {
+            return self::getAll();
+        }
         if (isset(self::$cookie[$name])) {
             return self::$cookie[$name];
         }
@@ -51,6 +54,11 @@ class Cookie
             return self::$cookie[$name] = self::getValue($name);
         }
         return $default;
+    }
+    
+    public static function has($name)
+    {
+        return isset(self::$cookie[$name]) || isset($_COOKIE[$name]);
     }
     
     public static function set($name, $value, ...$options)
@@ -74,10 +82,12 @@ class Cookie
     
     public static function clear()
     {
-        foreach ($_COOKIE as $key => $val) {
-            self::setCookie($name, null);
+        if ($_COOKIE) {
+            foreach (array_keys($_COOKIE) as $name) {
+                self::setCookie($name, null);
+            }
+            $_COOKIE = [];
         }
-        $_COOKIE = [];
         self::$cookie = null;
     }
     

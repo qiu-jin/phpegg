@@ -15,19 +15,21 @@ class Session
         }
         self::$init = true;
         if ($config = Config::flash('session')) {
+            if (isset($config['cookie_params'])) {
+                session_set_cookie_params(...$config['cookie_params']);
+            }
+            if (isset($config['save_handler'])) {
+                session_set_save_handler(instance(...$config['save_handler']));
+            }
             foreach (['id', 'name', 'save_path', 'cache_expire', 'cache_limiter'] as $k) {
                 if (isset($config[$k])) {
                     ('session_'.$config[$k])($value);
                 }
             }
-            if (isset($config['cookie_params'])) {
-                session_set_cookie_params(...$config['cookie_params']);
-            }
-            if (isset($config['save_handler'])) {
-                session_set_save_handler(new $config['save_handler'][0](...array_slice($config['save_handler'], 1)));
-            }
         }
-        session_start();
+        if (empty($config['disable_auto_start'])) {
+            session_start();
+        }
     }
     
     public static function __callStatic($method, $params)
@@ -38,11 +40,16 @@ class Session
         throw new \Exception('Call to undefined method '.__CLASS__."::$method");
     }
     
-    public static function get($name = null, $default = null)
+    public static function get($name, $default = null)
     {
-        return $name === null ? $_SESSION : $_SESSION[$name] ?? $default;
+        return $name === null ? $_SESSION : ($_SESSION[$name] ?? $default);
     }
     
+    public static function has($name)
+    {
+        return isset($_SESSION[$name]);
+    }
+
     public static function set($name, $value)
     {
         $_SESSION[$name] = $value;
@@ -55,13 +62,11 @@ class Session
         }
     }
     
-    public static function clear($destroy = false)
+    public static function clear()
     {
         $_SESSION = [];
         session_unset();
-        if ($destroy) {
-            session_destroy();
-        }
+        session_destroy();
     }
 }
 Session::init();
