@@ -40,7 +40,7 @@ class Session
         throw new \Exception('Call to undefined method '.__CLASS__."::$method");
     }
     
-    public static function get($name, $default = null)
+    public static function get($name = null, $default = null)
     {
         return $name === null ? $_SESSION : ($_SESSION[$name] ?? $default);
     }
@@ -64,8 +64,10 @@ class Session
     
     public static function clear()
     {
-        $_SESSION = [];
         session_unset();
+        if ($_SESSION) {
+            $_SESSION = [];
+        }
         session_destroy();
     }
 }

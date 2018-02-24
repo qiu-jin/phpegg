@@ -3,12 +3,14 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\core\Loader;
+use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\extend\MethodParameter;
 
 /*
  * https://github.com/google/protobuf
+ * pecl install protobuf 或者 composer require google/protobuf
  */
 use Google\Protobuf\Internal\Message;
 
@@ -23,21 +25,27 @@ class Grpc extends App
         'controller_alias'      => null,
         // 允许调度的控制器，为空不限制
         'dispatch_controllers'  => null,
+        // 服务定义文件
+        'service_schemes'       => null,
+        // 忽略service类名前缀
+        'ignore_service_prefix' => 0,
+        // 是否启用timeout（只支持时H/分M/秒S）
+        'enable_timeout'        => false,
         /* 参数模式
          * 0 键值参数模式
          * 1 request response 参数模式
          */
         'param_mode'            => 0,
-        // 服务定义文件
-        'service_schemes'       => null,
-        // 忽略service类名前缀
-        'ignore_service_prefix' => 0,
         // 检查响应数据类型（键值参数模式下有效）
         'check_response_type'   => false,
-        // 请求scheme格式
+        // 请求scheme格式（键值参数模式下有效）
         'request_scheme_format' => '{service}{method}Request',
-        // 响应scheme格式
+        // 响应scheme格式（键值参数模式下有效）
         'response_scheme_format'=> '{service}{method}Response',
+        // 请求解压处理器
+        'request_decode'        => ['gzip' => 'gzdecode'],
+        // 响应压缩处理器
+        'response_encode'       => ['gzip' => 'gznecode'],
     ];
     
     protected function dispatch()
@@ -68,6 +76,22 @@ class Grpc extends App
     
     protected function call()
     {
+        if ($this->config['enable_timeout']
+            && ($grpc_timeout = Request::header('grpc-timeout'))
+            && ($num = (int) substr($grpc_timeout, 0, -1)) > 0
+        ) {
+            switch (substr($grpc_timeout, -1)) {
+                case 'S':
+                    set_time_limit($num);
+                    break;
+                case 'M':
+                    set_time_limit($num * 60);
+                    break;
+                case 'H':
+                    set_time_limit($num * 3600);
+                    break;
+            }
+        }
         if (isset($this->config['service_schemes'])) {
             foreach ($this->config['service_schemes'] as $type => $rules) {
                 Loader::add($type, $rules);
@@ -82,23 +106,42 @@ class Grpc extends App
     
     protected function error($code = null, $message = null)
     {
-        Response::headers(['grpc-status' => $code, 'grpc-message' => $message]);
+        Response::headers(['grpc-status' => $code, 'grpc-message' => $message ?? Status::CODE[$code] ?? '']);
     }
     
     protected function response($return)
     {
         $data = $return->serializeToString();
+        $encode = 0;
+        if ($grpc_accept_encoding = strtolower(Request::header('grpc-accept-encoding'))) {
+            foreach (explode(',', $grpc_accept_encoding) as $encoding) {
+                if (isset($this->config['request_decode'][$encoding])) {
+                    $encode = 1;
+                    Response::header('grpc-encoding', $encoding);
+                    $data = ($this->config['request_decode'][$encoding])($data);
+                    break;
+                }
+            }
+        }
         $size = strlen($data);
         Response::header('grpc-status', '0');
-        Response::send(pack('C1N1a'.$size, 0, $size, $data), null, false);
+        Response::send(pack('C1N1a'.$size, $encode, $size, $data), 'application/grpc+proto', false);
     }
     
     protected function readParams()
     {
         if (($body = Request::body()) && strlen($body) > 5) {
-            extract(unpack('Cencode/Nzise/a*message', $body));
-            if ($zise === strlen($message)) {
-                return $message;
+            extract(unpack('Cencode/Nzise/a*data', $body));
+            if ($zise === strlen($data)) {
+                if ($encode === 1) {
+                    if (($grpc_encoding = strtolower(Request::header('grpc-encoding')))
+                        && isset($this->config['request_decode'][$grpc_encoding])
+                    ) {
+                        return ($this->config['request_decode'][$grpc_encoding])($data);
+                    }
+                    self::abort(400, 'Invalid params grpc encoding');
+                }
+                return $data;
             }
         }
         self::abort(400, 'Invalid params');

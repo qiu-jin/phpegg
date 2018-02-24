@@ -15,14 +15,16 @@ class Str
     
     public static function toCamel($value, $char = '_')
     {
+        $str = '';
 		foreach(explode($char, $value) as $v){
-			$str.= ucfirst($v);
+			$str .= ucfirst($v);
 		}
 		return $str;
     }
     
     public static function toSnake($value, $char = '_')
     {
+        $str = '';
         $len = strlen($value);
         $value = lcfirst($value);
         for ($i = 0; $i < $len; $i++) {
@@ -30,7 +32,7 @@ class Str
             $lower = strtolower($c);
             $str .= $c === $lower ? $c : $char.$lower;
         }
-        return $str ?? '';
+        return $str;
     }
     
     public static function indexPos($value, $find, $index)

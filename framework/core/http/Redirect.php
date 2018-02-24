@@ -22,6 +22,6 @@ class Redirect
             $html .= "<input type='hidden' name='$k' value='$v' >";
         }
         $html .= "</form><script type='text/javascript'>document.getElementById('_redirect').submit();</script>";
-        Response::send($html, 'text/html; charset=UTF-8');
+        Response::html($html);
     }
 }

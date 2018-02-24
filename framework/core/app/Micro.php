@@ -19,8 +19,10 @@ class Micro extends App
         'controller_suffix' => null,
         // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
-        // 路由模式下是否启用Getter魔术方法
-        'route_dispatch_closure_getter' => true,
+        // 是否启用closure getter魔术方法
+        'enable_closure_getter' => true,
+        // Getter providers
+        'getter_providers'  => null,
         // 路由模式下允许的HTTP方法
         'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/]
     ];
@@ -94,9 +96,12 @@ class Micro extends App
             && $result = Router::route(Request::pathArr(), $this->dispatch['route'], $method)
         ) {
             if (is_callable($result[0])) {
-                if ($this->config['route_dispatch_closure_getter'] && $result[0] instanceof \Closure) {
-                    return [\Closure::bind($result[0], new class () {
+                if ($this->config['enable_closure_getter'] && $result[0] instanceof \Closure) {
+                    return [\Closure::bind($result[0], new class ($this->config['getter_providers']) {
                         use Getter;
+                        public function __construct($providers) {
+                            $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
+                        }
                     }), $result[1]];
                 }
                 return $result;

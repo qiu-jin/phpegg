@@ -21,6 +21,8 @@ class Inline extends App
         'enable_view'       => false,
         // 是否启用Getter魔术方法
         'enable_getter'     => true,
+        // Getter providers
+        'getter_providers'  => null,
         // 是否将返回值1改成null
         'return_1_to_null'  => false,
         // 默认调度的缺省调度
@@ -53,8 +55,11 @@ class Inline extends App
         } else {
             $call = \Closure::bind(function($__file, $_PARAMS) {
                 return require $__file;
-            }, new class() {
+            }, new class($this->config['getter_providers']) {
                 use Getter;
+                public function __construct($providers) {
+                    $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
+                }
             });
         }
         $return = $call($this->dispatch['controller_file'], $this->dispatch['params'] ?? []);

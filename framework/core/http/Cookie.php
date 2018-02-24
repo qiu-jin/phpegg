@@ -10,7 +10,7 @@ class Cookie
     private static $cookie;
     private static $options = [
         'lifetime'  => 0,
-        'path'      => '/',
+        'path'      => '',
         'domain'    => '',
         'secure'    => false,
         'httponly'  => false
@@ -70,7 +70,7 @@ class Cookie
     public static function forever($name, $value)
     {
         self::$cookie[$name] = $value;
-        self::setCookie($name, $value, 31536001);
+        self::setCookie($name, $value, 315360000);
     }
     
     public static function delete($name)
@@ -80,11 +80,16 @@ class Cookie
         self::setCookie($name, null);
     }
     
-    public static function clear()
+    public static function clear($except = true)
     {
         if ($_COOKIE) {
+            if ($except === true) {
+                $except = $crypt_except;
+            }
             foreach (array_keys($_COOKIE) as $name) {
-                self::setCookie($name, null);
+                if (empty($except) || !in_array($name, $except, true)) {
+                    self::setCookie($name, null);
+                }
             }
             $_COOKIE = [];
         }
@@ -103,7 +108,7 @@ class Cookie
         return self::$cookie;
     }
     
-    protected static function setCookie(
+    public static function setCookie(
         $name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null
     ) {
         foreach (self::$options as $k => $v) {
@@ -117,10 +122,10 @@ class Cookie
             if (isset(self::$serializer)) {
                 $value = (self::$serializer[0])($value);
             }
-            if (isset(self::$crypt) && !in_array($name, self::$crypt_except, true)) {
+            if (isset(self::$crypt_config) && !in_array($name, self::$crypt_except, true)) {
                 $value = self::getCryptHandler()->encrypt($value);
             }
-            $expire = time() + $lifetime;
+            $expire = $lifetime === 0 ? 0 : time() + $lifetime;
         }
         return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
     }
@@ -128,7 +133,7 @@ class Cookie
     protected static function getValue($name)
     {
         $value = $_COOKIE[$name];
-        if (isset(self::$crypt) && !in_array($name, self::$crypt_except, true)) {
+        if (isset(self::$crypt_config) && !in_array($name, self::$crypt_except, true)) {
             $value = self::getCryptHandler()->decrypt($value);
         }
         if (isset(self::$serializer)) {

@@ -161,7 +161,7 @@ class Request
      */
     public static function lang()
     {
-        return self::$request->lang ?? self::$request->lang =  strtolower(strtok($_SERVER['HTTP_ACCEPT_LANGUAGE'], ','));
+        return self::$request->lang ?? self::$request->lang = strtolower(strtok($_SERVER['HTTP_ACCEPT_LANGUAGE'], ','));
     }
     
     /*
