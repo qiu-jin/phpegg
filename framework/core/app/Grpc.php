@@ -63,7 +63,7 @@ class Grpc extends App
             $controller = $this->config['controller_alias'][$controller];
         } elseif (!isset($this->config['dispatch_controllers'])) {
             $check = true;
-        } elseif (!in_array($controller, $this->config['dispatch_controllers'], true)) {
+        } elseif (!in_array($controller, $this->config['dispatch_controllers'])) {
             return false;
         }
         if ($action[0] !== '_'

@@ -173,7 +173,7 @@ class Standard extends App
                 $controller = implode('\\', $controller_array);
                 if (!isset($this->config['default_dispatch_controllers'])) {
                     $check = true;
-                } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
+                } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
                     return;
                 }
             }

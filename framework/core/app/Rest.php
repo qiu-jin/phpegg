@@ -117,7 +117,7 @@ class Rest extends App
      */
     protected function defaultDispatch($path) 
     {
-        if (!in_array($this->method, $this->config['default_dispatch_http_methods'], true)) {
+        if (!in_array($this->method, $this->config['default_dispatch_http_methods'])) {
             return;
         }
         $count      = count($path);
@@ -148,7 +148,7 @@ class Rest extends App
             $controller = implode('\\', $controller_array);
             if (!isset($this->config['default_dispatch_controllers'])) {
                 $check = true;
-            } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
+            } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
                 return;
             }
         }
@@ -196,7 +196,7 @@ class Rest extends App
             $controller = implode('\\', array_slice($path, 0, $depth));
             if (!isset($this->config['resource_dispatch_controllers'])) {
                 $check = true;
-            } elseif (!in_array($controller, $this->config['resource_dispatch_controllers'], true)) {
+            } elseif (!in_array($controller, $this->config['resource_dispatch_controllers'])) {
                 return;
             }
             $action_path = array_slice($path, $depth);

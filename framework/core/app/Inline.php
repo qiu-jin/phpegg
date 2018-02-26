@@ -102,7 +102,7 @@ class Inline extends App
                     return compact('controller', 'controller_file');
                 }
                 return;
-            } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
+            } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
                 return;
             }
         } elseif (isset($this->config['default_dispatch_index'])) {

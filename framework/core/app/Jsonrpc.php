@@ -209,7 +209,7 @@ class Jsonrpc extends App
             $controller = $this->config['controller_alias'][$controller];
         } elseif (!isset($this->config['dispatch_controllers'])) {
             $check = true;
-        } elseif (!in_array($controller, $this->config['dispatch_controllers'], true)) {
+        } elseif (!in_array($controller, $this->config['dispatch_controllers'])) {
             return;
         }
         if ($class = $this->getControllerClass($controller, isset($check))) {

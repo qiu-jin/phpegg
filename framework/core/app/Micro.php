@@ -79,7 +79,7 @@ class Micro extends App
         list($controller, $action, $params) = $this->dispatch['default'];
         if (!isset($this->config['default_dispatch_controllers'])) {
             $check = true;
-        } elseif (!in_array($controller, $this->config['default_dispatch_controllers'], true)) {
+        } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
             return;
         }
         if ($action[0] !== '_'
@@ -92,11 +92,11 @@ class Micro extends App
     
     protected function routeDispatch()
     {
-        if (in_array($method = Request::method(), $this->config['route_dispatch_http_methods'], true)
+        if (in_array($method = Request::method(), $this->config['route_dispatch_http_methods'])
             && $result = Router::route(Request::pathArr(), $this->dispatch['route'], $method)
         ) {
             if (is_callable($result[0])) {
-                if ($this->config['enable_closure_getter'] && $result[0] instanceof \Closure) {
+                if ($result[0] instanceof \Closure && $this->config['enable_closure_getter']) {
                     return [\Closure::bind($result[0], new class ($this->config['getter_providers']) {
                         use Getter;
                         public function __construct($providers) {
@@ -108,8 +108,7 @@ class Micro extends App
             } else {
                 $dispatch = Router::parse($result, 1);
                 list($controller, $action) = explode('::', $dispatch[0]);
-                $class = $this->getControllerClass($controller);
-                return [[new $class, $action], $dispatch[1]];
+                return [[instance($this->getControllerClass($controller)), $action], $dispatch[1]];
             }
         }
     }
