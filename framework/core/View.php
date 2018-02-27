@@ -75,6 +75,9 @@ class View
         return $phpfile;
     }
     
+    /*
+     * 返回视图block文件路径
+     */
     public static function block($tpl)
     {
         $path    = self::$config['dir'].$tpl;
@@ -86,6 +89,9 @@ class View
         return $phpfile;
     }
 
+    /*
+     * 返回视图layout处理
+     */
     public static function layout($tpl, $file)
     {
         if (!isset(self::$config['template'])) {

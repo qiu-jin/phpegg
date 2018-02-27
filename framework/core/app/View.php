@@ -16,14 +16,18 @@ class View extends App
         'dispatch_mode'     => ['default'],
         // 视图模型名称空间
         'viewmodel_ns'      => 'viewmodel',
-        // 视图初始变量
-        'boot_vars_call'    => null,
         // 是否启用pjax
         'enable_pjax'       => false,
-        // 默认调度的视图，为空不限制
-        'default_dispatch_views' => null,
+        // 是否启用Getter魔术方法
+        'enable_getter'     => true,
+        // Getter providers
+        'getter_providers'  => null,
+        // 视图初始变量
+        'boot_vars_handler' => null,
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
+        // 默认调度的视图，为空不限制
+        'default_dispatch_views' => null,
         // 默认调度时是否将URL PATH中划线转成下划线
         'default_dispatch_hyphen_to_underscore' => false,
         // 路由调度的路由表
@@ -43,15 +47,28 @@ class View extends App
     
     protected function call()
     {
+        if (empty($this->config['enable_getter'])) {
+            $call = static function($__file, $__vars) {
+                extract($__vars, EXTR_SKIP);
+                require $__file;
+            };
+        } else {
+            $call = \Closure::bind(function($__file, $__vars) {
+                extract($__vars, EXTR_SKIP);
+                require $__file;
+            }, new class($this->config['getter_providers']) {
+                use Getter;
+                public function __construct($providers) {
+                    $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
+                }
+            });
+        }
+        if (isset($this->config['boot_vars_handler'])) {
+            $vars = $this->config['boot_vars_handler']($this->dispatch['view']);
+        }
+        $vars['_PARAMS'] = $this->dispatch['params'] ?? [];
         ob_start();
-        $type = $this->config['enable_pjax'] && Response::isPjax() ? 'block' : 'file';
-        $vars = isset($this->config['boot_vars_call']) ? $this->config['boot_vars_call']() : [];
-        (\Closure::bind(function($__file, $__vars) {
-            extract($__vars, EXTR_SKIP);
-            return require($__file);
-        }, new class() {
-            use Getter;
-        }))(CoreView::{$type}($this->dispatch['view']), $vars);
+        $call($this->dispatch['view_file'], $vars);
         return ob_get_clean();
     }
     
@@ -71,24 +88,30 @@ class View extends App
     protected function defaultDispatch($path) 
     {
         if ($path) {
-            if ($this->config['default_dispatch_hyphen_to_underscore']) {
-                $path = strtr($path, '-', '_');
+            if (empty($this->config['default_dispatch_hyphen_to_underscore'])) {
+                $view = $path;
+            } else {
+                $view = strtr($path, '-', '_');
             }
             if (!isset($this->config['default_dispatch_views'])) {
-                if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $path)) {
-                    $view = Config::get('view.dir', APP_DIR.'view/').$path;
-                    if (is_php_file("$view.php")
-                        || (Config::has('view.template') && is_file(CoreView::getTemplateFile($path, true)))
-                    ) {
-                        return ['view' => $path];
-                    }
+                if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $view)
+                    && is_php_file($view_file = $this->getViewFile($view))
+                ) {
+                    return compact('view', 'view_file');
                 }
-            } elseif (in_array($path, $this->config['default_dispatch_views'], true)) {
-                return ['view' => $path];
+                return;
+            } elseif (!in_array($view, $this->config['default_dispatch_views'])) {
+                return;
             }
         } elseif (isset($this->config['default_dispatch_index'])) {
-            return ['view' => $this->config['default_dispatch_index']];
+            $view = $this->config['default_dispatch_index'];
+        } else {
+            return;
         }
+        return [
+            'view'      => $view,
+            'view_file' => $this->getViewFile($view)
+        ];
     }
     
     protected function routeDispatch($path)
@@ -99,8 +122,17 @@ class View extends App
             }
             $path = empty($path) ? null : explode('/', $path);
             if ($result = Router::route($path, $routes)) {
-                return ['view' => $result[0], 'params' => $result[1]];
+                return [
+                    'view'      => $result[0],
+                    'view_file' => $this->getViewFile($result[0]),
+                    'params'    => $result[1]
+                ];
             }
         }
+    }
+    
+    protected function getViewFile($view)
+    {
+        return $this->config['enable_pjax'] && Response::isPjax() ? CoreView::block($view) : CoreView::file($view);
     }
 }

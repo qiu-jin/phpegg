@@ -62,6 +62,6 @@ class Openssl extends Crypt
         if (($len = openssl_cipher_iv_length($this->config['method'])) === 0) {
             return $this->iv = '';
         }
-        return $this->iv = substr(openssl_digest($this->config['salt'] ?? '', 'MD5', true), 0, $len);
+        return $this->iv = substr(md5($this->config['salt'] ?? '', true), 0, $len);
     }
 }
