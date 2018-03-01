@@ -14,16 +14,16 @@ class View extends App
     protected $config = [
         // 调度模式，支持default route组合
         'dispatch_mode'     => ['default'],
-        // 视图模型名称空间
-        'viewmodel_ns'      => 'viewmodel',
+        // 视图模型目录
+        'view_model_path'   => null,
         // 是否启用pjax
         'enable_pjax'       => false,
         // 是否启用Getter魔术方法
         'enable_getter'     => true,
         // Getter providers
         'getter_providers'  => null,
-        // 视图初始变量
-        'boot_vars_handler' => null,
+        // 初始视图模型
+        'boot_view_model_file'   => null,
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
         // 默认调度的视图，为空不限制
@@ -63,9 +63,15 @@ class View extends App
                 }
             });
         }
-        if (isset($this->config['boot_vars_handler'])) {
-            $vars = $this->config['boot_vars_handler']($this->dispatch['view']);
+        if (isset($this->config['boot_view_model_file'])) {
+            //return require $this->config['boot_view_model_file'];
         }
+        if (isset($this->config['view_model_path'])
+            && is_php_file($file = $this->getViewModelFile($this->dispatch['view']))
+        ) {
+            
+        }
+        
         $vars['_PARAMS'] = $this->dispatch['params'] ?? [];
         ob_start();
         $call($this->dispatch['view_file'], $vars);
@@ -94,10 +100,13 @@ class View extends App
                 $view = strtr($path, '-', '_');
             }
             if (!isset($this->config['default_dispatch_views'])) {
-                if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $view)
-                    && is_php_file($view_file = $this->getViewFile($view))
-                ) {
-                    return compact('view', 'view_file');
+                if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $view)) {
+                    if (Config::has('view.template')) {
+                        Config::set('view.template.ignore_not_find') = true;
+                    }
+                    if (is_php_file($view_file = $this->getViewFile($view))) {
+                        return compact('view', 'view_file');
+                    }
                 }
                 return;
             } elseif (!in_array($view, $this->config['default_dispatch_views'])) {
@@ -108,10 +117,7 @@ class View extends App
         } else {
             return;
         }
-        return [
-            'view'      => $view,
-            'view_file' => $this->getViewFile($view)
-        ];
+        return ['view' => $view, 'view_file' => $this->getViewFile($view)];
     }
     
     protected function routeDispatch($path)
@@ -133,6 +139,11 @@ class View extends App
     
     protected function getViewFile($view)
     {
-        return $this->config['enable_pjax'] && Response::isPjax() ? CoreView::block($view) : CoreView::file($view);
+        return $this->config['enable_pjax'] && Request::isPjax() ? CoreView::block($view) : CoreView::file($view);
+    }
+    
+    protected function getViewModelFile($view)
+    {
+        return APP_DIR.$this->config['viewmodel_path']."/$view.php";
     }
 }

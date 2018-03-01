@@ -35,12 +35,22 @@ class View
         self::$view->vars[$name] = $value;
     }
     
+    public static function vars(array $values)
+    {
+        self::$view->vars = isset(self::$view->vars) ? $values + self::$view->vars : $values;
+    }
+    
     /*
      * 设置函数
      */
     public static function filter($name, callable $value)
     {
         self::$view->filters[$name] = $value;
+    }
+    
+    public static function filters(array $values)
+    {
+        self::$view->filters = isset(self::$view->filters) ? $values + self::$view->filters : $values;
     }
     
     /*
@@ -68,7 +78,7 @@ class View
             $is_relative_path = true;
             $path = "$dir/$tpl";
         }
-        $phpfile = "$path.php";        
+        $phpfile = "$path.php";
         if (isset(self::$config['template'])) {
             self::complie(self::getTemplateFile($path, $is_relative_path), $phpfile);
         }
@@ -165,7 +175,10 @@ class View
     public static function complie($tplfile, $phpfile, $layout = null)
     {
         if (!is_file($tplfile)) {
-            throw new \Exception("Template file not found: $tplfile");
+            if (empty(self::$config['template']['ignore_not_find'])) {
+                throw new \Exception("Template file not found: $tplfile");
+            }
+            return;
         }
         if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
             $dir = dirname($phpfile);

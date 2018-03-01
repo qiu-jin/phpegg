@@ -53,7 +53,7 @@ class Cassandra
     protected function initBuild($object, $options)
     {
         foreach ($options as $key => $value) {
-            $ssl->{'with'.ucfirst($key)}(...(array) $value);
+            $ssl->{"with$key"}(...(array) $value);
         }
         $object->build();
         return $object;
