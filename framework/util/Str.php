@@ -5,10 +5,10 @@ class Str
 {
     public static function random($length = 16, $type = null)
     {
-        $str = '';
         $string = '0123456789qwertyuiopasdfghjklzxcvbnm';
+        $str = '';
         for ($i = 0; $i < $length; $i++) {
-            $str .= $string{rand(0, 33)};
+            $str .= $string[mt_rand(0, 33)];
         }
         return $str;
     }

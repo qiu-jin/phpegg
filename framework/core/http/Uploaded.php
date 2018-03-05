@@ -3,6 +3,7 @@ namespace framework\core\http;
 
 use framework\util\Str;
 use framework\util\File;
+use framework\util\Image;
 use framework\core\Container;
 
 class Uploaded
@@ -17,12 +18,6 @@ class Uploaded
         UPLOAD_ERR_NO_FILE      => 'UPLOAD_ERR_NO_FILE',
         UPLOAD_ERR_NO_TMP_DIR   => 'UPLOAD_ERR_NO_TMP_DIR',
         UPLOAD_ERR_CANT_WRITE   => 'UPLOAD_ERR_CANT_WRITE'
-    ];
-    private static $image_type = [
-         1 => 'GIF',  2 => 'JPG',  3 => 'PNG',   4 => 'SWF',
-         5 => 'PSD',  6 => 'BMP',  7 => 'TIFF',  8 => 'TIFF',
-         9 => 'JPC', 10 => 'JP2', 11 => 'JPX',  12 => 'JB2',
-        13 => 'SWC', 14 => 'IFF', 15 => 'WBMP', 16 => 'XBM'
     ];
     
     public function __construct($file, $validate = null)
@@ -58,12 +53,7 @@ class Uploaded
     
     public function image()
     {
-        if (function_exists('exif_imagetype')) {
-            $type = exif_imagetype($this->file['tmp_name']);
-        } else {
-            $type = getimagesize($this->file['tmp_name'])[2];
-        }
-        return $type && isset(self::$image_type[$type]) ? self::$image_type[$type] : false;
+        return (new Image($this->file['tmp_name']))->info('type');
     }
     
     public function extension()

@@ -14,16 +14,18 @@ class View extends App
     protected $config = [
         // 调度模式，支持default route组合
         'dispatch_mode'     => ['default'],
+        // 初始视图模型
+        'boot_view_model'   => null,
         // 视图模型目录
         'view_model_path'   => null,
+        // 视图模型目录
+        'view_models'       => null,
         // 是否启用pjax
         'enable_pjax'       => false,
         // 是否启用Getter魔术方法
         'enable_getter'     => true,
         // Getter providers
         'getter_providers'  => null,
-        // 初始视图模型
-        'boot_view_model_file'   => null,
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
         // 默认调度的视图，为空不限制
@@ -47,34 +49,28 @@ class View extends App
     
     protected function call()
     {
-        if (empty($this->config['enable_getter'])) {
-            $call = static function($__file, $__vars) {
-                extract($__vars, EXTR_SKIP);
-                require $__file;
-            };
-        } else {
-            $call = \Closure::bind(function($__file, $__vars) {
-                extract($__vars, EXTR_SKIP);
-                require $__file;
-            }, new class($this->config['getter_providers']) {
-                use Getter;
-                public function __construct($providers) {
-                    $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
+        extract($this->dispatch);
+        $vars = [
+            '_VIEW'     => $view,
+            '_PARAMS'   => $params ?? []
+        ];
+        if (isset($this->config['boot_view_model'])) {
+            $vars = (array) self::requireModelFile($this->config['boot_view_model'], $vars) + $vars;
+        }
+        if (isset($this->config['view_model_path'])) {
+            if (isset($this->config['view_models'])) {
+                if (in_array($view, $this->config['view_models'])) {
+                    $vars = (array) self::requireModelFile($this->getViewModelFile($view), $vars) + $vars;
                 }
-            });
+            } elseif (is_php_file($view_model_file = $this->getViewModelFile($view))) {
+                $vars = (array) self::requireModelFile($view_model_file, $vars) + $vars;
+            }
         }
-        if (isset($this->config['boot_view_model_file'])) {
-            //return require $this->config['boot_view_model_file'];
-        }
-        if (isset($this->config['view_model_path'])
-            && is_php_file($file = $this->getViewModelFile($this->dispatch['view']))
-        ) {
-            
-        }
-        
-        $vars['_PARAMS'] = $this->dispatch['params'] ?? [];
         ob_start();
-        $call($this->dispatch['view_file'], $vars);
+        (static function($__file, $__vars) {
+            extract($__vars, EXTR_SKIP);
+            require $__file;
+        })($view_file, $vars);
         return ob_get_clean();
     }
     
@@ -102,7 +98,7 @@ class View extends App
             if (!isset($this->config['default_dispatch_views'])) {
                 if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $view)) {
                     if (Config::has('view.template')) {
-                        Config::set('view.template.ignore_not_find') = true;
+                        Config::set('view.template.ignore_not_find', true);
                     }
                     if (is_php_file($view_file = $this->getViewFile($view))) {
                         return compact('view', 'view_file');
@@ -145,5 +141,24 @@ class View extends App
     protected function getViewModelFile($view)
     {
         return APP_DIR.$this->config['viewmodel_path']."/$view.php";
+    }
+    
+    protected function requireModelFile($file, &$vars)
+    {
+        if (empty($this->config['enable_getter'])) {
+            $call = static function($__file, $_VARS) {
+                return require $__file;
+            };
+        } else {
+            $call = \Closure::bind(function($__file, $_VARS) {
+                return require $__file;
+            }, new class($this->config['getter_providers']) {
+                use Getter;
+                public function __construct($providers) {
+                    $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
+                }
+            });
+        }
+        return $call($file, $vars);
     }
 }

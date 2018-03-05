@@ -21,7 +21,7 @@ class Xml
     public static function decode($xml, $root = false)
     {
         if ($object = simplexml_load_string($xml, null, LIBXML_NOCDATA)) {
-            $array = json_decode(json_encode($object), true);
+            $array = (array) $object;
             return $root ? [$object->getName() => $array] : $array;
         }
         return false;

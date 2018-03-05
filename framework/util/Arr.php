@@ -5,18 +5,17 @@ class Arr
 {
     public static function pull(array &$array, $key, $default = null)
     {
-        if (!isset($array[$key])) {
-            return $default;
+        if (isset($array[$key])) {
+            $value = $array[$key];
+            unset($array[$key]);
+            return $value;
         }
-        $value = $array[$key];
-        unset($array[$key]);
-        return $value;
+        return $default;
     }
     
     public static function isAssoc(array $array)
     {
-        $keys = array_keys($array);
-        return array_keys($keys) !== $keys;
+        return array_keys($keys = array_keys($array)) !== $keys;
     }
     
     public static function field(array $array, $field, $default = null)

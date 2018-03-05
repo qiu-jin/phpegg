@@ -175,10 +175,10 @@ class View
     public static function complie($tplfile, $phpfile, $layout = null)
     {
         if (!is_file($tplfile)) {
-            if (empty(self::$config['template']['ignore_not_find'])) {
-                throw new \Exception("Template file not found: $tplfile");
+            if (!empty(self::$config['template']['ignore_not_find'])) {
+                return;
             }
-            return;
+            throw new \Exception("Template file not found: $tplfile");
         }
         if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
             $dir = dirname($phpfile);

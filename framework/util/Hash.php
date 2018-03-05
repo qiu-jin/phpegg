@@ -3,59 +3,37 @@ namespace Framework\Util;
 
 class Hash
 {
-    public static function __callstatic($name, $params)
+    public static function salt(int $length = 8, $raw = false)
     {
-        if (in_array($algo, hash_algos())) {
-            return hash($name, $params[0]);
-        }
-        return false;
-    }
-    
-    public static function fast($str, $salt, $length = 0, $algo = 'sha256', $count = 3)
-    {
-        $hash = hash_hmac($algo, $str, $salt);
-        if ($count > 0) {
-            for ($i = 0; $i < $count; $i++) {
-                $hash = hash_hmac($algo, $hash, $salt);
-            }
-        }
-        if (!$length) return $hash;
-        $len =  strlen($hash);
-        if ($len > $length) {
-            return substr($hash, 0, $length);
-        } elseif ($len < $length) {
-            
-        } else {
-            return $hash;
-        }
-    }
-    
-    public static function slow($str, $salt, $length = 32, $algo = 'sha256', $count = 10000)
-    {
-        if ($algo === 'sha256' || in_array($algo, hash_algos())) {
-            return hash_pbkdf2($algo, $str, $salt, $count, $length*2);
-        }
-        return false;
-    }
-    
-    public static function salt($length = 10, $raw = false)
-    {
-        $salt = random_bytes($length, MCRYPT_DEV_URANDOM);
+        $salt = random_bytes($length);
         return $raw ? $salt : bin2hex($salt);
     }
-
-    public static function equals($a, $b)
+    
+    public static function hmac($data, $salt, $raw = false, $algo = 'md5', int $count = 3)
     {
-        return hash_equals($a, $b);
+        do {
+            $data = hash_hmac($algo, $data, $salt, true);
+        } while ($count-- > 0);
+        return $raw ? $data : bin2hex($data);
     }
     
-    public static function password($password)
+    public static function pbkdf2($data, $salt, $raw = false, $algo = 'md5', int $count = 1000, int $length = 0)
     {
-        return password_hash($password, ['cost' => 10]);
+        return hash_pbkdf2($algo, $data, $salt, $count, $length, $raw);
     }
 
-    public static function verify($str, $hash)
+    public static function equals($data1, $data2)
     {
-        return password_verify($str, $hash);
+        return hash_equals($data1, $data2);
+    }
+    
+    public static function password($password, array $options = [])
+    {
+        return password_hash($password, Arr::pull($options, 'algo', PASSWORD_DEFAULT), $options);
+    }
+
+    public static function verify($password, $hash)
+    {
+        return password_verify($password, $hash);
     }
 }
