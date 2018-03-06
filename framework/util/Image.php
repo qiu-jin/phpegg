@@ -102,7 +102,7 @@ class Image
     /*
      * 文字
      */
-    public function text()
+    public function text($text, int $x = -1, int $y = -1)
     {
         return $this;
     }
@@ -112,6 +112,33 @@ class Image
      */
     public function watermark($source, int $x = -1, int $y = -1, int $alpha = 100)
     {
+        if (!is_file($source) || !($info = getimagesize($source))) {
+            throw new ImageException("Illegal watermark file: $source");
+        }
+        if ($x > 0) {
+            $x = 0;
+        } elseif ($x < 0) {
+            $x = $this->info('width') - $width;
+        } else {
+            $x = ($this->info('width') - $width) / 2;
+        }
+        if ($y > 0) {
+            $y = 0;
+        } elseif ($y < 0) {
+            $y = $this->info('height') - $height;
+        } else {
+            $y = ($this->info('height') - $height) / 2;
+        }
+        $src   = imagecreatetruecolor($info[0], $info[1]);
+        $color = imagecolorallocate($src, 255, 255, 255);
+        $image = {'imagecreatefrom'.image_type_to_extension($info[2], false)}($source);
+        imagealphablending($image, true);
+        imagefill($src, 0, 0, $color);
+        imagecopy($src, $this->resource(), 0, 0, $x, $y, $info[0], $info[1]);
+        imagecopy($src, $image, 0, 0, 0, 0, $info[0], $info[1]);
+        imagecopymerge($this->image, $src, $x, $y, 0, 0, $info[0], $info[1], $alpha);
+        imagedestroy($src);
+        imagedestroy($water);
         return $this;
     }
     
