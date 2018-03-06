@@ -11,11 +11,8 @@ class Zip
         if (is_file($file)) {
             $ret = $zip->open($file);
         } else {
-            $dir = dirname($file);
-            if (!is_dir($dir)) {
-                if (!mkdir($to)) {
-                    throw new \Exception('Illegal zip file');
-                }
+            if (!is_dir($dir = dirname($file)) && !mkdir($to)) {
+                throw new \Exception('Illegal zip file');
             }
             $ret = $zip->open($file, \ZipArchive::CREATE);
         }
