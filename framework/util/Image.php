@@ -11,36 +11,30 @@ class Image
     
 	public function __construct($path)
 	{
-        if (is_file($path)) {
-            $this->path = $path;
-        } else {
-            throw new \Exception("Illegal file: $path");
+        if (!($info = getimagesize($path))) {
+            throw new \Exception("Illegal image file: $path");
         }
+        $this->path = $path;
+        $this->info = [
+            'type'      => image_type_to_extension($info[2], false),
+            'mime'      => $info['mime'],
+            'width'     => $info[0],
+            'height'    => $info[1],
+        ];
 	}
     
     /*
-     * 保存
+     * 信息
      */
     public function info($name = null)
     {
-        if (!isset($this->info)) {
-            if (!($info = getimagesize($this->path))) {
-                throw new \Exception("Illegal image file: $this->path");
-            }
-            $this->info = [
-                'type'      => image_type_to_extension( $info[2], false),
-                'mime'      => $info['mime'],
-                'width'     => $info[0],
-                'height'    => $info[1],
-            ];
-        }
         return $name ? ($this->info[$name] ?? false) : $this->info;
     }
     
     /*
      * 裁剪
      */
-    public function crop(int $width, int $height, $x = 0, $y = 0, $w = null, $h = null)
+    public function crop(int $width, int $height, int $x = 0, int $y = 0, int $w = null, int $h = null)
     {
         $image = imagecreatetruecolor($width, $height);
         $color = imagecolorallocate($image, 255, 255, 255);
@@ -54,11 +48,11 @@ class Image
     /*
      * 调整大小
      */
-    public function resize(int $width, int $height)
+    public function resize(int $width, int $height, $zoom_in = false)
     {
-        $w = $this->info('width');
+        $w = $this->info['width'];
         $h = $this->info['height'];
-        if ($w <= $width && $h <= $height) {
+        if ($w < $width && $h < $height && $zoom_in == false) {
             return $this;
         }
         $scale = min($width / $w, $height / $h);
@@ -70,7 +64,7 @@ class Image
     /*
      * 旋转
      */
-    public function rotate($degrees = 90)
+    public function rotate(int $degrees = 90)
     {
         $image = imagerotate($this->resource(), -$degrees, imagecolorallocatealpha($this->image, 0, 0, 0, 127));
         $this->info['width']  = imagesx($image);
@@ -81,13 +75,13 @@ class Image
     /*
      * 翻转
      */
-    public function flip($direction_flip_y = false)
+    public function flip($flip_y = false)
     {
-        $w = $this->info('width');
+        $w = $this->info['width'];
         $h = $this->info['height'];
         $image1 = imagecreatetruecolor($w, $h);
         $image2 = $this->resource();
-        if ($direction_flip_y) {
+        if ($flip_y) {
             for ($x = 0; $x < $w; $x++) {
                 imagecopy($image1, $image2, $w - $x - 1, 0, $x, 0, 1, $h);
             }
@@ -102,55 +96,86 @@ class Image
     /*
      * 文字
      */
-    public function text($text, int $x = -1, int $y = -1)
-    {
+    public function text(
+       $text, $fontfile, $size, $color = '#000000',
+       int $angle = 0, int $x = 1, int $y = 1, int $margin_x = 0, int $margin_y = 0
+    ) {
+        $info = imagettfbbox($size, $angle, $fontfile, $text);
+        $minx = min($info[0], $info[2], $info[4], $info[6]);
+        $miny = min($info[1], $info[3], $info[5], $info[7]);
+        $w = max($info[0], $info[2], $info[4], $info[6]) - $minx;
+        $h = max($info[1], $info[3], $info[5], $info[7]) - $miny;
+        if ($x > 0) {
+            $x = $margin_x - $minx;
+        } elseif ($x < 0) {
+            $x = $this->info['width'] - $w - $minx - $margin_x;
+        } else {
+            $x = (($this->info['width'] - $w) / 2) - $minx;
+        }
+        if ($y > 0) {
+            $y = $margin_y - $miny;
+        } elseif ($y < 0) {
+            $y = $this->info['height'] - $h - $miny - $margin_y;
+        } else {
+            $y = (($this->info['height'] - $h) / 2) - $miny;
+        }
+        if (isset($color[6]) && 0 === strpos($color, '#')) {
+            $color = array_map('hexdec', str_split(substr($color, 1), 2));
+            if (empty($color[3]) || $color[3] > 127) {
+                $color[3] = 0;
+            }
+        } elseif (!is_array($color)) {
+            throw new \Exception("Illegal color: $color");
+        }
+        $col = imagecolorallocatealpha($this->resource(), $color[0], $color[1], $color[2], $color[3]);
+        imagettftext($this->image, $size, $angle, $x, $y, $col, $fontfile, $text);
         return $this;
     }
     
     /*
      * 水印
      */
-    public function watermark($source, int $x = -1, int $y = -1, int $alpha = 100)
+    public function watermark($path, int $alpha = 100, int $x = 1, int $y = 1, int $margin_x = 0, int $margin_y = 0)
     {
-        if (!is_file($source) || !($info = getimagesize($source))) {
-            throw new ImageException("Illegal watermark file: $source");
+        if (!($info = getimagesize($path))) {
+            throw new \Exception("Illegal watermark file: $path");
         }
         if ($x > 0) {
-            $x = 0;
+            $x = $margin_x;
         } elseif ($x < 0) {
-            $x = $this->info('width') - $width;
+            $x = $this->info['width'] - $info[0] - $margin_x;
         } else {
-            $x = ($this->info('width') - $width) / 2;
+            $x = ($this->info['width'] - $info[0]) / 2;
         }
         if ($y > 0) {
-            $y = 0;
+            $y = $margin_y;
         } elseif ($y < 0) {
-            $y = $this->info('height') - $height;
+            $y = $this->info['height'] - $info[1] - $margin_y;
         } else {
-            $y = ($this->info('height') - $height) / 2;
+            $y = ($this->info['height'] - $info[1]) / 2;
         }
         $src   = imagecreatetruecolor($info[0], $info[1]);
         $color = imagecolorallocate($src, 255, 255, 255);
-        $image = {'imagecreatefrom'.image_type_to_extension($info[2], false)}($source);
+        $image = ('imagecreatefrom'.image_type_to_extension($info[2], false))($path);
         imagealphablending($image, true);
         imagefill($src, 0, 0, $color);
         imagecopy($src, $this->resource(), 0, 0, $x, $y, $info[0], $info[1]);
         imagecopy($src, $image, 0, 0, 0, 0, $info[0], $info[1]);
         imagecopymerge($this->image, $src, $x, $y, 0, 0, $info[0], $info[1], $alpha);
         imagedestroy($src);
-        imagedestroy($water);
+        imagedestroy($image);
         return $this;
     }
     
     /*
-     * source
+     * resource
      */
     public function resource()
     {
         if (isset($this->image)) {
             return $this->image;
         }
-        if (function_exists($func = 'imagecreatefrom'.$this->info('type'))
+        if (function_exists($func = 'imagecreatefrom'.$this->info['type'])
             && is_resource($image = $func($this->path))
         ) {
             return $this->image = $image;
@@ -161,18 +186,26 @@ class Image
     /*
      * 保存
      */
-    public function save($path = null, $type = null, int $quality = 90)
+    public function save($path = null, $type = null, array $options = null)
     {
-        return $this->imageFunc($type)($this->resource(), $path ?? $this->path, ...$this->build($type, $quality));
+        if ($path == null) {
+            if ($type == null) {
+                $path = $this->path;
+            } elseif ($type != $this->info['type']) {
+                $info = pathinfo($this->path, PATHINFO_DIRNAME | PATHINFO_BASENAME);
+                $path = $info['dirname'].'/'.$info['basename'].".$type";
+            }
+        }
+        return $this->imageFunc($type)($this->resource(), $path, ...$this->build($options));
     }
     
     /*
      * 数据
      */
-    public function buffer($type = null, int $quality = 90)
+    public function buffer($type = null, array $options = null)
     {
         ob_start();
-        $ret = $this->imageFunc($type)($this->resource(), ...$this->build($type, $quality));
+        $ret = $this->imageFunc($type)($this->resource(), null, ...$this->build($options));
         $data = ob_get_contents();
         ob_end_clean();
         return $ret === false ? false : $data;
@@ -181,16 +214,16 @@ class Image
     /*
      * 输出
      */
-    public function output($type = null, $quality = 90)
+    public function output($type = null, array $options = null)
     {
-        if ($data = $this->buffer($type, $quality)) {
-            Response::send($data, $this->info('mime'));
+        if ($data = $this->buffer($type, $options)) {
+            Response::send($data, $this->info['mime']);
         }
         throw new \Exception("Failed to output image");
     }
     
     /*
-     * source
+     * reset
      */
     private function reset($image)
     {
@@ -202,29 +235,32 @@ class Image
     /*
      * build
      */
-    private function build($type, $quality)
+    private function build($options)
     {
-        $params = [];
-        switch ($type) {
-            case 'jpg':
+        switch ($this->info['type']) {
             case 'jpeg':
-                $params[] = $quality;
-                break;
+                if (isset($options['interlace'])) {
+                    imageinterlace($this->image, (int) $options['interlace']);
+                }
+                return isset($options['quality']) ? [(int) $options['quality']] : [];
             case 'png':
                 imagesavealpha($this->image, true);
-                $params[] = min((int) ($quality / 10), 9);
-                break;
+                return isset($options['quality']) ? [min((int) ($quality / 10), 9)] : [];
+            default:
+                return [];
         }
-        return $params;
     }
 
     /*
-     * imageFunc
+     * image create function
      */
     private function imageFunc($type)
     {
         if ($type == null) {
-            $type = $this->info('type');
+            $type = $this->info['type'];
+        } elseif ($type != $this->info['type']) {
+            $this->info['type'] = $type;
+            $this->info['mime'] = "image/$type";
         }
         if (function_exists($func = "image$type")) {
             return $func;

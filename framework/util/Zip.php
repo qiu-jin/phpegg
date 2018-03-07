@@ -23,11 +23,6 @@ class Zip
         }
     }
     
-	public static function open($file)
-    {
-        return new self($file);
-    }
-    
 	public function get($name)
     {
         return $this->zip->getFromName($name);
@@ -38,7 +33,7 @@ class Zip
         return $this->zip->getNameIndex($name) !== false;
     }
     
-	public function put($value, $name, $is_buffer = false)
+	public function put($name, $value, $is_buffer = false)
     {
         return isset($is_buffer) ? $this->zip->addFromString($name, $value) : $this->zip->addFile($value, $name);
     }
@@ -72,7 +67,7 @@ class Zip
     
     public function move($name, $newname)
     {
-        return $this->zip->renameName ($name, $newname);
+        return $this->zip->renameName($name, $newname);
     }
     
 	public function stream($name)
