@@ -1,7 +1,7 @@
 <?php
 namespace framework\core\exception;
 
-class UserErrorException extends \ErrorException
+class ErrorException extends \ErrorException
 {
     protected $trace;
     

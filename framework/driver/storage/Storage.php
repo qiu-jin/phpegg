@@ -74,15 +74,15 @@ abstract class Storage
     {
         if (strpos($from, '://')) {
             list($scheme, $uri) = explode('://', $from, 2);
-            $scheme = strtolower($scheme);
             if ($scheme === 'http' || $scheme === 'https') {
                 $data = Client::get($from);
             } else {
                 $data = Container::driver('storage', $scheme)->get($uri);
             }
-            return $data ? $this->put($data, $to, true) : false;
+        } else {
+            $data = Container::driver('storage')->get($uri);
         }
-        return false;
+        return $data ? $this->put($data, $to, true) : false;
     }
     
     public function setTimeout($timeout)

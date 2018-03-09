@@ -27,7 +27,7 @@ class Xml
         return false;
     }
     
-    private static function writeArrayToXml($writer, $array)
+    private static function arrayToXml($writer, $array)
     {
         foreach($array as $key => $value){
             $writer->startElement($key);

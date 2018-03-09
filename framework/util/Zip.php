@@ -1,111 +1,57 @@
 <?php
 namespace framework\util;
 
-class Zip
+class Zip extends \ZipArchive
 {
-    private $zip;
-    
-    private function __construct($file)
+    public function __construct($file = null)
     {
-        $zip = new \ZipArchive;
+        if ($file == null) {
+            return;
+        }
         if (is_file($file)) {
-            $ret = $zip->open($file);
+            $ret = $this->open($file);
         } else {
-            if (!is_dir($dir = dirname($file)) && !mkdir($to)) {
+            if (!is_dir($dir = dirname($file)) && !mkdir($dir)) {
                 throw new \Exception('Illegal zip file');
             }
-            $ret = $zip->open($file, \ZipArchive::CREATE);
+            $ret = $this->open($file, \ZipArchive::CREATE);
         }
-        if ($ret === true) {
-            $this->zip = $zip;
-        } else {
+        if ($ret !== true) {
             throw new \Exception('Illegal zip file');
         }
     }
     
-	public function get($name)
+	public function num()
     {
-        return $this->zip->getFromName($name);
+        return $this->numFiles;
     }
     
-	public function has($name)
+	public function hasName($name)
     {
-        return $this->zip->getNameIndex($name) !== false;
-    }
-    
-	public function put($name, $value, $is_buffer = false)
-    {
-        return isset($is_buffer) ? $this->zip->addFromString($name, $value) : $this->zip->addFile($value, $name);
-    }
-    
-    public function num() 
-    {
-        return $this->zip->numFiles;
+        return $this->getNameIndex($name) !== false;
     }
 
-    public function name($index) 
+    public function getNames() 
     {
-        return $this->zip->getNameIndex($index);
-    }
-    
-    public function names() 
-    {
-        $names = [];
-        $num = $this->zip->numFiles;
-        if ($num > 0) {
+        if (($num = $this->numFiles) > 0) {
             for ($i = 0; $i < $num; $i++) {
-                $names[] = $this->zip->getNameIndex($i);
+                $names[] = $this->getNameIndex($i);
             }
         }
-        return $names;
-    }
-
-	public function stat($name)
-    {
-        return $this->zip->statName($name);
+        return $names ?? [];
     }
     
-    public function move($name, $newname)
+    public function uploadTo($to)
     {
-        return $this->zip->renameName($name, $newname);
-    }
-    
-	public function stream($name)
-    {
-        return $this->zip->getStream($name);
-    }
-    
-	public function save($name, $to)
-    {
-        $data = $this->zip->getFromName($name);
-        if ($data) {
-            return (bool) file_put_contents($to, $data);
+        if ($filename = $this->filename) {
+            $this->close();
+            return File::upload($filename, $to);
         }
         return false;
     }
     
-	public function delete($name)
-    {
-        return $this->zip->deleteName($name);
-    }
-    
-	public function extract($to)
-    {
-        if (!is_dir($to)) {
-            if (!mkdir($to)) {
-                return false;
-            }
-        }
-        return $this->zip->extractTo($to);
-    }
-    
-	public function password($pw)
-    {
-        return $this->zip->setPassword($pw);
-    }
-    
 	public function __destruct()
     {
-        return $this->zip->close();
+        empty($this->filename) || $this->close();
     }
 }

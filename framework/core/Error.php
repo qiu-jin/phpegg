@@ -3,7 +3,7 @@ namespace framework\core;
 
 use framework\App;
 use framework\core\exception\Exception;
-use framework\core\exception\UserErrorException;
+use framework\core\exception\ErrorException;
 
 class Error
 {
@@ -55,7 +55,7 @@ class Error
         }
         list($level, $prefix) = self::getErrorInfo($code);
         if (Config::env('STRICT_ERROR_MODE')) {
-            throw new UserErrorException("[$prefix] $message", $code, $file, $line, $trace);
+            throw new ErrorException("[$prefix] $message", $code, $file, $line, $trace);
         }
         self::record('error.user', $level, $code, "User Error: [$prefix] $message", $file, $line, $trace);
     }
@@ -87,7 +87,7 @@ class Error
             sprintf('Uncaught %s: %s', get_class($e), $e->getMessage()),
             $e->getFile(),
             $e->getLine(),
-            APP_DEBUG ? ($e instanceof UserErrorException ? $e->getUserTrace() : $e->getTrace()) : null
+            APP_DEBUG ? ($e instanceof ErrorException ? $e->getUserTrace() : $e->getTrace()) : null
         );
         self::response();
     }

@@ -9,18 +9,19 @@ class Image
     private $info;
     private $image;
     
-	public function __construct($path)
+	public function __construct($path, $ignore_exception = false)
 	{
-        if (!($info = getimagesize($path))) {
+        if ($info = getimagesize($path)) {
+            $this->path = $path;
+            $this->info = [
+                'type'      => image_type_to_extension($info[2], false),
+                'mime'      => $info['mime'],
+                'width'     => $info[0],
+                'height'    => $info[1],
+            ];
+        } elseif (!$ignore_exception) {
             throw new \Exception("Illegal image file: $path");
         }
-        $this->path = $path;
-        $this->info = [
-            'type'      => image_type_to_extension($info[2], false),
-            'mime'      => $info['mime'],
-            'width'     => $info[0],
-            'height'    => $info[1],
-        ];
 	}
     
     /*
@@ -28,7 +29,17 @@ class Image
      */
     public function info($name = null)
     {
-        return $name ? ($this->info[$name] ?? false) : $this->info;
+        return $name ? ($this->info[$name] ?? false) : ($this->info ?? false);
+    }
+    
+    /*
+     * 检查
+     */
+    public function check($type = null)
+    {
+        return $type == null ? isset($this->info) : (
+            is_array($type) ? in_array($this->info['type'], $type) : $this->info['type'] == $type
+        );
     }
     
     /*
@@ -119,15 +130,15 @@ class Image
         } else {
             $y = (($this->info['height'] - $h) / 2) - $miny;
         }
-        if (isset($color[6]) && 0 === strpos($color, '#')) {
+        if (is_string($color[6]) && strpos($color, '#') == 0) {
             $color = array_map('hexdec', str_split(substr($color, 1), 2));
-            if (empty($color[3]) || $color[3] > 127) {
+            if (isset($color[2]) && (empty($color[3]) || $color[3] > 127)) {
                 $color[3] = 0;
             }
         } elseif (!is_array($color)) {
             throw new \Exception("Illegal color: $color");
         }
-        $col = imagecolorallocatealpha($this->resource(), $color[0], $color[1], $color[2], $color[3]);
+        $col = imagecolorallocatealpha($this->resource(), ...$color);
         imagettftext($this->image, $size, $angle, $x, $y, $col, $fontfile, $text);
         return $this;
     }
@@ -192,7 +203,7 @@ class Image
             if ($type == null) {
                 $path = $this->path;
             } elseif ($type != $this->info['type']) {
-                $info = pathinfo($this->path, PATHINFO_DIRNAME | PATHINFO_BASENAME);
+                $info = pathinfo($this->path);
                 $path = $info['dirname'].'/'.$info['basename'].".$type";
             }
         }
@@ -220,6 +231,17 @@ class Image
             Response::send($data, $this->info['mime']);
         }
         throw new \Exception("Failed to output image");
+    }
+    
+    /*
+     * 上传
+     */
+    public function uploadTo($to, $type = null, array $options = null)
+    {
+        if ($data = $this->buffer($type, $options)) {
+            return File::upload($data, $to, true);
+        }
+        throw new \Exception("Failed to upload image");
     }
     
     /*

@@ -1,14 +1,13 @@
 <?php
 namespace framework\core\http;
 
-use framework\util\Str;
 use framework\util\File;
 use framework\util\Image;
-use framework\core\Container;
 
 class Uploaded
 {
     private $file;
+    private $image;
     private $check;
     private $validate;
     private static $error = [
@@ -48,15 +47,17 @@ class Uploaded
     
     public function mime()
     {
-        return isset($this->file['tmp_name']) ? File::mime($this->file['tmp_name']) : false;
+        return $this->file['mime_type'] ??
+               $this->file['mime_type'] = isset($this->file['tmp_name']) ? File::mime($this->file['tmp_name']) : false;
     }
     
     public function image()
     {
-        return (new Image($this->file['tmp_name']))->info('type');
+        return $this->image ??
+               $this->image = isset($this->file['tmp_name']) ? new Image($this->file['tmp_name'], true) : false;
     }
     
-    public function extension()
+    public function ext()
     {
         return isset($this->file['name']) ? pathinfo($this->file['name'], PATHINFO_EXTENSION) : false;
     }
@@ -66,12 +67,15 @@ class Uploaded
         if (!$this->check && !$this->check()) {
             return false;
         }
-        if (stripos($to, '://')) {
-            list($scheme, $uri) = explode('://', $to, 2);
-            return Container::driver('storage', $scheme)->put($this->file['tmp_name'], $to);
-        } else {
-            return move_uploaded_file($this->file['tmp_name'], $to);
+        return move_uploaded_file($this->file['tmp_name'], $to);
+    }
+    
+    public function uploadTo($to)
+    {
+        if (!$this->check && !$this->check()) {
+            return false;
         }
+        return File::upload($this->file['tmp_name'], $to);
     }
     
     public function check($validate = null)
@@ -79,16 +83,16 @@ class Uploaded
         $this->check = false;
         if ($this->file['error'] === UPLOAD_ERR_OK && is_uploaded_file($this->file['tmp_name'])) {
             if ($v = ($validate ?? $this->validate)) {
-                if (isset($v['image']) && !in_array($this->image(), $v['image'], true)) {
+                if (isset($v['ext']) && !in_array($this->ext(), $v['ext'])) {
                     return false;
                 }
-                if (isset($v['type']) && !in_array($this->type(), $v['type'], true)) {
+                if (isset($v['type']) && !in_array($this->type(), $v['type'])) {
                     return false;
                 }
-                if (isset($v['mime']) && !in_array($this->mime(), $v['mime'], true)) {
+                if (isset($v['mime']) && !in_array($this->mime(), $v['mime'])) {
                     return false;
                 }
-                if (isset($v['extension']) && !in_array($this->extension(), $v['extension'], true)) {
+                if (isset($v['image']) && $this->image()->check($v['image'])) {
                     return false;
                 }
                 if (isset($v['size'])) {
@@ -97,10 +101,8 @@ class Uploaded
                         if ($size < $v['size'][0] || $size > $v['size'][1]) {
                             return false;
                         }
-                    } else {
-                        if ($size > $v['size']) {
-                            return false;
-                        }
+                    } elseif ($size > $v['size']) {
+                        return false;
                     }
                 }
             }
@@ -111,6 +113,6 @@ class Uploaded
     
     public function error()
     {
-        return $this->file['error'] !== UPLOAD_ERR_OK ? self::$error[$this->file['error']] : null;
+        return $this->file['error'] != UPLOAD_ERR_OK ? [$this->file['error'], self::$error[$this->file['error']]] : null;
     }
 }
