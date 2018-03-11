@@ -6,18 +6,12 @@ use framework\core\http\Request;
 class Url
 {
     private $url;
-    private static $types = ['scheme', 'host', 'port', 'user', 'pass', 'path', 'query', 'fragment'];
+    private static $types = ['scheme', 'host', 'port', 'path', 'query', 'fragment'];
     
-    public function __construct($url)
+    public function __construct($url = null)
     {
         if (is_string($url)) {
-            $this->url = parse_url($url);
-            if (isset($this->url['path'])) {
-                $this->url['path'] = trim($this->url['path'], '/');
-            }
-            if (isset($this->url['query'])) {
-                parse_str($this->url['query'], $this->url['query']);
-            }
+            $this->url = self::parse($url);
         } elseif (is_array($url)) {
             $this->url = $url;
         }
@@ -31,6 +25,18 @@ class Url
     public static function previous()
     {
         return new self(Request::server('HTTP_REFERER'));
+    }
+    
+    public static function parse($str)
+    {
+        $url = parse_url($str);
+        if (isset($url['path'])) {
+            $url['path'] = trim($url['path'], '/');
+        }
+        if (isset($url['query'])) {
+            parse_str($url['query'], $url['query']);
+        }
+        return $url;
     }
     
     public function __get($name)
@@ -54,16 +60,32 @@ class Url
         $url = '';
         foreach (self::$types as $type) {
             if (isset($this->url[$type])) {
-                $url .= $this->build($type, $this->url[$item]);
+                $url .= $this->build($type, $this->url[$type]);
             }
         }
+        return $url;
+    }
+    
+    public function toArray()
+    {
+        return $this->url;
     }
     
     private function build($type, $value)
     {
-        //'scheme', 'host', 'port', 'user', 'pass', 'path', 'query', 'fragment'
         switch ($type) {
-            case 
+            case 'scheme':
+                return "$value://";
+            case 'host':
+                return $value;
+            case 'port':
+                return ":$value";
+            case 'path':
+                return '/'.trim($value).'/';
+            case 'query':
+                return '?'.http_build_query($value);
+            case 'fragment':
+                return "#$value";
         }
     }
 }
