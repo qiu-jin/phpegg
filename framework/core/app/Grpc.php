@@ -45,7 +45,7 @@ class Grpc extends App
         // 请求解压处理器
         'request_decode'        => ['gzip' => 'gzdecode'],
         // 响应压缩处理器
-        'response_encode'       => ['gzip' => 'gznecode'],
+        'response_encode'       => ['gzip' => 'gzencode'],
     ];
     
     protected function dispatch()

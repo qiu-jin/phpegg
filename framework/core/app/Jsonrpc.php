@@ -3,9 +3,9 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\util\Arr;
-use framework\core\Job;
 use framework\core\Event;
 use framework\core\Logger;
+use framework\core\Container;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\extend\MethodParameter;
@@ -33,18 +33,23 @@ class Jsonrpc extends App
         'batch_max_num' => 1,
         // 批调用异常中断
         'batch_exception_abort' => false,
-        /* 通知调用模式
+        /* 通知调用类型
          * null，不使用通知调用
-         * true，使用Hook close实现伪后台任务
+         * true，使用close event实现伪后台任务
          * string，使用异步队列任务实现，string为队列任务名
          */
-        'notification_mode' => false,
+        'notification_type' => null,
         // 通知回调方法
         'notification_callback' => null,
-        // Request 解码, 也支持igbinary_unserialize msgpack_unserialize等
+        /* 请求反序列化与响应序列化，支持设置除默认json外多种序列化方法
+         * serialize 原生方法 'unserialize' 'serialize'
+         * msgpack https://pecl.php.net/package/msgpack 'msgpack_unserialize' 'msgpack_serialize'
+         * igbinary https://pecl.php.net/package/igbinary 'igbinary_unserialize' 'igbinary_serialize'
+         * bson http://php.net/manual/zh/book.bson.php 'MongoDB\BSON\toPHP' 'MongoDB\BSON\fromPHP'
+         * hprose https://github.com/hprose/hprose-pecl 'hprose_unserialize' 'hprose_serialize'
+         */
         'request_unserialize' => 'jsondecode',
-        // Response 编码, 也支持igbinary_serialize msgpack_serialize等
-        'response_serialize' => 'jsonencode',
+        'response_serialize'  => 'jsonencode',
         // Response content type header
         'response_content_type' => null
     ];
@@ -63,7 +68,7 @@ class Jsonrpc extends App
     // 批请求控制器方法反射实例缓存
     protected $controller_reflection_methods;
     
-    
+
     protected function dispatch()
     {
         $body = Request::body();
@@ -95,7 +100,7 @@ class Jsonrpc extends App
             if (isset($dispatch['error'])) {
                 $return['error'] = $dispatch['error'];
             } else {
-                if (isset($dispatch['id']) || empty($this->config['notification_mode'])) {
+                if (isset($dispatch['id']) || empty($this->config['notification_type'])) {
                     if ($this->config['batch_exception_abort']) {
                         $return += $this->handle($dispatch);
                     } else {
@@ -106,7 +111,11 @@ class Jsonrpc extends App
                         }
                     }
                 } else {
-                    $this->addJob($dispatch);
+                    if ($this->config['notification_type'] === true) {
+                        $this->addCloseEventJob($dispatch);
+                    } else {
+                        //$this->addQueueJob($dispatch);
+                    }
                     $return = null;
                 }
             }
@@ -193,7 +202,8 @@ class Jsonrpc extends App
                     && is_callable([$controller_instance, $action])
                 ) {
                     $params = $item['params'] ?? [];
-                    return compact('id', 'action', 'controller', 'controller_instance', 'params');
+                    $callback = $item['callback'] ?? null;
+                    return compact('id', 'action', 'controller', 'controller_instance', 'params', 'callback');
                 }
             }
             $error = ['code' => -32601, 'message' => "Method not found $item[method]"];
@@ -220,34 +230,41 @@ class Jsonrpc extends App
         }
     }
     
-    protected function getReflectionMethod($controller_instance, $controller, $action)
+    protected function getReflectionMethod($instance, $controller, $action)
     {
         if (!$this->is_batch_call) {
-            return new \ReflectionMethod($controller_instance, $action);
+            return new \ReflectionMethod($instance, $action);
         }
         if (isset($this->controller_reflection_methods[$controller][$action])) {
             return $this->controller_reflection_methods[$controller][$action];
         }
-        return $this->controller_reflection_methods[$controller][$action] = new \ReflectionMethod($controller_instance, $action);
-    }
-    
-    protected function addJob($dispatch)
-    {
-        Event::on('close', function () use ($dispatch) {
-            try {
-                $return = $this->call($dispatch);
-            } catch (\Throwable $e) {
-                $this->setError($e);
-            }
-            if (isset($dispatch['callback']) && isset($this->config['notification_callback'])) {
-                ($this->config['notification_callback'])($dispatch['callback'], $return);
-            }
-        });
+        return $this->controller_reflection_methods[$controller][$action] = new \ReflectionMethod($instance, $action);
     }
     
     protected function addQueueJob($dispatch)
     {
-        //todo
+        $message = [
+            [get_class($dispatch['controller_instance']), $dispatch['action']],
+            $dispatch['params']
+        ];
+        if (isset($this->config['notification_callback'])) {
+            $message[] = [$this->config['notification_callback'], $dispatch['callback']];
+        }
+        Container::driver('queue', $this->config['notification_type'])->producer()->push($message);
+    }
+    
+    protected function addCloseEventJob($dispatch)
+    {
+        Event::on('close', function () use ($dispatch) {
+            try {
+                $return = $this->call($dispatch);
+                if (isset($this->config['notification_callback'])) {
+                    ($this->config['notification_callback'])($return, $dispatch['callback']);
+                }
+            } catch (\Throwable $e) {
+                $this->setError($e);
+            }
+        });
     }
     
     protected function setError($e)
