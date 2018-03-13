@@ -4,10 +4,20 @@ namespace framework\util;
 use framework\core\Container;
 
 class File extends \SplFileInfo
-{   
+{
+    public function getHash($hash = 'md5', $raw = false)
+    {
+        return hash_file($hash, $this->getPathname(), $raw);
+    }
+    
     public function getMime()
     {
         return self::mime($this->getPathname());
+    }
+    
+    public function getImage($ignore_exception = false)
+    {
+        return new Image($this->getPathname(), $ignore_exception);
     }
 
     public function uploadTo($to)

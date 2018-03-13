@@ -1,7 +1,7 @@
 <?php
 namespace framework\util;
 
-class Date
+class Date extends DateTime
 {
     private static $init;
     private static $config = [
@@ -88,20 +88,21 @@ class Date
         }
     }
     
-    public function add($int, $type = 'second')
+    public function addNum($num, $type = 'second')
     {
-        if (isset(self::$config['format'][$type])) {
-            return $this->datetime->modify((int) $int." $type");
-        }
-        throw new \InvalidArgumentException();
+        return $this->modifyNum($num, $type);
     }
     
-    public function sub($num, $type = 'second')
+    public function subNum($num, $type = 'second')
+    {
+        return $this->modifyNum(-$num, $type);
+    }
+    
+    public function modifyNum($num, $type = 'second')
     {
         if (isset(self::$config['format'][$type])) {
-            return $this->modify(- (int) $int." $type");
+            return $this->modify("$num $type");
         }
-        throw new \InvalidArgumentException();
     }
     
     public function than($time)
@@ -112,11 +113,6 @@ class Date
     public function diff($time, $type = null)
     {
         
-    }
-    
-    public function datetime($clone = false)
-    {
-        return $clone ? clone $this->datetime : $this->datetime;
     }
     
     public function toArray() {
