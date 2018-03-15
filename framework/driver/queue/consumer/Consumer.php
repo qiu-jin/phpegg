@@ -4,8 +4,8 @@ namespace framework\driver\queue\consumer;
 abstract class Consumer
 {
     protected $job;
-    protected $queue;
     protected $timeout = 3;
+    protected $consumer;
     protected $serializer;
     
     abstract public function consume(callable $call);
@@ -14,7 +14,7 @@ abstract class Consumer
     {
         $this->job = $job;
         $this->serializer = $serializer;
-        $this->init($connection);
+        $this->consumer = $this->init($connection);
     }
 
     public function timeout($timeout)

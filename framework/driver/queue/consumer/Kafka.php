@@ -5,16 +5,23 @@ class Kafka extends Consumer
 {
     protected function init($connection)
     {
-        $this->queue = $connection->newTopic($this->job);
+        return $connection->newTopic($this->job);
     }
     
     public function bpop()
     {
-        return $this->queue->consume(RD_KAFKA_PARTITION_UA, $this->timeout); 
+        return $this->consumer->consume(RD_KAFKA_PARTITION_UA, $this->timeout); 
     }
     
     public function consume(callable $call)
     {
-
+        while (true) {
+            $job = $this->consumer->consume(RD_KAFKA_PARTITION_UA, $this->timeout);
+            if (!$job->err) {
+                if (!$call($job)) {
+                    
+                }
+            }
+        }
     }
 }

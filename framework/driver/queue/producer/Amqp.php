@@ -5,12 +5,13 @@ class Amqp extends Producer
 {
     protected function init($connection)
     {
-        $this->queue = new \AMQPExchange(new \AMQPChannel($connection)); 
-        $this->queue->setName($this->job);
+        $producer = new \AMQPExchange(new \AMQPChannel($connection)); 
+        $producer->setName($this->job);
+        return $producer;
     }
     
     public function push($value)
     {   
-        return $this->queue->publish($this->serialize($value));
+        return $this->producer->publish($this->serialize($value));
     }
 }

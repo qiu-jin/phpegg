@@ -6,11 +6,11 @@ class Beanstalkd extends Producer
     protected function init($connection)
     {
         $connection->useTube($this->job);
-        $this->queue = $connection;
+        return $connection;
     }
     
     public function push($value)
     {
-        return $this->queue->put($this->serialize($value));//, $delay)
+        return $this->producer->put($this->serialize($value));//, $delay)
     }
 }

@@ -6,7 +6,7 @@ class Beanstalkd extends Consumer
     protected function init($connection)
     {
         $connection->watch($this->job);
-        $this->queue = $connection;
+        return $connection;
     }
     
     public function bpop()
@@ -23,10 +23,10 @@ class Beanstalkd extends Consumer
         while (true) {
             if ($job = $this->queue->reserve()) {
                 $message = $this->unserialize($job->getData());
-                if ($call($message)) {
-                    $this->queue->delete($job);
-                } else {
+                if ($call($message) === false) {
                     $this->queue->release($job);
+                } else {
+                    $this->queue->delete($job);
                 }
             }
         }
