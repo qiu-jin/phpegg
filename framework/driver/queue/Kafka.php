@@ -9,12 +9,18 @@ class Kafka extends Queue
     protected function connect($role)
     {
         $class = "RdKafka\\$role";
-        ($connection = new $class())->addBrokers($this->config['hosts']);
+        $connection = new $class;
+        $connection->addBrokers($this->config['hosts']);
         return $connection;
     }
     
     protected function makeInstance($role, $job)
     {
+        if ($job == null && isset($this->config['job'])) {
+            $job = $this->config['job'];
+        } else {
+            throw new \Exception('Queue job is null');
+        }
         if (isset($this->instances[$role][$job])) {
             return $this->instances[$role][$job];
         }

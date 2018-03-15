@@ -16,12 +16,12 @@ abstract class Queue
 
     public function producer($job = null)
     {
-        return $this->makeInstance('Producer', $job ?? $this->config['job']);
+        return $this->makeInstance('Producer', $job);
     }
     
     public function consumer($job = null)
     {
-        return $this->makeInstance('Consumer', $job ?? $this->config['job']);
+        return $this->makeInstance('Consumer', $job);
     }
     
     public function getConnection()
@@ -31,6 +31,11 @@ abstract class Queue
     
     protected function makeInstance($role, $job)
     {
+        if ($job == null && isset($this->config['job'])) {
+            $job = $this->config['job'];
+        } else {
+            throw new \Exception('Queue job is null');
+        }
         if (isset($this->instances[$role][$job])) {
             return $this->instances[$role][$job];
         }
