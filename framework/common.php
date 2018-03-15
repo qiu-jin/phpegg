@@ -60,6 +60,11 @@ function email($name = null)
     return Container::driver('email', $name);
 }
 
+function job($name, $message)
+{
+    return Container::driver($name)->producer()->push($message);
+}
+
 function driver($type, $name = null)
 {
     return Container::driver($type, $name);

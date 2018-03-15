@@ -101,6 +101,7 @@ abstract class App
             }
             define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
         }
+        // define('EGGCORE_LOADED', extension_loaded('eggcore'));
         require FW_DIR.'common.php';
         require FW_DIR.'core/Config.php';
         require FW_DIR.'core/Loader.php';

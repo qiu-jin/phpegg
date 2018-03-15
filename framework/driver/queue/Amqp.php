@@ -12,12 +12,11 @@ class Amqp extends Queue
         if (!$this->connection->connect()) {
             throw new \Exception('Can not connect to AMQP server');
         }
+        return $this->connection;
     }
 
     public function __destruct()
     {
-        if ($this->connection) {
-            $this->connection->disconnect();
-        }
+        empty($this->connection) || $this->connection->disconnect();
     }
 }

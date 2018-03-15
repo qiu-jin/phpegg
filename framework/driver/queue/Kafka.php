@@ -6,14 +6,12 @@ namespace framework\driver\queue;
  */
 class Kafka extends Queue
 {
-    protected function connect()
+    protected function connect($role)
     {
-        if ($this->role === 'producer') {
-            $this->connection = new \RdKafka\Producer();
-        } elseif ($this->role === 'consumer') {
-            $this->connection = new \RdKafka\Consumer();
-        }
+        $class = "RdKafka\\$role";
+        $this->connection[$role] = new $class();
         $hosts = $this->config['hosts'];
-        $this->connection->addBrokers(is_array($hosts) ? implode(',', $hosts) : $hosts);
+        $this->connection[$role]->addBrokers(is_array($hosts) ? implode(',', $hosts) : $hosts);
+        return $this->connection[$role];
     }
 }

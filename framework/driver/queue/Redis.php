@@ -15,6 +15,7 @@ class Redis extends Queue
         if (isset($this->config['database'])) {
             $this->connection->select($this->config['database']);
         }
+        return $this->connection;
     }
     
     public function __destruct()

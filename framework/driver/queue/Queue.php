@@ -3,9 +3,9 @@ namespace framework\driver\queue;
 
 abstract class Queue
 {
-    protected $role;
     protected $config;
-    protected $instance;
+    protected $producer;
+    protected $consumer;
     protected $connection;
     
     public function __construct($config)
@@ -15,31 +15,22 @@ abstract class Queue
 
     public function producer($job = null)
     {
-        return $this->getRoleInstance('Producer', $job);
+        return $this->producer ?? $this->producer = $this->makeInstance('Producer', $job);
     }
     
     public function consumer($job = null)
     {
-        return $this->getRoleInstance('Consumer', $job);
+        return $this->consumer ?? $this->consumer = $this->makeInstance('Consumer', $job);
     }
     
-    protected function getRoleInstance($role, $job)
+    public function getConnection()
     {
-        if ($this->instance) {
-            if ($this->role === $role) {
-                return $this->instance;
-            }
-            throw new \Exception("Queue role $this->role exists");
-        }
-        if (empty($job)) {
-            if (isset($this->config['job'])) {
-                $job = $this->config['job'];
-            } else {
-                throw new \Exception("Queue job not exists");
-            }
-        }
-        $this->role = $role;
+        return $this->connection;
+    }
+    
+    protected function makeInstance($role, $job)
+    {
         $class = __NAMESPACE__.'\\'.$role.strrchr(static::class, '\\');
-        return $this->instance = new $class($this->connect(), $job, $this->config['serializer'] ?? null);
+        return new $class($this->connect($role), $job ?? $this->config['job'], $this->config['serializer'] ?? null);
     }
 }

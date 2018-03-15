@@ -93,7 +93,7 @@ class Cli extends App
         if ($prompt !== null) {
             $this->write($this->formatTemplate($prompt));
         }
-		return fgets(STDIN);
+        return fgets(STDIN);
     }
     
     public function write($text, $style = null)

@@ -15,9 +15,14 @@ class File extends \SplFileInfo
         return self::mime($this->getPathname());
     }
     
-    public function getImage($ignore_exception = false)
+    public function isImage($type = null)
     {
-        return new Image($this->getPathname(), $ignore_exception);
+        return (new Image($this->getPathname(), true))->check($type);
+    }
+    
+    public function getImage($type = null)
+    {
+        return ($image = new Image($this->getPathname(), true))->check($type) ? $image : false;
     }
 
     public function uploadTo($to)

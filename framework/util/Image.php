@@ -9,8 +9,8 @@ class Image
     private $info;
     private $image;
     
-	public function __construct($path, $ignore_exception = false)
-	{
+    public function __construct($path, $ignore_exception = false)
+    {
         if ($info = getimagesize($path)) {
             $this->path = $path;
             $this->info = [
@@ -22,7 +22,7 @@ class Image
         } elseif (!$ignore_exception) {
             throw new \Exception("Illegal image file: $path");
         }
-	}
+    }
     
     /*
      * 信息

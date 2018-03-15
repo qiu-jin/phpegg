@@ -12,8 +12,8 @@ abstract class Producer
     public function __construct($connection, $job, $serializer)
     {
         $this->job = $job;
-        $this->init($connection);
         $this->serializer = $serializer;
+        $this->init($connection);
     }
     
     protected function serialize($data)
