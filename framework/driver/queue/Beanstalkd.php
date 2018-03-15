@@ -11,7 +11,7 @@ class Beanstalkd extends Queue
 {
     protected function connect()
     {
-        return $this->connection = new Pheanstalk(
+        return new Pheanstalk(
             $this->config['host'],
             $this->config['port'] ?? 11300,
             $this->config['timeout'] ?? 3

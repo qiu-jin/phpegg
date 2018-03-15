@@ -8,11 +8,11 @@ class Amqp extends Queue
 {
     protected function connect()
     {
-        $this->connection = new \AMQPConnection($this->config);
-        if (!$this->connection->connect()) {
-            throw new \Exception('Can not connect to AMQP server');
+        $connection = new \AMQPConnection($this->config);
+        if ($connection->connect()) {
+            return $connection;
         }
-        return $this->connection;
+        throw new \Exception('Can not connect to AMQP server');
     }
 
     public function __destruct()

@@ -4,9 +4,10 @@ namespace framework\driver\queue;
 abstract class Queue
 {
     protected $config;
-    protected $producer;
-    protected $consumer;
+    protected $instances;
     protected $connection;
+    
+    abstract public function connect();
     
     public function __construct($config)
     {
@@ -15,12 +16,12 @@ abstract class Queue
 
     public function producer($job = null)
     {
-        return $this->producer ?? $this->producer = $this->makeInstance('Producer', $job);
+        return $this->makeInstance('Producer', $job ?? $this->config['job']);
     }
     
     public function consumer($job = null)
     {
-        return $this->consumer ?? $this->consumer = $this->makeInstance('Consumer', $job);
+        return $this->makeInstance('Consumer', $job ?? $this->config['job']);
     }
     
     public function getConnection()
@@ -30,7 +31,13 @@ abstract class Queue
     
     protected function makeInstance($role, $job)
     {
+        if (isset($this->instances[$role][$job])) {
+            return $this->instances[$role][$job];
+        }
+        if (!isset($this->connection)) {
+             $this->connection = $this->connect();
+        }
         $class = __NAMESPACE__.'\\'.$role.strrchr(static::class, '\\');
-        return new $class($this->connect($role), $job ?? $this->config['job'], $this->config['serializer'] ?? null);
+        return $this->instances[$role][$job] = new $class($this->connection, $job, $this->config['serializer'] ?? null);
     }
 }
