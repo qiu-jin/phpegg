@@ -2,7 +2,6 @@
 namespace framework\driver\queue;
 
 /* 
- * composer require pda/pheanstalk
  * https://github.com/pda/pheanstalk
  */
 use Pheanstalk\Pheanstalk;

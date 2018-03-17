@@ -140,12 +140,16 @@ function __require($file)
     return require $file;
 }
 
-function getter()
+function closure_bind_getter(Closure $call, $providers = null)
 {
-    static $getter;
-    return $getter ?? $getter = new class () {
+    return Closure::bind($call, new class ($providers) {
         use Getter;
-    };
+        public function __construct($providers) {
+            if ($providers) {
+                $this->{app\env\GETTER_PROVIDERS_NAME} = $providers;
+            }
+        }
+    });
 }
 
 define('OPCACHE_LOADED', extension_loaded('opcache'));

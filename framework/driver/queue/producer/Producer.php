@@ -3,17 +3,17 @@ namespace framework\driver\queue\producer;
 
 abstract class Producer
 {
-    protected $job;
     protected $producer;
     protected $serializer;
     
     abstract public function push($value);
     
-    public function __construct($connection, $job, $serializer)
+    public function __construct($connection, $job, $config)
     {
-        $this->job = $job;
-        $this->serializer = $serializer;
-        $this->producer = $this->init($connection);
+        if (isset($config['serializer'])) {
+            $this->serializer = $config['serializer'];
+        }
+        $this->producer = $this->init($connection, $job, $config);
     }
     
     protected function serialize($data)

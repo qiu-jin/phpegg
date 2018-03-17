@@ -3,10 +3,10 @@ namespace framework\driver\queue\consumer;
 
 class Amqp extends Consumer
 {
-    protected function init($connection)
+    protected function init($connection, $job)
     {
         $consumer = new \AMQPQueue(new \AMQPChannel($connection)); 
-        $consumer->setName($this->job);
+        $consumer->setName($job);
         return $consumer;
     }
     

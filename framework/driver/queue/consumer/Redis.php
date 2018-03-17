@@ -3,8 +3,11 @@ namespace framework\driver\queue\consumer;
 
 class Redis extends Consumer
 {
-    protected function init($connection)
+    protected $job;
+    
+    protected function init($connection, $job)
     {
+        $this->job = $job;
         return $connection;
     }
     

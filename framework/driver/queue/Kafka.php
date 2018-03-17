@@ -16,18 +16,11 @@ class Kafka extends Queue
     
     protected function makeInstance($role, $job)
     {
-        if ($job == null && isset($this->config['job'])) {
-            $job = $this->config['job'];
-        } else {
-            throw new \Exception('Queue job is null');
+        if ($instance = $this->getInstance($role, $job)) {
+            return $instance;
         }
-        if (isset($this->instances[$role][$job])) {
-            return $this->instances[$role][$job];
-        }
-        if (!isset($this->connection[$role])) {
-             $this->connection[$role] = $this->connect($role);
-        }
-        $class = __NAMESPACE__.'\\'.$role.'\Kafka';
-        return $this->instances[$role][$job] = new $class($this->connection[$role], $job, $this->config['serializer'] ?? null);
+        $class = __NAMESPACE__."\\$role\Kafka";
+        $connection = $this->connection[$role] ?? $this->connection[$role] = $this->connect();
+        return $this->instances[$role][$job] = new $class($connection, $job, $this->config['serializer'] ?? null);
     }
 }

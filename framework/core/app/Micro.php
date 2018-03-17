@@ -97,12 +97,10 @@ class Micro extends App
         ) {
             if (is_callable($result[0])) {
                 if ($result[0] instanceof \Closure && $this->config['enable_closure_getter']) {
-                    return [\Closure::bind($result[0], new class ($this->config['getter_providers']) {
-                        use Getter;
-                        public function __construct($providers) {
-                            $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
-                        }
-                    }), $result[1]];
+                    return [
+                        closure_bind_getter($result[0], $this->config['getter_providers']),
+                        $result[1]
+                    ];
                 }
                 return $result;
             } else {

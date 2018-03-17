@@ -3,8 +3,11 @@ namespace framework\driver\queue\producer;
 
 class Redis extends Producer
 {
-    protected function init($connection)
+    protected $job;
+    
+    protected function init($connection, $job)
     {
+        $this->job = $job;
         return $connection;
     }
     

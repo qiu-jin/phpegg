@@ -31,7 +31,7 @@ class Error
     ];
     
     /*
-     * 获取错误信息
+     * 获取信息
      */
     public static function get($all = false)
     {
@@ -39,7 +39,7 @@ class Error
     }
     
     /*
-     * 设置错误信息
+     * 触发错误
      */
     public static function trigger($message, $code = self::ERROR, $limit = 1)
     {
@@ -97,7 +97,7 @@ class Error
      */
     public static function fatalHandler()
     {
-		if (($error = error_get_last())
+        if (($error = error_get_last())
             && ($error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR))
         ) {
             App::exit(5);
@@ -105,10 +105,10 @@ class Error
             $message = "Fatal Error: [$prefix] $error[message]";
             self::record('error.fatal', $level, $error['type'], $message, $error['file'], $error['line']);
             self::response();
-		} else {
+        } else {
             App::exit(0);
             self::record('error.fatal', Logger::NOTICE, 0, 'Unknown exit', null, null);
-		}
+        }
     }
     
     /*

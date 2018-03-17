@@ -20,6 +20,6 @@ class Redis extends Queue
     
     public function __destruct()
     {
-        $this->connection && $this->connection->close();
+        empty($this->connection) || $this->connection->close();
     }
 }

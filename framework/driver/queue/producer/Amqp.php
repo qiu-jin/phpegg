@@ -3,10 +3,10 @@ namespace framework\driver\queue\producer;
 
 class Amqp extends Producer
 {
-    protected function init($connection)
+    protected function init($connection, $job)
     {
         $producer = new \AMQPExchange(new \AMQPChannel($connection)); 
-        $producer->setName($this->job);
+        $producer->setName($job);
         return $producer;
     }
     

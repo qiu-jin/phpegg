@@ -3,9 +3,9 @@ namespace framework\driver\queue\consumer;
 
 class Beanstalkd extends Consumer
 {   
-    protected function init($connection)
+    protected function init($connection, $job)
     {
-        $connection->watch($this->job);
+        $connection->watch($job);
         return $connection;
     }
     

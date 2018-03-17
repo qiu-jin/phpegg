@@ -14,9 +14,11 @@ class Cli extends App
         // 默认命令
         //'default_commands' => null,
         // 默认调用的方法，为空则使用__invoke
-        'default_call_method' => null,
+        'default_call_method'   => null,
         // 匿名函数是否启用Getter魔术方法
         'enable_closure_getter' => true,
+        // Getter providers
+        'getter_providers'      => null,
     ];
     // 是否为windows系统
     protected $is_win;
@@ -212,8 +214,14 @@ class Cli extends App
             if (empty($this->config['enable_closure_getter'])) {
                 $command = new class ($this) extends Command {};
             } else {
-                $command = new class ($this) extends Command {
+                $command = new class ($this, $this->config['getter_providers']) extends Command {
                     use Getter;
+                    public function __construct($app, $providers) {
+                        if ($providers) {
+                            $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
+                        }
+                        parent::__construct($app);
+                    }
                 };
             }
             $ref  = new \ReflectionFunction($dispatch);

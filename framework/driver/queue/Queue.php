@@ -7,7 +7,7 @@ abstract class Queue
     protected $instances;
     protected $connection;
     
-    abstract public function connect();
+    abstract protected function connect();
     
     public function __construct($config)
     {
@@ -29,20 +29,24 @@ abstract class Queue
         return $this->connection;
     }
     
+    protected function getInstance($role, &$job)
+    {
+        if ($job == null) {
+            if (!isset($this->config['job'])) {
+                throw new \Exception('Queue job is null');
+            }
+            $job = $this->config['job'];
+        }
+        return $this->instances[$role][$job] ?? null;
+    }
+    
     protected function makeInstance($role, $job)
     {
-        if ($job == null && isset($this->config['job'])) {
-            $job = $this->config['job'];
-        } else {
-            throw new \Exception('Queue job is null');
-        }
-        if (isset($this->instances[$role][$job])) {
-            return $this->instances[$role][$job];
-        }
-        if (!isset($this->connection)) {
-             $this->connection = $this->connect();
+        if ($instance = $this->getInstance($role, $job)) {
+            return $instance;
         }
         $class = __NAMESPACE__.'\\'.$role.strrchr(static::class, '\\');
-        return $this->instances[$role][$job] = new $class($this->connection, $job, $this->config['serializer'] ?? null);
+        $connection = $this->connection ?? $this->connection = $this->connect();
+        return $this->instances[$role][$job] = new $class($connection, $job, $this->config);
     }
 }
