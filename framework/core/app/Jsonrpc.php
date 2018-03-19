@@ -24,9 +24,10 @@ class Jsonrpc extends App
         // 允许调度的控制器，为空不限制
         'dispatch_controllers' => null,
         /* 参数模式
-         * 0 无参数
-         * 1 顺序参数
-         * 2 键值参数
+         * 0 单参数
+         * 1 顺序参数（不检查）
+         * 2 顺序参数（检查绑定）
+         * 3 键值参数
          */
         'param_mode'    => 1,
         // 最大批调用数，1不启用批调用，0无限批调用数
@@ -34,7 +35,7 @@ class Jsonrpc extends App
         // 批调用异常中断
         'batch_exception_abort' => false,
         /* 通知调用类型
-         * null，不使用通知调用
+         * null/false，不使用通知调用
          * true，使用close event实现伪后台任务
          * string，使用异步队列任务实现，string为队列任务名
          */
@@ -129,18 +130,19 @@ class Jsonrpc extends App
     protected function handle($dispatch)
     {
         extract($dispatch);
-        if (!$this->config['param_mode']) {
-            Request::set('post', $params);
-            return ['result' => $controller_instance->$action()];
+        if ($this->config['param_mode'] == 0) {
+            return ['result' => $controller_instance->$action($params)];
         }
-        $rm = $this->getReflectionMethod($controller_instance, $controller, $action);
-        if ($this->config['param_mode'] === 1) {
-            $params = MethodParameter::bindListParams($rm, $params);
-        } elseif ($this->config['param_mode'] === 2) {
-            $params = MethodParameter::bindKvParams($rm, $params);
-        }
-        if ($params === false) {
-            return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
+        if ($this->config['param_mode'] != 1) {
+            $rm = $this->getReflectionMethod($controller_instance, $controller, $action);
+            if ($this->config['param_mode'] == 2) {
+                $params = MethodParameter::bindListParams($rm, $params);
+            } elseif ($this->config['param_mode'] == 3) {
+                $params = MethodParameter::bindKvParams($rm, $params);
+            }
+            if ($params === false) {
+                return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
+            }
         }
         return ['result' => $controller_instance->$action(...$params)];
     }

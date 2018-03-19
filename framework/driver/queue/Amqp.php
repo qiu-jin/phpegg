@@ -2,7 +2,7 @@
 namespace framework\driver\queue;
 
 /* 
- * http://pecl.php.net/package/amqp
+ * https://github.com/pdezwart/php-amqp
  */
 class Amqp extends Queue
 {

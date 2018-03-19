@@ -11,14 +11,14 @@ class Grpc
         //'endpoint'                => null,
         // service类名前缀
         //'prefix'                  => null,
-        // 简单模式
+        // 简单模式，简单模式下使用CURL请求，不支持流处理
         'simple_mode'               => false,
-        // 简单模式下是否启用HTTP2
-        //'simple_mode_enable_http2'=> false,
-        // 简单模式下公共headers
-        //'simple_mode_headers'     => null,
-        // 简单模式下CURL设置
-        //'simple_mode_curlopts'    => null,
+        // 是否启用HTTP2（简单模式）
+        //'enable_http2'=> false,
+        // 公共headers（简单模式）
+        //'headers'     => null,
+        // CURL设置（简单模式）
+        //'curlopts'    => null,
         // 自动绑定参数
         'auto_bind_param'           => true,
         

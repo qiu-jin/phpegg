@@ -44,14 +44,14 @@ class GrpcSimple
         $size   = strlen($data);
         $body   = pack('C1N1a'.$size, 0, $size, $data);
         $client = Client::post($url)->body($body);
-        if (!empty($this->options['simple_mode_enable_http2'])) {
+        if (!empty($this->options['enable_http2'])) {
             $client->curlopt(CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
         }
-        if (!empty($this->options['simple_mode_headers'])) {
-            $client->headers($this->options['simple_mode_headers']);
+        if (!empty($this->options['headers'])) {
+            $client->headers($this->options['headers']);
         }
-        if (!empty($this->options['simple_mode_curlopts'])) {
-            $client->curlopts($this->options['simple_mode_curlopts']);
+        if (!empty($this->options['curlopts'])) {
+            $client->curlopts($this->options['curlopts']);
         }
         $response = $client->response;
         if (isset($response->headers['grpc-status'])) {

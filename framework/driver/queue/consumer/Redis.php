@@ -11,20 +11,20 @@ class Redis extends Consumer
         return $connection;
     }
     
-    public function pop()
+    public function pull($block = true)
     {
-        return $this->consumer->rPop($this->job);
+        if ($block) {
+            $job = $this->consumer->brPop($this->job, $this->timeout); 
+        } else {
+            $job = $this->consumer->rPop($this->job);
+        }
+        return $job ? $this->unserialize($job[1]) : null;
     }
-    
-    public function bpop()
-    {
-        return $this->consumer->brPop($this->job, $this->timeout);
-    }
-    
+
     public function consume(callable $call)
     {
         while (true) {
-            if ($job = $this->bpop()) {
+            if ($job = $this->consumer->brPop($this->job, $this->timeout)) {
                 $message = $this->unserialize($job[1]);
                 if ($call($message) === false) {
                     $this->consumer->lPush($this->job, $job[1]);

@@ -7,6 +7,8 @@ class Amqp extends Producer
     {
         $producer = new \AMQPExchange(new \AMQPChannel($connection)); 
         $producer->setName($job);
+    	$producer->setFlags(AMQP_NOPARAM);
+    	$producer->declareQueue();
         return $producer;
     }
     

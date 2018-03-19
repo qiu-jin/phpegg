@@ -6,70 +6,60 @@ use framework\core\http\Client;
 class Ipip extends Geoip
 {
     protected $db;
-    protected $token;
-    protected $reader;
-    protected static $endpoint = 'http://ipapi.ipip.net/find';
+    protected $index;
+    protected $offset;
+    protected $is_free = true;
 
     protected function init($config)
     {
-        if (isset($config['database'])) {
-            $this->handle   = 'dbHandle';
-            if (!$this->db  = fopen($config['database'], 'rb')) {
-                throw new \Exception("Database open error");
-            }
-        } elseif (isset($config['token'])) {
-            $this->handle   = 'apiHandle';
-            $this->token    = $config['token'];
-        } else {
-            throw new \Exception("Invalid configuration");
+        if (!$this->db = fopen($config['database'], 'rb')) {
+            throw new \Exception("Database open error");
         }
+        if (isset($config['is_free'])) {
+            $this->is_free = $config['is_free'];
+        }
+        $this->offset = unpack('N', fread($this->db, 4));
+        $this->index  = fread($this->db, $this->offset[1] - 4);
     }
     
-    protected function dbHandle($ip,  $raw = false)
+    protected function handle($ip,  $raw = false)
     {
         if (!$long = pack('N', ip2long($ip))) {
             return;
         }
-        $this->reader['offset'] = unpack('N', fread($this->db, 4));
-        $index = $this->reader['index'] = fread($this->db, $this->reader['offset'][1] - 4);
-        $start = unpack('V', substr($index, strtok($ip, '.') * 4, 4));
-        $max_comp_len = $this->reader['offset'][1] - 1024 - 4;
-        for ($start = $start[1] * 8 + 1024; $start < $max_comp_len; $start += 8) {
-            if (substr($index, $start, 4) >= $long) {
-                $index_offset = unpack('V', substr($index, $start + 4, 3)."\x0");
-                $index_length = unpack('C', $index[$start + 7]);
-                break;
+        $ips    = explode('.', $ip);
+        $idx    = (256 * $ips[0] + $ips[1]) * 4;
+        $start  = unpack('V', substr($this->index, $idx, 4));
+        $step   = $this->is_free ? 9 : 13;
+        for ($start = $start[1] * $step + 262144; $start < $this->offset[1] - 262148; $start += $step) {
+            if ($this->is_free) {
+                if ($long <= substr($this->index, $start, 4)) {
+                    $offset = unpack('V', substr($this->index, $start + 4, 3)."\x0");
+                    $length = unpack('n', substr($this->index, $start + 7, 2));
+                    break;
+                }
+            } else {
+                if ($long >= substr($this->index, $start, 4) && $long <= substr($this->index, $start + 4, 4)) {
+                    $offset = unpack('V', substr($this->index, $start + 8, 4));
+                    $length = unpack('C', $this->index[$start + 12]);
+                    break;
+                }
             }
         }
-        if (!isset($index_offset)) {
+        if (empty($offset)) {
             return;
         }
-        fseek($this->db, $this->reader['offset'][1] + $index_offset[1] - 1024);
-        $result = explode("\t", fread($this->db, $index_length[1]));
-        return $raw ? $result : $this->result(...$result);
-    }
-    
-    protected function apiHandle($ip, $raw = false)
-    {
-        $client = Client::get(self::$endpoint."/?addr=$ip")->header('Token', $this->token);
-        $result = $client->response->json();
-        if (isset($result['ret'])) {
-            if ($result['ret'] === 'ok') {
-                return $raw ? $result['data'] : $this->result(...$result['data']);
-            } elseif ($result['ret'] === 'err') {
-                return error($result['msg']);
-            }
-        }
-        return error($client->error);
-    }
-    
-    protected function result($country, $state, $city)
-    {
-        return compact('country', 'state', 'city');
+        fseek($this->db, $this->offset[1] + $offset[1] - 262144);
+        $result = explode("\t", fread($this->db, $length[1]));
+        return $raw ? $result : [
+            'country'   => $result[0],
+            'state'     => $result[1],
+            'city'      => $result[2]
+        ];
     }
     
     public function __destruct()
     {
-        isset($this->db) && fclose($this->db);
+        empty($this->db) || fclose($this->db);
     }
 } 

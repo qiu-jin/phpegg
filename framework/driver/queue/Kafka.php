@@ -9,7 +9,13 @@ class Kafka extends Queue
     protected function connect($role)
     {
         $class = "RdKafka\\$role";
-        $connection = new $class;
+        if (isset($this->config['options'])) {
+            $conf = new \RdKafka\Conf();
+            foreach ($config['options'] as $k => $v) {
+                $conf->set($k, $v);
+            }
+        }
+        $connection = new $class($conf ?? null);
         $connection->addBrokers($this->config['hosts']);
         return $connection;
     }

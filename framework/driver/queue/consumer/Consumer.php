@@ -7,6 +7,8 @@ abstract class Consumer
     protected $consumer;
     protected $serializer;
     
+    //abstract public function pull($block = true);
+    
     abstract public function consume(callable $call);
     
     public function __construct($connection, $job, $config)

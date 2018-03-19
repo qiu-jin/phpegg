@@ -3,9 +3,15 @@ namespace framework\driver\queue\producer;
 
 class Kafka extends Producer
 {
-    protected function init($connection, $job)
+    protected function init($connection, $job, $config)
     {
-        return $connection->newTopic($job);
+        if (isset($config['topic_options'])) {
+            $conf = new \RdKafka\TopicConf();
+            foreach ($config['topic_options'] as $k => $v) {
+                $conf->set($k, $v);
+            }
+        }
+        return $connection->newTopic($job, $conf ?? null);
     }
     
     public function push($value)

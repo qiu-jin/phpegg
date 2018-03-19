@@ -9,24 +9,27 @@ class Beanstalkd extends Consumer
         return $connection;
     }
     
-    public function bpop()
+    public function pull($block = true)
     {
-        if ($job = $this->queue->reserve()) {
-            $message = $this->unserialize($job->getData());
-            $this->queue->delete($job);
-            return $message;
+        if ($block) {
+            if ($job = $this->consumer->reserve()) {
+                $message = $this->unserialize($job->getData());
+                $this->consumer->delete($job);
+                return $message;
+            }
         }
+        throw new \Exception('Beanstalkd not support no-block pull');
     }
     
     public function consume(callable $call)
     {
         while (true) {
-            if ($job = $this->queue->reserve()) {
+            if ($job = $this->consumer->reserve()) {
                 $message = $this->unserialize($job->getData());
                 if ($call($message) === false) {
-                    $this->queue->release($job);
+                    $this->consumer->release($job);
                 } else {
-                    $this->queue->delete($job);
+                    $this->consumer->delete($job);
                 }
             }
         }

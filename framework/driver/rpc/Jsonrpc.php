@@ -100,9 +100,12 @@ class Jsonrpc
         $socket = $this->socket ?? $this->socket = $this->tcpSocket();
         fwrite($socket, $data);
         while (!feof($socket)) {
-            $result .= fgets($socket, 256);
+            $result .= fread($socket, 1024);
         }
-        return $result;
+        if (!empty($result)) {
+            return $result;
+        }
+        error('-32603: nvalid JSON-RPC response');
     }
     
     protected function tcpSocket()
@@ -116,7 +119,7 @@ class Jsonrpc
         if ($socket !== false) {
             return $socket;
         }
-        error("$errstr[$errno] connecting to $host:$port");
+        error("-32000: Internet error $errstr[$errno] connecting to $host:$port");
     }
     
     public function __destruct()

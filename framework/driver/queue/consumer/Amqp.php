@@ -7,11 +7,16 @@ class Amqp extends Consumer
     {
         $consumer = new \AMQPQueue(new \AMQPChannel($connection)); 
         $consumer->setName($job);
+    	$consumer->setFlags(AMQP_DURABLE);
+    	$consumer->declareQueue();
         return $consumer;
     }
     
-    public function pop()
-    {   
+    public function pull($block = true)
+    {
+        if ($block) {
+            throw new \Exception('Amqp not support block pull');
+        }
         if ($job = $this->consumer->get(AMQP_AUTOACK)) {
             return $this->unserialize($envelope->getBody());
         }
@@ -19,8 +24,10 @@ class Amqp extends Consumer
     
     public function consume(callable $call)
     {
-        $this->consumer->consume(function ($envelope, $queue) use ($call) {
-            return $call($envelope->getBody()) !== false;
-        }, AMQP_AUTOACK);
+        $this->consumer->consume(function ($job, $queue) use ($call) {
+            if ($call($this->unserialize($job->getBody())) !== false) {
+                $queue->ack($job->getDeliveryTag());
+            }
+        });
     }
 }
