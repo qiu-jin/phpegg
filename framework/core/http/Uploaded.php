@@ -54,7 +54,7 @@ class Uploaded
     public function image()
     {
         return $this->image ??
-               $this->image = isset($this->file['tmp_name']) ? new Image($this->file['tmp_name'], true) : false;
+               $this->image = isset($this->file['tmp_name']) ? Image::open($this->file['tmp_name'], true) : false;
     }
     
     public function ext()
@@ -92,7 +92,7 @@ class Uploaded
                 if (isset($v['mime']) && !in_array($this->mime(), $v['mime'])) {
                     return false;
                 }
-                if (isset($v['image']) && $this->image()->check($v['image'])) {
+                if (isset($v['image']) && $this->image() && $this->image->check($v['image'])) {
                     return false;
                 }
                 if (isset($v['size'])) {

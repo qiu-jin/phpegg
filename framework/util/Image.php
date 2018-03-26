@@ -9,19 +9,41 @@ class Image
     private $info;
     private $image;
     
-    public function __construct($path, $ignore_exception = false)
+    public static function open($path, $ignore_exception = false)
     {
         if ($info = getimagesize($path)) {
-            $this->path = $path;
-            $this->info = [
+            return new self($path, [
                 'type'      => image_type_to_extension($info[2], false),
                 'mime'      => $info['mime'],
                 'width'     => $info[0],
                 'height'    => $info[1],
-            ];
-        } elseif (!$ignore_exception) {
-            throw new \Exception("Illegal image file: $path");
+            ]);
+        } elseif ($ignore_exception) {
+            return false;
         }
+        throw new \Exception("Illegal image file: $path");
+    }
+    
+    public static function blank(int $width, int $height, $color = null)
+    {
+        $image = imagecreate($width, $height);
+        if ($color) {
+            if (is_string($color)) {
+                $color = self::parseStringColor($color);
+            }
+            imagecolorallocatealpha($image, ...$color);
+        }
+        return new self($image, compact('width', 'height'));
+    }
+    
+    public function __construct($image, $info = null)
+    {
+        if (is_resource($image)) {
+            $this->image = $image;
+        } else {
+            $this->path  = $image;
+        }
+        $this->info = $info;
     }
     
     /*
@@ -130,13 +152,8 @@ class Image
         } else {
             $y = (($this->info['height'] - $h) / 2) - $miny;
         }
-        if (is_string($color[6]) && strpos($color, '#') == 0) {
-            $color = array_map('hexdec', str_split(substr($color, 1), 2));
-            if (isset($color[2]) && (empty($color[3]) || $color[3] > 127)) {
-                $color[3] = 0;
-            }
-        } elseif (!is_array($color)) {
-            throw new \Exception("Illegal color: $color");
+        if (is_string($color)) {
+            $color = self::parseStringColor($color);
         }
         $col = imagecolorallocatealpha($this->resource(), ...$color);
         imagettftext($this->image, $size, $angle, $x, $y, $col, $fontfile, $text);
@@ -200,12 +217,10 @@ class Image
     public function save($path = null, $type = null, array $options = null)
     {
         if ($path == null) {
-            if ($type == null) {
-                $path = $this->path;
-            } elseif ($type != $this->info['type']) {
-                $info = pathinfo($this->path);
-                $path = $info['dirname'].'/'.$info['basename'].".$type";
+            if (empty($this->path)) {
+                throw \InvalidArgumentException('argument path not is null');
             }
+            $path = $this->path;
         }
         return $this->imageFunc($type)($this->resource(), $path, ...$this->build($options));
     }
@@ -279,8 +294,11 @@ class Image
     private function imageFunc($type)
     {
         if ($type == null) {
+            if (empty($this->info['type'])) {
+                throw \InvalidArgumentException('argument type not is null');
+            }
             $type = $this->info['type'];
-        } elseif ($type != $this->info['type']) {
+        } elseif (empty($this->info['type']) || $type != $this->info['type']) {
             $this->info['type'] = $type;
             $this->info['mime'] = "image/$type";
         }
@@ -288,6 +306,21 @@ class Image
             return $func;
         }
         throw new \Exception("Failed to create image");
+    }
+    
+    /*
+     * parse string color
+     */
+    private static function parseStringColor($color)
+    {
+        if (strpos($color, '#') == 0 && isset($color[6])) {
+            $color = array_map('hexdec', str_split(substr($color, 1), 2));
+            if (isset($color[2]) && (empty($color[3]) || $color[3] > 127)) {
+                $color[3] = 0;
+            }
+            return $color;
+        }
+        throw new \Exception("Illegal color: $color");
     }
     
     public function __destruct()

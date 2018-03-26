@@ -22,7 +22,7 @@ class File extends \SplFileInfo
     
     public function getImage($type = null)
     {
-        return ($image = new Image($this->getPathname(), true))->check($type) ? $image : false;
+        return ($image = Image::open($this->getPathname(), true)) && $image->check($type) ? $image : false;
     }
 
     public function uploadTo($to)

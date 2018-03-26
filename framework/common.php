@@ -146,7 +146,7 @@ function closure_bind_getter(Closure $call, $providers = null)
         use Getter;
         public function __construct($providers) {
             if ($providers) {
-                $this->{app\env\GETTER_PROVIDERS_NAME} = $providers;
+                $this->{Config::env('GETTER_PROVIDERS_NAME')} = $providers;
             }
         }
     });
