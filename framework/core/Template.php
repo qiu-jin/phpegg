@@ -188,12 +188,18 @@ class Template
                 }
                 if (strlen($match[0]) - $ret['pos'] > 2) {
                     $end_html = substr($match[0], $ret['pos']+1);
-                    $res .= $end_tags ? self::completeEndTag($end_html, $end_tags, $end_count, $skip_num, $blank) :$end_html;
+                    if ($end_tags) {
+                        $res .= self::completeEndTag($end_html, $end_tags, $end_count, $skip_num, $blank);
+                    } else {
+                        $res .= $end_html;
+                    }
+                    
                 }
                 $pos = strlen($match[0])+$match[1];
             }
         }
-        $res .= $end_tags ? self::completeEndTag(substr($str, $pos), $end_tags, $end_count, $skip_num) : substr($str, $pos);
+        $tmp  = substr($str, $pos);
+        $res .= $end_tags ? self::completeEndTag($tmp, $end_tags, $end_count, $skip_num) : $tmp;
         return $res;
     }
     
@@ -376,7 +382,10 @@ class Template
             }
         }
         if ($quote) {
-            return ['continue' => true, 'code' => $code, 'pos' => $len, 'vars' => $vars, 'var' => $var, 'quote' => $quote];
+            return [
+                'continue' => true, 'code' => $code, 'pos' => $len, 'vars' => $vars,
+                'var' => $var, 'quote' => $quote
+            ];
         } else {
             return ['continue' => false, 'code' => $code, 'pos' => $pos, 'vars' => $vars];
         }
@@ -494,7 +503,6 @@ class Template
             $unit = self::readWord(substr($str, $i));
             $i += $unit['seek'];
             if (empty($unit['end'])) {
-                //continue;
                 if (empty($code)) {
                     return self::replaceVar($unit['code']);
                 } else {
@@ -512,14 +520,18 @@ class Template
                     return $code.' ? '.self::readUnit($arr[0], $vars). ':' .self::readUnit($arr[1], $vars);
                 case '[':
                     if (empty($unit['code'])) {
-                        if ($prev === '.' || empty($code)) throw new \Exception('read error');
+                        if ($prev === '.' || empty($code)) {
+                            throw new \Exception('read error');
+                        }
                     }
                     $pos = self::findEndPos(substr($str, $i), '[', ']');
                     $argument = self::readArgument(substr($str, $i, $pos), $vars);
-                    $i += $pos+1;
-                    if($argument['type'] === 'mixed' || $argument['type'] === 'number' || $argument['type'] === 'string') {
+                    $i += $pos + 1;
+                    if(in_array($argument['type'], ['mixed', 'number', 'string'])) {
                         if ($code) {
-                            if ($unit['code']) $code .= '[\''.$unit['code'].'\']';
+                            if ($unit['code']) {
+                                $code .= '[\''.$unit['code'].'\']';
+                            }
                             $code .= '['.$argument['value'].']';
                         } else {
                             $code = self::replaceVar($unit['code']).'['.$argument['value'].']';
@@ -539,7 +551,7 @@ class Template
                         }
                         throw new \Exception('read_unit error: '.$str);
                     }
-                    $arguments = $code ? array($code) : array();
+                    $arguments = $code ? [$code] :[];
                     $pos = self::findEndPos(substr($str, $i), '(', ')');
                     $args_str = trim(substr($str, $i, $pos));
                     if (!empty($args_str)) {
@@ -548,7 +560,7 @@ class Template
                             $arguments[] = self::readArgument($arg, $vars)['value'];
                         }
                     }
-                    $i += $pos+1;
+                    $i += $pos + 1;
                     $code = self::replaceFunction($unit['code'], $arguments);
                     $prev = '(';
                     break;
@@ -614,13 +626,17 @@ class Template
         for($i=0; $i<$len; $i++) {
             $c = $str{$i};
             if (self::isVarnameChar($c)) {
-                if ($is_end || (!$code && is_numeric($c))) throw new \Exception('read_word error: '.$str);
+                if ($is_end || (!$code && is_numeric($c))) {
+                    throw new \Exception("readWord error: $str");
+                }
                 $code .= $c;
             } else {
                 if($c === '.' || $c === '[' || $c === '(') {
-                    return array('code'=> $code, 'seek'=>$i+1, 'end'=>$c);
+                    return ['code' => $code, 'seek' => $i + 1, 'end' => $c];
                 } elseif (self::isBlankChar($c)) {
-                    if($code) $is_end = true;
+                    if ($code) {
+                        $is_end = true;
+                    }
                 } else {
                     throw new \Exception('read_word error: '.$str);
                 }
@@ -789,7 +805,12 @@ class Template
     protected static function isVarnameChar($char)
     {
         $ascii = ord($char);
-        return ($ascii === 95 || ($ascii > 47 && $ascii < 58) || ($ascii > 64 && $ascii < 91) || ($ascii > 96 && $ascii < 123));
+        return (
+            $ascii === 95
+            || ($ascii > 47 && $ascii < 58)
+            || ($ascii > 64 && $ascii < 91)
+            || ($ascii > 96 && $ascii < 123)
+        );
     }
     
     /*
