@@ -62,7 +62,7 @@ class View
         (static function($__file, $__vars) {
             extract($__vars, EXTR_SKIP);
             require $__file;
-        })(self::file($tpl), isset(self::$view->vars) ? $vars + self::$view->vars : $vars);
+        })(self::path($tpl), isset(self::$view->vars) ? $vars + self::$view->vars : $vars);
         return ob_get_clean();
     }
     
@@ -93,7 +93,7 @@ class View
     /*
      * 返回视图extends处理
      */
-    public static function extends($tpl, $self)
+    public static function extends($tpl, $self, $check = false)
     {
         if (!isset(self::$config['template'])) {
             return;
@@ -106,7 +106,7 @@ class View
         if (!is_file($file = self::getTemplateFile($path, $tpl[0] !== '/'))) {
             throw new \Exception("Template file not found: $file");
         } 
-        if (filemtime($self) < filemtime($file)) {
+        if (!$check || filemtime($self) < filemtime($file)) {
             if ($content = Template::complieExtends(
                 self::readTemplateFile(self::getTemplateFile(substr($self, 0, -4))),
                 self::readTemplateFile($file)
@@ -185,7 +185,7 @@ class View
     
     private static function readTemplateFile($file)
     {
-        if ($content = file_get_contents($tplfile)) {
+        if ($content = file_get_contents($file)) {
             return $content;
         }
         throw new \Exception("Template file read fail: $file");

@@ -4,31 +4,30 @@ namespace framework\core;
 class Template
 {
     protected static $init;
-    
+    // 
     protected static $operators             = [
         '!', '&', '|', '=', '>', '<', '+', '-', '*', '/', '%', '?', ':'
     ];
-    
+    // 
     protected static $structures            = [
         'if', 'elseif', 'else', 'each', 'for'
     ];
-    
+    // 
     protected static $struct_html_tag       = 'php';
-    
+    // 
     protected static $tag_struct_prefix     = '@';
-    
+    // 
     protected static $tag_assign_prefix     = '$';
     // 默认是否转义文本
     protected static $defalut_escape_text   = true;
     // 文本转义符号与反转义符号
     protected static $text_escape_sign      = ['&', '!'];
     // 文本插入左右边界符号
-    protected static $inter_text_sign       = ['{{', '}}'];
-    
-    protected static $view_include_method   = View::class.'::file';
-    
+    protected static $text_border_sign      = ['{{', '}}'];
+    // 
+    protected static $view_include_method   = View::class.'::path';
+    // 
     protected static $view_extends_method   = View::class.'::extends';
-    
     // 内置函数
     protected static $functions             = [
         'is'        => '("is_$1")($0)',
@@ -81,12 +80,17 @@ class Template
     
     public static function complie($str)
     {
+        $str = trim($str);
+        if ($extends = self::readExtendsTag($str)) {
+            return $extends;
+        }
         return self::textParse(self::tagParse($str));
     }
     
     public static function complieExtends($self, $parent)
     {
-        return self::textParse(self::tagParse(self::mergeExtends($self, $parent)));
+        $str = self::mergeExtends(trim($self), $parent);
+        return self::textParse(self::tagParse($str));
     }
 
     /*
@@ -95,7 +99,7 @@ class Template
     protected static function textParse($str)
     {
         $i = 1;
-        $pairs = explode(self::$inter_text_sign[0], $str);
+        $pairs = explode(self::$text_border_sign[0], $str);
         if (($count = count($pairs)) < 2) {
             return $str;
         }
@@ -110,7 +114,12 @@ class Template
             do {
                 if ($i < $count) {
                     $pair = $pairs[$i];
-                    $ret = self::readTagAttr($pair, self::$inter_text_sign[0], self::$inter_text_sign[1], $ret['continue'] ? $ret : null);
+                    $ret  = self::readTagAttr(
+                        $pair,
+                        self::$text_border_sign[0],
+                        self::$text_border_sign[1],
+                        $ret['continue'] ? $ret : null
+                    );
                     $i++;
                 } else {
                     throw new \Exception('textParse error: '.$count);
@@ -133,12 +142,7 @@ class Template
      */
     public static function tagParse($str)
     {
-        $str = trim($str);
-        $tag_regex = '<%s +name *= *"([\w|\/|-]+)" *\/>';
-        if (preg_match(sprintf("/^$tag_regex/", 'extends'), $str, $extends_match)) {
-            return '<?php if ($_f = '.self::$view_extends_memthod.'("'.$extends_match[1].'", __FILE__)) return include $_f; ?>';
-        }
-        if (preg_match_all(sprintf("/$tag_regex/", 'include'), $str, $include_matchs, PREG_OFFSET_CAPTURE)) {
+        if (preg_match_all('/<%include +name *= *"([\w|\/|-]+)" *\/>/', $str, $include_matchs, PREG_OFFSET_CAPTURE)) {
             $pos = 0;
             $tmp = '';
             foreach ($include_matchs[0] as $i => $match) {
@@ -149,55 +153,47 @@ class Template
             $str = $tmp.substr($str, $pos);
         }
         $regex = "/<(\w+) +".preg_quote(self::$tag_struct_prefix)."(".implode('|', self::$structures).").+/";
-        if (preg_match_all($regex, $str, $matchs, PREG_OFFSET_CAPTURE)) {
-            $res       = '';
-            $pos       = 0;
-            $end_tags  = [];
-            $end_count = [];
-            $skip_num  = [];
-            foreach ($matchs[0] as $i => $match) {
-                if ($pos > $match[1]) {
-                    throw new \Exception("Tag parse error");
-                }
-                $left  = substr($str, $pos, $match[1] - $pos);
-                $blank = self::readLeftBlank($left);
-                $res  .= $end_tags ? self::completeEndTag($left, $end_tags, $end_count, $skip_num) : $left;
-            
-                $ret = self::readTagAttr($match[0], $start = '<', $end = '>');
-                $tag = self::readTag($ret['code'].'>', $ret['vars']);
-                //$tag = self::readTag($str, $match[1]);
-
-                $res  .= implode(PHP_EOL.$blank, $tag['code']);
-                if ($matchs[1][$i][0] !== self::$struct_html_tag) {
-                    $res .= PHP_EOL.$blank.$tag['html'];
-                }
-                //$pos = $tag['pos'];
-            
-                if ($tag['end']) {
-                    $skip_num[] = 0;
-                    $end_tags[] = $matchs[1][$i][0];
-                    $end_count[] = $tag['count'];
-                
-                    if (substr($tag['html'], -2, 1) === '/') {
-                        $res .= PHP_EOL.$blank.str_pad('<?php ', $tag['count'], '}').' ?>';
-                    } else {
-                        $skip_num[] = 0;
-                        $end_count[] = $tag['count'];
-                        $end_tags[] = $matchs[1][$i][0];
-                    }
-                    //
-                    if (strlen($match[0]) - $ret['pos'] > 2) {
-                        $end_html = substr($match[0], $ret['pos']+1);
-                        $res .= $end_tags ? self::completeEndTag($end_html, $end_tags, $end_count, $skip_num, $blank) : $end_html;
-                    }
-                    $pos = strlen($match[0])+$match[1];
-                }
-            
-            }
-            $res .= $end_tags ? self::completeEndTag(substr($str, $pos), $end_tags, $end_count, $skip_num) : substr($str, $pos);
-        } else {
-            $res .= $str;
+        if (!preg_match_all($regex, $str, $matchs, PREG_OFFSET_CAPTURE)) {
+            return $str;
         }
+        $res       = '';
+        $pos       = 0;
+        $end_tags  = [];
+        $end_count = [];
+        $skip_num  = [];
+        foreach ($matchs[0] as $i => $match) {
+            if ($pos > $match[1]) {
+                throw new \Exception("Tag parse error");
+            }
+            $left  = substr($str, $pos, $match[1] - $pos);
+            $blank = self::readLeftBlank($left);
+            $res  .= $end_tags ? self::completeEndTag($left, $end_tags, $end_count, $skip_num) : $left;
+        
+            $ret = self::readTagAttr($match[0], $start = '<', $end = '>');
+            $tag = self::readTag($ret['code'].'>', $ret['vars']);
+            $res  .= implode(PHP_EOL.$blank, $tag['code']);
+            if ($matchs[1][$i][0] !== self::$struct_html_tag) {
+                $res .= PHP_EOL.$blank.$tag['html'];
+            }
+            if ($tag['end']) {
+                $skip_num[] = 0;
+                $end_tags[] = $matchs[1][$i][0];
+                $end_count[] = $tag['count'];
+                if (substr($tag['html'], -2, 1) === '/') {
+                    $res .= PHP_EOL.$blank.str_pad('<?php ', $tag['count'], '}').' ?>';
+                } else {
+                    $skip_num[] = 0;
+                    $end_count[] = $tag['count'];
+                    $end_tags[] = $matchs[1][$i][0];
+                }
+                if (strlen($match[0]) - $ret['pos'] > 2) {
+                    $end_html = substr($match[0], $ret['pos']+1);
+                    $res .= $end_tags ? self::completeEndTag($end_html, $end_tags, $end_count, $skip_num, $blank) :$end_html;
+                }
+                $pos = strlen($match[0])+$match[1];
+            }
+        }
+        $res .= $end_tags ? self::completeEndTag(substr($str, $pos), $end_tags, $end_count, $skip_num) : substr($str, $pos);
         return $res;
     }
     
@@ -206,38 +202,39 @@ class Template
      */
     public static function mergeExtends($self, $parent)
     {
+        $res = self::readExtendsTag($self, true).PHP_EOL;
         $s = '/<block +name *= *"(\w+)" *>/';
         $e = '</block>';
-        if (preg_match_all($s, $self, $matchs, PREG_OFFSET_CAPTURE)) {
+        if (preg_match_all($s, $self, $self_matchs, PREG_OFFSET_CAPTURE)) {
             $pos = 0;
             $sub_blocks = [];
-            foreach ($matchs[0] as $i => $match) {
+            foreach ($self_matchs[0] as $i => $match) {
                 if ($match[1] >= $pos) {
                     $pos = stripos($self, $e, $match[1]);
                     if ($pos) {
                         $start = $match[1] + strlen($match[0]);
-                        $sub_blocks[$matchs[1][$i][0]] = substr($self, $s, $pos - $s);
+                        $sub_blocks[$self_matchs[1][$i][0]] = substr($self, $start, $pos - $start);
                         continue;
                     }
                 }
                 throw new \Exception('extend_merge error');
             }
         }
-        if (preg_match_all($s, $parent, $matchs, PREG_OFFSET_CAPTURE)) {
-            $res = '';
+
+        if (preg_match_all($s, $parent, $parent_matchs, PREG_OFFSET_CAPTURE)) {
             $s_pos = 0;
             $e_pos = 0;
-            foreach ($matchs[0] as $i => $match) {
+            foreach ($parent_matchs[0] as $i => $match) {
                 if ($match[1] >= $e_pos) {
                     $res .= substr($parent, $s_pos, $match[1] - $s_pos);
                     $e_pos = stripos($parent, $e, $match[1]);
                     if ($e_pos) {
-                        $block_name = $matchs[1][$i][0];
+                        $block_name = $parent_matchs[1][$i][0];
                         if (isset($sub_blocks[$block_name])) {
                             $res .= $sub_blocks[$block_name];
                         } else {
                             $start = $match[1] + strlen($match[0]);
-                            $res .= substr($parent, $start, $epos - $start);
+                            $res .= substr($parent, $start, $e_pos - $start);
                         }
                         $s_pos = $e_pos + strlen($e);
                         continue;
@@ -248,24 +245,30 @@ class Template
             if ($s_pos < strlen($parent)) {
                 $res .= substr($parent, $s_pos);
             }
-            return $res;
+        } else {
+            $res .= $parent;
         }
-        return $parent;
+        return $res;
     }
     
+    protected static function readExtendsTag($str, $check = false)
+    {
+        if (preg_match('/^<extends +name *= *"([\w|\/|-]+)" *\/>/', $str, $extends_match)) {
+            return sprintf(
+                '<?php if ($_f = %s("%s", __FILE__, %s)) return include $_f; ?>',
+                self::$view_extends_method,
+                $extends_match[1],
+                $check ? 'true' : 'false'
+            );
+        }
+    }
     
     protected static function readTag($tag, $vars)
     {
-        //$val  = self::readTagAttr($match[0], '<', '>');
-        //$tag  = self::readTag($ret['code'].'>', $ret['vars']);
-        
         $end  = false;
         $html = '';
         $code = [];
         $has_noas_attr = false;
-        
-        //$regex = "/(".self::$struct_attr_prefix."|".self::$assign_attr_prefix.")([.\:\.\[\]])(=\\$[1-9]+)?/";
-        
         $reg = "/".self::$tag_struct_prefix."(".implode('|', self::$structures).")(=\\$[1-9])?/";
         if (preg_match_all($reg, $tag, $matchs, PREG_OFFSET_CAPTURE)) {
             $start_pos = 0;
@@ -373,7 +376,7 @@ class Template
             }
         }
         if ($quote) {
-            return ['continue' => true,  'code' => $code, 'pos' => $len, 'vars' => $vars, 'var' => $var, 'quote' => $quote];
+            return ['continue' => true, 'code' => $code, 'pos' => $len, 'vars' => $vars, 'var' => $var, 'quote' => $quote];
         } else {
             return ['continue' => false, 'code' => $code, 'pos' => $pos, 'vars' => $vars];
         }
@@ -384,7 +387,7 @@ class Template
      */
     protected static function completeEndTag($str, &$end_tags, &$end_count, &$skip_num, $blank = null)
     {
-        $code = '';
+        $res = '';
         do {
             $i = count($end_tags)-1;
             $start_tag = '<'.$end_tags[$i];
@@ -393,20 +396,20 @@ class Template
                 $start_pos = 0;
                 foreach ($matchs[0] as $match) {                    
                     $tmp = substr($str, $start_pos, $match[1] - $start_pos);
-                    $code .= $tmp;
+                    $res .= $tmp;
                     $start_pos = strlen($match[0]) + $match[1];
                     if ($match[0] === $start_tag) {
-                        $code .= $match[0];
+                        $res .= $match[0];
                         $skip_num[$i]++;
                     } else {
                         if ($skip_num[$i] > 0) {
-                            $code .= $match[0];
+                            $res .= $match[0];
                             $skip_num[$i]--;
                         } else {
                             if ($end_tags[$i] !== self::$struct_html_tag) {
-                                $code .= $match[0].PHP_EOL.($blank ? $blank : self::readLeftBlank($tmp));
+                                $res .= $match[0].PHP_EOL.($blank ? $blank : self::readLeftBlank($tmp));
                             }
-                            $code .= '<?php '.str_pad('', $end_count[$i], '}').' ?>';
+                            $res .= '<?php '.str_pad('', $end_count[$i], '}').' ?>';
                             array_pop($skip_num);
                             array_pop($end_tags);
                             array_pop($end_count);
@@ -416,11 +419,11 @@ class Template
                 }
                 $str = substr($str, $start_pos);
             } else {
-                $code .= $str;
+                $res .= $str;
                 break;
             }
         } while ($i > 0);
-        return $code;
+        return $res;
     }
     
     /*
