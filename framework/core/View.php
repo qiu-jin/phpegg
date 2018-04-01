@@ -107,18 +107,15 @@ class View
             throw new \Exception("Template file not found: $file");
         } 
         if (!$check || filemtime($self) < filemtime($file)) {
-            if ($content = Template::complieExtends(
+            $content = Template::complieExtends(
                 self::readTemplateFile(self::getTemplateFile(substr($self, 0, -4))),
                 self::readTemplateFile($file)
-            )) {
-                if (self::writeViewFile($self, $content)) {
-                    if (OPCACHE_LOADED) {
-                        opcache_compile_file($self);
-                    }
-                    return $self;
-                }
-                throw new \Exception("View file write fail: $self");
+            );
+            self::writeViewFile($self, $content);
+            if (OPCACHE_LOADED) {
+                opcache_compile_file($self);
             }
+            return $self;
         }
     }
     
@@ -131,7 +128,12 @@ class View
         $prefix  = self::$config['template']['block_view_prefix'] ?? '__';
         $phpfile = dirname($path)."/$prefix".basename($path).'.php';
         if (isset(self::$config['template'])) {
-            self::complie(self::getTemplateFile($path), $phpfile);
+            if (!is_file($tplfile = self::getTemplateFile($path))) {
+                throw new \Exception("Template file not found: $tplfile");
+            } 
+            if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
+                self::writeViewFile($phpfile, Template::complieBlock(self::readTemplateFile($tplfile)));
+            }
         }
         return $phpfile;
     }

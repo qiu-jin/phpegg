@@ -100,6 +100,12 @@ class Template
         $str = self::mergeExtends(trim($self), $parent);
         return self::textParse(self::tagParse($str));
     }
+    
+    public static function complieBlock($str)
+    {
+        self::readExtendsTag($str = trim($str));
+        return self::textParse(self::tagParse($str));
+    }
 
     /*
      * 模版语法解析
@@ -222,6 +228,7 @@ class Template
         $res = self::readExtendsTag($self, true).PHP_EOL;
         $s = '/<block +name *= *"(\w+)" *>/';
         $e = '</block>';
+        
         if (preg_match_all($s, $self, $self_matchs, PREG_OFFSET_CAPTURE)) {
             $pos = 0;
             $sub_blocks = [];
@@ -229,8 +236,9 @@ class Template
                 if ($match[1] >= $pos) {
                     $pos = stripos($self, $e, $match[1]);
                     if ($pos) {
+                        $name = $self_matchs[1][$i][0];
                         $start = $match[1] + strlen($match[0]);
-                        $sub_blocks[$self_matchs[1][$i][0]] = substr($self, $start, $pos - $start);
+                        $sub_blocks[$name] = substr($self, $start, $pos - $start);
                         continue;
                     }
                 }
@@ -240,6 +248,7 @@ class Template
         if (preg_match_all($s, $parent, $parent_matchs, PREG_OFFSET_CAPTURE)) {
             $s_pos = 0;
             $e_pos = 0;
+            $inter_regex  = '/'.implode(' *parent\(\) *', self::$config['text_border_sign']).'/';
             foreach ($parent_matchs[0] as $i => $match) {
                 if ($match[1] >= $e_pos) {
                     $res .= substr($parent, $s_pos, $match[1] - $s_pos);
@@ -247,7 +256,14 @@ class Template
                     if ($e_pos) {
                         $block_name = $parent_matchs[1][$i][0];
                         if (isset($sub_blocks[$block_name])) {
-                            $res .= $sub_blocks[$block_name];
+                            $content = $sub_blocks[$block_name];
+                            $pairs = preg_split($inter_regex, $content, 2);
+                            if (count($pairs) == 2) {
+                                $start = $match[1] + strlen($match[0]);
+                                $res  .= implode(substr($parent, $start, $e_pos - $start), $pairs);
+                            } else {
+                                $res  .= $content;
+                            }
                         } else {
                             $start = $match[1] + strlen($match[0]);
                             $res .= substr($parent, $start, $e_pos - $start);
@@ -267,9 +283,10 @@ class Template
         return $res;
     }
     
-    protected static function readExtendsTag($str, $check = false)
+    protected static function readExtendsTag(&$str, $check = false)
     {
         if (preg_match('/^<extends +name *= *"([\w|\/|-]+)" *\/>/', $str, $extends_match)) {
+            $str = substr($str, strlen($extends_match[0]));
             return sprintf(
                 '<?php if ($_f = %s("%s", __FILE__, %s)) return include $_f; ?>',
                 self::$config['view_extends_method'],
@@ -284,45 +301,47 @@ class Template
         $end  = false;
         $html = '';
         $code = [];
+        $count = 0;
         $has_noas_attr = false;
-        $assign_regex = preg_quote(self::$config['tag_assign_prefix']).'\w+';
-        $struct_regex = preg_quote(self::$config['tag_struct_prefix']).'\w+';
+        $assign_regex = preg_quote(self::$config['tag_assign_prefix']);
+        $struct_regex = preg_quote(self::$config['tag_struct_prefix']);
+        $regex = "/ +($assign_regex|$struct_regex)([a-zA-Z_]\w*)( *= *\\$([1-9]))?/";
         //$reg = "/".self::$config['tag_struct_prefix']."(".implode('|', self::$structures).")(=\\$[1-9])?/";
-        if (preg_match_all("/($assign_regex|$struct_regex)(=\\$[1-9])?/", $tag, $matchs, PREG_OFFSET_CAPTURE)) {
+        if (preg_match_all($regex, $tag, $matchs, PREG_OFFSET_CAPTURE)) {
             $start_pos = 0;
             foreach ($matchs[1] as $i => $match) {
+                //print_r($matchs);die;
                 $tmp = trim(substr($tag, $start_pos, $matchs[0][$i][1] - $start_pos));
                 if (!empty($tmp)) {
                     $html .= $tmp;
                 }
-                $attr = substr($match[0], 1);
-                if ($match[0][0] == self::$config['tag_assign_prefix']) {
-                    $value = self::readAttrValue(substr(trim($vars[$matchs[2][$i][0][2]-1]), 1, -1));
-                    $code[] = '<?php $'.$attr.' = '.self::readExp($value['code'], $value['vars'], self::$operators).' ?>';
-                    print_r($code);die;
+                $attr = $matchs[2][$i][0];
+                if ($matchs[1][$i][0] == self::$config['tag_assign_prefix']) {
+                    $value = self::readAttrValue(substr(trim($vars[$matchs[4][$i][0] - 1]), 1, -1));
+                    $code[] = '<?php $'.$attr.' = '.self::readExp($value['code'], $value['vars'], self::$operators).'; ?>';
                 } else {
-                    if ($attr === 'else') {
+                    $count++;
+                    if ($attr == 'else') {
                         $val = null;
                     } else {
-                        if (empty($matchs[2][$i][0])) {
+                        if (empty($matchs[3][$i][0])) {
                             throw new \Exception('read_tag error: '.$tag);
                         }
-                        $val = substr(trim($vars[$matchs[2][$i][0][2]-1]), 1, -1);
+                        $val = substr(trim($vars[$matchs[4][$i][0] - 1]), 1, -1);
                     }
                     $attr_ret = self::readStructure($attr, $val);
                     $code[] = '<?php '.$attr_ret['code'].' ?>';
                     if(!$end) {
                         $end = $attr_ret['end'];
                     }
-                    $start_pos = $matchs[0][$i][1] + strlen($matchs[0][$i][0]);
                 }
+                $start_pos = $matchs[0][$i][1] + strlen($matchs[0][$i][0]);
             }
             $html .= substr($tag, $start_pos);
         }
         if ($vars) {
             $html = self::restoreStrvars($html, $vars);
         }
-        $count = $i + 1;
         return compact('html', 'code', 'end', 'count');
     }
     
@@ -497,20 +516,19 @@ class Template
                         }
                     }
                 }
-                if(empty($code)) {
-                    throw new \Exception('Read each structure error: '.$ret['code']);
+                if(isset($code)) {
+                    $code = 'foreach('.$argument['value'].' as '.$code.') {';
+                    break;
                 }
-                $code = 'foreach('.$argument['value'].' as '.$code.') {';
-                break;
+                throw new \Exception('Read each structure error: '.$ret['code']);
             case 'for':
                 if (substr_count($ret['code'], ';') === 2) {
                     $for_operator = self::$operators;
                     $for_operator[] = ';';
                     $code = 'for ('.self::readExp($ret['code'], $ret['vars'], $for_operator).') {';
-                } else {
-                    throw new \Exception('Read for structure error: '.$ret['code']);
+                    break;
                 }
-                break;
+                throw new \Exception('Read for structure error: '.$ret['code']);
             default:
                 throw new \Exception('Read for structure error: '.$structure);
         }
