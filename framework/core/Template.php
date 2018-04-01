@@ -88,22 +88,24 @@ class Template
     
     public static function complie($str)
     {
-        $str = trim($str);
-        if ($extends = self::readExtendsTag($str)) {
-            return $extends;
-        }
-        return self::textParse(self::tagParse($str));
-    }
-    
-    public static function complieExtends($self, $parent)
-    {
-        $str = self::mergeExtends(trim($self), $parent);
-        return self::textParse(self::tagParse($str));
+        return self::textParse(self::tagParse(trim($str)));
     }
     
     public static function complieBlock($str)
     {
-        self::readExtendsTag($str = trim($str));
+        self::readExtends($str = trim($str));
+        return self::textParse(self::tagParse($str));
+    }
+    /*
+    public static function complieInline($self, $contents)
+    {
+        $str = self::mergeInline(trim($str), $contents);
+        return self::textParse(self::tagParse($str));
+    }
+    */
+    public static function complieExtends($self, $parent)
+    {
+        $str = self::mergeExtends(trim($self), $parent);
         return self::textParse(self::tagParse($str));
     }
 
@@ -145,7 +147,7 @@ class Template
                 $res .= '<?php echo '.self::readUnit($ret['code'], $ret['vars']).'; ?>';
             }
             if(strlen($pair) - $ret['pos'] > 1) {
-                $res .= substr($pair, $ret['pos']+1);
+                $res .= substr($pair, $ret['pos'] + 1);
             }
         }
         return $res;
@@ -156,7 +158,10 @@ class Template
      */
     public static function tagParse($str)
     {
-        if (preg_match_all('/<%include +name *= *"([\w|\/|-]+)" *\/>/', $str, $include_matchs, PREG_OFFSET_CAPTURE)) {
+        if (($content = self::readExtends($str))/* || ($content = self::readInline($str))*/) {
+            return $content;
+        }
+        if (preg_match_all('/<include +name *= *"([\w|\/|-]+)" *\/>/', $str, $include_matchs, PREG_OFFSET_CAPTURE)) {
             $pos = 0;
             $tmp = '';
             foreach ($include_matchs[0] as $i => $match) {
@@ -225,10 +230,9 @@ class Template
      */
     public static function mergeExtends($self, $parent)
     {
-        $res = self::readExtendsTag($self, true).PHP_EOL;
+        $res = self::readExtends($self, true).PHP_EOL;
         $s = '/<block +name *= *"(\w+)" *>/';
         $e = '</block>';
-        
         if (preg_match_all($s, $self, $self_matchs, PREG_OFFSET_CAPTURE)) {
             $pos = 0;
             $sub_blocks = [];
@@ -283,14 +287,43 @@ class Template
         return $res;
     }
     
-    protected static function readExtendsTag(&$str, $check = false)
+    /*
+     * 合并布局模版
+     */
+    public static function mergeInline($self, $contents)
     {
-        if (preg_match('/^<extends +name *= *"([\w|\/|-]+)" *\/>/', $str, $extends_match)) {
-            $str = substr($str, strlen($extends_match[0]));
+        if (preg_match_all('/^<inline +name *= *"([\w|\/|-]+)" *\/>/', $self, $matchs, PREG_OFFSET_CAPTURE)) {
+            $pos = 0;
+            $res = '';
+            foreach ($matchs[0] as $i => $match) {
+                $res .= substr($str, $pos, $match[1] - $pos);
+                $res .= $contents[$matchs[1][$i][0]];
+                $pos = strlen($match[0]) + $match[1];
+            }
+            return $res.substr($self, $pos);
+        }
+    }
+    
+    protected static function readInline($str, $check = false)
+    {
+        if (preg_match_all('/^<inline +name *= *"([\w|\/|-]+)" *\/>/', $str, $matchs)) {
+            return sprintf(
+                '<?php if ($_f = %s(["%s"], __FILE__, %s)) return include $_f; ?>',
+                self::$config['view_inline_method'],
+                implode('","', $matchs[1]),
+                $check ? 'true' : 'false'
+            );
+        }
+    }
+    
+    protected static function readExtends(&$str, $check = false)
+    {
+        if (preg_match('/^<extends +name *= *"([\w|\/|-]+)" *\/>/', $str, $match)) {
+            $str = substr($str, strlen($match[0]));
             return sprintf(
                 '<?php if ($_f = %s("%s", __FILE__, %s)) return include $_f; ?>',
                 self::$config['view_extends_method'],
-                $extends_match[1],
+                $match[1],
                 $check ? 'true' : 'false'
             );
         }
