@@ -7,29 +7,35 @@ class Template
 {
     protected static $init;
     // 
-    protected static $operators     = [
+    protected static $operators = [
         '!', '&', '|', '=', '>', '<', '+', '-', '*', '/', '%', '?', ':'
     ];
-    // 
-    protected static $structures    = [
-        'if', 'elseif', 'else', 'each', 'for'
-    ];
-    
+    // 配置
     protected static $config    = [
         // 
-        'struct_tag_name'       => 'php',
+        'blank_tag'             => 'blank',
+        // 
+        'block_tag'             => 'block',
+        // 
+        'include_tag'           => 'include',
+        // 
+        'extends_tag'           => 'extends',
         // 结构语句前缀符
-        'tag_struct_prefix'     => '@',
+        'struct_attr_prefix'    => '@',
         // 赋值语句前缀符
-        'tag_assign_prefix'     => '$',
+        'assign_attr_prefix'    => '$',
         // 默认是否转义文本
-        'defalut_escape_text'   => true,
+        'auto_escape_text'      => true,
         // 文本转义符号与反转义符号
-        'text_escape_sign'      => ['&', '!'],
+        'text_escape_sign'      => ['#', '!'],
         // 文本插入左右边界符号
         'text_border_sign'      => ['{{', '}}'],
+        // 父模版块标签
+        'parent_block_sign'     => '@parent',
+        // filter方法名
+        'view_filter_method'    => View::class.'::filter',
         // include方法名
-        'view_include_method'   =>  View::class.'::path',
+        'view_include_method'   => View::class.'::path',
         // extends方法名
         'view_extends_method'   => View::class.'::extends',
     ];
@@ -121,7 +127,7 @@ class Template
         }
         $res = $pairs[0];
         while ($i < $count) {
-            $escape = self::$config['defalut_escape_text'];
+            $escape = self::$config['auto_escape_text'];
             if (in_array($c = $pairs[$i][0], self::$config['text_escape_sign'])) {
                 $pairs[$i] = substr($pairs[$i], 1);
                 $escape = !array_search($c, self::$config['text_escape_sign']);
@@ -158,24 +164,22 @@ class Template
      */
     public static function tagParse($str)
     {
-        if (($content = self::readExtends($str))/* || ($content = self::readInline($str))*/) {
-            return $content;
+        if ($res = self::readExtends($str)) {
+            return $res;
         }
-        if (preg_match_all('/<include +name *= *"([\w|\/|-]+)" *\/>/', $str, $include_matchs, PREG_OFFSET_CAPTURE)) {
+        $include_regex = '/<'.self::$config['include_tag'].' +name *= *"([\w|\/|-]+)" *\/>/';
+        if (preg_match_all($include_regex, $str, $include_matchs, PREG_OFFSET_CAPTURE)) {
             $pos = 0;
             $tmp = '';
             foreach ($include_matchs[0] as $i => $match) {
                 $tmp .= substr($str, $pos, $match[1] - $pos);
-                $tmp .= '<?php include '
-                     .self::$config['view_include_method']
-                     .'("'.$include_matchs[1][$i][0].'", __DIR__); ?>';
+                $tmp .= '<?php include '.self::$config['view_include_method'].'("'.$include_matchs[1][$i][0].'"); ?>';
                 $pos = strlen($match[0]) + $match[1];
             }
             $str = $tmp.substr($str, $pos);
         }
-        $assign_regex = preg_quote(self::$config['tag_assign_prefix']).'\w+';
-        $struct_regex = preg_quote(self::$config['tag_struct_prefix']).'\w+';
-        //$regex = "/<(\w+) +".preg_quote(self::$config['tag_struct_prefix'])."(".implode('|', self::$structures).").+/";
+        $assign_regex = preg_quote(self::$config['assign_attr_prefix']).'\w+';
+        $struct_regex = preg_quote(self::$config['struct_attr_prefix']).'\w+';
         if (!preg_match_all("/<(\w+) +($assign_regex|$struct_regex).+/", $str, $matchs, PREG_OFFSET_CAPTURE)) {
             return $str;
         }
@@ -194,7 +198,7 @@ class Template
             $ret = self::readAttrValue($match[0], $start = '<', $end = '>');
             $tag = self::readTag($ret['code'].'>', $ret['vars']);
             $res  .= implode(PHP_EOL.$blank, $tag['code']);
-            if ($matchs[1][$i][0] !== self::$config['struct_tag_name']) {
+            if ($matchs[1][$i][0] !== self::$config['blank_tag']) {
                 $res .= PHP_EOL.$blank.$tag['html'];
             }
             if ($tag['end']) {
@@ -217,7 +221,7 @@ class Template
                     }
                     
                 }
-                $pos = strlen($match[0])+$match[1];
+                $pos = strlen($match[0]) + $match[1];
             }
         }
         $tmp  = substr($str, $pos);
@@ -226,19 +230,35 @@ class Template
     }
     
     /*
+     * readExtends
+     */
+    protected static function readExtends(&$str, $check = false)
+    {
+        if (preg_match('/^<'.self::$config['extends_tag'].' +name *= *"([\w|\/|-]+)" *\/>/', $str, $match)) {
+            $str = substr($str, strlen($match[0]));
+            return sprintf(
+                '<?php if (%s("%s", __FILE__, %s)) return include __FILE__; ?>',
+                self::$config['view_extends_method'],
+                $match[1],
+                $check ? 'true' : 'false'
+            );
+        }
+    }
+    
+    /*
      * 合并布局模版
      */
     public static function mergeExtends($self, $parent)
     {
         $res = self::readExtends($self, true).PHP_EOL;
-        $s = '/<block +name *= *"(\w+)" *>/';
-        $e = '</block>';
-        if (preg_match_all($s, $self, $self_matchs, PREG_OFFSET_CAPTURE)) {
+        $block_regex = '/<'.self::$config['block_tag'].' +name *= *"(\w+)" *>/';
+        $block_end   = '</'.self::$config['block_tag'].'>';
+        if (preg_match_all($block_regex, $self, $self_matchs, PREG_OFFSET_CAPTURE)) {
             $pos = 0;
             $sub_blocks = [];
             foreach ($self_matchs[0] as $i => $match) {
                 if ($match[1] >= $pos) {
-                    $pos = stripos($self, $e, $match[1]);
+                    $pos = stripos($self, $block_end, $match[1]);
                     if ($pos) {
                         $name = $self_matchs[1][$i][0];
                         $start = $match[1] + strlen($match[0]);
@@ -249,19 +269,19 @@ class Template
                 throw new \Exception('extend_merge error');
             }
         }
-        if (preg_match_all($s, $parent, $parent_matchs, PREG_OFFSET_CAPTURE)) {
+        if (preg_match_all($block_regex, $parent, $parent_matchs, PREG_OFFSET_CAPTURE)) {
             $s_pos = 0;
             $e_pos = 0;
-            $inter_regex  = '/'.implode(' *parent\(\) *', self::$config['text_border_sign']).'/';
+            $regex  = '/'.implode(' *'.self::$config['parent_block_sign'].' *', self::$config['text_border_sign']).'/';
             foreach ($parent_matchs[0] as $i => $match) {
                 if ($match[1] >= $e_pos) {
                     $res .= substr($parent, $s_pos, $match[1] - $s_pos);
-                    $e_pos = stripos($parent, $e, $match[1]);
+                    $e_pos = stripos($parent, $block_end, $match[1]);
                     if ($e_pos) {
                         $block_name = $parent_matchs[1][$i][0];
                         if (isset($sub_blocks[$block_name])) {
                             $content = $sub_blocks[$block_name];
-                            $pairs = preg_split($inter_regex, $content, 2);
+                            $pairs = preg_split($regex, $content, 2);
                             if (count($pairs) == 2) {
                                 $start = $match[1] + strlen($match[0]);
                                 $res  .= implode(substr($parent, $start, $e_pos - $start), $pairs);
@@ -272,7 +292,7 @@ class Template
                             $start = $match[1] + strlen($match[0]);
                             $res .= substr($parent, $start, $e_pos - $start);
                         }
-                        $s_pos = $e_pos + strlen($e);
+                        $s_pos = $e_pos + strlen($block_end);
                         continue;
                     }
                 }
@@ -290,6 +310,7 @@ class Template
     /*
      * 合并布局模版
      */
+    /*
     public static function mergeInline($self, $contents)
     {
         if (preg_match_all('/^<inline +name *= *"([\w|\/|-]+)" *\/>/', $self, $matchs, PREG_OFFSET_CAPTURE)) {
@@ -315,19 +336,7 @@ class Template
             );
         }
     }
-    
-    protected static function readExtends(&$str, $check = false)
-    {
-        if (preg_match('/^<extends +name *= *"([\w|\/|-]+)" *\/>/', $str, $match)) {
-            $str = substr($str, strlen($match[0]));
-            return sprintf(
-                '<?php if ($_f = %s("%s", __FILE__, %s)) return include $_f; ?>',
-                self::$config['view_extends_method'],
-                $match[1],
-                $check ? 'true' : 'false'
-            );
-        }
-    }
+    */
     
     protected static function readTag($tag, $vars)
     {
@@ -336,20 +345,18 @@ class Template
         $code = [];
         $count = 0;
         $has_noas_attr = false;
-        $assign_regex = preg_quote(self::$config['tag_assign_prefix']);
-        $struct_regex = preg_quote(self::$config['tag_struct_prefix']);
+        $assign_regex = preg_quote(self::$config['assign_attr_prefix']);
+        $struct_regex = preg_quote(self::$config['struct_attr_prefix']);
         $regex = "/ +($assign_regex|$struct_regex)([a-zA-Z_]\w*)( *= *\\$([1-9]))?/";
-        //$reg = "/".self::$config['tag_struct_prefix']."(".implode('|', self::$structures).")(=\\$[1-9])?/";
         if (preg_match_all($regex, $tag, $matchs, PREG_OFFSET_CAPTURE)) {
             $start_pos = 0;
             foreach ($matchs[1] as $i => $match) {
-                //print_r($matchs);die;
                 $tmp = trim(substr($tag, $start_pos, $matchs[0][$i][1] - $start_pos));
                 if (!empty($tmp)) {
                     $html .= $tmp;
                 }
                 $attr = $matchs[2][$i][0];
-                if ($matchs[1][$i][0] == self::$config['tag_assign_prefix']) {
+                if ($matchs[1][$i][0] == self::$config['assign_attr_prefix']) {
                     $value = self::readAttrValue(substr(trim($vars[$matchs[4][$i][0] - 1]), 1, -1));
                     $code[] = '<?php $'.$attr.' = '.self::readExp($value['code'], $value['vars'], self::$operators).'; ?>';
                 } else {
@@ -358,7 +365,7 @@ class Template
                         $val = null;
                     } else {
                         if (empty($matchs[3][$i][0])) {
-                            throw new \Exception('read_tag error: '.$tag);
+                            throw new \Exception("readTag error: $tag");
                         }
                         $val = substr(trim($vars[$matchs[4][$i][0] - 1]), 1, -1);
                     }
@@ -485,7 +492,7 @@ class Template
                             $res .= $match[0];
                             $skip_num[$i]--;
                         } else {
-                            if ($end_tags[$i] !== self::$config['struct_tag_name']) {
+                            if ($end_tags[$i] !== self::$config['blank_tag']) {
                                 $res .= $match[0].PHP_EOL.($blank ? $blank : self::readLeftBlank($tmp));
                             }
                             $res .= '<?php '.str_pad('', $end_count[$i], '}').' ?>';
@@ -622,7 +629,7 @@ class Template
                     break;
                 case '(':
                     if (empty($unit['code'])) {
-                        if (empty($code) && $str{$len-1} === ')') {
+                        if (empty($code) && $str[$len - 1] === ')') {
                             $argument = self::readArgument(substr($str, $i, -1), $vars);
                             if ($argument['type'] === 'string') {
                                 return $argument['value'];
@@ -650,16 +657,17 @@ class Template
                     if (empty($code)) {
                         $code = self::replaceVar($unit['code']);
                     } elseif (!empty($unit['code'])){
-                        $code .= '[\''.$unit['code'].'\']';
+                        $code .= '[\''.$unit['code'].'\']'; 
                     }
                     $prev = '.';
                     break;
-                case '':
+                case '|':
                     if (empty($code)) {
                         return self::replaceVar($unit['code']);
                     } else {
                         return $code.'[\''.$unit['code'].'\']';
                     }
+                    break;
             }
         }
         return $code;
@@ -780,7 +788,7 @@ class Template
     protected static function readLeftBlank($str)
     {
         $blank = '';
-        $i = strlen($str)-1;
+        $i = strlen($str) - 1;
         while ($i >= 0) {
             if (isset($str[$i])) {
                if (self::isBlankChar($str[$i])) {
@@ -817,7 +825,7 @@ class Template
                 return self::$functions[$name];
             }
         }
-        throw new \Exception("replaceFunction: $name");
+        return 'call_user_func('.self::$config['view_filter_method']."('$name'), ".implode(',', $args).')';
     }
 
     
@@ -908,3 +916,4 @@ class Template
         return false;
     }
 }
+Template::init();

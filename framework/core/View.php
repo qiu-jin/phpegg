@@ -69,54 +69,18 @@ class View
     /*
      * 返回视图文件路径
      */
-    public static function path($tpl, $dir = null)
+    public static function path($tpl)
     {
-        if ($dir === null || $tpl[0] === '/') {
-            $is_relative_path = false;
-            $path = self::$config['dir'].$tpl;
-        } else {
-            $is_relative_path = true;
-            $path = "$dir/$tpl";
-        }
-        $phpfile = "$path.php";
+        $phpfile = self::$config['dir']."$tpl.php";
         if (isset(self::$config['template'])) {
-            if (!is_file($tplfile = self::getTemplateFile($path, $tpl[0] !== '/'))) {
+            if (!is_file($tplfile = self::getTemplate($tpl))) {
                 throw new \Exception("Template file not found: $tplfile");
             } 
             if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
-                self::writeViewFile($phpfile, Template::complie(self::readTemplateFile($tplfile)));
+                self::writeView($phpfile, Template::complie(self::readTemplate($tplfile)));
             }
         }
         return $phpfile;
-    }
-
-    /*
-     * 返回视图extends处理
-     */
-    public static function extends($tpl, $self, $check = false)
-    {
-        if (!isset(self::$config['template'])) {
-            return;
-        }
-        if ($tpl[0] === '/') {
-            $path = self::$config['dir'].$tpl;
-        } else {
-            $path = dirname($self).'/'.$tpl;
-        }
-        if (!is_file($file = self::getTemplateFile($path, $tpl[0] !== '/'))) {
-            throw new \Exception("Template file not found: $file");
-        } 
-        if (!$check || filemtime($self) < filemtime($file)) {
-            $content = Template::complieExtends(
-                self::readTemplateFile(self::getTemplateFile(substr($self, 0, -4))),
-                self::readTemplateFile($file)
-            );
-            self::writeViewFile($self, $content);
-            if (OPCACHE_LOADED) {
-                opcache_compile_file($self);
-            }
-            return $self;
-        }
     }
     
     /*
@@ -128,14 +92,38 @@ class View
         $prefix  = self::$config['template']['block_view_prefix'] ?? '__';
         $phpfile = dirname($path)."/$prefix".basename($path).'.php';
         if (isset(self::$config['template'])) {
-            if (!is_file($tplfile = self::getTemplateFile($path))) {
+            if (!is_file($tplfile = self::getTemplate($path))) {
                 throw new \Exception("Template file not found: $tplfile");
             } 
             if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
-                self::writeViewFile($phpfile, Template::complieBlock(self::readTemplateFile($tplfile)));
+                self::writeView($phpfile, Template::complieBlock(self::readTemplate($tplfile)));
             }
         }
         return $phpfile;
+    }
+    
+    /*
+     * 返回视图extends处理
+     */
+    public static function extends($tpl, $self, $check = false)
+    {
+        if (!isset(self::$config['template'])) {
+            return;
+        }
+        if (!is_file($tplfile = self::getTemplate($tpl))) {
+            throw new \Exception("Template file not found: $tplfile");
+        } 
+        if (!$check || filemtime($self) < filemtime($tplfile)) {
+            $content = Template::complieExtends(
+                self::readTemplate(self::getTemplateFromView($self)),
+                self::readTemplate($tplfile)
+            );
+            self::writeViewFile($self, $content);
+            if (OPCACHE_LOADED) {
+                opcache_compile_file($self);
+            }
+            return true;
+        }
     }
 
     /*
@@ -171,21 +159,28 @@ class View
         throw new \Exception('Call to undefined method '.__CLASS__."::$method");
     }
 
-    public static function getTemplateFile($path, $is_relative_path = false)
+    public static function getTemplate($tpl)
     {
         $ext = self::$config['template']['ext'] ?? '.htm';
         if (empty(self::$config['template']['dir'])) {
-            return $path.$ext;
+            return self::$config['dir'].$tpl.$ext;
         } else {
-            if ($is_relative_path) {
-                return self::$config['template']['dir'].$tpl.$ext;
-            } else {
-                return self::$config['template']['dir'].substr($path, strlen(self::$config['dir']) + 1).$ext;
-            }
+            return self::$config['template']['dir'].$tpl.$ext;
         }
     }
     
-    private static function readTemplateFile($file)
+    public static function getTemplateFromView($file)
+    {
+        $ext = self::$config['template']['ext'] ?? '.htm';
+        $path = substr($file, 0, strrpos($file, '.'));
+        if (empty(self::$config['template']['dir'])) {
+            return $path.$ext;
+        } else {
+            return self::$config['template']['dir'].substr($path, strlen(self::$config['dir'])).$ext;
+        }
+    }
+    
+    private static function readTemplate($file)
     {
         if ($content = file_get_contents($file)) {
             return $content;
@@ -193,7 +188,7 @@ class View
         throw new \Exception("Template file read fail: $file");
     }
     
-    private static function writeViewFile($file, $content)
+    private static function writeView($file, $content)
     {
         if (is_dir($dir = dirname($file)) || mkdir($dir, 0777, true)) {
             if (file_put_contents($file, $content)) {
