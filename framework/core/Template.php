@@ -227,8 +227,8 @@ class Template
             }
             $left  = substr($str, $pos, $match[1] - $pos);
             $blank = self::readLeftBlank($left);
-            $res  .= $end_tags ? self::completeEndTag($left, $end) : $left;
-            $ret   = self::readAttrValue($match[0], $start = '<', $end = '>');
+            $res  .= $end ? self::completeEndTag($left, $end) : $left;
+            $ret   = self::readAttrValue($match[0], '<', '>');
             $tag   = self::readTag($ret['code'].'>', $ret['vars']);
             $res  .= implode(PHP_EOL.$blank, $tag['code']);
             if ($matchs[1][$i][0] !== self::$config['blank_tag']) {
@@ -246,7 +246,7 @@ class Template
                 }
                 if (strlen($match[0]) - $ret['pos'] > 2) {
                     $end_html = substr($match[0], $ret['pos'] + 1);
-                    if ($end_tags) {
+                    if ($end) {
                         $res .= self::completeEndTag($end_html, $end, $blank);
                     } else {
                         $res .= $end_html;
@@ -257,7 +257,7 @@ class Template
             }
         }
         $tmp = substr($str, $pos);
-        $res .= $end_tags ? self::completeEndTag($tmp, $end) : $tmp;
+        $res .= $end ? self::completeEndTag($tmp, $end) : $tmp;
         return $res;
     }
     
@@ -508,7 +508,7 @@ class Template
         $res = '';
         do {
             $i = count($end) - 1;
-            $tag = $end['tag'][$i];
+            $tag = $end[$i]['tag'];
             if (preg_match_all('/(<'.$tag.'|<\/'.$tag.'>)/', $str, $matchs, PREG_OFFSET_CAPTURE)) {
                 $pos = 0;
                 foreach ($matchs[0] as $match) {                    
