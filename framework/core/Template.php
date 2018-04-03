@@ -7,9 +7,7 @@ class Template
 {
     protected static $init;
     // 
-    protected static $operators = [
-        '!', '&', '|', '=', '>', '<', '+', '-', '*', '/', '%', '?', ':'
-    ];
+    protected static $operators;
     // 配置
     protected static $config    = [
         // 空标签
@@ -236,7 +234,7 @@ class Template
             }
             if ($tag['end']) {
                 if (substr($tag['html'], -2, 1) === '/') {
-                    $res .= PHP_EOL.$blank.'<?php '.str_pad('', $tag['count'], '}').' ?>';
+                    $res .= PHP_EOL.$blank.'<?php '.str_repeat('}', $tag['count']).' ?>';
                 } else {
                     $end[] = [
                         'num'   => 0,
@@ -396,16 +394,13 @@ class Template
                     if ($attr == 'else') {
                         $val = null;
                     } else {
+                        $end = true;
                         if (empty($matchs[3][$i][0])) {
                             throw new \Exception("readTag error: $tag");
                         }
                         $val = substr(trim($vars[$matchs[4][$i][0] - 1]), 1, -1);
                     }
-                    $attr_ret = self::readStructure($attr, $val);
-                    $code[] = '<?php '.$attr_ret['code'].' ?>';
-                    if(!$end) {
-                        $end = $attr_ret['end'];
-                    }
+                    $code[] = '<?php '.self::readStruct($attr, $val).' ?>';
                 }
                 $start_pos = $matchs[0][$i][1] + strlen($matchs[0][$i][0]);
             }
@@ -524,9 +519,9 @@ class Template
                             $end[$i]['num']--;
                         } else {
                             if ($tag !== self::$config['blank_tag']) {
-                                $res .= $match[0].PHP_EOL.($blank ? $blank : self::readLeftBlank($tmp));
+                                $res .= $match[0].PHP_EOL.($blank ?: self::readLeftBlank($tmp));
                             }
-                            $res .= '<?php '.str_pad('', $end[$i]['count'], '}').' ?>';
+                            $res .= '<?php '.str_repeat('}', $end[$i]['count']).' ?>';
                             array_pop($end);
                             break;
                         }
@@ -544,27 +539,24 @@ class Template
     /*
      * 读取语句结构
      */
-    protected static function readStructure($structure, $val = null)
+    protected static function readStruct($struct, $val = null)
     {
-        $end = true;
-        $code = '';
-        if ($val) $ret = self::readAttrValue($val);
-        switch ($structure) {
+        if ($val) {
+            $attr = self::readAttrValue($val);
+        }
+        switch ($struct) {
             case 'if':
-                $code = 'if ('.self::readExp($ret['code'], $ret['vars'], self::$operators).') {';
-                break;
+                return 'if ('.self::readExp($attr['code'], $attr['vars']).') {';
             case 'elseif':
-                $code = 'elseif ('.self::readExp($ret['code'], $ret['vars'], self::$operators).') {';
-                break;
+                return 'elseif ('.self::readExp($attr['code'], $attr['vars']).') {';
             case 'else':
-                $code = 'else {';
-                break;
+                return 'else {';
             case 'each':
-                $pairs = explode(' in ', $ret['code']);
+                $arr = explode(' in ', $attr['code']);
                 if (count($pairs) == 2) {
-                    $argument = self::readArgument($pairs[1], $ret['vars']);
-                    if ($argument['type'] === 'mixed') {
-                        $kv = explode(':', $pairs[0]);
+                    $arg = self::readArgument($arr[1], $attr['vars']);
+                    if ($arg['type'] === 'mixed') {
+                        $kv = explode(':', $arr[0]);
                         $ct = count($kv);
                         if ($ct == 1) {
                             $code = '$'.$kv[0];
@@ -586,22 +578,19 @@ class Template
                     }
                 }
                 if(isset($code)) {
-                    $code = 'foreach('.$argument['value'].' as '.$code.') {';
-                    break;
+                    return 'foreach('.$arg['value'].' as '.$code.') {';
                 }
-                throw new \Exception('Read each structure error: '.$ret['code']);
+                throw new \Exception("Read each struct error: $struct");
             case 'for':
-                if (substr_count($ret['code'], ';') === 2) {
-                    $for_operator = self::$operators;
-                    $for_operator[] = ';';
-                    $code = 'for ('.self::readExp($ret['code'], $ret['vars'], $for_operator).') {';
-                    break;
+                if (count($arr = explode(';', $attr['code'])) > 2) {
+                    foreach($arr as $v) {
+                        $ret[] = self::readExp($v, $attr['vars']);
+                    }
+                    return 'for ('.implode(';', $ret).') {';
                 }
-                throw new \Exception('Read for structure error: '.$ret['code']);
-            default:
-                throw new \Exception('Read for structure error: '.$structure);
+                throw new \Exception("Read for struct error: $struct");
         }
-        return ['code' => $code, 'end' => $end];
+        throw new \Exception("Read struct error: $struct");
     }
     
     
@@ -706,11 +695,11 @@ class Template
     /*
      * 读取表达式
      */
-    protected static function readExp($str, $vars, $exp)
+    protected static function readExp($str, $vars)
     {
-        $exp = array_map(function ($v) {
+        $exp = self::$operators ?? self::$operators = array_map(function ($v) {
             return preg_quote($v);
-        } , $exp);
+        } , ['!', '&', '|', '=', '>', '<', '+', '-', '*', '/', '%', '?', ':']);
         if (preg_match_all('#('.implode('|', $exp).')#', $str, $matchs, PREG_OFFSET_CAPTURE)) {
             $code = '';
             $start_pos = 0;
