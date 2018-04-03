@@ -12,13 +12,15 @@ class Template
     ];
     // 配置
     protected static $config    = [
-        // 
-        'blank_tag'             => 'blank',
-        // 
+        // 空标签
+        'blank_tag'             => 'php',
+        // 块标签
         'block_tag'             => 'block',
-        // 
+        // 原生标签
+        'verbatim_tag'          => 'verbatim',
+        // 引用标签
         'include_tag'           => 'include',
-        // 
+        // 继承标签
         'extends_tag'           => 'extends',
         // 结构语句前缀符
         'struct_attr_prefix'    => '@',
@@ -32,8 +34,6 @@ class Template
         'text_border_sign'      => ['{{', '}}'],
         // 父模版块标签
         'parent_block_sign'     => '@parent',
-        // filter方法名
-        'view_filter_method'    => View::class.'::filter',
         // include方法名
         'view_include_method'   => View::class.'::path',
         // extends方法名
@@ -41,40 +41,75 @@ class Template
     ];
     // 内置函数
     protected static $functions = [
+        // 类型判断
         'is'        => '("is_$1")($0)',
+        // 是否为空
         'has'       => 'isset($0)',
+        // 默认值
         'default'   => '$0 ?? $1',
-        
+        // 转为字符串
         'str'       => 'strval($0)',
+        // 转为数字
         'num'       => '($0+0)',
+        // 字符串拼接
+        'concat'    => '$0.$1',
+        // 字符串拼接
+        'sprintf'   => 'sprintf($0, $1, ...)',
+        // 字符串替换
         'replace'   => 'str_replace($1, $2, $0)',
+        // 字符串截取
         'substr'    => 'substr($0, $1, $2)',
+        // 字符串长度
         'length'    => 'strlen($0)',
-        'count'     => 'count($0)',
+        // 字符串大写
         'lower'     => 'strtolower($0)',
+        // 字符串小写
         'upper'     => 'strtoupper($0)',
+        // 字符串首字母大写
         'ucfirst'   => 'ucfirst($0)',
-        'trim'      => 'trim($0)',
+        // 字符串剔除两端空白
+        'trim'      => 'trim($0, ...)',
+        // 字符串中字符位置
         'index'     => 'strpos($1, $0)',
+        // 字符串中字符
         'char'      => '$0[$1]',
+        // 字符串HTML转义
         'escape'    => 'htmlspecialchars($0)',
+        // 字符串HTML反转义
         'unescape'  => 'htmlspecialchars_decode($0)',
+        // 字符串URL转义
         'urlencode' => 'urlencode($0)',
+        // 字符串URL反转义
         'urldecode' => 'urldecode($0)',
-
+        // 数组转为JSON
+        'jsonencode'=> 'jsonencode($0)',
+        // JSON转为数组
+        'jsondenode'=> 'jsondenode($0)',
+        // 数组长度
+        'count'     => 'count($0)',
+        // 字符串分割为数组
         'split'     => 'explode($1, $0)',
+        // 数组连接成字符串
         'join'      => 'implode($1, $0)',
+        // 获取数组keys
         'keys'      => 'array_keys($0)',
+        // 获取数组values
         'values'    => 'array_values($0)',
-        
+        // 数字绝对值
         'abs'       => 'abs($0)',
-        'floor'     => 'floor($0)',
-        'round'     => 'round($0)',
+        // 数字向上取整
         'ceil'      => 'ceil($0)',
+        // 数字向下取整
+        'floor'     => 'floor($0)',
+        // 数字四舍五入
+        'round'     => 'round($0)',
+        // 数字随机值
         'rand'      => 'rand($0, $1)',
+        // 数字格式化
         'number'    => 'number_format($0)',
-    
+        // 时间戳
         'time'      => 'time()',
+        // 时间格式化
         'date'      => 'date($1, $0)',
     ];
     
@@ -183,39 +218,36 @@ class Template
         if (!preg_match_all("/<(\w+) +($assign_regex|$struct_regex).+/", $str, $matchs, PREG_OFFSET_CAPTURE)) {
             return $str;
         }
-        $res       = '';
-        $pos       = 0;
-        $end_tags  = [];
-        $end_count = [];
-        $skip_num  = [];
+        $res = '';
+        $pos = 0;
+        $end = [];
         foreach ($matchs[0] as $i => $match) {
             if ($pos > $match[1]) {
                 throw new \Exception("Tag parse error");
             }
             $left  = substr($str, $pos, $match[1] - $pos);
             $blank = self::readLeftBlank($left);
-            $res  .= $end_tags ? self::completeEndTag($left, $end_tags, $end_count, $skip_num) : $left;
-            $ret = self::readAttrValue($match[0], $start = '<', $end = '>');
-            $tag = self::readTag($ret['code'].'>', $ret['vars']);
+            $res  .= $end_tags ? self::completeEndTag($left, $end) : $left;
+            $ret   = self::readAttrValue($match[0], $start = '<', $end = '>');
+            $tag   = self::readTag($ret['code'].'>', $ret['vars']);
             $res  .= implode(PHP_EOL.$blank, $tag['code']);
             if ($matchs[1][$i][0] !== self::$config['blank_tag']) {
                 $res .= PHP_EOL.$blank.$tag['html'];
             }
             if ($tag['end']) {
-                $skip_num[] = 0;
-                $end_tags[] = $matchs[1][$i][0];
-                $end_count[] = $tag['count'];
                 if (substr($tag['html'], -2, 1) === '/') {
-                    $res .= PHP_EOL.$blank.str_pad('<?php ', $tag['count'], '}').' ?>';
+                    $res .= PHP_EOL.$blank.'<?php '.str_pad('', $tag['count'], '}').' ?>';
                 } else {
-                    $skip_num[] = 0;
-                    $end_count[] = $tag['count'];
-                    $end_tags[] = $matchs[1][$i][0];
+                    $end[] = [
+                        'num'   => 0,
+                        'count' => $tag['count'],
+                        'tag'   => $matchs[1][$i][0]
+                    ];
                 }
                 if (strlen($match[0]) - $ret['pos'] > 2) {
-                    $end_html = substr($match[0], $ret['pos']+1);
+                    $end_html = substr($match[0], $ret['pos'] + 1);
                     if ($end_tags) {
-                        $res .= self::completeEndTag($end_html, $end_tags, $end_count, $skip_num, $blank);
+                        $res .= self::completeEndTag($end_html, $end, $blank);
                     } else {
                         $res .= $end_html;
                     }
@@ -224,8 +256,8 @@ class Template
                 $pos = strlen($match[0]) + $match[1];
             }
         }
-        $tmp  = substr($str, $pos);
-        $res .= $end_tags ? self::completeEndTag($tmp, $end_tags, $end_count, $skip_num) : $tmp;
+        $tmp = substr($str, $pos);
+        $res .= $end_tags ? self::completeEndTag($tmp, $end) : $tmp;
         return $res;
     }
     
@@ -471,39 +503,36 @@ class Template
     /*
      * 合并完成模版标签闭合
      */
-    protected static function completeEndTag($str, &$end_tags, &$end_count, &$skip_num, $blank = null)
+    protected static function completeEndTag($str, &$end, $blank = null)
     {
         $res = '';
         do {
-            $i = count($end_tags)-1;
-            $start_tag = '<'.$end_tags[$i];
-            $end_tag = '<\/'.$end_tags[$i].'>';
-            if (preg_match_all('/('.$start_tag.'|'.$end_tag.')/', $str, $matchs, PREG_OFFSET_CAPTURE)) {
-                $start_pos = 0;
+            $i = count($end) - 1;
+            $tag = $end['tag'][$i];
+            if (preg_match_all('/(<'.$tag.'|<\/'.$tag.'>)/', $str, $matchs, PREG_OFFSET_CAPTURE)) {
+                $pos = 0;
                 foreach ($matchs[0] as $match) {                    
-                    $tmp = substr($str, $start_pos, $match[1] - $start_pos);
+                    $tmp  = substr($str, $pos, $match[1] - $pos);
                     $res .= $tmp;
-                    $start_pos = strlen($match[0]) + $match[1];
-                    if ($match[0] === $start_tag) {
+                    $pos  = strlen($match[0]) + $match[1];
+                    if ($match[0][1] !== '/') {
                         $res .= $match[0];
-                        $skip_num[$i]++;
+                        $end[$i]['num']++;
                     } else {
-                        if ($skip_num[$i] > 0) {
+                        if ($end[$i]['num'] > 0) {
                             $res .= $match[0];
-                            $skip_num[$i]--;
+                            $end[$i]['num']--;
                         } else {
-                            if ($end_tags[$i] !== self::$config['blank_tag']) {
+                            if ($tag !== self::$config['blank_tag']) {
                                 $res .= $match[0].PHP_EOL.($blank ? $blank : self::readLeftBlank($tmp));
                             }
-                            $res .= '<?php '.str_pad('', $end_count[$i], '}').' ?>';
-                            array_pop($skip_num);
-                            array_pop($end_tags);
-                            array_pop($end_count);
+                            $res .= '<?php '.str_pad('', $end[$i]['count'], '}').' ?>';
+                            array_pop($end);
                             break;
                         }
                     }
                 }
-                $str = substr($str, $start_pos);
+                $str = substr($str, $pos);
             } else {
                 $res .= $str;
                 break;
@@ -591,9 +620,10 @@ class Template
             if (empty($unit['end'])) {
                 if (empty($code)) {
                     return self::replaceVar($unit['code']);
-                } else {
+                } elseif(!empty($unit['code'])) {
                     return $code.'[\''.$unit['code'].'\']';
                 }
+                return $code;
             }
             switch ($unit['end']) {
                 case '?':

@@ -1,6 +1,7 @@
 <?php
 namespace framework\core;
 
+use framework\util\Arr;
 use framework\core\http\Response;
 use framework\extend\view\Error as ViewError;
 
@@ -8,7 +9,14 @@ class View
 {    
     private static $init;
     private static $view;
-    private static $config;
+    private static $config = [
+        'dir' => APP_DIR.'view/'
+    ];
+    private static $template = [
+        'ext' => '.html',
+        'engine' => Template::class,
+        'block_view_prefix' => '__',
+    ];
     
     /*
      * 初始化
@@ -20,9 +28,14 @@ class View
         }
         self::$init = true;
         self::$view = new \stdClass();
-        self::$config = Config::get('view');
-        if (empty(self::$config['dir'])) {
-            self::$config['dir'] = APP_DIR.'view/';
+        if ($config = Config::get('view')) {
+            $template = Arr::pull($config, 'template');
+            if ($template === false) {
+                self::$template = false;
+            } elseif (is_array($template)) {
+                self::$template = $template + self::$template;
+            }
+            self::$config = $config + self::$config;
         }
         Event::on('exit', __CLASS__.'::free');
     }
@@ -72,7 +85,7 @@ class View
     public static function path($tpl)
     {
         $phpfile = self::$config['dir']."$tpl.php";
-        if (isset(self::$config['template'])) {
+        if (self::$template) {
             if (!is_file($tplfile = self::getTemplate($tpl))) {
                 throw new \Exception("Template file not found: $tplfile");
             } 
@@ -89,9 +102,9 @@ class View
     public static function block($tpl)
     {
         $path    = self::$config['dir'].$tpl;
-        $prefix  = self::$config['template']['block_view_prefix'] ?? '__';
+        $prefix  = self::$template['block_view_prefix'];
         $phpfile = dirname($path)."/$prefix".basename($path).'.php';
-        if (isset(self::$config['template'])) {
+        if (self::$template) {
             if (!is_file($tplfile = self::getTemplate($path))) {
                 throw new \Exception("Template file not found: $tplfile");
             } 
@@ -107,14 +120,14 @@ class View
      */
     public static function extends($tpl, $self, $check = false)
     {
-        if (!isset(self::$config['template'])) {
+        if (!self::$template) {
             return;
         }
         if (!is_file($tplfile = self::getTemplate($tpl))) {
             throw new \Exception("Template file not found: $tplfile");
         } 
         if (!$check || filemtime($self) < filemtime($tplfile)) {
-            $content = Template::complieExtends(
+            $content = (self::$template['engine'])::complieExtends(
                 self::readTemplate(self::getTemplateFromView($self)),
                 self::readTemplate($tplfile)
             );
@@ -161,22 +174,20 @@ class View
 
     public static function getTemplate($tpl)
     {
-        $ext = self::$config['template']['ext'] ?? '.htm';
-        if (empty(self::$config['template']['dir'])) {
-            return self::$config['dir'].$tpl.$ext;
+        if (empty(self::$template['dir'])) {
+            return self::$config['dir'].$tpl.self::$template['ext'];
         } else {
-            return self::$config['template']['dir'].$tpl.$ext;
+            return self::$template['dir'].$tpl.self::$template['ext'];
         }
     }
     
     public static function getTemplateFromView($file)
     {
-        $ext = self::$config['template']['ext'] ?? '.htm';
         $path = substr($file, 0, strrpos($file, '.'));
-        if (empty(self::$config['template']['dir'])) {
-            return $path.$ext;
+        if (empty(self::$template['dir'])) {
+            return $path.self::$template['ext'];
         } else {
-            return self::$config['template']['dir'].substr($path, strlen(self::$config['dir'])).$ext;
+            return self::$template['dir'].substr($path, strlen(self::$config['dir'])).self::$template['ext'];
         }
     }
     
