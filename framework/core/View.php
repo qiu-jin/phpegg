@@ -15,6 +15,7 @@ class View
     private static $template = [
         'ext' => '.html',
         'engine' => Template::class,
+        'force_complie' => false,
         'block_view_prefix' => '__',
     ];
     
@@ -69,13 +70,16 @@ class View
     /*
      * 渲染页面
      */
-    public static function render($tpl, $vars = [])
+    public static function render($tpl, $vars = null)
     {
+        $vars && self::vars($vars);
         ob_start();
         (static function($__file, $__vars) {
-            extract($__vars, EXTR_SKIP);
+            if ($__vars) {
+                extract($__vars, EXTR_SKIP);
+            }
             require $__file;
-        })(self::path($tpl), isset(self::$view->vars) ? $vars + self::$view->vars : $vars);
+        })(self::path($tpl), self::$view->vars ?? null);
         return ob_get_clean();
     }
     
@@ -89,7 +93,7 @@ class View
             if (!is_file($tplfile = self::getTemplate($tpl))) {
                 throw new \Exception("Template file not found: $tplfile");
             } 
-            if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
+            if (self::$template['force_complie'] || !is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
                 self::writeView($phpfile, Template::complie(self::readTemplate($tplfile)));
             }
         }
@@ -108,7 +112,7 @@ class View
             if (!is_file($tplfile = self::getTemplate($path))) {
                 throw new \Exception("Template file not found: $tplfile");
             } 
-            if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
+            if (elf::$template['force_complie'] || !is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
                 self::writeView($phpfile, Template::complieBlock(self::readTemplate($tplfile)));
             }
         }
@@ -126,7 +130,7 @@ class View
         if (!is_file($tplfile = self::getTemplate($tpl))) {
             throw new \Exception("Template file not found: $tplfile");
         } 
-        if (!$check || filemtime($self) < filemtime($tplfile)) {
+        if ($check && (self::$template['force_complie'] || filemtime($self) < filemtime($tplfile))) {
             $content = (self::$template['engine'])::complieExtends(
                 self::readTemplate(self::getTemplateFromView($self)),
                 self::readTemplate($tplfile)
@@ -170,6 +174,11 @@ class View
             return Response::view($tpl, $vars);
         }
         throw new \Exception('Call to undefined method '.__CLASS__."::$method");
+    }
+    
+    public static function callFilter($name, ...$params)
+    {
+        return (self::$view->filters[$name])(...$params);
     }
 
     public static function getTemplate($tpl)
