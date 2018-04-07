@@ -38,6 +38,8 @@ class Template
         'view_include_method'   => View::class.'::path',
         // extends方法名
         'view_extends_method'   => View::class.'::extends',
+        // model方法名
+        'view_model_method'     => View::class.'::callModel',
         // filter方法名
         'view_filter_method'    => View::class.'::callFilter',
     ];
@@ -175,7 +177,7 @@ class Template
             do {
                 if ($i < $count) {
                     $val = $arr[$i];
-                    $ret  = self::readAttrValue(
+                    $ret  = self::readValue(
                         $val,
                         self::$config['text_border_sign'][0],
                         self::$config['text_border_sign'][1],
@@ -242,7 +244,7 @@ class Template
             // 拼接左侧内容，如有为闭合语句，尝试闭合处理。
             $res  .= $end ? self::completeEndTag($left, $end) : $left;
             // 读取解析标签内代码
-            $ret   = self::readAttrValue($match[0], '<', '>');
+            $ret   = self::readValue($match[0], '<', '>');
             $tag   = self::readTag($ret['code'].'>', $ret['vars']);
             if ($tag['is_else']) {
                 // 合并if与elseif else
@@ -327,7 +329,7 @@ class Template
                         continue;
                     }
                 }
-                throw new \Exception('extend_merge error');
+                throw new \Exception('mergeExtends error');
             }
         }
         // 匹配读取父模版
@@ -360,7 +362,7 @@ class Template
                         continue;
                     }
                 }
-                throw new \Exception('extend_merge error');
+                throw new \Exception('mergeExtends error');
             }
             if ($s_pos < strlen($parent)) {
                 $res .= substr($parent, $s_pos);
@@ -396,7 +398,7 @@ class Template
                 $attr = $matchs[2][$i][0];
                 // 是否为赋值语句
                 if ($attr == self::$config['assign_attr_prefix']) {
-                    $value  = self::readAttrValue(substr(trim($vars[$matchs[4][$i][0] - 1]), 1, -1));
+                    $value  = self::readValue(substr(trim($vars[$matchs[4][$i][0] - 1]), 1, -1));
                     $code[] = self::wrapCode('$'.$attr.' = '.self::readExp($value['code'], $value['vars']).';');
                 } else {
                     $count++;
@@ -428,7 +430,7 @@ class Template
     /*
      * 读取解析属性值
      */
-    protected static function readAttrValue($str, $start = null, $end = null, $continue = null)
+    protected static function readValue($str, $start = null, $end = null, $continue = null)
     {
         $pos = $num = 0;
         // $continue不为空则继续上次内容处理，否则开始新处理
@@ -454,7 +456,7 @@ class Template
                 if ($quote) {
                     if ($quote === $char) {
                         if ($continue) {
-                            if (($i === 0 || $str{$i-1} !== '\\')) {
+                            if (($i === 0 || $str[$i - 1] !== '\\')) {
                                 $vars[] = $quote.$var.$quote;
                                 $var   = '';
                                 $num   = 0;
@@ -464,7 +466,7 @@ class Template
                                 $var  .= $char;
                             }
                         } else {
-                            if (($i - $num === 1) || ($str{$i-1} !== '\\')) {
+                            if ($i - $num === 1 || ($str[$i - 1] !== '\\')) {
                                 $vars[] = $quote.$var.$quote;
                                 $var   = '';
                                 $num   = 0;
@@ -556,7 +558,7 @@ class Template
     protected static function readStruct($struct, $val = null)
     {
         if ($val) {
-            $attr = self::readAttrValue($val);
+            $attr = self::readValue($val);
         }
         switch ($struct) {
             case 'if':
@@ -636,13 +638,23 @@ class Template
                     if ($str[$i] == ':' || $str[$i] == '?') {
                         return $code.' ?'.$str[$i].' '.self::readArg(substr($str, $i + 1), $vars);
                     } else {
-                        $arr = explode(' : ', substr($str, $i));
-                        return $code.' ? '.self::readArg($arr[0], $vars). ' : ' .self::readArg($arr[1], $vars);
+                        $pos = 0;
+                        while ($pos = strpos($str, ':', $pos)) {
+                            if (substr($str, $pos + 1, 1) != ':') {
+                                $left  = substr($str, 0, $pos);
+                                $right = substr($str, $pos + 1);
+                                break;
+                            }
+                        }
+                        if (isset($left)) {
+                            return $code.' ? '.self::readArg($left, $vars). ' : ' .self::readArg($right, $vars);
+                        }
                     }
+                    throw new \Exception("readUnit error: $str");
                 case '[':
                     if (empty($unit['code'])) {
                         if ($prev === '.' || empty($code)) {
-                            throw new \Exception('read error');
+                            throw new \Exception("readUnit error: $str");
                         }
                     }
                     $pos = self::findEndPos(substr($str, $i), '[', ']');
@@ -658,7 +670,7 @@ class Template
                             $code = self::replaceVar($unit['code']).'['.$arg.']';
                         }
                     } else {
-                        throw new \Exception('read_unit error :'.$str);
+                        throw new \Exception("readUnit error: $str");
                     }
                     $prev = '[';
                     break;
@@ -670,7 +682,7 @@ class Template
                                 return $arg;
                             }
                         }
-                        throw new \Exception('read_unit error: '.$str);
+                        throw new \Exception("readUnit error: $str");
                     }
                     $args = $code ? [$code] :[];
                     $pos = self::findEndPos(substr($str, $i), '(', ')');
@@ -695,7 +707,7 @@ class Template
                     }
                     $prev = '.';
                     break;
-                case ':':
+                case '::':
                     if (!$code && $unit['code']) {
                         $code .= $unit['code'];
                         $tmp = '';
@@ -711,13 +723,14 @@ class Template
                             $i++;
                         }
                     }
-                    throw new \Exception('read_unit error: '.$str);
+                    throw new \Exception("readUnit error: $str");
                 case '/':
                     if (!$code && $unit['code']) {
                         $code .= $unit['code'];
                     }
                     break;
                 case '->':
+                    
                     break;
                 default:
                     if (in_array($unit['end'], ['+', '-', '*', '/', '%'])) {

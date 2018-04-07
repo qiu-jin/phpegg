@@ -89,7 +89,7 @@ class Qiniu extends Storage
     
     public function fetch($from, $to)
     {
-        if (stripos($from, 'http://') === 0 || stripos($from, 'https://') === 0) {
+        if (substr($from, 0, 7) == 'http://' || substr($from, 0, 8) == 'https://') {
             $path = '/fetch/'.$this->base64Encode($from).'/to/'.$this->encode($to);
             return $this->send("https://iovip{$this->region}.qbox.me", $path);
         }

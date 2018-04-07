@@ -94,7 +94,7 @@ class View
                 throw new \Exception("Template file not found: $tplfile");
             } 
             if (self::$template['force_complie'] || !is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
-                self::writeView($phpfile, Template::complie(self::readTemplate($tplfile)));
+                self::writeView($phpfile, (self::$template['engine'])::complie(self::readTemplate($tplfile)));
             }
         }
         return $phpfile;
@@ -113,7 +113,7 @@ class View
                 throw new \Exception("Template file not found: $tplfile");
             } 
             if (elf::$template['force_complie'] || !is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
-                self::writeView($phpfile, Template::complieBlock(self::readTemplate($tplfile)));
+                self::writeView($phpfile, (self::$template['engine'])::complieBlock(self::readTemplate($tplfile)));
             }
         }
         return $phpfile;
