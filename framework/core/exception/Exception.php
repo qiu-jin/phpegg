@@ -1,5 +1,5 @@
 <?php
-namespace framework\core;
+namespace framework\core\exception;
 
 class Exception extends \Exception
 {

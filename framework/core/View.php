@@ -3,6 +3,7 @@ namespace framework\core;
 
 use framework\util\Arr;
 use framework\core\http\Response;
+use framework\core\exception\ViewException;
 use framework\extend\view\Error as ViewError;
 
 class View
@@ -13,9 +14,9 @@ class View
         'dir' => APP_DIR.'view/'
     ];
     private static $template = [
-        'ext' => '.html',
-        'engine' => Template::class,
-        'force_complie' => false,
+        'ext'               => '.html',
+        'engine'            => Template::class,
+        'force_complie'     => false,
         'block_view_prefix' => '__',
     ];
     
@@ -91,7 +92,7 @@ class View
         $phpfile = self::$config['dir']."$tpl.php";
         if (self::$template) {
             if (!is_file($tplfile = self::getTemplate($tpl))) {
-                throw new \Exception("Template file not found: $tplfile");
+                throw new ViewException("Template file not found: $tplfile");
             } 
             if (self::$template['force_complie'] || !is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
                 self::writeView($phpfile, (self::$template['engine'])::complie(self::readTemplate($tplfile)));
@@ -110,7 +111,7 @@ class View
         $phpfile = dirname($path)."/$prefix".basename($path).'.php';
         if (self::$template) {
             if (!is_file($tplfile = self::getTemplate($path))) {
-                throw new \Exception("Template file not found: $tplfile");
+                throw new ViewException("Template file not found: $tplfile");
             } 
             if (elf::$template['force_complie'] || !is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
                 self::writeView($phpfile, (self::$template['engine'])::complieBlock(self::readTemplate($tplfile)));
@@ -128,7 +129,7 @@ class View
             return;
         }
         if (!is_file($tplfile = self::getTemplate($tpl))) {
-            throw new \Exception("Template file not found: $tplfile");
+            throw new ViewException("Template file not found: $tplfile");
         } 
         if ($check && (self::$template['force_complie'] || filemtime($self) < filemtime($tplfile))) {
             $content = (self::$template['engine'])::complieExtends(
@@ -173,7 +174,7 @@ class View
             }
             return Response::view($tpl, $vars);
         }
-        throw new \Exception('Call to undefined method '.__CLASS__."::$method");
+        throw new \BadMethodCallException('Call to undefined method '.__CLASS__."::$method");
     }
     
     public static function callFilter($name, ...$params)
@@ -205,7 +206,7 @@ class View
         if ($content = file_get_contents($file)) {
             return $content;
         }
-        throw new \Exception("Template file read fail: $file");
+        throw new ViewException("Template file read fail: $file");
     }
     
     private static function writeView($file, $content)
@@ -214,9 +215,9 @@ class View
             if (file_put_contents($file, $content)) {
                 return true;
             }
-            throw new \Exception("View file write fail: $file");
+            throw new ViewException("View file write fail: $file");
         }
-        throw new \Exception("View dir create fail: $dir");
+        throw new ViewException("View dir create fail: $dir");
     }
     
     public static function free()

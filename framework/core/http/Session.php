@@ -37,7 +37,7 @@ class Session
         if (function_exists($function = 'session_'.Str::toSnake($method))) {
             return $function(...$params);
         }
-        throw new \Exception('Call to undefined method '.__CLASS__."::$method");
+        throw new \BadMethodCallException('Call to undefined method '.__CLASS__."::$method");
     }
     
     public static function get($name = null, $default = null)

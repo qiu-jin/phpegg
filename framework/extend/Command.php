@@ -134,6 +134,11 @@ abstract class Command
         $this->line("<warning>$text</warning>", true);
     }
     
+    protected function json($data)
+    {
+        $this->line(json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), true);
+    }
+    
     protected function table(array $data, array $head = null)
     {
         $data = array_values($data);

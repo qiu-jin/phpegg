@@ -17,6 +17,16 @@ class Recaptcha
         $this->seckey = $config['seckey'];
     }
     
+    public function script()
+    {
+        return $this->script;
+    }
+    
+    public function sitekey()
+    {
+        return $this->acckey;
+    }
+    
     public function render($tag = 'div', $attr = [])
     {
         if (empty($attr['class'])) {
