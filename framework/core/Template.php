@@ -748,7 +748,7 @@ class Template
                     break;
                 // 三元表达式
                 case '?':
-                    if (empty($code)) {
+                    if (!$code) {
                         $code = self::replaceVar($ret['code']);
                     } elseif($ret['code']) {
                         $code .= '[\''.$ret['code'].'\']';
@@ -770,17 +770,17 @@ class Template
                     }
                     throw new TemplateException("readUnit error: $str");
                 case '':
-                    if (empty($code)) {
+                    if (!$code) {
                         return self::replaceVar($ret['code']);
-                    } elseif(!empty($ret['code'])) {
+                    } elseif($ret['code']) {
                         return $code.'[\''.$ret['code'].'\']';
                     }
                     return $code;
                 default:
                     if (in_array($ret['end'], ['+', '-', '*', '/', '%'])) {
-                        if (empty($code)) {
+                        if (!$code) {
                             $code = self::replaceVar($ret['code']);
-                        } elseif (!empty($ret['code'])){
+                        } elseif ($ret['code']){
                             $code .= '[\''.$ret['code'].'\']'; 
                         }
                         return $code.' '.$ret['end'].' '.self::readArg(substr($str, $i), $vars);
@@ -915,8 +915,8 @@ class Template
             return ['left' => $left, 'right' => '', 'str' => ''];
         } else {
             for ($i = $len - 1; $i >= 0; $i--) {
-                if (self::isBlankChar($str{$i})) {
-                    $right .= $str{$i};
+                if (self::isBlankChar($str[$i])) {
+                    $right .= $str[$i];
                 } else {
                     $rpos = $i;
                     break;
@@ -951,8 +951,7 @@ class Template
     protected static function readFuncArgs($str, &$i, $vars, $args = [])
     {
         $pos = self::findEndPos(substr($str, $i), '(', ')');
-        $tmp = trim(substr($str, $i, $pos));
-        if (!empty($tmp)) {
+        if ($tmp = trim(substr($str, $i, $pos))) {
             foreach (explode(',', $tmp) as $v) {
                 $args[] = self::readArg($v, $vars);
             }
@@ -966,7 +965,7 @@ class Template
      */
     protected static function replaceVar($var)
     {
-        return self::$var_alias[$var] ?? '$'.$var;
+        return self::$vars[$var] ?? '$'.$var;
     }
     
     /*
@@ -1078,19 +1077,6 @@ class Template
             return true;
         }
         return false;
-    }
-    
-    /*
-     * 查找特定字符前的字符串是否为合法变量名
-     */ 
-    protected static function beforeIsVarnameChars($str, $finds, $miss_return = false)
-    {
-        foreach ($finds as $find) {
-            if (($p = strpos($str, $end)) !== false) {
-                $pos[] = $p;
-            }
-        }
-        return isset($pos) ? self::isVarnameChars(substr($str, 0, min($pos))) : $miss_return;
     }
 }
 Template::init();
