@@ -55,15 +55,15 @@ class View extends App
             '_PARAMS'   => $params ?? []
         ];
         if (isset($this->config['boot_view_model'])) {
-            $vars = (array) self::requireModel($this->config['boot_view_model'], $vars) + $vars;
+            $vars = (array) self::requireModelFile($this->config['boot_view_model'], $vars) + $vars;
         }
         if (isset($this->config['view_model_path'])) {
             if (isset($this->config['view_models'])) {
                 if (in_array($view, $this->config['view_models'])) {
-                    $vars = (array) self::requireModel($this->getViewModel($view), $vars) + $vars;
+                    $vars = (array) self::requireModelFile($this->getViewModelFile($view), $vars) + $vars;
                 }
-            } elseif (is_php_file($view_model_file = $this->getViewModel($view))) {
-                $vars = (array) self::requireModel($view_model_file, $vars) + $vars;
+            } elseif (is_php_file($view_model_file = $this->getViewModelFile($view))) {
+                $vars = (array) self::requireModelFile($view_model_file, $vars) + $vars;
             }
         }
         ob_start();
@@ -100,7 +100,7 @@ class View extends App
                     if (Config::has('view.template')) {
                         Config::set('view.template.ignore_not_find', true);
                     }
-                    if (is_php_file($view_file = $this->getView($view))) {
+                    if (is_php_file($view_file = $this->getViewFile($view))) {
                         return compact('view', 'view_file');
                     }
                 }
@@ -113,7 +113,7 @@ class View extends App
         } else {
             return;
         }
-        return ['view' => $view, 'view_file' => $this->getView($view)];
+        return ['view' => $view, 'view_file' => $this->getViewFile($view)];
     }
     
     protected function routeDispatch($path)
@@ -126,24 +126,24 @@ class View extends App
             if ($result = Router::route($path, $routes)) {
                 return [
                     'view'      => $result[0],
-                    'view_file' => $this->getView($result[0]),
+                    'view_file' => $this->getViewFile($result[0]),
                     'params'    => $result[1]
                 ];
             }
         }
     }
     
-    protected function getView($view)
+    protected function getViewFile($view)
     {
         return $this->config['enable_pjax'] && Request::isPjax() ? CoreView::block($view) : CoreView::file($view);
     }
     
-    protected function getViewModel($view)
+    protected function getViewModelFile($view)
     {
         return APP_DIR.$this->config['viewmodel_path']."/$view.php";
     }
     
-    protected function requireModel($file, &$vars)
+    protected function requireModelFile($file, &$vars)
     {
         if (empty($this->config['enable_getter'])) {
             $call = static function($__file, $_VARS) {

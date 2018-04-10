@@ -662,12 +662,12 @@ class Template
             switch ($ret['end']) {
                 // 数组或函数
                 case '.':
-                    if (($prev === '.' || empty($code)) && empty($ret['code'])) {
+                    if (!$ret['code'] && ($prev === '.' || !$code)) {
                         throw new TemplateException('read_unit error: '.$str);
                     }
-                    if (empty($code)) {
+                    if (!$code) {
                         $code = self::replaceVar($ret['code']);
-                    } elseif (!empty($ret['code'])){
+                    } elseif ($ret['code']){
                         $code .= '[\''.$ret['code'].'\']'; 
                     }
                     break;
@@ -679,7 +679,7 @@ class Template
                     if ($code || $ret['code'] || !($pos = strpos($str, '('))) {
                         throw new TemplateException("readUnit error: 非法字符");
                     }
-                    foreach ($arr = explode('.', substr($str, $i, $pos - 1)) as $item) {
+                    foreach ($arr = explode('.', substr($str, $i, $pos - $i)) as $item) {
                         if (!self::IsVarnameChars($item)) {
                             throw new TemplateException("readUnit error: 非法字符 $item");
                         }
@@ -694,14 +694,24 @@ class Template
                     break;
                 // 对象
                 case '->':
-                    if (($code || $ret['code']) && self::beforeIsVarnameChars($str, ['('])) {
-                        if ($prev === '@') {
-                            $code .= self::replaceMethod($ret['code']).'()->';
-                        } else {
-                            $code .= $ret['code'].'->';
-                            $prev = '->';
+                    $obj = '';
+                    if ($code) {
+                        if (!$ret['code']) {
+                            $obj = $code;
+                        } elseif($prev === '.') {
+                            $obj = $code."['".$ret['code']."']";
                         }
-                        break;
+                    } elseif ($ret['code']) {
+                        $obj = self::replaceVar($ret['code']);
+                    }
+                    if ($obj && ($pos = strpos($str, '('))) {
+                        $name = substr($str, $i, $pos - $i);
+                        if (self::IsVarnameChars($name)) {
+                            $i = $pos + 1;
+                            $args = implode(', ', self::readFuncArgs($str, $i, $vars));
+                            $code = "$obj->$name($args)";
+                            break;
+                        }
                     }
                     throw new TemplateException("readUnit error: $str");
                 // 括号或函数调用
@@ -721,21 +731,19 @@ class Template
                     break;
                 // 数组
                 case '[':
-                    if (empty($ret['code'])) {
-                        if ($prev === '.' || empty($code)) {
-                            throw new TemplateException("readUnit error: $str");
-                        }
+                    if (!$ret['code'] && ($prev === '.' || !$code)) {
+                        throw new TemplateException('read_unit error: '.$str);
                     }
                     $pos = self::findEndPos(substr($str, $i), '[', ']');
-                    $arg = self::readArg(substr($str, $i, $pos), $vars, $type);
+                    $arg = self::readArg(substr($str, $i, $pos), $vars);
                     $i += $pos + 1;
                     if ($code) {
                         if ($ret['code']) {
-                            $code .= '[\''.$ret['code'].'\']';
+                            $code .= "['".$ret['code']."']";
                         }
-                        $code .= '['.$arg.']';
+                        $code .= "[$arg]";
                     } else {
-                        $code = self::replaceVar($ret['code']).'['.$arg.']';
+                        $code = self::replaceVar($ret['code'])."[$arg]";
                     }
                     break;
                 // 三元表达式
@@ -1009,7 +1017,7 @@ class Template
                 $num--;
             }
         }
-        throw new TemplateException("findEndPos errer: 没有找到结束符");
+        throw new TemplateException("findEndPos errer: $str 没有找到结束符 $end");
     }
     
     /*
