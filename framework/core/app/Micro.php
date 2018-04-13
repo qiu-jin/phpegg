@@ -4,6 +4,7 @@ namespace framework\core\app;
 use framework\App;
 use framework\core\Getter;
 use framework\core\Router;
+use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\response;
@@ -23,8 +24,10 @@ class Micro extends App
         'enable_closure_getter' => true,
         // Getter providers
         'getter_providers'  => null,
+        // 是否路由动态调用
+        'route_dispatch_dynamic_call' => false,
         // 路由模式下允许的HTTP方法
-        'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/]
+        'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
     ];
     
     public function default($controller, $action, array $params = [])
@@ -33,7 +36,7 @@ class Micro extends App
         return $this;
     }
     
-    public function route($role, $call)
+    public function any($role, $call)
     {
         $this->dispatch['route'][$role] = $call;
         return $this;
@@ -41,11 +44,17 @@ class Micro extends App
     
     public function __call($method, $params)
     {
-        if (in_array($method = strtoupper($method), $this->config['route_dispatch_http_methods'])) {
-            $this->dispatch['route'][$params[0]][$method] = $params[1];
+        if (in_array($m = strtoupper($method), $this->config['route_dispatch_http_methods'])) {
+            $this->dispatch['route'][$params[0]][":$m"] = $params[1];
             return $this;
         }
         throw new \Exception('Call to undefined method '.__CLASS__."::$method");
+    }
+    
+    public function route(array $roles)
+    {
+        $this->dispatch['route'] = array_merge_recursive($this->dispatch['routes'] ?? [], $roles);
+        return $this;
     }
     
     protected function dispatch()
@@ -92,19 +101,19 @@ class Micro extends App
     
     protected function routeDispatch()
     {
-        if (in_array($method = Request::method(), $this->config['route_dispatch_http_methods'])
-            && $result = Router::route(Request::pathArr(), $this->dispatch['route'], $method)
+        if (in_array($m = Request::method(), $this->config['route_dispatch_http_methods'])
+            && $route = (new Router(Request::pathArr(), $m))->route($this->dispatch['route'])
         ) {
-            if (is_callable($result[0])) {
-                if ($result[0] instanceof \Closure && $this->config['enable_closure_getter']) {
-                    return [
-                        closure_bind_getter($result[0], $this->config['getter_providers']),
-                        $result[1]
-                    ];
-                }
-                return $result;
-            } else {
-                $dispatch = Router::parse($result, 1);
+            if ($route['dispatch'] instanceof \Closure) {
+                return [
+                    empty($this->config['enable_closure_getter']) ? $route['dispatch'] : closure_bind_getter(
+                        $route['dispatch'],
+                        $this->config['getter_providers'] ?? null
+                    ),
+                    $route['matches']
+                ];
+            } elseif (is_string($route['dispatch'])) {
+                $dispatch = Dispatcher::parse($route, 1, $this->config['route_dispatch_dynamic_call']);
                 list($controller, $action) = explode('::', $dispatch[0]);
                 return [[instance($this->getControllerClass($controller)), $action], $dispatch[1]];
             }

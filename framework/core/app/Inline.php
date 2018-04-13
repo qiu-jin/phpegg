@@ -6,6 +6,7 @@ use framework\core\View;
 use framework\core\Config;
 use framework\core\Getter;
 use framework\core\Router;
+use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
@@ -33,6 +34,8 @@ class Inline extends App
         'default_dispatch_hyphen_to_underscore' => false,
         // 路由调度的路由表
         'route_dispatch_routes' => null,
+        // 是否路由动态调用
+        'route_dispatch_dynamic_call' => false,
     ];
     
     protected function dispatch()
@@ -118,11 +121,14 @@ class Inline extends App
                 $routes = Config::flash($routes);
             }
             $path = empty($path) ? null : explode('/', $path);
-            if ($result = Router::route($path, $routes)) {
+            if ($route = (new Router($path))->route($routes)) {
+                if ($this->config['route_dispatch_dynamic_call']) {
+                    $route['dispatch'] = Dispatcher::dynamicCall($route['dispatch'], $route['matches']);
+                }
                 return [
-                    'controller'        => $result[0],
-                    'controller_file'   => $this->getControllerFile($result[0]),
-                    'params'            => $result[1]
+                    'controller'        => $route['dispatch'],
+                    'controller_file'   => $this->getControllerFile($route['dispatch']),
+                    'params'            => $route['matches']
                 ];
             }
         }

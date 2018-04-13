@@ -5,7 +5,7 @@ use framework\App;
 use framework\util\Str;
 use framework\core\View;
 use framework\core\Config;
-use framework\core\Router;
+use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
@@ -54,6 +54,8 @@ class Standard extends App
         'route_dispatch_param_mode' => 1,
         // 路由调度的路由表，如果值为字符串则作为PHP文件include
         'route_dispatch_routes' => null,
+        // 是否路由动态调用
+        'route_dispatch_dynamic_call' => false,
         // 路由调度是否允许访问受保护的方法
         'route_dispatch_access_protected' => false,
         // 设置动作路由属性名，为null则不启用动作路由
@@ -167,8 +169,8 @@ class Standard extends App
                 if (!isset($controller_array)) {
                     return;
                 }
-                if (isset($this->config['default_dispatch_to_camel'])) {
-                    $controller_array[] = Str::toCamel(array_pop($controller_array), $this->config['default_dispatch_to_camel']);
+                if ($to_camel = $this->config['default_dispatch_to_camel'] ?? null) {
+                    $controller_array[] = Str::toCamel(array_pop($controller_array), $to_camel);
                 }
                 $controller = implode('\\', $controller_array);
                 if (!isset($this->config['default_dispatch_controllers'])) {
@@ -202,12 +204,15 @@ class Standard extends App
      */
     protected function routeDispatch($path) 
     {
-        $param_mode = $this->config['route_dispatch_param_mode'];
-        if (isset($this->config['route_dispatch_routes'])) {
+        if (!empty($this->config['route_dispatch_routes'])) {
             if (is_string($routes = $this->config['route_dispatch_routes'])) {
-                $routes = Config::flash($routes);
+                if (!$routes = Config::flash($routes)) {
+                    return;
+                }
             }
-            if ($routes && ($dispatch = Router::dispatch($path, $routes, $param_mode))) {
+            $param_mode   = $this->config['route_dispatch_param_mode'];
+            $dynamic_call = $this->config['route_dispatch_dynamic_call'];
+            if ($dispatch = Dispatcher::dispatch($path, $routes, $param_mode, $dynamic_call)) {
                 if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->getControllerClass($controller);
@@ -240,10 +245,14 @@ class Standard extends App
         if ($class === null) {
             $class = $this->getControllerClass($controller);
         }
-        if (($vars = get_class_vars($class))
-            && isset($vars[$this->config['route_dispatch_action_routes']])
-            && ($dispatch = Router::dispatch($path, $vars[$this->config['route_dispatch_action_routes']], $param_mode))
-        ) {
+        if ($vars = get_class_vars($class)) {
+            $routes = $vars[$this->config['route_dispatch_action_routes']] ?? null;
+        }
+        if (empty($routes)) {
+            return;
+        }
+        $dynamic_call = $this->config['route_dispatch_dynamic_call'];
+        if ($dispatch = Dispatcher::dispatch($path, $routes, $param_mode, $dynamic_call)) {
             if ($this->config['route_dispatch_access_protected']) {
                 $this->checkMethodAccessible($class, $dispatch[0]);
             }

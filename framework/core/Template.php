@@ -42,6 +42,8 @@ class Template
         'verbatim_text_sign'    => '!',
         // include方法名
         'view_include_method'   => View::class.'::path',
+        // inner方法名
+        'view_inner_method'     => View::class.'::inner',
         // extends方法名
         'view_extends_method'   => View::class.'::extends',
         // model方法名
@@ -218,7 +220,7 @@ class Template
                 );
                 $i++;
             } while ($ret['continue'] === true);
-            $code = self::readUnit($ret['code'], $ret['vars']);
+            $code = self::readArg($ret['code'], $ret['vars']);
             if ($escape) {
                 $res .= self::wrapCode("echo htmlentities($code);");
             } else {
@@ -645,11 +647,40 @@ class Template
         }
         throw new TemplateException("readStruct error: 非法语句 $struct");
     }
-
+    
+    /*
+     * 读取参数
+     */
+    protected static function readArg($str, $vars, &$type = null)
+    {
+        $str = trim($str);
+        // bool或null
+        if ($str === 'true' || $str === 'false' || $str === 'null') {
+            $type = $str;
+            return $str;
+        // 被替换的字符串变量
+        } elseif (preg_match("/^\\$([1-9][0-9]*)$/", $str, $match)) {
+            $type = 'string';
+            return $vars[$match[1] - 1];
+        // 数字
+        } elseif (is_numeric($str)) {
+            $type = 'number';
+            return $str;
+        // 数组
+        } elseif ($str[0] === '[' || $str[0] === '{') {
+            $type = 'array';
+            return self::readArray($str, $vars);
+        // 其它
+        } else {
+            $type = 'mixed';
+            return self::readMixed($str, $vars);
+        }
+    }
+    
     /*
      * 读取语句单元
      */
-    protected static function readUnit($str, $vars)
+    protected static function readMixed($str, $vars)
     {
         $i    = 0;
         $str  = trim($str);
@@ -658,6 +689,9 @@ class Template
         $prev = null;
         while ($i < $len) {
             $ret = self::readWord(substr($str, $i));
+            if (in_array($ret['code'], ['true', 'false', 'null'], true)) {
+                throw new TemplateException("readUnit error: 不允许用关键字做变量 ".$ret['code']);
+            }
             $i += $ret['seek'];
             switch ($ret['end']) {
                 // 数组或函数
@@ -680,7 +714,7 @@ class Template
                         throw new TemplateException("readUnit error: 非法字符");
                     }
                     foreach ($arr = explode('.', substr($str, $i, $pos - $i)) as $item) {
-                        if (!self::IsVarnameChars($item)) {
+                        if (!self::isVarnameChars($item)) {
                             throw new TemplateException("readUnit error: 非法字符 $item");
                         }
                     }
@@ -706,7 +740,7 @@ class Template
                     }
                     if ($obj && ($pos = strpos($str, '('))) {
                         $name = substr($str, $i, $pos - $i);
-                        if (self::IsVarnameChars($name)) {
+                        if (self::isVarnameChars($name)) {
                             $i = $pos + 1;
                             $args = implode(', ', self::readFuncArgs($str, $i, $vars));
                             $code = "$obj->$name($args)";
@@ -766,6 +800,20 @@ class Template
                         }
                         if (isset($left)) {
                             return $code.' ? '.self::readArg($left, $vars). ' : ' .self::readArg($right, $vars);
+                        }
+                    }
+                    throw new TemplateException("readUnit error: $str");
+                case '$':
+                    if (!$code && !$ret['code']) {
+                        if ($pos = strpos($str, '.')) {
+                            $var = substr($str, $i, $i - $pos);
+                            if (self::isVarnameChars($var)) {
+                                $code = self::readArg('$'.$var, $vars);
+                                $i += $pos + 1;
+                                break;
+                            }
+                        } elseif ($var = substr($str, $i)) {
+                            return self::readArg('$'.$var, $vars);
                         }
                     }
                     throw new TemplateException("readUnit error: $str");
@@ -859,35 +907,6 @@ class Template
     }
     
     /*
-     * 读取参数
-     */
-    protected static function readArg($str, $vars, &$type = null)
-    {
-        $str = trim($str);
-        // bool或null
-        if ($str === 'true' || $str === 'false' || $str === 'null') {
-            $type = $str;
-            return $str;
-        // 被替换的字符串变量
-        } elseif (preg_match("/^\\$([1-9][0-9]*)$/", $str, $match)) {
-            $type = 'string';
-            return $vars[$match[1] - 1];
-        // 数字
-        } elseif (is_numeric($str)) {
-            $type = 'number';
-            return $str;
-        // 数组
-        } elseif ($str[0] === '[' || $str[0] === '{') {
-            $type = 'array';
-            return self::readArray($str, $vars);
-        // 其它
-        } else {
-            $type = 'mixed';
-            return self::readUnit($str, $vars);
-        }
-    }
-    
-    /*
      * 读取数组
      */
     protected function readArray($str, $vars)
@@ -965,7 +984,7 @@ class Template
      */
     protected static function replaceVar($var)
     {
-        return self::$vars[$var] ?? '$'.$var;
+        return is_numeric($var) ? $var : (self::$vars[$var] ?? '$'.$var);
     }
     
     /*

@@ -5,7 +5,7 @@ use framework\App;
 use framework\util\Str;
 use framework\util\Xml;
 use framework\core\Config;
-use framework\core\Router;
+use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
@@ -37,15 +37,15 @@ class Rest extends App
         // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
         // 默认调度下允许的HTTP方法
-        'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'/*, 'HEAD', 'OPTIONS'*/],
+        'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         // 资源调度的控制器，为空不限制
         'resource_dispatch_controllers' => null,
         // 资源调度默认路由表
         'resource_dispatch_routes' => [
-            '/'     => ['GET' => 'index', 'POST' => 'create'],
-            '*'     => ['GET' => 'show',  'PUT'  => 'update', 'DELETE' => 'destroy'],
-            'create'=> ['GET' => 'new'],
-            '*/edit'=> ['GET' => 'edit']
+            '/'     => [':GET' => 'index', ':POST' => 'create'],
+            'create'=> [':GET' => 'new'],
+            '*'     => [':GET' => 'show',  ':PUT'  => 'update', ':DELETE' => 'destroy'],
+            '*/edit'=> [':GET' => 'edit']
         ],
         // 资源调度的控制器路径转为驼峰风格
         'resource_dispatch_controller_to_camel' => null,
@@ -57,6 +57,8 @@ class Rest extends App
         'route_dispatch_param_mode' => 1,
         // 路由调度的路由表
         'route_dispatch_routes' => null,
+        // 是否路由动态调用
+        'route_dispatch_dynamic_call' => false,
         // 设置动作路由属性名，为null则不启用动作路由
         'route_dispatch_action_routes' => null,
     ];
@@ -142,8 +144,8 @@ class Rest extends App
             } elseif ($param_mode === 0) {
                 $controller_array = $path;
             }
-            if (isset($this->config['default_dispatch_to_camel'])) {
-                $controller_array[] = Str::toCamel(array_pop($controller_array), $this->config['default_dispatch_to_camel']);
+            if ($to_camel = $this->config['default_dispatch_to_camel'] ?? null) {
+                $controller_array[] = Str::toCamel(array_pop($controller_array), $to_camel);
             }
             $controller = implode('\\', $controller_array);
             if (!isset($this->config['default_dispatch_controllers'])) {
@@ -190,8 +192,8 @@ class Rest extends App
             $controller = $this->dispatch['route'][0];
             $action_path = $this->dispatch['route'][1];
         } elseif (count($path) >= $depth) {
-            if (!empty($this->config['resource_dispatch_controller_to_camel'])) {
-                $path[$depth] = Str::toCamel($path[$depth], $this->config['resource_dispatch_controller_to_camel']);
+            if ($to_camel = $this->config['resource_dispatch_controller_to_camel'] ?? null) {
+                $path[$depth] = Str::toCamel($path[$depth], $to_camel);
             }
             $controller = implode('\\', array_slice($path, 0, $depth));
             if (!isset($this->config['resource_dispatch_controllers'])) {
@@ -204,7 +206,9 @@ class Rest extends App
             return;
         }
         if ($class = $this->getControllerClass($controller, isset($check))) {
-            if (($dispatch = Router::dispatch($action_path, $this->config['resource_dispatch_routes'], 0, $this->method))
+            $routes        = $this->config['resource_dispatch_routes'];
+            $dynamic_call  = $this->config['route_dispatch_dynamic_call'];
+            if (($dispatch = Dispatcher::dispatch($action_path, $routes, 0, $dynamic_call, $this->method))
                 && is_callable([$controller_instance = new $class(), $dispatch[0]])
             ) {
                 return [
@@ -229,12 +233,15 @@ class Rest extends App
      */
     protected function routeDispatch($path)
     {
-        $param_mode = $this->config['route_dispatch_param_mode'];
-        if ($this->config['route_dispatch_routes']) {
+        if (!empty($this->config['route_dispatch_routes'])) {
             if (is_string($routes = $this->config['route_dispatch_routes'])) {
-                $routes = Config::flash($routes);
+                if (!$routes = Config::flash($routes)) {
+                    return;
+                }
             }
-            if ($routes && ($dispatch = Router::dispatch($path, $routes, $param_mode, $this->method))) {
+            $param_mode   = $this->config['route_dispatch_param_mode'];
+            $dynamic_call = $this->config['route_dispatch_dynamic_call'];
+            if ($dispatch = Dispatcher::dispatch($path, $routes, $param_mode, $dynamic_call, $this->method)) {
                 if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->getControllerClass($controller);
@@ -264,10 +271,14 @@ class Rest extends App
         if ($class === null) {
             $class = $this->getControllerClass($controller);
         }
-        if (($vars = get_class_vars($class))
-            && isset($vars[$this->config['route_dispatch_action_routes']])
-            && ($dispatch = Router::dispatch($path, $vars[$this->config['route_dispatch_action_routes']], $param_mode))
-        ) {
+        if ($vars = get_class_vars($class)) {
+            $routes = $vars[$this->config['route_dispatch_action_routes']] ?? null;
+        }
+        if (empty($routes)) {
+            return;
+        }
+        $dynamic_call = $this->config['route_dispatch_dynamic_call'];
+        if ($dispatch = Dispatcher::dispatch($path, $routes, $param_mode, $dynamic_call, $this->method)) {
             return [
                 'controller'            => $controller,
                 'controller_instance'   => new $class,
