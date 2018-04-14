@@ -17,6 +17,7 @@ trait Getter
             } elseif ($value instanceof \Closure) {
                 return $this->$name = $value();
             }
+            throw new \Exception("Provider $name invalid type");
         } else {
             if ($type = Container::getProviderType($name)) {
                 if ($type === 'model') {
@@ -29,7 +30,7 @@ trait Getter
         throw new \Exception('Undefined property: $'.$name);
     }
     
-    private static function __makeModelNs($ns, $depth)
+    private function __makeModelNs($ns, $depth)
     {
         return new class($ns, $depth) {
             protected $_ns;

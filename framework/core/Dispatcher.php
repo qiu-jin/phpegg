@@ -6,16 +6,16 @@ class Dispatcher
     /*
      * 路由调度
      */
-    public static function dispatch($path, $rules, $param_mode, $dynamic = false, $method = null)
+    public static function route($path, $rules, $param_mode, $dynamic = false, $method = null)
     {
         $router = new framework\core\Router($path, $method);
-        return ($route = $router->route($rules)) && self::parse($route, $param_mode, $dynamic);
+        return ($route = $router->route($rules)) && self::dispatch($route, $param_mode, $dynamic);
     }
     
     /*
      * 解析调度
      */
-    public static function parse($route, $param_mode = 0, $dynamic = false)
+    public static function dispatch($route, $param_mode = 0, $dynamic = false)
     {
         if (preg_match('/^([^\(]+)(\(([^\)]+)\))?$/', $route['dispatch'], $res)) {
             $call   = $res[1];

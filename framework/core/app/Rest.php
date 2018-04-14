@@ -208,7 +208,7 @@ class Rest extends App
         if ($class = $this->getControllerClass($controller, isset($check))) {
             $routes        = $this->config['resource_dispatch_routes'];
             $dynamic_call  = $this->config['route_dispatch_dynamic_call'];
-            if (($dispatch = Dispatcher::dispatch($action_path, $routes, 0, $dynamic_call, $this->method))
+            if (($dispatch = Dispatcher::route($action_path, $routes, 0, $dynamic_call, $this->method))
                 && is_callable([$controller_instance = new $class(), $dispatch[0]])
             ) {
                 return [
@@ -241,7 +241,7 @@ class Rest extends App
             }
             $param_mode   = $this->config['route_dispatch_param_mode'];
             $dynamic_call = $this->config['route_dispatch_dynamic_call'];
-            if ($dispatch = Dispatcher::dispatch($path, $routes, $param_mode, $dynamic_call, $this->method)) {
+            if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic_call, $this->method)) {
                 if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->getControllerClass($controller);
@@ -278,7 +278,7 @@ class Rest extends App
             return;
         }
         $dynamic_call = $this->config['route_dispatch_dynamic_call'];
-        if ($dispatch = Dispatcher::dispatch($path, $routes, $param_mode, $dynamic_call, $this->method)) {
+        if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic_call, $this->method)) {
             return [
                 'controller'            => $controller,
                 'controller_instance'   => new $class,

@@ -211,7 +211,7 @@ class Standard extends App
             }
             $param_mode   = $this->config['route_dispatch_param_mode'];
             $dynamic_call = $this->config['route_dispatch_dynamic_call'];
-            if ($dispatch = Dispatcher::dispatch($path, $routes, $param_mode, $dynamic_call)) {
+            if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic_call)) {
                 if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->getControllerClass($controller);
@@ -251,7 +251,7 @@ class Standard extends App
             return;
         }
         $dynamic_call = $this->config['route_dispatch_dynamic_call'];
-        if ($dispatch = Dispatcher::dispatch($path, $routes, $param_mode, $dynamic_call)) {
+        if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic_call)) {
             if ($this->config['route_dispatch_access_protected']) {
                 $this->checkMethodAccessible($class, $dispatch[0]);
             }
