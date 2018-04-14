@@ -205,10 +205,9 @@ class Standard extends App
     protected function routeDispatch($path) 
     {
         if (!empty($this->config['route_dispatch_routes'])) {
-            if (is_string($routes = $this->config['route_dispatch_routes'])) {
-                if (!$routes = Config::flash($routes)) {
-                    return;
-                }
+            $routes = $this->config['route_dispatch_routes'];
+            if (is_string($routes) && !($routes = Config::flash($routes))) {
+                return;
             }
             $param_mode   = $this->config['route_dispatch_param_mode'];
             $dynamic_call = $this->config['route_dispatch_dynamic_call'];

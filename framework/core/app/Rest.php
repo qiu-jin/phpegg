@@ -189,7 +189,7 @@ class Rest extends App
             throw new \Exception('If use resource dispatch, must controller_depth > 0');
         }
         if (isset($this->dispatch['route'])) {
-            $controller = $this->dispatch['route'][0];
+            $controller  = $this->dispatch['route'][0];
             $action_path = $this->dispatch['route'][1];
         } elseif (count($path) >= $depth) {
             if ($to_camel = $this->config['resource_dispatch_controller_to_camel'] ?? null) {

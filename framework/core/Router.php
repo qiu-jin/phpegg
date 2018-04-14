@@ -104,9 +104,13 @@ class Router
                 case '(':
                     if (substr($v, -1) === ')'
                         && ($n = substr($v, 1, -1))
-                        && preg_match("/^$n$/", $s, $matches)
+                        && preg_match("/^$n$/", $s, $m)
                     ) {
-                        $ret[] = $s;
+                        if (count($m) > 1) {
+                            $ret = array_merge($ret, array_slice($m, 1)),
+                        } else {
+                            $ret[] = $s;
+                        }
                         break;
                     }
                     return false;
@@ -115,9 +119,13 @@ class Router
                     if (substr($v, -1) === ']'
                         && ($n = substr($v, 1, -1))
                         && isset(self::$patterns[$n])
-                        && preg_match('/^'.self::$patterns[$n].'$/', $s)
+                        && preg_match('/^'.self::$patterns[$n].'$/', $s, $m)
                     ) {
-                        $ret[] = $s;
+                        if (count($m) > 1) {
+                            $ret = array_merge($ret, array_slice($m, 1)),
+                        } else {
+                            $ret[] = $s;
+                        }
                         break;
                     }
                     return false;

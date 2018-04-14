@@ -26,7 +26,6 @@ class Mysqli extends Db
                 $connection->options($option, $value);
             }
         }
-        $connection->query("SET sql_mode=''");
         return $connection;
     }
     

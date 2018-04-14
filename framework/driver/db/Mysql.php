@@ -17,7 +17,6 @@ class Mysql extends Pdo
         if (isset($config['charset'])) {
             $dsn .= ';charset='.$config['charset'];
         }
-        $this->commands[] = 'SET SQL_MODE=ANSI_QUOTES';
         return $dsn;
     }
     
