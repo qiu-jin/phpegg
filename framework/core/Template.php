@@ -167,7 +167,7 @@ class Template
         $str = self::readExtends($str, $ck);
         // inner
         $str = self::readInner($str, $ck);
-        // 
+        // 检查模版更新
         $res = '';
         if ($ck) {
             $res .= self::wrapCode(sprintf(self::$config['view_check_expired_code'], implode('","', $ck))).PHP_EOL;
@@ -178,21 +178,24 @@ class Template
             if ($arr[0]) {
                 $res .= $arr[1];
             } else {
+                // 读取解析模版
                 $res .= self::readText(self::readTag(self::readInclude($arr[1]), $end));
             }
         }
         return $res;
     }
     
-    //
-    protected static function readExtends($str, &$tpls)
+    /*
+     * 读取解析extends标签
+     */
+    protected static function readExtends($str, &$ck)
     {
         $regex = '/^<'.self::$config['extends_tag'].' +name *= *"([\w|\/|-]+)" *\/>/';
         if (!preg_match($regex, $str, $matches)) {
             return $str;
         }
         $res    = '';
-        $tpls[] = $matches[1];
+        $ck[]   = $matches[1];
         $parent = self::$config['view_read_template_method']($matches[1]);
         $self   = substr($str, strlen($matches[0]));
         $block_regex = '/<'.self::$config['block_tag'].' +name *= *"(\w+)" *>/';
@@ -211,14 +214,18 @@ class Template
                         continue;
                     }
                 }
-                throw new TemplateException('mergeExtends error: 子模版代码块未闭合');
+                throw new TemplateException('readExtends error: 子模版代码块未闭合');
             }
         }
         // 匹配读取父模版
+        $regex  = '/'.implode('@ *block\("(\w+)"\) *', self::$config['text_border_sign']).'/';
+        $parent = preg_replace_callback($regex, function ($matchs) use ($sub_blocks) {
+            return $sub_blocks[$matchs[1]] ?? '';
+        }, $parent);
         if (preg_match_all($block_regex, $parent, $parent_matchs, PREG_OFFSET_CAPTURE)) {
-            $s_pos = 0;
-            $e_pos = 0;
-            $regex  = '/'.implode(' *'.self::$config['parent_block_sign'].' *', self::$config['text_border_sign']).'/';
+            $s_pos  = 0;
+            $e_pos  = 0;
+            $regex  = '/'.implode('@ *parent\(\) *', self::$config['text_border_sign']).'/';
             foreach ($parent_matchs[0] as $i => $match) {
                 if ($match[1] >= $e_pos) {
                     $res .= substr($parent, $s_pos, $match[1] - $s_pos);
@@ -244,7 +251,7 @@ class Template
                         continue;
                     }
                 }
-                throw new TemplateException('mergeExtends error: 父模版代码块未闭合');
+                throw new TemplateException('readExtends error: 父模版代码块未闭合');
             }
             if ($s_pos < strlen($parent)) {
                 $res .= substr($parent, $s_pos);
@@ -255,17 +262,21 @@ class Template
         return $res;
     }
     
-    //
-    protected static function readInner($str, &$tpls)
+    /*
+     * 读取解析inner标签
+     */
+    protected static function readInner($str, &$ck)
     {
         $regex = '/<'.self::$config['inner_tag'].' +name *= *"([\w|\/|-]+)" *\/>/';
         return preg_replace_callback($regex, function ($matches) use (&$tpls) {
-            $tpls[] = $matches[1];
+            $ck[] = $matches[1];
             return self::$config['view_read_template_method']($matches[1]);
         }, $str);
     }
     
-    //
+    /*
+     * 读取解析verbatim标签
+     */
     protected static function readVerbatim($str)
     {
         $regex = '/<'.self::$config['verbatim_tag'].' *>/';
@@ -292,7 +303,9 @@ class Template
         return $arr;
     }
     
-    //
+    /*
+     * 读取解析include标签
+     */
     protected static function readInclude($str)
     {
         $regex = '/<'.self::$config['include_tag'].' +name *= *"([\w|\/|-]+)" *\/>/';
@@ -310,21 +323,20 @@ class Template
     }
     
     /*
-     * 标签模版语法解析
+     * 读取解析流程控制语句标签
      */
     protected static function readTag($str, &$end)
     {
-        // 结构语句
-        $regex = '/<(\w+) +('.preg_quote(self::$config['assign_attr_prefix'])
-               . '\w+|'.preg_quote(self::$config['struct_attr_prefix']).'\w+).+/';
-        if (!preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
+        $assign = preg_quote(self::$config['assign_attr_prefix']);
+        $struct = preg_quote(self::$config['struct_attr_prefix']);
+        if (!preg_match_all('/<(\w+) +('.$assign.'\w+|'.$struct.'\w+).+/', $str, $matches, PREG_OFFSET_CAPTURE)) {
             return $str;
         }
         $pos = 0;
         $res = '';
         foreach ($matches[0] as $i => $match) {
             if ($pos > $match[1]) {
-                throw new TemplateException("tagParse error: 文本读取偏移地址错误");
+                throw new TemplateException("readTag error: 文本读取偏移地址错误");
             }
             // 读取左侧HTML
             $left  = substr($str, $pos, $match[1] - $pos);
@@ -334,14 +346,14 @@ class Template
             $res  .= $end ? self::completeEndTag($left, $end) : $left;
             // 读取解析标签内代码
             $ret   = self::readValue($match[0], '<', '>');
-            $tag   = self::readStructTag($ret['code'].'>', $ret['vars']);
+            $tag   = self::readTagAttr($ret['code'].'>', $ret['vars']);
             if ($tag['is_else']) {
                 // 处理if与elseif else的衔接
                 $l = 2 + strlen(PHP_EOL);
                 if (substr($res, -$l, 2) == '?>') {
                     $res = substr($res, 0, -$l).substr(implode(PHP_EOL.$blank, $tag['code']), 6);
                 } else {
-                    throw new TemplateException('tagParse error: 衔接if else失败');
+                    throw new TemplateException('readTag error: 衔接if else失败');
                 }
             } else {
                 $res .= implode(PHP_EOL.$blank, $tag['code']);
@@ -382,7 +394,7 @@ class Template
     }
 
     /*
-     * 插值模版语法解析
+     * 读取解析插值语句
      */
     protected static function readText($str)
     {
@@ -411,7 +423,7 @@ class Template
             $ret = ['continue' => false];
             do {
                 if ($i >= $count) {
-                    throw new TemplateException('textParse error: 不完整的插值语句');
+                    throw new TemplateException('readText error: 不完整的插值语句');
                 }
                 $val = $arr[$i];
                 $ret  = self::readValue(
@@ -432,9 +444,9 @@ class Template
     }
     
     /*
-     * 读取解析模版标签
+     * 读取解析流程控制语句
      */
-    protected static function readStructTag($tag, $vars)
+    protected static function readTagAttr($str, $vars)
     {
         // 标签HTML代码
         $html = '';
@@ -443,13 +455,13 @@ class Template
         // 标签内结构语句条数
         $count   = 0;
         $is_else = false;
-        $assign_regex = preg_quote(self::$config['assign_attr_prefix']);
-        $struct_regex = preg_quote(self::$config['struct_attr_prefix']);
-        $regex = "/ +($assign_regex|$struct_regex)([a-zA-Z_]\w*)( *= *\\$([1-9]))?/";
-        if (preg_match_all($regex, $tag, $matches, PREG_OFFSET_CAPTURE)) {
+        $assign  = preg_quote(self::$config['assign_attr_prefix']);
+        $struct  = preg_quote(self::$config['struct_attr_prefix']);
+        $regex   = "/ +($assign|$struct)([a-zA-Z_]\w*)( *= *\\$([1-9]))?/";
+        if (preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
             $pos = 0;
             foreach ($matches[1] as $i => $match) {
-                $tmp = trim(substr($tag, $pos, $matches[0][$i][1] - $pos));
+                $tmp = trim(substr($str, $pos, $matches[0][$i][1] - $pos));
                 if ($tmp) {
                     $html .= $tmp;
                 }
@@ -463,12 +475,12 @@ class Template
                     if ($attr == 'else' || $attr == 'elseif') {
                         $is_else = true;
                         if ($code) {
-                            throw new TemplateException("readStructTag error: 单个标签内else或elseif前不允许有其它语句");
+                            throw new TemplateException("readTagAttr error: 单个标签内else或elseif前不允许有其它语句");
                         }
                     }
                     if ($attr != 'else') {
                         if (empty($matches[3][$i][0])) {
-                            throw new TemplateException("readStructTag error: 标签属性值不能为空");
+                            throw new TemplateException("readTagAttr error: 标签属性值不能为空");
                         }
                         $val = substr(trim($vars[$matches[4][$i][0] - 1]), 1, -1);
                     }
@@ -476,7 +488,7 @@ class Template
                 }
                 $pos = $matches[0][$i][1] + strlen($matches[0][$i][0]);
             }
-            $html .= substr($tag, $pos);
+            $html .= substr($str, $pos);
         }
         if ($vars) {
             $html = self::restoreStrvars($html, $vars);
@@ -728,11 +740,11 @@ class Template
                     if (!$code) {
                         $code = self::replaceVar($ret['code']);
                     } elseif ($ret['code']){
-                        $code .= '[\''.$ret['code'].'\']'; 
+                        $code .= "['$ret[code]']"; 
                     }
                     break;
                 // 原生PHP函数或静态方法
-                case '@':
+                case ':':
                     if (!self::$config['enable_native_function']) {
                         throw new TemplateException("readUnit error: 未开启原生PHP函数支持");
                     }
@@ -759,7 +771,7 @@ class Template
                         if (!$ret['code']) {
                             $obj = $code;
                         } elseif($prev === '.') {
-                            $obj = $code."['".$ret['code']."']";
+                            $obj = $code."['$ret[code]']";
                         }
                     } elseif ($ret['code']) {
                         $obj = self::replaceVar($ret['code']);
@@ -799,7 +811,7 @@ class Template
                     $i += $pos + 1;
                     if ($code) {
                         if ($ret['code']) {
-                            $code .= "['".$ret['code']."']";
+                            $code .= "['$ret[code]']";
                         }
                         $code .= "[$arg]";
                     } else {
@@ -811,7 +823,7 @@ class Template
                     if (!$code) {
                         $code = self::replaceVar($ret['code']);
                     } elseif($ret['code']) {
-                        $code .= '[\''.$ret['code'].'\']';
+                        $code .= "['$ret[code]']";
                     }
                     if ($str[$i] == ':' || $str[$i] == '?') {
                         return $code.' ?'.$str[$i].' '.self::readArg(substr($str, $i + 1), $vars);
@@ -847,7 +859,7 @@ class Template
                     if (!$code) {
                         return self::replaceVar($ret['code']);
                     } elseif($ret['code']) {
-                        return $code.'[\''.$ret['code'].'\']';
+                        return $code."['$ret[code]']";
                     }
                     return $code;
                 default:
@@ -855,7 +867,7 @@ class Template
                         if (!$code) {
                             $code = self::replaceVar($ret['code']);
                         } elseif ($ret['code']){
-                            $code .= '[\''.$ret['code'].'\']'; 
+                            $code .= "['$ret[code]']"; 
                         }
                         return $code.' '.$ret['end'].' '.self::readArg(substr($str, $i), $vars);
                     }

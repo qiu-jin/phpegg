@@ -10,9 +10,12 @@ class View
 {    
     private static $init;
     private static $view;
+    // View配置
     private static $config = [
+        'ext' => '.php',
         'dir' => APP_DIR.'view/'
     ];
+    // View模版配置，为false则不使用模版
     private static $template = [
         'ext'           => '.html',
         'engine'        => Template::class,
@@ -28,7 +31,6 @@ class View
             return;
         }
         self::$init = true;
-        self::$view = new \stdClass();
         if ($config = Config::get('view')) {
             $template = Arr::pull($config, 'template');
             if ($template === false) {
@@ -46,12 +48,12 @@ class View
      */
     public static function var($name, $value)
     {
-        self::$view->vars[$name] = $value;
+        self::$view['vars'][$name] = $value;
     }
     
     public static function vars(array $values)
     {
-        self::$view->vars = isset(self::$view->vars) ? $values + self::$view->vars : $values;
+        self::$view['vars'] = $values + (self::$view['vars'] ?? []);
     }
     
     /*
@@ -59,12 +61,12 @@ class View
      */
     public static function filter($name, callable $value)
     {
-        self::$view->filters[$name] = $value;
+        self::$view['filter'][$name] = $value;
     }
     
     public static function filters(array $values)
     {
-        self::$view->filters = isset(self::$view->filters) ? $values + self::$view->filters : $values;
+        self::$view['filter'] = $values + (self::$view['filter'] ?? []);
     }
     
     /*
@@ -88,7 +90,7 @@ class View
      */
     public static function path($tpl)
     {
-        $phpfile = self::$config['dir']."$tpl.php";
+        $phpfile = self::$config['dir'].$tpl.self::$config['ext'];
         if (self::$template) {
             if (!is_file($tplfile = self::getTemplate($tpl))) {
                 throw new ViewException("Template file not found: $tplfile");
@@ -145,8 +147,8 @@ class View
     
     public static function readTemplate($tpl)
     {
-        if ($content = file_get_contents(self::getTemplate($tpl))) {
-            return $content;
+        if ($res = file_get_contents(self::getTemplate($tpl))) {
+            return $res;
         }
         throw new ViewException("Template file read fail: $file");
     }
