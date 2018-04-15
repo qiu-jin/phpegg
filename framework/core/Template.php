@@ -36,17 +36,17 @@ class Template
         'auto_escape_text'      => true,
         // 文本转义符号与反转义符号
         'text_escape_sign'      => ['$', '!'],
-        // 是否支持原生PHP函数
-        'enable_native_func'    => false,
         // 内置变量标识符
         'template_var_sign'     => '$',
         // 原样输出文本标识符（不解析文本插入边界符以其内内容）
         'verbatim_text_sign'    => '!',
-        // include方法
+        // 是否支持原生PHP函数
+        'enable_native_function'    => false,
+        // include 
         'view_include_code'         => 'include '.View::class.'::path("%s");',
-        // check expired方法
+        // check expired
         'view_check_expired_code'   => 'if ('.View::class.'::isExpired(__FILE__, "%s")) return include __FILE__;',
-        // 
+        // read template
         'view_read_template_method' => View::class.'::readTemplate',
     ];
     
@@ -162,24 +162,23 @@ class Template
     
     public static function complie($tpl)
     {
-        $tpls = [];
-        $str = self::$config['view_read_template_method']($tpl);
+        $ck = [];
         // extends
-        $str = self::readExtends($str, $tpls);
+        $str = self::readExtends($str, $ck);
         // inner
-        $str = self::readInner($str, $tpls);
+        $str = self::readInner($str, $ck);
         // 
         $res = '';
-        if ($tpls) {
-            $res = self::wrapCode(sprintf(self::$config['view_check_expired_code'], implode('","', $tpls))).PHP_EOL;
+        if ($ck) {
+            $res .= self::wrapCode(sprintf(self::$config['view_check_expired_code'], implode('","', $ck))).PHP_EOL;
         }
         $end = [];
         // verbatim
-        foreach (self::readVerbatim($str) as $chunk) {
-            if ($chunk[0]) {
-                $res .= $chunk[1];
+        foreach (self::readVerbatim($str) as $arr) {
+            if ($arr[0]) {
+                $res .= $arr[1];
             } else {
-                $res .= self::textParse(self::tagParse(self::readInclude($chunk[1]), $end));
+                $res .= self::readText(self::readTag(self::readInclude($arr[1]), $end));
             }
         }
         return $res;
@@ -297,28 +296,28 @@ class Template
     protected static function readInclude($str)
     {
         $regex = '/<'.self::$config['include_tag'].' +name *= *"([\w|\/|-]+)" *\/>/';
-        if (preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
-            $pos = 0;
-            $tmp = '';
-            foreach ($matches[0] as $i => $match) {
-                $tmp .= substr($str, $pos, $match[1] - $pos);
-                $tmp .= self::wrapCode(sprintf(self::$config['view_include_code'], $matches[1][$i][0]));
-                $pos  = strlen($match[0]) + $match[1];
-            }
-            return $tmp.substr($str, $pos);
+        if (!preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
+            return $str;
         }
-        return $str;
+        $pos = 0;
+        $tmp = '';
+        foreach ($matches[0] as $i => $match) {
+            $tmp .= substr($str, $pos, $match[1] - $pos);
+            $tmp .= self::wrapCode(sprintf(self::$config['view_include_code'], $matches[1][$i][0]));
+            $pos  = strlen($match[0]) + $match[1];
+        }
+        return $tmp.substr($str, $pos);
     }
     
     /*
      * 标签模版语法解析
      */
-    protected static function tagParse($str, &$end)
+    protected static function readTag($str, &$end)
     {
         // 结构语句
-        $assign_regex = preg_quote(self::$config['assign_attr_prefix']).'\w+';
-        $struct_regex = preg_quote(self::$config['struct_attr_prefix']).'\w+';
-        if (!preg_match_all("/<(\w+) +($assign_regex|$struct_regex).+/", $str, $matches, PREG_OFFSET_CAPTURE)) {
+        $regex = '/<(\w+) +('.preg_quote(self::$config['assign_attr_prefix'])
+               . '\w+|'.preg_quote(self::$config['struct_attr_prefix']).'\w+).+/';
+        if (!preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
             return $str;
         }
         $pos = 0;
@@ -385,7 +384,7 @@ class Template
     /*
      * 插值模版语法解析
      */
-    protected static function textParse($str)
+    protected static function readText($str)
     {
         // 以文插值左边界符分割文本
         $i = 1;
@@ -734,7 +733,7 @@ class Template
                     break;
                 // 原生PHP函数或静态方法
                 case '@':
-                    if (!self::$config['enable_native_func']) {
+                    if (!self::$config['enable_native_function']) {
                         throw new TemplateException("readUnit error: 未开启原生PHP函数支持");
                     }
                     if ($code || $ret['code'] || !($pos = strpos($str, '('))) {

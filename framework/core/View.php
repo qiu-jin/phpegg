@@ -14,10 +14,9 @@ class View
         'dir' => APP_DIR.'view/'
     ];
     private static $template = [
-        'ext'               => '.html',
-        'engine'            => Template::class,
-        'force_complie'     => false,
-        'block_view_prefix' => '__',
+        'ext'           => '.html',
+        'engine'        => Template::class,
+        'force_complie' => false,
     ];
     
     /*
@@ -95,7 +94,7 @@ class View
                 throw new ViewException("Template file not found: $tplfile");
             } 
             if (self::$template['force_complie'] || !is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
-                self::writeView($phpfile, (self::$template['engine'])::complie(self::readTemplate($tplfile)));
+                self::save($phpfile, (self::$template['engine'])::complie(self::readTemplate($tplfile)));
             }
         }
         return $phpfile;
@@ -121,8 +120,7 @@ class View
     public static function __callStatic($method, $params = [])
     {
         if (isset(self::$config['methods'][$method])) {
-            $vars = self::$config['methods'][$method];
-            $tpl = array_pop($vars);
+            $tpl = array_pop($vars = self::$config['methods'][$method]);
             if ($vars) {
                 foreach (array_keys($vars) as $i => $v) {
                     if (!isset($params[$i])) {
@@ -153,25 +151,24 @@ class View
         throw new ViewException("Template file read fail: $file");
     }
     
-    public static function isExpired(...$tpls)
+    public static function isExpired($phpfile, ...$tpls)
     {
         if (self::$template && $tpls) {
             foreach ($tpls as $tpl) {
                 if (is_file($tplfile = self::getTemplate($tpl))) {
                     throw new ViewException("Template file not found: $tplfile");
                 }
-                $phpfile = self::$config['dir']."$tpl.php";
-                if (!is_file($phpfile) || filemtime($phpfile) < filemtime($tplfile)) {
+                if (filemtime($phpfile) < filemtime($tplfile)) {
                     return true;
                 }
             }
         }
     }
 
-    private static function writeView($file, $content)
+    private static function save($file, $content)
     {
         if (is_dir($dir = dirname($file)) || mkdir($dir, 0777, true)) {
-            if (file_put_contents($file, $content)) {
+            if (file_put_contents($file, $content, LOCK_EX)) {
                 return true;
             }
             throw new ViewException("View file write fail: $file");
