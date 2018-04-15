@@ -87,10 +87,8 @@ class Inline extends App
     
     protected function defaultDispatch($path) 
     {
-        if ($path) {
-            if (empty($this->config['default_dispatch_hyphen_to_underscore'])) {
-                $controller = $path;
-            } else {
+        if ($controller = $path) {
+            if ($this->config['default_dispatch_hyphen_to_underscore']) {
                 $controller = strtr($path, '-', '_');
             }
             if (!isset($this->config['default_dispatch_controllers'])) {

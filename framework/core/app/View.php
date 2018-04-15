@@ -4,10 +4,12 @@ namespace framework\core\app;
 use framework\App;
 use framework\core\Config;
 use framework\core\Getter;
+use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\core\View as CoreView;
+use framework\core\exception\ViewException;
 
 class View extends App
 {
@@ -34,6 +36,8 @@ class View extends App
         'default_dispatch_hyphen_to_underscore' => false,
         // 路由调度的路由表
         'route_dispatch_routes' => null,
+        // 是否路由动态调用
+        'route_dispatch_dynamic_call' => false,
     ];
     
     protected function dispatch()
@@ -89,18 +93,18 @@ class View extends App
     
     protected function defaultDispatch($path) 
     {
-        if ($path) {
-            if (empty($this->config['default_dispatch_hyphen_to_underscore'])) {
-                $view = $path;
-            } else {
+        if ($view = $path) {
+            if ($this->config['default_dispatch_hyphen_to_underscore']) {
                 $view = strtr($path, '-', '_');
             }
             if (!isset($this->config['default_dispatch_views'])) {
                 if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $view)) {
-                    if (Config::has('view.template')) {
-                        Config::set('view.template.ignore_not_find', true);
+                    try {
+                        $view_file = $this->getViewFile($view);
+                    } catch (\ViewException $e) {
+                        return;
                     }
-                    if (is_php_file($view_file = $this->getViewFile($view))) {
+                    if (is_php_file($view_file)) {
                         return compact('view', 'view_file');
                     }
                 }
@@ -123,11 +127,14 @@ class View extends App
                 $routes = Config::flash($routes);
             }
             $path = empty($path) ? null : explode('/', $path);
-            if ($result = Router::route($path, $routes)) {
+            if ($route = (new Router($path))->route($routes)) {
+                if ($this->config['route_dispatch_dynamic_call']) {
+                    $route['dispatch'] = Dispatcher::dynamicCall($route['dispatch'], $route['matches']);
+                }
                 return [
-                    'view'      => $result[0],
-                    'view_file' => $this->getViewFile($result[0]),
-                    'params'    => $result[1]
+                    'view'      => $route['dispatch'],
+                    'view_file' => $this->getViewFile($route['dispatch']),
+                    'params'    => $route['matches']
                 ];
             }
         }
@@ -135,7 +142,10 @@ class View extends App
     
     protected function getViewFile($view)
     {
-        return $this->config['enable_pjax'] && Request::isPjax() ? CoreView::block($view) : CoreView::file($view);
+        if ($this->config['enable_pjax'] && Request::isPjax()) {
+            return CoreView::block($view);
+        }
+        return CoreView::file($view);
     }
     
     protected function getViewModelFile($view)
@@ -143,7 +153,7 @@ class View extends App
         return APP_DIR.$this->config['viewmodel_path']."/$view.php";
     }
     
-    protected function requireModelFile($file, &$vars)
+    protected function requireModelFile($file, $vars)
     {
         if (empty($this->config['enable_getter'])) {
             $call = static function($__file, $_VARS) {
