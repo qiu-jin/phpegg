@@ -508,32 +508,9 @@ class Template
     {
         $ret = '';
         $tmp = '';
-        
-        $ret = [];
         if ($strs === null) {
             extract(self::extractString($val));
         }
-        $len  = strlen($val);
-        $lpos = $rpos = 0;
-        while(true) {
-            $lpos = strpos($val, '(', $lpos));
-            $rpos = strrpos($val, ')', $rpos));
-            if ($lpos === false && $rpos === false) {
-                break;
-            }
-            if (!($lpos !== false && $rpos !== false)) {
-                throw new TemplateException("readValue");
-            }
-            if ($lpos > $rpos) {
-                throw new TemplateException("readValue");
-            }
-            $left  = substr($val, 0, $lpos);
-            $right = substr($val, 0, $rpos);
-            $val   = substr($val, $lpos, $rpos - $lpos);
-            $rpos  = $rpos - $len;
-        }
-        
-        
         $len = strlen($val);
         for ($i = 0; $i < $len; $i++) {
             $c = $val[$i];
@@ -1032,18 +1009,6 @@ class Template
             return true;
         }
         return false;
-    }
-    
-    /*
-     * 读取字符串部分
-     */ 
-    protected static function readVarnameChars($str, $i)
-    {
-        $ret = '';
-        $len = strlen($str);
-        foreach ($i < $len) {
-            
-        }
     }
 }
 Template::init();
