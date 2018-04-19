@@ -35,7 +35,7 @@ class Template
         // 文本插入是否自动转义
         'auto_escape_text'      => true,
         // 文本转义符号与反转义符号
-        'text_escape_sign'      => ['$', '!'],
+        'text_escape_sign'      => [':', '!'],
         // 内置变量标识符
         'template_var_sign'     => '$',
         // 原样输出文本标识符（不解析文本插入边界符以其内内容）
@@ -43,9 +43,9 @@ class Template
         // 是否支持原生PHP函数
         'enable_native_function'    => false,
         // include 
-        'view_include_code'         => 'include '.View::class.'::path("%s");',
+        'view_include_code'         => 'include '.View::class.'::path(%s);',
         // check expired
-        'view_check_expired_code'   => 'if ('.View::class.'::isExpired(__FILE__, "%s")) return include __FILE__;',
+        'view_check_expired_code'   => 'if ('.View::class.'::checkExpired(__FILE__, %s)) return include __FILE__;',
         // read template
         'view_read_template_method' => View::class.'::readTemplate',
     ];
@@ -67,13 +67,13 @@ class Template
         // 是否为空
         'empty'         => 'empty($0)',
         // 默认值
-        'default'       => '$0 ?? $1',
+        'default'       => '($0 ?? $1)',
         // 转为字符串
         'str'           => 'strval($0)',
         // 转为数字
         'num'           => '($0+0)',
         // 字符串拼接
-        'concat'        => '$0.$1',
+        'concat'        => '($0.$1)',
         // 字符串拼接
         'format'        => 'sprintf($0, $1, ...)',
         // 字符串替换
@@ -160,9 +160,9 @@ class Template
         }
     }
     
-    public static function complie($tpl)
+    public static function complie($str)
     {
-        $ck = [];
+        $ck  = [];
         // extends
         $str = self::readExtends($str, $ck);
         // inner
@@ -170,96 +170,28 @@ class Template
         // 检查模版更新
         $res = '';
         if ($ck) {
-            $res .= self::wrapCode(sprintf(self::$config['view_check_expired_code'], implode('","', $ck))).PHP_EOL;
+            $arg  = '"'.implode('", "', array_unique($ck)).'"';
+            $res .= self::wrapCode(sprintf(self::$config['view_check_expired_code'], $arg)).PHP_EOL;
         }
         $end = [];
-        // verbatim
-        foreach (self::readVerbatim($str) as $arr) {
-            if ($arr[0]) {
-                $res .= $arr[1];
-            } else {
-                // 读取解析模版
-                $res .= self::readText(self::readTag(self::readInclude($arr[1]), $end));
+        if ($ret = self::parseEndTag($str, 'verbatim')) {
+            $pos = 0;
+            foreach ($ret as $v) {
+                $res .= self::readTagText(substr($str, $pos, $v['pos'][0] - $pos), $end);
+                $res .= $v['text'];
+                $pos  = $v['pos'][1];
             }
+            $str = substr($str, $pos);
         }
-        return $res;
+        if (!$end) {
+            return $res.self::readTagText($str, $end);
+        }
+        throw new TemplateException('complie error: 结构语句标签未闭合');
     }
     
-    /*
-     * 读取解析extends标签
-     */
-    protected static function readExtends($str, &$ck)
+    protected static function readTagText($str, &$end) 
     {
-        $regex = '/^<'.self::$config['extends_tag'].' +name *= *"([\w|\/|-]+)" *\/>/';
-        if (!preg_match($regex, $str, $matches)) {
-            return $str;
-        }
-        $res    = '';
-        $ck[]   = $matches[1];
-        $parent = self::$config['view_read_template_method']($matches[1]);
-        $self   = substr($str, strlen($matches[0]));
-        $block_regex = '/<'.self::$config['block_tag'].' +name *= *"(\w+)" *>/';
-        $block_end   = '</'.self::$config['block_tag'].'>';
-        // 匹配读取子模版
-        if (preg_match_all($block_regex, $self, $self_matchs, PREG_OFFSET_CAPTURE)) {
-            $pos = 0;
-            $sub_blocks = [];
-            foreach ($self_matchs[0] as $i => $match) {
-                if ($match[1] >= $pos) {
-                    $pos = stripos($self, $block_end, $match[1]);
-                    if ($pos) {
-                        $name = $self_matchs[1][$i][0];
-                        $start = $match[1] + strlen($match[0]);
-                        $sub_blocks[$name] = substr($self, $start, $pos - $start);
-                        continue;
-                    }
-                }
-                throw new TemplateException('readExtends error: 子模版代码块未闭合');
-            }
-        }
-        // 匹配读取父模版
-        $regex  = '/'.implode('@ *block\("(\w+)"\) *', self::$config['text_border_sign']).'/';
-        $parent = preg_replace_callback($regex, function ($matchs) use ($sub_blocks) {
-            return $sub_blocks[$matchs[1]] ?? '';
-        }, $parent);
-        if (preg_match_all($block_regex, $parent, $parent_matchs, PREG_OFFSET_CAPTURE)) {
-            $s_pos  = 0;
-            $e_pos  = 0;
-            $regex  = '/'.implode('@ *parent\(\) *', self::$config['text_border_sign']).'/';
-            foreach ($parent_matchs[0] as $i => $match) {
-                if ($match[1] >= $e_pos) {
-                    $res .= substr($parent, $s_pos, $match[1] - $s_pos);
-                    $e_pos = stripos($parent, $block_end, $match[1]);
-                    if ($e_pos) {
-                        $block_name = $parent_matchs[1][$i][0];
-                        // 继承或重写父模版块代码
-                        if (isset($sub_blocks[$block_name])) {
-                            $content = $sub_blocks[$block_name];
-                            // 匹配父模版块占位符，并替换成父模版块代码
-                            $arr = preg_split($regex, $content, 2);
-                            if (count($arr) == 2) {
-                                $start = $match[1] + strlen($match[0]);
-                                $res  .= implode(substr($parent, $start, $e_pos - $start), $arr);
-                            } else {
-                                $res  .= $content;
-                            }
-                        } else {
-                            $start = $match[1] + strlen($match[0]);
-                            $res  .= substr($parent, $start, $e_pos - $start);
-                        }
-                        $s_pos = $e_pos + strlen($block_end);
-                        continue;
-                    }
-                }
-                throw new TemplateException('readExtends error: 父模版代码块未闭合');
-            }
-            if ($s_pos < strlen($parent)) {
-                $res .= substr($parent, $s_pos);
-            }
-        } else {
-            $res .= $parent;
-        }
-        return $res;
+        return self::readText(self::readStructTag(self::readInclude($str), $end));
     }
     
     /*
@@ -267,40 +199,11 @@ class Template
      */
     protected static function readInner($str, &$ck)
     {
-        $regex = '/<'.self::$config['inner_tag'].' +name *= *"([\w|\/|-]+)" *\/>/';
-        return preg_replace_callback($regex, function ($matches) use (&$tpls) {
-            $ck[] = $matches[1];
-            return self::$config['view_read_template_method']($matches[1]);
+        return preg_replace_callback(self::tagRegex('inner'), function ($matches) use (&$tpls) {
+            $attrs = self::parseSelfEndTagAttrs($matches, ['name']);
+            $ck[]  = $attrs['name'];
+            return self::$config['view_read_template_method']($attrs['name']);
         }, $str);
-    }
-    
-    /*
-     * 读取解析verbatim标签
-     */
-    protected static function readVerbatim($str)
-    {
-        $regex = '/<'.self::$config['verbatim_tag'].' *>/';
-        if (!preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
-            return [[false, $str]];
-        }
-        $s_pos = $e_pos = 0;
-        $verbatim_end = '</'.self::$config['verbatim_tag'].'>';
-        foreach ($matches[0] as $i => $match) {
-            if ($match[1] >= $e_pos) {
-                $arr[]  = [false, substr($str, $s_pos, $match[1] - $s_pos)];
-                if ($e_pos = stripos($str, $verbatim_end, $match[1])) {
-                    $s_pos = $e_pos + strlen($verbatim_end);
-                    $start = $match[1] + strlen($match[0]);
-                    $arr[] = [true, substr($str, $start, $e_pos - $start)];
-                }
-                continue;
-            }
-            throw new TemplateException('Complie error: verbatim标签未闭合');
-        }
-        if ($s_pos < strlen($str)) {
-            $arr[] = [false, substr($str, $s_pos)];
-        }
-        return $arr;
     }
     
     /*
@@ -308,28 +211,97 @@ class Template
      */
     protected static function readInclude($str)
     {
-        $regex = '/<'.self::$config['include_tag'].' +name *= *"([\w|\/|-]+)" *\/>/';
-        if (!preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
-            return $str;
-        }
-        $pos = 0;
-        $tmp = '';
-        foreach ($matches[0] as $i => $match) {
-            $tmp .= substr($str, $pos, $match[1] - $pos);
-            $tmp .= self::wrapCode(sprintf(self::$config['view_include_code'], $matches[1][$i][0]));
-            $pos  = strlen($match[0]) + $match[1];
-        }
-        return $tmp.substr($str, $pos);
+        return preg_replace_callback(self::tagRegex('include'), function ($matches) {
+            $vname = self::$config['arg_attr_prefix'].'name';
+            $attrs = self::parseSelfEndTagAttrs($matches, ['name', $vname]);
+            if (isset($attrs['name'])) {
+                $arg = '"'.$attrs['name'].'"';
+            } else {
+                $arg = self::readValue($attrs[$name]);
+            }
+            return self::wrapCode(sprintf(self::$config['view_include_code'], $arg));
+        }, $str);
     }
     
     /*
-     * 读取解析流程控制语句标签
+     * 读取解析插值语句
      */
-    protected static function readTag($str, &$end)
+    protected static function readText($str)
     {
-        $assign = preg_quote(self::$config['assign_attr_prefix']);
-        $struct = preg_quote(self::$config['struct_attr_prefix']);
-        if (!preg_match_all('/<(\w+) +('.$assign.'\w+|'.$struct.'\w+).+/', $str, $matches, PREG_OFFSET_CAPTURE)) {
+        $l = preg_quote(self::$config['text_border_sign'][0]);
+        $r = preg_quote(self::$config['text_border_sign'][1]);
+        return preg_replace_callback("/$l(.*?)$r/", function ($matches) use ($str) {
+            // 不解析，原样输出
+            if ($matches[0][0] === self::$config['verbatim_text_sign']) {
+                return substr($matches[0], 1);
+            }
+            // 是否转义
+            $val = $matches[1];
+            $escape = self::$config['auto_escape_text'];
+            if (in_array($c = $val[0], self::$config['text_escape_sign'])) {
+                $val = substr($val, 1);
+                $escape  = !array_search($c, self::$config['text_escape_sign']);
+            }
+            $code = self::readValue($val);
+            return self::wrapCode($escape ? "echo htmlentities($code);" : "echo $code;");
+        }, $str);
+    }
+    
+    /*
+     * 读取解析extends标签
+     */
+    protected static function readExtends($str, &$ck)
+    {
+        if (!preg_match_all(self::tagRegex('extends'), $str, $matches, PREG_OFFSET_CAPTURE)) {
+            return $str;
+        }
+        if (count($matches[0]) > 1) {
+            throw new TemplateException('readExtends error: 不允许有多条extends标签语句');
+        }
+        if (count($matches[0][0][1]) !== 0) {
+            throw new TemplateException('readExtends error: extends标签语句必须在模版开头，其前不允许有非空白字符');
+        }
+        $name = self::parseSelfEndTagAttrs($matches[0][0][0], ['name'])['name'];
+        $ck[] = $name;
+        // 读取子模版block
+        if ($ret = self::parseEndTag(substr($str, strlen($matches[0][0][0])), 'block', ['name'])) {
+            foreach ($sret as $v) {
+                $blocks[$v['attrs']['name']] = $v['text'];
+            }
+        }
+        // 替换父模版block
+        $parent = preg_replace_callback(self::funcRegex('block'), function ($matchs) use ($blocks) {
+            return $blocks[$matchs[1]] ?? '';
+        }, self::$config['view_read_template_method']($name));
+        if ($ret = self::parseEndTag($parent, 'block', ['name'])) {
+            $pos = 0;
+            $res = '';
+            $regex = self::funcRegex('parent', false);
+            foreach ($ret as $v) {
+                $res .= substr($parent, $pos, $v['pos'][0] - $pos);
+                $pos  = $v['pos'][1];
+                if (isset($blocks[$v['attrs']['name']])) {
+                    $res .= preg_replace_callback($regex, function ($matchs) use ($v) {
+                        return $v['text'];
+                    }, $blocks[$v['attrs']['name']]);
+                } else {
+                    $res .= $v['text'];
+                }
+            }
+            return $res.substr($parent, $pos);
+        }
+        return $parent;
+    }
+    
+    /*
+     * 读取解析控制结构语句标签
+     */
+    protected static function readStructTag($str, &$end)
+    {
+        $r = '(?:"[^"]*"|\'[^\']*\')';
+        $prefix = preg_quote(self::$config['assign_attr_prefix'].self::$config['struct_attr_prefix']);
+        $regex  = "/<(\w+)\s+(?:\s*\w+\s*=\s*$r)*(?:\s*[$prefix]\w+(?:\s*=\s*$r)?)+(?:\s*\w+\s*=\s*$r)*\s*\/?>/";
+        if (!preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
             return $str;
         }
         $pos = 0;
@@ -343,169 +315,56 @@ class Template
             // 读取空白内容
             $blank = self::readLeftBlank($left);
             // 拼接左侧内容，如有为闭合语句，尝试闭合处理。
-            $res  .= $end ? self::completeEndTag($left, $end) : $left;
+            $res  .= $end ? self::completeStructTag($left, $end) : $left;
             // 读取解析标签内代码
-            $ret   = self::readValue($match[0], '<', '>');
-            $tag   = self::readTagAttr($ret['code'].'>', $ret['vars']);
-            if ($tag['is_else']) {
-                // 处理if与elseif else的衔接
+            $attrs = self::readTagStructAttr($match[0]);
+            // 处理if与elseif else的衔接
+            if ($attrs['is_else']) {
                 $l = 2 + strlen(PHP_EOL);
                 if (substr($res, -$l, 2) == '?>') {
-                    $res = substr($res, 0, -$l).substr(implode(PHP_EOL.$blank, $tag['code']), 6);
+                    $res = substr($res, 0, -$l).substr(implode(PHP_EOL.$blank, $attrs['code']), 6);
                 } else {
                     throw new TemplateException('readTag error: 衔接if else失败');
                 }
             } else {
-                $res .= implode(PHP_EOL.$blank, $tag['code']);
+                $res .= implode(PHP_EOL.$blank, $attrs['code']);
             }
             // 补全空白内容
             $res .= PHP_EOL.$blank;
             // 如果是空白标签则忽略标签HTML代码
             if ($matches[1][$i][0] != self::$config['blank_tag']) {
-                $res .= $tag['html'];
+                $res .= $attrs['html'];
             }
-            // 如果是自闭合标签则自行添加PHP闭合
-            // 否则增加未闭合标签语句数据供下步处理。
-            if (substr($tag['html'], -2, 1) === '/') {
-                $res .= str_repeat(PHP_EOL.$blank.self::wrapCode('}'), $tag['count']);
+            // 如果是自闭合标签则自行添加PHP闭合，否则增加未闭合标签语句数据供下步处理。
+            if (substr($attrs['html'], -2) === '/>') {
+                $res .= str_repeat(PHP_EOL.$blank.self::wrapCode('}'), $attrs['count']);
             } else {
                 $end[] = [
-                    // HTML闭合标签层数
-                    'num'   => 0,
-                    // 补全的PHP闭合标签数
-                    'count' => $tag['count'],
-                    // HTML标签名
-                    'tag'   => $matches[1][$i][0]
+                    'num'   => 0, // HTML闭合标签层数
+                    'tag'   => $matches[1][$i][0], // HTML标签名
+                    'count' => $attrs['count'], // 补全的PHP闭合标签数
                 ];
-            }
-            // 处理开始标签行右侧内容，尝试闭合处理。
-            if (strlen($match[0]) - $ret['pos'] > 2) {
-                $right = substr($match[0], $ret['pos'] + 1);
-                $res  .= $end ? self::completeEndTag($right, $end, $blank) : $right;
             }
             // 重设文本处理位置
             $pos = strlen($match[0]) + $match[1];
         }
         // 处理最后部分
         if ($tmp = substr($str, $pos)) {
-            $res.= $end ? self::completeEndTag($tmp, $end) : $tmp;
+            $res.= $end ? self::completeStructTag($tmp, $end) : $tmp;
         }
         return $res;
-    }
-
-    /*
-     * 读取解析插值语句
-     */
-    protected static function readText($str)
-    {
-        // 以文插值左边界符分割文本
-        $i = 1;
-        $arr = explode(self::$config['text_border_sign'][0], $str);
-        if (($count = count($arr)) < 2) {
-            return $str;
-        }
-        $res = $arr[0];
-        // 循环处理被分割文本
-        while ($i < $count) {
-            // 不解析，原样输出
-            if (substr($res, -1) === self::$config['verbatim_text_sign']) {
-                $res .= self::$config['text_border_sign'][0].$arr[$i];
-                $i++;
-                continue;
-            }
-            // 是否转义
-            $escape = self::$config['auto_escape_text'];
-            if (in_array($c = $arr[$i][0], self::$config['text_escape_sign'])) {
-                $arr[$i] = substr($arr[$i], 1);
-                $escape  = !array_search($c, self::$config['text_escape_sign']);
-            }
-            // 读取解析插值语句
-            $ret = ['continue' => false];
-            do {
-                if ($i >= $count) {
-                    throw new TemplateException('readText error: 不完整的插值语句');
-                }
-                $val = $arr[$i];
-                $ret  = self::readValue(
-                    $val,
-                    self::$config['text_border_sign'][0],
-                    self::$config['text_border_sign'][1],
-                    $ret['continue'] ? $ret : null
-                );
-                $i++;
-            } while ($ret['continue'] === true);
-            $code = self::readArg($ret['code'], $ret['vars']);
-            $res .= self::wrapCode($escape ? "echo htmlentities($code);" : "echo $code;");
-            if(strlen($val) - $ret['pos'] > 1) {
-                $res .= substr($val, $ret['pos'] + 1);
-            }
-        }
-        return $res;
-    }
-    
-    /*
-     * 读取解析流程控制语句
-     */
-    protected static function readTagAttr($str, $vars)
-    {
-        // 标签HTML代码
-        $html = '';
-        // 标签PHP代码
-        $code = [];
-        // 标签内结构语句条数
-        $count   = 0;
-        $is_else = false;
-        $assign  = preg_quote(self::$config['assign_attr_prefix']);
-        $struct  = preg_quote(self::$config['struct_attr_prefix']);
-        $regex   = "/ +($assign|$struct)([a-zA-Z_]\w*)( *= *\\$([1-9]))?/";
-        if (preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
-            $pos = 0;
-            foreach ($matches[1] as $i => $match) {
-                $tmp = trim(substr($str, $pos, $matches[0][$i][1] - $pos));
-                if ($tmp) {
-                    $html .= $tmp;
-                }
-                $attr = $matches[2][$i][0];
-                // 是否为赋值语句
-                if ($matches[1][$i][0] == self::$config['assign_attr_prefix']) {
-                    $value  = self::readValue(substr(trim($vars[$matches[4][$i][0] - 1]), 1, -1));
-                    $code[] = self::wrapCode('$'.$attr.' = '.self::readExp($value['code'], $value['vars']).';');
-                } else {
-                    $count++;
-                    if ($attr == 'else' || $attr == 'elseif') {
-                        $is_else = true;
-                        if ($code) {
-                            throw new TemplateException("readTagAttr error: 单个标签内else或elseif前不允许有其它语句");
-                        }
-                    }
-                    if ($attr != 'else') {
-                        if (empty($matches[3][$i][0])) {
-                            throw new TemplateException("readTagAttr error: 标签属性值不能为空");
-                        }
-                        $val = substr(trim($vars[$matches[4][$i][0] - 1]), 1, -1);
-                    }
-                    $code[] = self::wrapCode(self::readStruct($attr, $val ?? null));
-                }
-                $pos = $matches[0][$i][1] + strlen($matches[0][$i][0]);
-            }
-            $html .= substr($str, $pos);
-        }
-        if ($vars) {
-            $html = self::restoreStrvars($html, $vars);
-        }
-        return compact('html', 'code', 'count', 'is_else');
     }
     
     /*
      * 合并完成模版标签闭合
      */
-    protected static function completeEndTag($str, &$end, $blank = null)
+    protected static function completeStructTag($str, &$end, $blank = null)
     {
         $res = '';
         do {
             $i = count($end) - 1;
             $tag = $end[$i]['tag'];
-            if (!preg_match_all('/(<'.$tag.'|<\/'.$tag.'>)/', $str, $matches, PREG_OFFSET_CAPTURE)) {
+            if (!preg_match_all("/(<$tag|<\/$tag>)/", $str, $matches, PREG_OFFSET_CAPTURE)) {
                 // 无匹配则直接拼接剩余部分返回
                 return $res.$str;
             }
@@ -537,123 +396,78 @@ class Template
                     }
                 }
             }
-            // 重设字符串
-            $str  = substr($str, $pos);
+            $str = substr($str, $pos);
         } while ($i > 0);
-        if ($str) {
-            // 拼接剩余部分
-            $res .= $str;
-        }
-        return $res;
+        return $res.$str;
     }
     
     /*
-     * 读取解析属性值
+     * 读取解析流程控制语句
      */
-    protected static function readValue($str, $start = null, $end = null, $continue = null)
+    protected static function readTagStructAttr($str)
     {
-        $pos = $num = 0;
-        // $continue不为空则继续上次内容处理，否则开始新处理
-        if ($continue) {
-            extract($continue);
-            if ($start) {
-                $var .= $start;
-            }
-        } else {
-            $var    = '';
-            $code   = '';
-            $quote  = null;
-            $vars   = [];
-        }
-        if($end) {
-            $end_len = strlen($end);
-        }
-        $len = strlen($str);
-        for($i = 0; $i < $len; $i++) {
-            $char = $str[$i];
-            // 处理引号
-            if (self::isQuoteChar($char)) {
-                if ($quote) {
-                    if ($quote === $char) {
-                        if ($continue) {
-                            if (($i === 0 || $str[$i - 1] !== '\\')) {
-                                $vars[] = $quote.$var.$quote;
-                                $var   = '';
-                                $num   = 0;
-                                $quote = null;
-                                $code .= '$'.count($vars);
-                            } else {
-                                $var  .= $char;
-                            }
-                        } else {
-                            if ($i - $num === 1 || ($str[$i - 1] !== '\\')) {
-                                $vars[] = $quote.$var.$quote;
-                                $var   = '';
-                                $num   = 0;
-                                $quote = null;
-                                $code .= '$'.count($vars);
-                            } else {
-                                $var  .= $char;
-                            }
+        // 标签HTML代码
+        $html    = '';
+        // 标签PHP代码
+        $code    = [];
+        // 标签内结构语句条数
+        $count   = 0;
+        $is_else = false;
+        $prefix  = preg_quote(self::$config['assign_attr_prefix'].self::$config['struct_attr_prefix']);
+        $regex   = "/\s*([$prefix])(\w+)(?:\s*=\s*(\"[^\"]*\"|'[^']*'))?/";
+        if (preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
+            $pos = 0;
+            foreach ($matches[1] as $i => $match) {
+                $html .= trim(substr($str, $pos, $matches[0][$i][1] - $pos));
+                $pref  = $matches[1][$i][0];
+                $name  = $matches[2][$i][0];
+                if ($val = $matches[3][$i][0]) {
+                    $val = substr($val, 1, -1);
+                } else {
+                    if ($name != 'else' && $pref == self::$config['struct_attr_prefix']) {
+                        throw new TemplateException("readTagAttr error: 标签属性值不能为空");
+                    }
+                }
+                // 是否为赋值语句
+                if ($pref == self::$config['assign_attr_prefix']) {
+                    $code[] = self::wrapCode("$$name = ".self::readValue($val).';');
+                } else {
+                    $count++;
+                    if ($name == 'else' || $name == 'elseif') {
+                        $is_else = true;
+                        if ($code) {
+                            throw new TemplateException("readTagAttr error: 单个标签内else或elseif前不允许有其它语句");
                         }
-                    } else {
-                        $var .= $char;
                     }
-                } else {
-                    $num = $i;
-                    $quote = $char;
+                    $code[] = self::wrapCode(self::readControlStruct($name, $val));
                 }
-            } elseif ($end && ($i - $end_len) > -2) {
-                if ($quote){
-                    $var  .= $char;
-                } elseif (substr($str, $i + 1 - $end_len, $end_len) !== $end) {
-                    $code .= $char;
-                } else {
-                    if ($end_len > 1) {
-                        $code = substr($code, 0, 1 - $end_len);
-                    }
-                    return ['continue' => false, 'code' => $code, 'pos' => $i, 'vars' => $vars];
-                }
-            } elseif (self::isNewlineChar($char)) {
-                throw new TemplateException("readValue error: 不允许有换行符");
-            } else {
-                if ($quote) {
-                    $var  .= $char;
-                } else {
-                    $code .= $char;
-                }
+                $pos = $matches[0][$i][1] + strlen($matches[0][$i][0]);
             }
+            $html .= substr($str, $pos);
         }
-        if (!$quote) {
-            return ['continue' => false, 'code' => $code, 'pos' => $pos, 'vars' => $vars];
-        }
-        return ['continue' => true, 'code' => $code, 'pos' => $len, 'vars' => $vars, 'var' => $var, 'quote' => $quote];
+        return compact('html', 'code', 'count', 'is_else');
     }
     
     /*
      * 读取语句结构
      */
-    protected static function readStruct($struct, $val = null)
+    protected static function readControlStruct($name, $val)
     {
-        if ($val) {
-            $attr = self::readValue($val);
-        }
-        switch ($struct) {
+        switch ($name) {
             case 'if':
-                return 'if ('.self::readExp($attr['code'], $attr['vars']).') {';
+                return 'if ('.self::readValue($val).') {';
             case 'elseif':
-                return 'elseif ('.self::readExp($attr['code'], $attr['vars']).') {';
+                return 'elseif ('.self::readValue($val).') {';
             case 'else':
                 return 'else {';
             case 'each':
-                $arr = explode(' in ', $attr['code'], 2);
+                $arr = explode(' in ', $val, 2);
                 if (isset($arr[1])) {
-                    $kv = explode(':', $arr[0]);
-                    $ct = count($kv);
-                    $each = $arr[1];
-                    if ($ct == 1) {
+                    $kv  = explode(':', trim($arr[0]), 2);
+                    $val = $arr[1];
+                    if (count($kv) == 1) {
                         $as = '$'.$kv[0];
-                    } elseif ($ct == 2) {
+                    } else {
                         if (empty($kv[0])) {
                             if (self::isVarnameChars($kv[1])) {
                                 $as = '$'.$kv[1];
@@ -668,239 +482,80 @@ class Template
                             }
                         }
                     }
-                // 无in关键字则默认使用$key和$val表示键值
+                    if (!isset($as)) {
+                        break;
+                    }
                 } else {
-                    $each = $arr[0];
                     $as = '$key => $val';
                 }
-                return 'foreach('.self::readArg($each, $attr['vars']).' as '.$as.') {';
+                return 'foreach('.self::readValue($val)." as $as) {";
             case 'for':
                 if (count($arr = explode(';', $attr['code'], 2)) == 2) {
                     foreach($arr as $v) {
-                        $ret[] = self::readExp($v, $attr['vars']);
+                        $ret[] = self::readValue($v, $attr['vars']);
                     }
                     return 'for ('.implode(';', $ret).') {';
                 }
-                throw new TemplateException("readStruct error: for语句格式错误");
+                break;
         }
-        throw new TemplateException("readStruct error: 非法语句 $struct");
-    }
-    
-    /*
-     * 读取参数
-     */
-    protected static function readArg($str, $vars, &$type = null)
-    {
-        $str = trim($str);
-        // bool或null
-        if ($str === 'true' || $str === 'false' || $str === 'null') {
-            $type = $str;
-            return $str;
-        // 被替换的字符串变量
-        } elseif (preg_match("/^\\$([1-9][0-9]*)$/", $str, $match)) {
-            $type = 'string';
-            return $vars[$match[1] - 1];
-        // 数字
-        } elseif (is_numeric($str)) {
-            $type = 'number';
-            return $str;
-        // 数组
-        } elseif ($str[0] === '[' || $str[0] === '{') {
-            $type = 'array';
-            return self::readArray($str, $vars);
-        // 其它
-        } else {
-            $type = 'mixed';
-            return self::readMixed($str, $vars);
-        }
-    }
-    
-    /*
-     * 读取语句单元
-     */
-    protected static function readMixed($str, $vars)
-    {
-        $i    = 0;
-        $str  = trim($str);
-        $len  = strlen($str);
-        $code = '';
-        $prev = null;
-        while ($i < $len) {
-            $ret = self::readWord(substr($str, $i));
-            if (in_array($ret['code'], ['true', 'false', 'null'], true)) {
-                throw new TemplateException("readUnit error: 不允许用关键字做变量 ".$ret['code']);
-            }
-            $i += $ret['seek'];
-            switch ($ret['end']) {
-                // 数组或函数
-                case '.':
-                    if (!$ret['code'] && ($prev === '.' || !$code)) {
-                        throw new TemplateException('read_unit error: '.$str);
-                    }
-                    if (!$code) {
-                        $code = self::replaceVar($ret['code']);
-                    } elseif ($ret['code']){
-                        $code .= "['$ret[code]']"; 
-                    }
-                    break;
-                // 原生PHP函数或静态方法
-                case ':':
-                    if (!self::$config['enable_native_function']) {
-                        throw new TemplateException("readUnit error: 未开启原生PHP函数支持");
-                    }
-                    if ($code || $ret['code'] || !($pos = strpos($str, '('))) {
-                        throw new TemplateException("readUnit error: 非法字符");
-                    }
-                    foreach ($arr = explode('.', substr($str, $i, $pos - $i)) as $item) {
-                        if (!self::isVarnameChars($item)) {
-                            throw new TemplateException("readUnit error: 非法字符 $item");
-                        }
-                    }
-                    $i = $pos + 1;
-                    $args = implode(', ', self::readFuncArgs($str, $i, $vars));
-                    if (($c = count($arr)) == 1) {
-                        $code = "$arr[0]($args)";
-                    } else {
-                        $code = implode('\\', array_slice($arr, 0, -1)).'::'.$arr[$c - 1]."($args)";
-                    }
-                    break;
-                // 对象
-                case '->':
-                    $obj = '';
-                    if ($code) {
-                        if (!$ret['code']) {
-                            $obj = $code;
-                        } elseif($prev === '.') {
-                            $obj = $code."['$ret[code]']";
-                        }
-                    } elseif ($ret['code']) {
-                        $obj = self::replaceVar($ret['code']);
-                    }
-                    if ($obj && ($pos = strpos($str, '('))) {
-                        $name = substr($str, $i, $pos - $i);
-                        if (self::isVarnameChars($name)) {
-                            $i = $pos + 1;
-                            $args = implode(', ', self::readFuncArgs($str, $i, $vars));
-                            $code = "$obj->$name($args)";
-                            break;
-                        }
-                    }
-                    throw new TemplateException("readUnit error: $str");
-                // 括号或函数调用
-                case '(':
-                    // 作为括号使用
-                    if (empty($ret['code'])) {
-                        if (!$code) {
-                            $str = rtrim($str);
-                            if (substr($str, -1) === ')') {
-                                return '('.self::readArg(substr($str, $i, -1), $vars).')';
-                            }
-                        }
-                        throw new TemplateException("readUnit error: 括号未闭合或括号前存在代码");
-                    }
-                    $args = self::readFuncArgs($str, $i, $vars, $code ? [$code] : []);
-                    $code = self::replaceFunc($ret['code'], $args);
-                    break;
-                // 数组
-                case '[':
-                    if (!$ret['code'] && ($prev === '.' || !$code)) {
-                        throw new TemplateException('read_unit error: '.$str);
-                    }
-                    $pos = self::findEndPos(substr($str, $i), '[', ']');
-                    $arg = self::readArg(substr($str, $i, $pos), $vars);
-                    $i += $pos + 1;
-                    if ($code) {
-                        if ($ret['code']) {
-                            $code .= "['$ret[code]']";
-                        }
-                        $code .= "[$arg]";
-                    } else {
-                        $code = self::replaceVar($ret['code'])."[$arg]";
-                    }
-                    break;
-                // 三元表达式
-                case '?':
-                    if (!$code) {
-                        $code = self::replaceVar($ret['code']);
-                    } elseif($ret['code']) {
-                        $code .= "['$ret[code]']";
-                    }
-                    if ($str[$i] == ':' || $str[$i] == '?') {
-                        return $code.' ?'.$str[$i].' '.self::readArg(substr($str, $i + 1), $vars);
-                    } else {
-                        $pos = 0;
-                        while ($pos = strpos($str, ':', $pos)) {
-                            if (substr($str, $pos + 1, 1) != ':') {
-                                $left  = substr($str, 0, $pos);
-                                $right = substr($str, $pos + 1);
-                                break;
-                            }
-                        }
-                        if (isset($left)) {
-                            return $code.' ? '.self::readArg($left, $vars). ' : ' .self::readArg($right, $vars);
-                        }
-                    }
-                    throw new TemplateException("readUnit error: $str");
-                case '$':
-                    if (!$code && !$ret['code']) {
-                        if ($pos = strpos($str, '.')) {
-                            $var = substr($str, $i, $i - $pos);
-                            if (self::isVarnameChars($var)) {
-                                $code = self::readArg('$'.$var, $vars);
-                                $i += $pos + 1;
-                                break;
-                            }
-                        } elseif ($var = substr($str, $i)) {
-                            return self::readArg('$'.$var, $vars);
-                        }
-                    }
-                    throw new TemplateException("readUnit error: $str");
-                case '':
-                    if (!$code) {
-                        return self::replaceVar($ret['code']);
-                    } elseif($ret['code']) {
-                        return $code."['$ret[code]']";
-                    }
-                    return $code;
-                default:
-                    if (in_array($ret['end'], ['+', '-', '*', '/', '%'])) {
-                        if (!$code) {
-                            $code = self::replaceVar($ret['code']);
-                        } elseif ($ret['code']){
-                            $code .= "['$ret[code]']"; 
-                        }
-                        return $code.' '.$ret['end'].' '.self::readArg(substr($str, $i), $vars);
-                    }
-            }
-            $prev = $ret['end'];
-        }
-        return $code;
+        throw new TemplateException("readControlStruct error: 非法语句 $name ($val)");
     }
     
     /*
      * 读取表达式
      */
-    protected static function readExp($str, $vars)
+    protected static function readValue($val, $strs = null)
     {
-        $exp = self::$operators ?? self::$operators = array_map(function ($v) {
-            return preg_quote($v);
-        } , ['!', '&', '|', '=', '>', '<', '+', '-', '*', '/', '%']);
-        if (!preg_match_all('#('.implode('|', $exp).')#', $str, $matches, PREG_OFFSET_CAPTURE)) {
-            return self::readArg($str, $vars);
+        $ret = '';
+        $tmp = '';
+        
+        $ret = [];
+        if ($strs === null) {
+            extract(self::extractString($val));
         }
-        $pos = 0;
-        $res = '';
-        foreach ($matches[0] as $match) {
-            if ($match[1] > $pos) {
-                $res.= self::readExpVal(substr($str, $pos, $match[1] - $pos), $vars);
+        $len  = strlen($val);
+        $lpos = $rpos = 0;
+        while(true) {
+            $lpos = strpos($val, '(', $lpos));
+            $rpos = strrpos($val, ')', $rpos));
+            if ($lpos === false && $rpos === false) {
+                break;
             }
-            $res.= $match[0];
-            $pos = strlen($match[0]) + $match[1];
+            if (!($lpos !== false && $rpos !== false)) {
+                throw new TemplateException("readValue");
+            }
+            if ($lpos > $rpos) {
+                throw new TemplateException("readValue");
+            }
+            $left  = substr($val, 0, $lpos);
+            $right = substr($val, 0, $rpos);
+            $val   = substr($val, $lpos, $rpos - $lpos);
+            $rpos  = $rpos - $len;
         }
-        if ($pos < strlen($str)) {
-            $res.= self::readExpVal(substr($str, $pos), $vars);
+        
+        
+        $len = strlen($val);
+        for ($i = 0; $i < $len; $i++) {
+            $c = $val[$i];
+            if (in_array($c, ['!', '&', '|', '=', '>', '<', '+', '-', '*', '/', '%'])) {
+                // 跳过对象操作符
+                if ($c == '-' && substr($val, $i + 1, 1) == '>') {
+                    $tmp .= $c;
+                    continue;
+                }
+                if ($tmp) {
+                    $ret .= self::readItem($tmp, $strs);
+                    $tmp  = '';
+                }
+                $ret .= $c;
+            } elseif (!self::isBlankChar($c)) {
+                $tmp .= $c;
+            }
         }
-        return $res;
+        if ($tmp) {
+            $ret .= self::readItem($tmp, $strs);
+        }
+        return $ret;
     }
     
     protected static function readExpVal($str, $vars)
@@ -910,38 +565,38 @@ class Template
     }
     
     /*
-     * 读取关键字
+     * 读取参数
      */
-    protected static function readWord($str)
+    protected static function readItem($val, $strs)
     {
-        $code = '';
-        $len  = strlen($str);
-        $is_blank_end  = false;
-        for($i = 0; $i < $len; $i++) {
-            $c = $str[$i];
-            if (self::isVarnameChar($c)) {
-                if ($is_blank_end/* || (!$code && is_numeric($c))*/) {
-                    throw new TemplateException("readWord error: var字符中不能有空白字符");
-                }
-                $code .= $c;
-            } else {
-                if(in_array($c, ['.', '[', '(', '?', '@'], true)) {
-                    return ['code' => $code, 'seek' => $i + 1, 'end' => $c];
-                } elseif (in_array($c, ['+', '-', '*', '/', '%'], true)) {
-                    if ($c === '-' && $str[$i + 1] == '>') {
-                        return ['code' => $code, 'seek' => $i + 2, 'end' => '->'];
-                    }
-                    return ['code' => $code, 'seek' => $i + 1, 'end' => $c];
-                } elseif (self::isBlankChar($c)) {
-                    if ($code) {
-                        $is_blank_end = true;
-                    }
-                } else {
-                    throw new TemplateException("readWord error: 非法字符 $c");
-                }
-            }
+        $val = trim($val);
+        // bool或null
+        if ($val == 'true' || $val == 'false' || $val == 'null') {
+            return $val;
+        // 数字
+        } elseif (is_numeric($val)) {
+            return $val;
+        // 变量
+        } elseif (self::isVarnameChars($val)) {
+            return self::readVar($val);
+        // 字符串
+        } elseif (preg_match("/^\\$\d+$/", $val, $matchs)) {
+            return $strs[$matchs[0]];
+        // 数组
+        } elseif (($val[0] == '[' && substr($val, -1) == ']') || ($val[0] === '{' && substr($val, -1) == '}')) {
+            return self::readArray($val, $strs);
+        // 混合
+        } else {
+            return self::readMixed($val, $strs);
         }
-        return ['code' => $code, 'seek' => $len, 'end' => ''];
+    }
+    
+    /*
+     * 替换变量
+     */
+    protected static function readVar($var)
+    {
+        return self::$vars[$var] ?? '$'.$var;
     }
     
     /*
@@ -950,6 +605,213 @@ class Template
     protected function readArray($str, $vars)
     {
         return "jsondecode('".self::restoreStrvars($str, $vars)."')";
+    }
+    
+    /*
+     * 读取语句单元
+     */
+    protected static function readMixed($val, $strs)
+    {
+        $ret = '';
+        $tmp = '';
+        $pre = null;
+        $len = strlen($val);
+        for($i = 0; $i < $len; $i++) {
+            $c = $val[$i];
+            $clear = true;
+            switch ($c) {
+                // 数组或函数
+                case '.':
+                    if (!$tmp && ($pre === '.' || !$ret)) {
+                        throw new TemplateException("readMixed error: $val");
+                    }
+                    if (!$ret) {
+                        $ret = self::readVar($tmp);
+                    } elseif ($tmp){
+                        $ret .= "['$tmp']"; 
+                    }
+                    break;
+                // 括号或函数调用
+                case '(':
+                    if ($tmp) {
+                        $arg = self::readFuncArgs($val, $i, $strs, $ret ? [$ret] : []);
+                        $ret = self::replaceFunc($tmp, $arg);
+                        break;
+                    }
+                    throw new TemplateException("readMixed error: $val");
+                // 数组
+                case '[':
+                    if (!$tmp && ($pre === '.' || !$ret)) {
+                        throw new TemplateException('readMixed error: '.$val);
+                    }
+                    $pos = self::findEndPos(substr($val, $i), '[', ']');
+                    $arg = self::readValue(substr($val, $i + 1, $pos - 1), $strs);
+                    $i += $pos;
+                    if ($ret) {
+                        if ($tmp) {
+                            $ret .= "['$tmp']";
+                        }
+                        $ret .= "[$arg]";
+                    } else {
+                        $ret = self::readVar($tmp)."[$arg]";
+                    }
+                    break;
+                // 原生PHP函数或静态方法
+                case '$':
+                    if (preg_match("/^\d+/", substr($val, $i + 1), $matchs)) {
+                        if (!$ret && !$tmp) {
+                            $ret = $strs[$matchs[0]];
+                            $i += strlen($matchs[0]);
+                            break;
+                        }
+                    } else {
+                        if (!self::$config['enable_native_function']) {
+                            throw new TemplateException("readMixed error: 未开启原生PHP函数支持");
+                        }
+                        if ($ret || $tmp || !($pos = strpos($val, '('))) {
+                            throw new TemplateException("readMixed error: 非法字符");
+                        }
+                        throw new TemplateException("readMixed error: $val");
+                        $arr = explode('.', substr($val, $i + 1, $pos - $i - 1));
+                        foreach ($arr as $v) {
+                            if (!self::isVarnameChars($v)) {
+                                throw new TemplateException("readMixed error: 非法字符 $v");
+                            }
+                        }
+                        $i = $pos;
+                        $arg = implode(', ', self::readFuncArgs($val, $i, $strs));
+                        if (($n = count($arr)) == 1) {
+                            $ret = "$arr[0]($arg)";
+                        } else {
+                            $ret = implode('\\', array_slice($arr, 0, -1)).'::'.$arr[$n - 1]."($arg)";
+                        }
+                        break;
+                    }
+                    throw new TemplateException("readMixed error: 非法字符");
+                // 对象
+                case '-':
+                    if (substr($val, $i + 1, 1) == '>') {
+                        $obj = '';
+                        if ($ret) {
+                            if (!$tmp) {
+                                $obj = $ret;
+                            } elseif($pre === '.') {
+                                $obj = $ret."['$tmp']";
+                            }
+                        } elseif ($tmp) {
+                            $obj = self::readVar($tmp);
+                        }
+                        if ($obj) {
+                            $pos = $i + 1;
+                            $name = '';
+                            while ($pos < $len) {
+                                $c = $val[$pos];
+                                if (!self::isVarnameChar($c)) {
+                                    break;
+                                }
+                                $name .= $val[$pos];
+                                $pos++;
+                            }
+                            if (self::isVarnameChars($name)) {
+                                if ($pos < $len && $val[$pos] === '(') {
+                                    $i = $pos;
+                                    $arg = implode(', ', self::readFuncArgs($val, $i, $arg));
+                                    $ret = "$obj->$name($arg)";
+                                } else {
+                                    $ret = "$obj->$name";
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    throw new TemplateException("readMixed error: $str");
+                // 三元表达式
+                case '?':
+                    if ($ret) {
+                        $ret = self::readVar($tmp);
+                    } elseif($tmp) {
+                        $ret .= "['$tmp']";
+                    }
+                    if ($val[$i] == ':' || $val[$i] == '?') {
+                        return $ret.' ?'.$val[$i].' '.self::readValue(substr($val, $i + 1), $vars);
+                    } else {
+                        $pos = 0;
+                        while ($pos = strpos($val, ':', $pos)) {
+                            if (substr($val, $pos + 1, 1) != ':') {
+                                $left  = substr($val, 0, $pos);
+                                $right = substr($val, $pos + 1);
+                                break;
+                            }
+                        }
+                        if (isset($left)) {
+                            return $ret.' ? '.self::readValue($left, $strs). ' : ' .self::readValue($right, $strs);
+                        }
+                    }
+                    throw new TemplateException("readUnit error: $str");
+                default:
+                    $clear = false;
+                    if (!self::isBlankChar($c)) {
+                        $tmp .= $c;
+                    }
+                    break;
+            }
+            if ($clear) {
+                $tmp   = '';
+                $clear = true;
+            }
+            $pre = $c;
+        }
+        if ($tmp) {
+            if ($ret) {
+                $ret .= "['$tmp']";
+            } else {
+                $ret = self::readVar($tmp);
+            }
+        }
+        return $ret;
+    }
+    
+    /*
+     * 提取字符串
+     */
+    protected static function extractString($val)
+    {
+        $tmp   = '';
+        $ret   = '';
+        $strs  = [];
+        $quote = null;
+        $len   = strlen($val);
+        for($i = 0; $i < $len; $i++) {
+            $c = $val[$i];
+            if (self::isQuoteChar($c)) {
+                if ($quote) {
+                    if ($quote === $c) {
+                        if ($val[$i - 1] === '\\') {
+                            $tmp .= $c;
+                            continue;
+                        }
+                        $ret  .= '$'.count($strs);
+                        $strs[]= $quote.$tmp.$quote;
+                        $tmp   = '';
+                        $quote = null;
+                    } else {
+                        $tmp  .= $c;
+                    }
+                } else {
+                    $quote = $c;
+                }
+            } else {
+                if ($quote) {
+                    $tmp .= $c;
+                } else {
+                    $ret .= $c;
+                }
+            }
+        }
+        if (!$quote) {
+            return ['val' => $ret, 'strs' => $strs];
+        }
+        throw new TemplateException("extractString error: 字符串引号未闭合");
     }
     
     /*
@@ -968,19 +830,15 @@ class Template
                 break;
             }
         }
-        if (strlen($left) === $len) {
-            return ['left' => $left, 'right' => '', 'str' => ''];
-        } else {
-            for ($i = $len - 1; $i >= 0; $i--) {
-                if (self::isBlankChar($str[$i])) {
-                    $right .= $str[$i];
-                } else {
-                    $rpos = $i;
-                    break;
-                }
+        for ($i = $len - 1; $i >= 0; $i--) {
+            if (self::isBlankChar($str[$i])) {
+                $right .= $str[$i];
+            } else {
+                $rpos = $i;
+                break;
             }
-            return ['left' => $left, 'right' => $right, 'str'=> substr($str, $lpos, $rpos - $lpos + 1)];
         }
+        return ['left' => $left, 'right' => $right, 'str'=> substr($str, $lpos, $rpos - $lpos + 1)];
     }
     
     /*
@@ -988,17 +846,13 @@ class Template
      */
     protected static function readLeftBlank($str)
     {
-        $blank = '';
-        $i = strlen($str) - 1;
-        while ($i >= 0) {
-            if (isset($str[$i])) {
-               if (self::isBlankChar($str[$i])) {
-                   $blank .= $str[$i];
-               } else {
-                   return $blank;
-               }
+        $ret = '';
+        for ($i = strlen($str) - 1; $i >= 0; $i--) {
+            if (self::isBlankChar($str[$i])) {
+                $ret .= $str[$i];
+            } else {
+                return $ret;
             }
-            $i--;
         }
     }
     
@@ -1008,21 +862,13 @@ class Template
     protected static function readFuncArgs($str, &$i, $vars, $args = [])
     {
         $pos = self::findEndPos(substr($str, $i), '(', ')');
-        if ($tmp = trim(substr($str, $i, $pos))) {
+        if ($tmp = trim(substr($str, $i + 1, $pos - 1))) {
             foreach (explode(',', $tmp) as $v) {
-                $args[] = self::readArg($v, $vars);
+                $args[] = self::readValue($v, $vars);
             }
         }
-        $i += $pos + 1;
+        $i += $pos;
         return $args;
-    }
-    
-    /*
-     * 替换变量
-     */
-    protected static function replaceVar($var)
-    {
-        return is_numeric($var) ? $var : (self::$vars[$var] ?? '$'.$var);
     }
     
     /*
@@ -1030,29 +876,84 @@ class Template
      */
     protected static function replaceFunc($name, $args)
     {
-        if (isset(self::$functions[$name])) {
-            if ($args) {
-                foreach ($args as $i => $arg) {
-                    $arr['$'.$i] = $arg;
-                }
-                return strtr(self::$functions[$name], $arr);
-            } else {
-                return self::$functions[$name];
+        if (empty(self::$functions[$name])) {
+            $args = $args ? ', '.implode(', ', $args) : '';
+            return self::$config['view_filter_method']."('$name'$args)";
+        }
+        return preg_replace_callback('/\\$(\d+)/', function ($matches) use ($args) {
+            if (isset($args[$matches[1]])) {
+                return $args[$matches[1]];
             }
-        }
-        $args = $args ? ', '.implode(', ', $args) : '';
-        return self::$config['view_filter_method']."('$name'$args)";
+            throw new TemplateException("replaceFunc error: 缺少参数");
+        }, self::$functions[$name]);
     }
-
+    
     /*
-     * 还原变量
-     */ 
-    protected static function restoreStrvars($code, $vars)
+     * 标签正则
+     */  
+    protected static function tagRegex($tag)
+    {        
+        return '/<'.self::$config[$tag.'_tag'].'(?:"[^"]*"|\'[^\']*\'|[^\'">])*>/';
+    }
+    
+    /*
+     * 函数正则
+     */  
+    protected static function funcRegex($func, $arg = true)
     {
-        foreach ($vars as $i => $v) {
-            $arr['$'.($i + 1)] = $v;
+        $s = $arg ? '"(\w+)"' : '';
+        return '/'.implode("@\s*$func\($s\)\s*", self::$config['text_border_sign']).'/';
+    }
+    
+    /*
+     * 解析标签属性
+     */  
+    protected static function parseSelfEndTagAttrs($str, $attrs = null)
+    {
+        if (substr($str, -2) != '/>') {
+            throw new TemplateException("parseTagAttrs error: 必须自闭合标签 $str");
         }
-        return strtr($code, $arr);
+        $prefix = preg_quote(self::$config['arg_attr_prefix']);
+        if (preg_match_all('/([\w|-'.$prefix.']+)\s*=\s*(?:"([^"]+)"|\'([^\']+)\')/', $str, $matches)) {
+            foreach ($matches[1] as $i => $attr) {
+                $ret[$attr] = $matches[2][$i] ?: $matches[3][$i];
+            }
+            if ($attrs) {
+                foreach ($attrs as $a) {
+                    if (isset($ret[$a])) {
+                        $_ret[$a] = $ret[$a];
+                    } else {
+                        throw new TemplateException("parseTagAttrs error: 标签值$a为空 $str");
+                    }
+                }
+                return $_ret;
+            }
+            return $ret;
+        }
+        throw new TemplateException("parseTagAttrs error: 标签值为空 $str");
+    }
+    
+    protected static function parseEndTag($str, $tag, $attrs = null)
+    {        
+        if (!preg_match_all(self::tagRegex($tag), $str, $matches, PREG_OFFSET_CAPTURE)) {
+            return false;
+        }
+        $pos = 0;
+        $end_tag = "</$tag>";
+        foreach ($matches[0] as $i => $match) {
+            if ($match[1] >= $pos) {
+                if (!$pos = stripos($str, $end_tag, $match[1])) {
+                    throw new TemplateException('readTagWithEnd error: $tag标签未闭合');
+                }
+                $start = $match[1] + strlen($match[0]);
+                $ret[] = [
+                    'pos'   => [$match[1], $pos + strlen($verbatim_end)],
+                    'text'  => substr($str, $start, $pos - $start),
+                    'attrs' => self::parseTagAttrs($match[0], $attrs, false)
+                ];
+            }
+            throw new TemplateException('readTagWithEnd error: $tag标签不允许嵌套');
+        }
     }
     
     /*
@@ -1062,7 +963,7 @@ class Template
     {
         $num = 0;
         $len = strlen($str);
-        for($i = 0; $i < $len; $i++) {
+        for($i = 1; $i < $len; $i++) {
             $c = $str[$i];
             if ($c === $start) {
                 $num++;
@@ -1113,10 +1014,7 @@ class Template
      */ 
     protected static function isVarnameChar($char)
     {
-        return (
-            ($ascii = ord($char)) === 95 || ($ascii > 47 && $ascii < 58) ||
-            ($ascii > 64 && $ascii < 91) || ($ascii > 96 && $ascii < 123)
-        );
+        return preg_match('/\w$/', $char);
     }
     
     /*
@@ -1124,8 +1022,8 @@ class Template
      */ 
     protected static function isVarnameChars($str)
     {
-        $len = strlen($str);
-        if($len > 0 && self::isVarnameChar($str[0]) && !is_numeric($str[0])) {
+        if($str && !in_array($str, ['true', 'false', 'null']) && self::isVarnameChar($str[0]) && !is_numeric($str[0])) {
+            $len = strlen($str);
             for ($i = 1; $i < $len; $i++) {
                 if (!self::isVarnameChar($str[$i])) {
                     return false;
@@ -1134,6 +1032,18 @@ class Template
             return true;
         }
         return false;
+    }
+    
+    /*
+     * 读取字符串部分
+     */ 
+    protected static function readVarnameChars($str, $i)
+    {
+        $ret = '';
+        $len = strlen($str);
+        foreach ($i < $len) {
+            
+        }
     }
 }
 Template::init();

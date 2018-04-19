@@ -97,27 +97,16 @@ class View extends App
             if ($this->config['default_dispatch_hyphen_to_underscore']) {
                 $view = strtr($path, '-', '_');
             }
-            if (!isset($this->config['default_dispatch_views'])) {
-                if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $view)) {
-                    try {
-                        $view_file = $this->getViewFile($view);
-                    } catch (\ViewException $e) {
-                        return;
-                    }
-                    if (is_php_file($view_file)) {
-                        return compact('view', 'view_file');
-                    }
+            if (isset($this->config['default_dispatch_views'])) {
+                if (in_array($view, $this->config['default_dispatch_views'])) {
+                    return compact('view');
                 }
-                return;
-            } elseif (!in_array($view, $this->config['default_dispatch_views'])) {
-                return;
+            } elseif (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $view) && CoreView::exists($view)) {
+                return compact('view');
             }
         } elseif (isset($this->config['default_dispatch_index'])) {
-            $view = $this->config['default_dispatch_index'];
-        } else {
-            return;
+            return ['view' => $this->config['default_dispatch_index']];
         }
-        return ['view' => $view, 'view_file' => $this->getViewFile($view)];
     }
     
     protected function routeDispatch($path)
@@ -133,7 +122,6 @@ class View extends App
                 }
                 return [
                     'view'      => $route['dispatch'],
-                    'view_file' => $this->getViewFile($route['dispatch']),
                     'params'    => $route['matches']
                 ];
             }
