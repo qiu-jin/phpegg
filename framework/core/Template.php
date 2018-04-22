@@ -42,6 +42,8 @@ class Template
         'verbatim_text_sign'    => '!',
         // 是否支持原生PHP函数
         'enable_native_function'    => false,
+        // 
+        'view_filter_code'          => View::class.'::callFilter(%s)',
         // include 
         'view_include_code'         => 'include '.View::class.'::path(%s);',
         // check expired
@@ -217,7 +219,7 @@ class Template
             if (isset($attrs['name'])) {
                 $arg = '"'.$attrs['name'].'"';
             } else {
-                $arg = self::readValue($attrs[$name]);
+                $arg = self::parseValue($attrs[$name]);
             }
             return self::wrapCode(sprintf(self::$config['view_include_code'], $arg));
         }, $str);
@@ -242,7 +244,7 @@ class Template
                 $val = substr($val, 1);
                 $escape  = !array_search($c, self::$config['text_escape_sign']);
             }
-            $code = self::readValue($val);
+            $code = self::parseValue($val);
             return self::wrapCode($escape ? "echo htmlentities($code);" : "echo $code;");
         }, $str);
     }
@@ -430,7 +432,7 @@ class Template
                 }
                 // 是否为赋值语句
                 if ($pref == self::$config['assign_attr_prefix']) {
-                    $code[] = self::wrapCode("$$name = ".self::readValue($val).';');
+                    $code[] = self::wrapCode("$$name = ".self::parseValue($val).';');
                 } else {
                     $count++;
                     if ($name == 'else' || $name == 'elseif') {
@@ -455,9 +457,9 @@ class Template
     {
         switch ($name) {
             case 'if':
-                return 'if ('.self::readValue($val).') {';
+                return 'if ('.self::parseValue($val).') {';
             case 'elseif':
-                return 'elseif ('.self::readValue($val).') {';
+                return 'elseif ('.self::parseValue($val).') {';
             case 'else':
                 return 'else {';
             case 'each':
@@ -469,15 +471,15 @@ class Template
                         $as = '$'.$kv[0];
                     } else {
                         if (empty($kv[0])) {
-                            if (self::isVarnameChars($kv[1])) {
+                            if (self::isVarChars($kv[1])) {
                                 $as = '$'.$kv[1];
                             }
                         } elseif (empty($kv[1])) {
-                            if (self::isVarnameChars($kv[0])) {
+                            if (self::isVarChars($kv[0])) {
                                 $as = '$'.$kv[0].' => $__';
                             }
                         } else {
-                            if (self::isVarnameChars($kv[0]) && self::isVarnameChars($kv[1])) {
+                            if (self::isVarChars($kv[0]) && self::isVarChars($kv[1])) {
                                 $as = '$'.$kv[0].' => $'.$kv[1];
                             }
                         }
@@ -488,11 +490,11 @@ class Template
                 } else {
                     $as = '$key => $val';
                 }
-                return 'foreach('.self::readValue($val)." as $as) {";
+                return 'foreach('.self::parseValue($val)." as $as) {";
             case 'for':
                 if (count($arr = explode(';', $attr['code'], 2)) == 2) {
                     foreach($arr as $v) {
-                        $ret[] = self::readValue($v, $attr['vars']);
+                        $ret[] = self::parseValue($v, $attr['vars']);
                     }
                     return 'for ('.implode(';', $ret).') {';
                 }
@@ -502,250 +504,263 @@ class Template
     }
     
     /*
-     * 读取表达式
+     * 读取语句单元
      */
-    protected static function readValue($val, $strs = null)
+    protected static function parseValue($val, $strs = null)
     {
-        $ret = '';
-        $tmp = '';
         if ($strs === null) {
             extract(self::extractString($val));
         }
+        if (preg_match('/\w\s+\w/', $val)) {
+            throw new TemplateException("parseValue error: 非法空格 $val");
+        }
+        $val = preg_replace('/\s+/', '', $val);
+        $ret = null;
+        $tmp = null;
         $len = strlen($val);
-        for ($i = 0; $i < $len; $i++) {
+        for($i = 0; $i < $len; $i++) {
             $c = $val[$i];
-            if (in_array($c, ['!', '&', '|', '=', '>', '<', '+', '-', '*', '/', '%'])) {
-                // 跳过对象操作符
-                if ($c == '-' && substr($val, $i + 1, 1) == '>') {
-                    $tmp .= $c;
-                    continue;
-                }
-                if ($tmp) {
-                    $ret .= self::readItem($tmp, $strs);
-                    $tmp  = '';
-                }
-                $ret .= $c;
-            } elseif (!self::isBlankChar($c)) {
+            if (self::isVarChar($c)) {
                 $tmp .= $c;
+                continue;
             }
+            switch ($c) {
+                // 数组或函数
+                case '.':
+                    $ret = self::readMacroValue($ret, $tmp, $val, $len, $i, $strs);
+                    break;
+                // 括号
+                case '(':
+                    if (!isset($ret) && !isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '(', ')'))) {
+                        $ret = "(".self::parseValue(substr($val, $i + 1, $pos - $i - 1), $strs).")";
+                        $i = $pos;
+                        break;
+                    }
+                    throw new TemplateException("parseValue error: 非法$c语法");
+                // 数组
+                case '[':
+                    if (!isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '[', ']'))) {
+                        if (isset($ret)) {
+                            $key = self::parseValue(substr($val, $i + 1, $pos - $i - 1), $strs);
+                            $ret = $ret."[$key]";
+                        } else {
+                            $ret = self::readArrayValue(substr($val, $i, $pos), $strs);
+                        }
+                        $i = $pos;
+                        break;
+                    }
+                    throw new TemplateException("parseValue error: 非法$c语法");
+                // 数组
+                case '{':
+                    if (!isset($ret) && !isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '{', '}'))) {
+                        $ret = self::readArray(substr($val, $i, $pos), $strs);
+                        $i = $pos;
+                        break;
+                    }
+                    throw new TemplateException("parseValue error: 非法$c语法");
+                // 原生函数
+                case '$':
+                    if (!isset($ret) && !isset($tmp)) {
+                        if (preg_match("/^\d+/", substr($val, $i + 1), $matchs)) {
+                            $ret .= self::injectString($matchs[0], $strs);
+                            $i += strlen($matchs[0]);
+                        } else {
+                            $ret = self::readFunctionValue($ret, $tmp, $val, $len, $i, $strs);
+                        }
+                        break;
+                    }
+                    throw new TemplateException("parseValue error: 非法$c语法");
+                // 三元表达式
+                case '?':
+                    $ret = self::readThreeMetaValue($ret, $tmp, $val, $len, $i, $strs);
+                    break;
+                default:
+                    if (in_array($c, ['+', '-', '*', '/', '%'])
+                        || in_array($c, ['!', '&', '|', '=', '>', '<'])
+                    ) {
+                        // 对象操作符
+                        if ($c == '-' && substr($val, $i + 1, 1) === '>') {
+                            $ret = self::readObjectValue($ret, $tmp, $val, $len, $i, $strs);
+                        } else {
+                            $ret = self::readInitValue($ret, $tmp);
+                            return "$ret $c ".self::parseValue(substr($val, $i + 1), $strs);
+                        }
+                        break;
+                    }
+                    throw new TemplateException("parseValue error: 非法字符$c");
+            }
+            $tmp = null;
         }
-        if ($tmp) {
-            $ret .= self::readItem($tmp, $strs);
-        }
-        return $ret;
-    }
-    
-    protected static function readExpVal($str, $vars)
-    {
-        $ret = self::readBlank($str);
-        return $ret['left'].self::readArg($ret['str'], $vars).$ret['right'];
+        return self::readInitValue($ret, $tmp);
     }
     
     /*
-     * 读取参数
+     * 变量
      */
-    protected static function readItem($val, $strs)
+    protected static function readVarValue($var)
     {
-        $val = trim($val);
-        // bool或null
-        if ($val == 'true' || $val == 'false' || $val == 'null') {
-            return $val;
-        // 数字
-        } elseif (is_numeric($val)) {
-            return $val;
-        // 变量
-        } elseif (self::isVarnameChars($val)) {
-            return self::readVar($val);
-        // 字符串
-        } elseif (preg_match("/^\\$\d+$/", $val, $matchs)) {
-            return $strs[$matchs[0]];
-        // 数组
-        } elseif (($val[0] == '[' && substr($val, -1) == ']') || ($val[0] === '{' && substr($val, -1) == '}')) {
-            return self::readArray($val, $strs);
-        // 混合
-        } else {
-            return self::readMixed($val, $strs);
+        if (is_numeric($var) || in_array($var, ['true', 'false', 'null'], true)) {
+            return $var;
         }
-    }
-    
-    /*
-     * 替换变量
-     */
-    protected static function readVar($var)
-    {
         return self::$vars[$var] ?? '$'.$var;
     }
     
     /*
-     * 读取数组
+     * 
      */
-    protected function readArray($str, $vars)
+    protected static function readInitValue($ret, $tmp)
     {
-        return "jsondecode('".self::restoreStrvars($str, $vars)."')";
+        if (isset($ret) && isset($tmp)) {
+            throw new TemplateException("readInitValue error: $tmp");
+        }
+        return isset($tmp) ? self::readVarValue($tmp) : $ret;
     }
     
     /*
-     * 读取语句单元
+     * 
      */
-    protected static function readMixed($val, $strs)
+    protected static function readArrayValue($val, $strs)
     {
-        $ret = '';
-        $tmp = '';
-        $pre = null;
-        $len = strlen($val);
-        for($i = 0; $i < $len; $i++) {
-            $c = $val[$i];
-            $clear = true;
-            switch ($c) {
-                // 数组或函数
-                case '.':
-                    if (!$tmp && ($pre === '.' || !$ret)) {
-                        throw new TemplateException("readMixed error: $val");
-                    }
-                    if (!$ret) {
-                        $ret = self::readVar($tmp);
-                    } elseif ($tmp){
-                        $ret .= "['$tmp']"; 
-                    }
-                    break;
-                // 括号或函数调用
-                case '(':
-                    if ($tmp) {
-                        $arg = self::readFuncArgs($val, $i, $strs, $ret ? [$ret] : []);
-                        $ret = self::replaceFunc($tmp, $arg);
-                        break;
-                    }
-                    throw new TemplateException("readMixed error: $val");
-                // 数组
-                case '[':
-                    if (!$tmp && ($pre === '.' || !$ret)) {
-                        throw new TemplateException('readMixed error: '.$val);
-                    }
-                    $pos = self::findEndPos(substr($val, $i), '[', ']');
-                    $arg = self::readValue(substr($val, $i + 1, $pos - 1), $strs);
-                    $i += $pos;
-                    if ($ret) {
-                        if ($tmp) {
-                            $ret .= "['$tmp']";
-                        }
-                        $ret .= "[$arg]";
-                    } else {
-                        $ret = self::readVar($tmp)."[$arg]";
-                    }
-                    break;
-                // 原生PHP函数或静态方法
-                case '$':
-                    if (preg_match("/^\d+/", substr($val, $i + 1), $matchs)) {
-                        if (!$ret && !$tmp) {
-                            $ret = $strs[$matchs[0]];
-                            $i += strlen($matchs[0]);
-                            break;
-                        }
-                    } else {
-                        if (!self::$config['enable_native_function']) {
-                            throw new TemplateException("readMixed error: 未开启原生PHP函数支持");
-                        }
-                        if ($ret || $tmp || !($pos = strpos($val, '('))) {
-                            throw new TemplateException("readMixed error: 非法字符");
-                        }
-                        throw new TemplateException("readMixed error: $val");
-                        $arr = explode('.', substr($val, $i + 1, $pos - $i - 1));
-                        foreach ($arr as $v) {
-                            if (!self::isVarnameChars($v)) {
-                                throw new TemplateException("readMixed error: 非法字符 $v");
-                            }
-                        }
-                        $i = $pos;
-                        $arg = implode(', ', self::readFuncArgs($val, $i, $strs));
-                        if (($n = count($arr)) == 1) {
-                            $ret = "$arr[0]($arg)";
-                        } else {
-                            $ret = implode('\\', array_slice($arr, 0, -1)).'::'.$arr[$n - 1]."($arg)";
-                        }
-                        break;
-                    }
-                    throw new TemplateException("readMixed error: 非法字符");
-                // 对象
-                case '-':
-                    if (substr($val, $i + 1, 1) == '>') {
-                        $obj = '';
-                        if ($ret) {
-                            if (!$tmp) {
-                                $obj = $ret;
-                            } elseif($pre === '.') {
-                                $obj = $ret."['$tmp']";
-                            }
-                        } elseif ($tmp) {
-                            $obj = self::readVar($tmp);
-                        }
-                        if ($obj) {
-                            $pos = $i + 1;
-                            $name = '';
-                            while ($pos < $len) {
-                                $c = $val[$pos];
-                                if (!self::isVarnameChar($c)) {
-                                    break;
-                                }
-                                $name .= $val[$pos];
-                                $pos++;
-                            }
-                            if (self::isVarnameChars($name)) {
-                                if ($pos < $len && $val[$pos] === '(') {
-                                    $i = $pos;
-                                    $arg = implode(', ', self::readFuncArgs($val, $i, $arg));
-                                    $ret = "$obj->$name($arg)";
-                                } else {
-                                    $ret = "$obj->$name";
-                                }
-                                break;
-                            }
-                        }
-                    }
-                    throw new TemplateException("readMixed error: $str");
-                // 三元表达式
-                case '?':
-                    if ($ret) {
-                        $ret = self::readVar($tmp);
-                    } elseif($tmp) {
-                        $ret .= "['$tmp']";
-                    }
-                    if ($val[$i] == ':' || $val[$i] == '?') {
-                        return $ret.' ?'.$val[$i].' '.self::readValue(substr($val, $i + 1), $vars);
-                    } else {
-                        $pos = 0;
-                        while ($pos = strpos($val, ':', $pos)) {
-                            if (substr($val, $pos + 1, 1) != ':') {
-                                $left  = substr($val, 0, $pos);
-                                $right = substr($val, $pos + 1);
-                                break;
-                            }
-                        }
-                        if (isset($left)) {
-                            return $ret.' ? '.self::readValue($left, $strs). ' : ' .self::readValue($right, $strs);
-                        }
-                    }
-                    throw new TemplateException("readUnit error: $str");
-                default:
-                    $clear = false;
-                    if (!self::isBlankChar($c)) {
-                        $tmp .= $c;
-                    }
-                    break;
-            }
-            if ($clear) {
-                $tmp   = '';
-                $clear = true;
-            }
-            $pre = $c;
+        return "jsondecode('".self::injectString($val, $strs)."')";
+    }
+    
+    /*
+     * 
+     */
+    protected static function readMacroValue($ret, $tmp, $val, $len, &$pos, $strs)
+    {
+        if (!isset($ret) && !isset($tmp)) {
+            throw new TemplateException("readMacroValue error: 空属性");
         }
-        if ($tmp) {
-            if ($ret) {
-                $ret .= "['$tmp']";
-            } else {
-                $ret = self::readVar($tmp);
+        $res = self::readItemVal($val, $pos + 1, $len)
+        $ret = self::readInitValue($ret, $tmp);
+        $pos = $res['pos'];
+        if (empty($res['fun'])) {
+            return $ret."['".$res['val']."']";
+        }
+        $args = self::readArguments($val, $len, $pos, $strs, $ret ? [$ret] : []);        
+        if (isset(self::$functions[$res['val']])) {
+            return self::injectString(self::$functions[$res['val']], $args);
+        }
+        $args = $args ? ', '.implode(', ', $args) : '';
+        return sprintf(self::$config['view_filter_code'], $res['val'].$args);
+    }
+    
+    /*
+     * 
+     */
+    protected static function readObjectValue($ret, $tmp, $val, $len, &$pos, $strs)
+    {
+        if (!isset($ret)) {
+            throw new TemplateException("readObjectValue error: 对象为空");
+        }
+        $res = self::readItemVal($val, $pos + 2, $len)
+        $ret = self::readInitValue($ret, $tmp);
+        $pos = $res['pos'];
+        if (empty($res['fun'])) {
+            return "$ret->".$res['val'];
+        }
+        $args = implode(', ', self::readArguments($val, $len, $pos, $strs));
+        return "$ret->$res[val]($args)";
+    }
+    
+    /*
+     * 
+     */
+    protected static function readFunctionValue($ret, $tmp, $val, $len, &$pos, $strs)
+    {
+        if (!self::$config['enable_native_function']) {
+            throw new TemplateException("readFunctionValue error: 未开启原生PHP函数支持");
+        }
+        if (!$lpos = strpos($val, '(', $pos)) {
+            throw new TemplateException("readFunctionValue error: 函数缺少调用符()");
+        }
+        $arr = explode('.', substr($val, $pos + 1, $lpos - $pos - 1));
+        foreach ($arr as $v) {
+            if (!self::isVarChars($v)) {
+                throw new TemplateException("readFunctionValue error: 非法字符 $v");
             }
         }
-        return $ret;
+        $pos  = $lpos;
+        $args = implode(', ', self::readArguments($val, $len, $pos, $strs));
+        if (count($arr) == 1) {
+            return "$arr[0]($args)";
+        }
+        $m = array_pop($arr);
+        return implode('\\', $arr)."::$m($args)";
+    }
+    
+    /*
+     * 
+     */
+    protected static function readThreeMetaValue($ret, $tmp, $val, $len, &$pos, $strs)
+    {
+        if (isset($tmp)) {
+            $ret = self::readVarValue($ret, $tmp);
+        }
+        if ($val[$i] == ':' || $val[$i] == '?') {
+            return "$ret ?".$val[$i].' '.self::parseValue(substr($val, $i + 2), $strs);
+        } else {
+            $pos = 0;
+            while ($pos = strpos($val, ':', $pos)) {
+                if (substr($val, $pos + 1, 1) != ':') {
+                    $left  = substr($val, 0, $pos);
+                    $right = substr($val, $pos + 1);
+                    break;
+                }
+            }
+            if (isset($left)) {
+                return $ret.' ? '.self::parseValue($left, $strs). ' : ' .self::parseValue($right, $strs);
+            }
+        }
+    }
+    
+    /*
+     * 
+     */
+    protected static function readItemVal($val, $pos, $len)
+    {
+        $ret = null;
+        while ($pos < $len) {
+            $c = $val[$pos];
+            if (!self::isVarChar($c)) {
+                break;
+            }
+            $ret .= $c;
+            $pos++;
+        }
+        if (self::isVarChars($ret)) {
+            if (substr($val, $pos, 1) !== '(') {
+                return ['val' => $ret, 'pos' => $pos - 1];
+            }
+            return ['val' => $ret, 'pos' => $pos, 'fun' => true];
+        }
+        throw new TemplateException("readItemVal error: 非法字符 $ret");
+    }
+    
+    /*
+     * 
+     */
+    protected static function readArguments($val, $len, &$pos, $strs, $args = [])
+    {
+        $epos = self::findEndPos($val, $len, $pos, '(', ')');
+        if ($tmp = trim(substr($val, $pos + 1, $epos - $pos - 1))) {
+            foreach (explode(',', $tmp) as $v) {
+                $args[] = self::parseValue(trim($v), $strs);
+            }
+        }
+        $pos = $epos;
+        return $args;
+    }
+    
+    /*
+     * 
+     */
+    protected static function injectString($val, $strs)
+    {
+        return preg_replace_callback('/\\$(\d+)/', function ($matches) use ($strs) {
+            return $strs[$matches[1]] ?? '';
+        }, $val);
     }
     
     /*
@@ -834,38 +849,6 @@ class Template
     }
     
     /*
-     * 读取函数值
-     */
-    protected static function readFuncArgs($str, &$i, $vars, $args = [])
-    {
-        $pos = self::findEndPos(substr($str, $i), '(', ')');
-        if ($tmp = trim(substr($str, $i + 1, $pos - 1))) {
-            foreach (explode(',', $tmp) as $v) {
-                $args[] = self::readValue($v, $vars);
-            }
-        }
-        $i += $pos;
-        return $args;
-    }
-    
-    /*
-     * 替换函数
-     */
-    protected static function replaceFunc($name, $args)
-    {
-        if (empty(self::$functions[$name])) {
-            $args = $args ? ', '.implode(', ', $args) : '';
-            return self::$config['view_filter_method']."('$name'$args)";
-        }
-        return preg_replace_callback('/\\$(\d+)/', function ($matches) use ($args) {
-            if (isset($args[$matches[1]])) {
-                return $args[$matches[1]];
-            }
-            throw new TemplateException("replaceFunc error: 缺少参数");
-        }, self::$functions[$name]);
-    }
-    
-    /*
      * 标签正则
      */  
     protected static function tagRegex($tag)
@@ -910,6 +893,9 @@ class Template
         throw new TemplateException("parseTagAttrs error: 标签值为空 $str");
     }
     
+    /*
+     * 
+     */
     protected static function parseEndTag($str, $tag, $attrs = null)
     {        
         if (!preg_match_all(self::tagRegex($tag), $str, $matches, PREG_OFFSET_CAPTURE)) {
@@ -936,22 +922,21 @@ class Template
     /*
      * 寻找语句结束符位置
      */ 
-    protected static function findEndPos($str, $start, $end)
+    protected static function findEndPos($val, $len, $pos, $left, $right)
     {
         $num = 0;
-        $len = strlen($str);
-        for($i = 1; $i < $len; $i++) {
-            $c = $str[$i];
-            if ($c === $start) {
+        for($i = $pos + 1; $i < $len; $i++) {
+            $c = $val[$i];
+            if ($c === $left) {
                 $num++;
-            } elseif ($c === $end) {
+            } elseif ($c === $right) {
                 if ($num === 0) {
                     return $i;
                 }
                 $num--;
             }
         }
-        throw new TemplateException("findEndPos errer: $str 没有找到结束符 $end");
+        throw new TemplateException("findEndPos errer: $val 没有找到结束符 $right");
     }
     
     /*
@@ -989,7 +974,7 @@ class Template
     /*
      * 是否变量名字符
      */ 
-    protected static function isVarnameChar($char)
+    protected static function isVarChar($char)
     {
         return preg_match('/\w$/', $char);
     }
@@ -997,12 +982,12 @@ class Template
     /*
      * 是否变量名字符串
      */ 
-    protected static function isVarnameChars($str)
+    protected static function isVarChars($str)
     {
-        if($str && !in_array($str, ['true', 'false', 'null']) && self::isVarnameChar($str[0]) && !is_numeric($str[0])) {
+        if($str && !in_array($str, ['true', 'false', 'null']) && self::isVarChar($str[0]) && !is_numeric($str[0])) {
             $len = strlen($str);
             for ($i = 1; $i < $len; $i++) {
-                if (!self::isVarnameChar($str[$i])) {
+                if (!self::isVarChar($str[$i])) {
                     return false;
                 }
             }
