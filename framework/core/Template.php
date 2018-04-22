@@ -176,7 +176,7 @@ class Template
             $res .= self::wrapCode(sprintf(self::$config['view_check_expired_code'], $arg)).PHP_EOL;
         }
         $end = [];
-        if ($ret = self::parseEndTag($str, 'verbatim')) {
+        if ($ret = self::parseTagWithText($str, 'verbatim')) {
             $pos = 0;
             foreach ($ret as $v) {
                 $res .= self::readTagText(substr($str, $pos, $v['pos'][0] - $pos), $end);
@@ -266,19 +266,19 @@ class Template
         $name = self::parseSelfEndTagAttrs($matches[0][0][0], ['name'])['name'];
         $ck[] = $name;
         // 读取子模版block
-        if ($ret = self::parseEndTag(substr($str, strlen($matches[0][0][0])), 'block', ['name'])) {
+        if ($ret = self::parseTagWithText(substr($str, strlen($matches[0][0][0])), 'block', ['name'])) {
             foreach ($sret as $v) {
                 $blocks[$v['attrs']['name']] = $v['text'];
             }
         }
         // 替换父模版block
-        $parent = preg_replace_callback(self::funcRegex('block'), function ($matchs) use ($blocks) {
+        $parent = preg_replace_callback(self::blockFuncRegex('block'), function ($matchs) use ($blocks) {
             return $blocks[$matchs[1]] ?? '';
         }, self::$config['view_read_template_method']($name));
-        if ($ret = self::parseEndTag($parent, 'block', ['name'])) {
+        if ($ret = self::parseTagWithText($parent, 'block', ['name'])) {
             $pos = 0;
             $res = '';
-            $regex = self::funcRegex('parent', false);
+            $regex = self::blockFuncRegex('parent', false);
             foreach ($ret as $v) {
                 $res .= substr($parent, $pos, $v['pos'][0] - $pos);
                 $pos  = $v['pos'][1];
@@ -504,6 +504,121 @@ class Template
     }
     
     /*
+     * 解析标签属性
+     */  
+    protected static function parseSelfEndTagAttrs($str, $attrs = null)
+    {
+        if (substr($str, -2) != '/>') {
+            throw new TemplateException("parseTagAttrs error: 必须自闭合标签 $str");
+        }
+        $prefix = preg_quote(self::$config['arg_attr_prefix']);
+        if (preg_match_all('/([\w|-'.$prefix.']+)\s*=\s*(?:"([^"]+)"|\'([^\']+)\')/', $str, $matches)) {
+            foreach ($matches[1] as $i => $attr) {
+                $ret[$attr] = $matches[2][$i] ?: $matches[3][$i];
+            }
+            if ($attrs) {
+                foreach ($attrs as $a) {
+                    if (isset($ret[$a])) {
+                        $_ret[$a] = $ret[$a];
+                    } else {
+                        throw new TemplateException("parseTagAttrs error: 标签值$a为空 $str");
+                    }
+                }
+                return $_ret;
+            }
+            return $ret;
+        }
+        throw new TemplateException("parseTagAttrs error: 标签值为空 $str");
+    }
+    
+    /*
+     * 
+     */
+    protected static function parseTagWithText($str, $tag, $attrs = null)
+    {        
+        if (!preg_match_all(self::tagRegex($tag), $str, $matches, PREG_OFFSET_CAPTURE)) {
+            return false;
+        }
+        $pos = 0;
+        $end_tag = "</$tag>";
+        foreach ($matches[0] as $i => $match) {
+            if ($match[1] >= $pos) {
+                if (!$pos = stripos($str, $end_tag, $match[1])) {
+                    throw new TemplateException('readTagWithEnd error: $tag标签未闭合');
+                }
+                $start = $match[1] + strlen($match[0]);
+                $ret[] = [
+                    'pos'   => [$match[1], $pos + strlen($verbatim_end)],
+                    'text'  => substr($str, $start, $pos - $start),
+                    'attrs' => self::parseTagAttrs($match[0], $attrs, false)
+                ];
+            }
+            throw new TemplateException('readTagWithEnd error: $tag标签不允许嵌套');
+        }
+    }
+    
+    
+    /*
+     * 读取两侧空白符
+     */
+    protected static function readBlank($str)
+    {
+        $lpos = $rpos  = 0;
+        $left = $right = $tmp = '';
+        $len  = strlen($str);
+        for ($i = 0; $i < $len; $i++) {
+            if (self::isBlankChar($str[$i])) {
+                $left .= $str[$i];
+            } else {
+                $lpos = $i;
+                break;
+            }
+        }
+        for ($i = $len - 1; $i >= 0; $i--) {
+            if (self::isBlankChar($str[$i])) {
+                $right .= $str[$i];
+            } else {
+                $rpos = $i;
+                break;
+            }
+        }
+        return ['left' => $left, 'right' => $right, 'str'=> substr($str, $lpos, $rpos - $lpos + 1)];
+    }
+    
+    /*
+     * 读取左边空白符
+     */
+    protected static function readLeftBlank($str)
+    {
+        $ret = '';
+        for ($i = strlen($str) - 1; $i >= 0; $i--) {
+            if (self::isBlankChar($str[$i])) {
+                $ret .= $str[$i];
+            } else {
+                return $ret;
+            }
+        }
+    }
+    
+    /*
+     * 标签正则
+     */  
+    protected static function tagRegex($tag)
+    {        
+        return '/<'.self::$config[$tag.'_tag'].'(?:"[^"]*"|\'[^\']*\'|[^\'">])*>/';
+    }
+    
+    /*
+     * 函数正则
+     */  
+    protected static function blockFuncRegex($func, $arg = true)
+    {
+        $l = preg_quote(self::$config['text_border_sign'][0]);
+        $r = preg_quote(self::$config['text_border_sign'][1]);
+        return "/$l@\s*$func\(\s*".($arg ? '"(\w+)"' : '')."\s*\)\s*$r/";
+    }
+    
+    /*
      * 读取语句单元
      */
     protected static function parseValue($val, $strs = null)
@@ -514,6 +629,7 @@ class Template
         if (preg_match('/\w\s+\w/', $val)) {
             throw new TemplateException("parseValue error: 非法空格 $val");
         }
+        // 去空格
         $val = preg_replace('/\s+/', '', $val);
         $ret = null;
         $tmp = null;
@@ -632,7 +748,7 @@ class Template
         if (!isset($ret) && !isset($tmp)) {
             throw new TemplateException("readMacroValue error: 空属性");
         }
-        $res = self::readItemVal($val, $pos + 1, $len)
+        $res = self::readItemVal($val, $pos + 1, $len);
         $ret = self::readInitValue($ret, $tmp);
         $pos = $res['pos'];
         if (empty($res['fun'])) {
@@ -643,7 +759,7 @@ class Template
             return self::injectString(self::$functions[$res['val']], $args);
         }
         $args = $args ? ', '.implode(', ', $args) : '';
-        return sprintf(self::$config['view_filter_code'], $res['val'].$args);
+        return sprintf(self::$config['view_filter_code'], "'$res[val]'$args");
     }
     
     /*
@@ -654,7 +770,7 @@ class Template
         if (!isset($ret)) {
             throw new TemplateException("readObjectValue error: 对象为空");
         }
-        $res = self::readItemVal($val, $pos + 2, $len)
+        $res = self::readItemVal($val, $pos + 2, $len);
         $ret = self::readInitValue($ret, $tmp);
         $pos = $res['pos'];
         if (empty($res['fun'])) {
@@ -805,120 +921,7 @@ class Template
         }
         throw new TemplateException("extractString error: 字符串引号未闭合");
     }
-    
-    /*
-     * 读取两侧空白符
-     */
-    protected static function readBlank($str)
-    {
-        $lpos = $rpos  = 0;
-        $left = $right = $tmp = '';
-        $len  = strlen($str);
-        for ($i = 0; $i < $len; $i++) {
-            if (self::isBlankChar($str[$i])) {
-                $left .= $str[$i];
-            } else {
-                $lpos = $i;
-                break;
-            }
-        }
-        for ($i = $len - 1; $i >= 0; $i--) {
-            if (self::isBlankChar($str[$i])) {
-                $right .= $str[$i];
-            } else {
-                $rpos = $i;
-                break;
-            }
-        }
-        return ['left' => $left, 'right' => $right, 'str'=> substr($str, $lpos, $rpos - $lpos + 1)];
-    }
-    
-    /*
-     * 读取左边空白符
-     */
-    protected static function readLeftBlank($str)
-    {
-        $ret = '';
-        for ($i = strlen($str) - 1; $i >= 0; $i--) {
-            if (self::isBlankChar($str[$i])) {
-                $ret .= $str[$i];
-            } else {
-                return $ret;
-            }
-        }
-    }
-    
-    /*
-     * 标签正则
-     */  
-    protected static function tagRegex($tag)
-    {        
-        return '/<'.self::$config[$tag.'_tag'].'(?:"[^"]*"|\'[^\']*\'|[^\'">])*>/';
-    }
-    
-    /*
-     * 函数正则
-     */  
-    protected static function funcRegex($func, $arg = true)
-    {
-        $s = $arg ? '"(\w+)"' : '';
-        return '/'.implode("@\s*$func\($s\)\s*", self::$config['text_border_sign']).'/';
-    }
-    
-    /*
-     * 解析标签属性
-     */  
-    protected static function parseSelfEndTagAttrs($str, $attrs = null)
-    {
-        if (substr($str, -2) != '/>') {
-            throw new TemplateException("parseTagAttrs error: 必须自闭合标签 $str");
-        }
-        $prefix = preg_quote(self::$config['arg_attr_prefix']);
-        if (preg_match_all('/([\w|-'.$prefix.']+)\s*=\s*(?:"([^"]+)"|\'([^\']+)\')/', $str, $matches)) {
-            foreach ($matches[1] as $i => $attr) {
-                $ret[$attr] = $matches[2][$i] ?: $matches[3][$i];
-            }
-            if ($attrs) {
-                foreach ($attrs as $a) {
-                    if (isset($ret[$a])) {
-                        $_ret[$a] = $ret[$a];
-                    } else {
-                        throw new TemplateException("parseTagAttrs error: 标签值$a为空 $str");
-                    }
-                }
-                return $_ret;
-            }
-            return $ret;
-        }
-        throw new TemplateException("parseTagAttrs error: 标签值为空 $str");
-    }
-    
-    /*
-     * 
-     */
-    protected static function parseEndTag($str, $tag, $attrs = null)
-    {        
-        if (!preg_match_all(self::tagRegex($tag), $str, $matches, PREG_OFFSET_CAPTURE)) {
-            return false;
-        }
-        $pos = 0;
-        $end_tag = "</$tag>";
-        foreach ($matches[0] as $i => $match) {
-            if ($match[1] >= $pos) {
-                if (!$pos = stripos($str, $end_tag, $match[1])) {
-                    throw new TemplateException('readTagWithEnd error: $tag标签未闭合');
-                }
-                $start = $match[1] + strlen($match[0]);
-                $ret[] = [
-                    'pos'   => [$match[1], $pos + strlen($verbatim_end)],
-                    'text'  => substr($str, $start, $pos - $start),
-                    'attrs' => self::parseTagAttrs($match[0], $attrs, false)
-                ];
-            }
-            throw new TemplateException('readTagWithEnd error: $tag标签不允许嵌套');
-        }
-    }
-    
+
     /*
      * 寻找语句结束符位置
      */ 
@@ -976,7 +979,7 @@ class Template
      */ 
     protected static function isVarChar($char)
     {
-        return preg_match('/\w$/', $char);
+        return preg_match('/\w/', $char);
     }
     
     /*
@@ -984,9 +987,8 @@ class Template
      */ 
     protected static function isVarChars($str)
     {
-        if($str && !in_array($str, ['true', 'false', 'null']) && self::isVarChar($str[0]) && !is_numeric($str[0])) {
-            $len = strlen($str);
-            for ($i = 1; $i < $len; $i++) {
+        if(($len = strlen($str)) && !in_array($str, ['true', 'false', 'null']) && !is_numeric($str[0])) {
+            for ($i = 0; $i < $len; $i++) {
                 if (!self::isVarChar($str[$i])) {
                     return false;
                 }

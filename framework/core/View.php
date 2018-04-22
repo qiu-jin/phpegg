@@ -208,6 +208,17 @@ class View
             }
         }
     }
+    
+    /*
+     * 调用过滤器
+     */
+    public static function callFilter($name, ...$params)
+    {
+        if (isset(self::$view['filter'][$name])) {
+            return self::$view['filter'][$name](...$params);
+        }
+        throw new \BadMethodCallException('Call to undefined filter '.$name);
+    }
 
     /*
      * 编译模版并保存到视图文件
