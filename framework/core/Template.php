@@ -643,16 +643,21 @@ class Template
             switch ($c) {
                 // 数组或函数
                 case '.':
-                    $ret = self::readMacroValue($ret, $tmp, $val, $len, $i, $strs);
+                    $ret = self::readArrayOrMacroValue($ret, $tmp, $val, $len, $i, $strs);
                     break;
                 // 括号
                 case '(':
-                    if (!isset($ret) && !isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '(', ')'))) {
-                        $ret = "(".self::parseValue(substr($val, $i + 1, $pos - $i - 1), $strs).")";
-                        $i = $pos;
+                    if (!isset($ret)) {
+                        if (isset($tmp)) {
+                            $ret = self::readMacroValue($tmp, self::readArguments($val, $len, $i, $strs));
+                        } elseif ($pos = self::findEndPos($val, $len, $i, '(', ')')) {
+                            $ret = "(".self::parseValue(substr($val, $i + 1, $pos - $i - 1), $strs).")";
+                            $i = $pos;
+                        }
+
                         break;
                     }
-                    throw new TemplateException("parseValue error: 非法$c语法");
+                    throw new TemplateException("parseValue error: 非法 $c 语法");
                 // 数组
                 case '[':
                     if (!isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '[', ']'))) {
@@ -678,7 +683,7 @@ class Template
                 case '$':
                     if (!isset($ret) && !isset($tmp)) {
                         if (preg_match("/^\d+/", substr($val, $i + 1), $matchs)) {
-                            $ret .= self::injectString($matchs[0], $strs);
+                            $ret .= self::injectString('$'.$matchs[0], $strs);
                             $i += strlen($matchs[0]);
                         } else {
                             $ret = self::readFunctionValue($ret, $tmp, $val, $len, $i, $strs);
@@ -751,10 +756,10 @@ class Template
     /*
      * 
      */
-    protected static function readMacroValue($ret, $tmp, $val, $len, &$pos, $strs)
+    protected static function readArrayOrMacroValue($ret, $tmp, $val, $len, &$pos, $strs)
     {
         if (!isset($ret) && !isset($tmp)) {
-            throw new TemplateException("readMacroValue error: 空属性");
+            throw new TemplateException("readArrayOrMacroValue error: 空属性");
         }
         $res = self::readItemVal($val, $pos + 1, $len);
         $ret = self::readInitValue($ret, $tmp);
@@ -762,12 +767,29 @@ class Template
         if (empty($res['fun'])) {
             return $ret."['".$res['val']."']";
         }
-        $args = self::readArguments($val, $len, $pos, $strs, $ret ? [$ret] : []);        
-        if (isset(self::$functions[$res['val']])) {
-            return self::injectString(self::$functions[$res['val']], $args);
+        return self::readMacroValue($res['val'], self::readArguments($val, $len, $pos, $strs, $ret ? [$ret] : []));
+    }
+
+    /*
+     * 
+     */
+    protected static function readMacroValue($name, $args)
+    {
+        if (empty(self::$functions[$name])) {
+            $args = $args ? ', '.implode(', ', $args) : '';
+            return sprintf(self::$config['view_filter_code'], "'$name'$args");
         }
-        $args = $args ? ', '.implode(', ', $args) : '';
-        return sprintf(self::$config['view_filter_code'], "'$res[val]'$args");
+        $ret = preg_replace_callback('/\\$(\d+)/', function ($matches) use (&$args) {
+            if (isset($args[$matches[1]])) {
+                $val = $args[$matches[1]];
+                unset($args[$matches[1]]);
+                return $val;
+            }
+            throw new TemplateException("readMacroValue error: 缺少参数");
+        }, self::$functions[$name]);
+        return preg_replace_callback('/\,\s*\.\.\.\s*\)\s*$/', function ($matches) use ($args) {
+            return $args ? ','.implode(',', $args).')' : ')';
+        }, $ret);
     }
     
     /*
