@@ -621,7 +621,7 @@ class Template
     /*
      * 读取语句单元
      */
-    protected static function parseValue($val, $strs = null)
+    protected static function parseValue($val, $strs = null, $end = null)
     {
         if ($strs === null) {
             extract(self::extractString($val));
@@ -660,7 +660,7 @@ class Template
                             $key = self::parseValue(substr($val, $i + 1, $pos - $i - 1), $strs);
                             $ret = $ret."[$key]";
                         } else {
-                            $ret = self::readArrayValue(substr($val, $i, $pos), $strs);
+                            $ret = self::readArrayValue(substr($val, $i, $pos + 1), $strs);
                         }
                         $i = $pos;
                         break;
@@ -669,7 +669,7 @@ class Template
                 // 数组
                 case '{':
                     if (!isset($ret) && !isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '{', '}'))) {
-                        $ret = self::readArray(substr($val, $i, $pos), $strs);
+                        $ret = self::readArrayValue(substr($val, $i, $pos + 1), $strs);
                         $i = $pos;
                         break;
                     }
@@ -688,8 +688,14 @@ class Template
                     throw new TemplateException("parseValue error: 非法$c语法");
                 // 三元表达式
                 case '?':
-                    $ret = self::readThreeMetaValue($ret, $tmp, $val, $len, $i, $strs);
-                    break;
+                    $ret  = self::readInitValue($ret, $tmp);
+                    $next = substr($val, $i + 1, 1);
+                    if ($next == ':' || $next == '?') {
+                        return "$ret ?$next ".self::parseValue(substr($val, $i + 2), $strs);
+                    } else {
+                        return "$ret ? ".self::parseValue(substr($val, $i + 1), $strs, ':');
+                    }
+                    throw new TemplateException("parseValue error: 非法字符$c");
                 default:
                     if (in_array($c, ['+', '-', '*', '/', '%'])
                         || in_array($c, ['!', '&', '|', '=', '>', '<'])
@@ -702,6 +708,8 @@ class Template
                             return "$ret $c ".self::parseValue(substr($val, $i + 1), $strs);
                         }
                         break;
+                    } elseif ($end === $c) {
+                        return self::readInitValue($ret, $tmp)." $c ".self::parseValue(substr($val, $i + 1), $strs);
                     }
                     throw new TemplateException("parseValue error: 非法字符$c");
             }
@@ -804,31 +812,6 @@ class Template
         }
         $m = array_pop($arr);
         return implode('\\', $arr)."::$m($args)";
-    }
-    
-    /*
-     * 
-     */
-    protected static function readThreeMetaValue($ret, $tmp, $val, $len, &$pos, $strs)
-    {
-        if (isset($tmp)) {
-            $ret = self::readVarValue($ret, $tmp);
-        }
-        if ($val[$i] == ':' || $val[$i] == '?') {
-            return "$ret ?".$val[$i].' '.self::parseValue(substr($val, $i + 2), $strs);
-        } else {
-            $pos = 0;
-            while ($pos = strpos($val, ':', $pos)) {
-                if (substr($val, $pos + 1, 1) != ':') {
-                    $left  = substr($val, 0, $pos);
-                    $right = substr($val, $pos + 1);
-                    break;
-                }
-            }
-            if (isset($left)) {
-                return $ret.' ? '.self::parseValue($left, $strs). ' : ' .self::parseValue($right, $strs);
-            }
-        }
     }
     
     /*
