@@ -16,9 +16,9 @@ class View
         'ext'       => '.php',
         'dir'       => APP_DIR.'view/',
         'template'  => [
-            'ext'           => '.html',
-            'engine'        => Template::class,
-            'force_complie' => false,
+            'ext'       => '.html',
+            'debug'     => APP_DEBUG,
+            'engine'    => Template::class,
         ]
     ];
 
@@ -61,12 +61,12 @@ class View
      */
     public static function filter($name, callable $value)
     {
-        self::$view['filter'][$name] = $value;
+        self::$view['filters'][$name] = $value;
     }
     
     public static function filters(array $values)
     {
-        self::$view['filter'] = $values + (self::$view['filter'] ?? []);
+        self::$view['filters'] = $values + (self::$view['filters'] ?? []);
     }
     
     /*
@@ -95,7 +95,7 @@ class View
             if (!is_file($tplfile = self::getTemplate($tpl))) {
                 throw new ViewException("Template file not found: $tplfile");
             } 
-            if (self::$config['template']['force_complie']
+            if (self::$config['template']['debug']
                 || !is_file($phpfile)
                 || filemtime($phpfile) < filemtime($tplfile)
             ) {
@@ -214,8 +214,8 @@ class View
      */
     public static function callFilter($name, ...$params)
     {
-        if (isset(self::$view['filter'][$name])) {
-            return self::$view['filter'][$name](...$params);
+        if (isset(self::$view['filters'][$name])) {
+            return self::$view['filters'][$name](...$params);
         }
         throw new \BadMethodCallException('Call to undefined filter '.$name);
     }
