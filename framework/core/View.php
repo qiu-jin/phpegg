@@ -2,6 +2,7 @@
 namespace framework\core;
 
 use framework\util\Arr;
+use framework\core\Container;
 use framework\core\http\Response;
 use framework\core\exception\ViewException;
 use framework\extend\view\Error as ViewError;
@@ -17,6 +18,7 @@ class View
         'dir'       => APP_DIR.'view/',
         'template'  => [
             'ext'       => '.html',
+            //'dir'       => APP_DIR.'view/',
             'debug'     => APP_DEBUG,
             'engine'    => Template::class,
         ]
@@ -165,6 +167,29 @@ class View
         } else {
             return self::$config['template']['dir'].$tpl.self::$config['template']['ext'];
         }
+    }
+
+    /*
+     *  模版编译宏
+     */
+    public static function filterMacro($name, $args)
+    {
+        return __CLASS__."::callFilter('$name'".($args ? ', '.implode(', ', $args) : '').")";
+    }
+    
+    public static function ContainerMacro($name)
+    {
+        return Container::class."::make('$name')";
+    }
+    
+    public static function includeMacro($name, $is_var = false)
+    {
+        return 'include '.__CLASS__.'::path('.($is_var ? $name : "'$name'").');';
+    }
+    
+    public static function checkExpiredMacro($names)
+    {
+        return 'if ('.__CLASS__."::checkExpired(__FILE__, '".implode("', '", $names)."')) return include __FILE__;";
     }
     
     /*

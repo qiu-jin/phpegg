@@ -67,6 +67,14 @@ abstract class Storage
     }
     
     /* 
+     * 获取domain
+     */
+    public function domain()
+    {
+        return $this->domain;
+    }
+    
+    /* 
      * 抓取远程文件并保存到storage
      * 支持http https和所有storage配置实例
      */

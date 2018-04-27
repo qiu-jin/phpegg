@@ -112,7 +112,7 @@ class Container
         if (is_array($name)) {
             return self::makeDriverInstance($type, $name);
         }
-        $key = $name ? $type : "$type.$name";
+        $key = $name ? "$type.$name" : $type;
         return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($type, $name);
     }
     
