@@ -80,7 +80,7 @@ class Db extends Cache
         return (bool) $this->db->exec("UPDATE $this->table SET _value = _value - ? WHERE _key = ?", [$value, $key]);
     }
     
-    public function clear()
+    public function clean()
     {
         return (bool) $this->db->query("TRUNCATE $this->table");
     }

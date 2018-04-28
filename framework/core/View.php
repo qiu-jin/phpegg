@@ -42,7 +42,7 @@ class View
             }
             self::$config = $config + self::$config;
         }
-        Event::on('exit', __CLASS__.'::free');
+        Event::on('exit', __CLASS__.'::clean');
     }
     
     /*
@@ -74,16 +74,15 @@ class View
     /*
      * 渲染页面
      */
-    public static function render($tpl, $vars = null)
+    public static function render($tpl, array $vars = [])
     {
-        $vars && self::vars($vars);
         ob_start();
         (static function($__file, $__vars) {
             if ($__vars) {
                 extract($__vars, EXTR_SKIP);
             }
             require $__file;
-        })(self::path($tpl), self::$view->vars ?? null);
+        })(self::path($tpl), $vars + (self::$view['vars'] ?? []));
         return ob_get_clean();
     }
     
@@ -96,7 +95,7 @@ class View
         if (self::$config['template']) {
             if (!is_file($tplfile = self::getTemplate($tpl))) {
                 throw new ViewException("Template file not found: $tplfile");
-            } 
+            }
             if (self::$config['template']['debug']
                 || !is_file($phpfile)
                 || filemtime($phpfile) < filemtime($tplfile)
@@ -148,26 +147,6 @@ class View
         }
         throw new \BadMethodCallException('Call to undefined method '.__CLASS__."::$method");
     }
- 
-    /*
-     * 获取视图文件路径
-     */
-    public static function getView($tpl)
-    {
-        return self::$config['dir'].$tpl.self::$config['ext'];
-    }
-    
-    /*
-     * 获取模版文件路径
-     */
-    public static function getTemplate($tpl)
-    {
-        if (empty(self::$config['template']['dir'])) {
-            return self::$config['dir'].$tpl.self::$config['template']['ext'];
-        } else {
-            return self::$config['template']['dir'].$tpl.self::$config['template']['ext'];
-        }
-    }
 
     /*
      *  模版编译宏
@@ -204,17 +183,6 @@ class View
     }
     
     /*
-     * 读取模版文件内容
-     */
-    public static function readTemplateFile($file)
-    {
-        if ($res = file_get_contents($file)) {
-            return $res;
-        }
-        throw new ViewException("Template file read fail: $file");
-    }
-    
-    /*
      * 检查视图文件是否过期
      */
     public static function checkExpired($phpfile, ...$tpls)
@@ -244,6 +212,37 @@ class View
         }
         throw new \BadMethodCallException('Call to undefined filter '.$name);
     }
+    
+    /*
+     * 获取视图文件路径
+     */
+    private static function getView($tpl)
+    {
+        return self::$config['dir'].$tpl.self::$config['ext'];
+    }
+    
+    /*
+     * 获取模版文件路径
+     */
+    private static function getTemplate($tpl)
+    {
+        if (empty(self::$config['template']['dir'])) {
+            return self::$config['dir'].$tpl.self::$config['template']['ext'];
+        } else {
+            return self::$config['template']['dir'].$tpl.self::$config['template']['ext'];
+        }
+    }
+    
+    /*
+     * 读取模版文件内容
+     */
+    private static function readTemplateFile($file)
+    {
+        if ($res = file_get_contents($file)) {
+            return $res;
+        }
+        throw new ViewException("Template file read fail: $file");
+    }
 
     /*
      * 编译模版并保存到视图文件
@@ -263,9 +262,13 @@ class View
         throw new ViewException("View dir create fail: $dir");
     }
     
-    public static function free()
+    public static function clean($name = null)
     {
-        self::$view = null;
+        if ($name === null) {
+            self::$view = null;
+        } elseif (isset(self::$view[$name])) {
+            self::$view[$name] = null;
+        }
     }
 }
 View::init();

@@ -69,7 +69,7 @@ class Opcache extends Cache
         return is_php_file($file = $this->filename($key)) && $this->removeCache($file);
     }
     
-    public function clear()
+    public function clean()
     {
         if ($od = opendir($this->dir)) {
             while (($f = readdir($od)) !== false) {

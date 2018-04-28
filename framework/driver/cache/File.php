@@ -74,7 +74,7 @@ class File extends Cache
         return is_file($file = $this->filename($key)) && unlink($file);
     }
     
-    public function clear()
+    public function clean()
     {
         if ($od = opendir($this->dir)) {
             while (($file = readdir($od)) !== false) {

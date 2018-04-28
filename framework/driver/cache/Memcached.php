@@ -78,7 +78,7 @@ class Memcached extends Cache
         return $this->connection->decrement($key, $value);
     }
     
-    public function clear()
+    public function clean()
     {
         return $this->connection->flush();
     }

@@ -15,7 +15,7 @@ abstract class Cache
     
     abstract public function delete($key);
     
-    abstract public function clear();
+    abstract public function clean();
     
     public function __construct($config)
     {

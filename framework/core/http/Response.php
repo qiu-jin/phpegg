@@ -137,7 +137,7 @@ class Response
     /*
      * 清除响应值
      */
-    public static function clear($name = null)
+    public static function clean($name = null)
     {
         if ($name) {
             if (isset(self::$response->$name)) {

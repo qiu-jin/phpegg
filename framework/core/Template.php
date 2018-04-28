@@ -44,16 +44,16 @@ class Template
         'allow_php_functions'   => false,
         // 静态类公共名称空间
         'view_class_namespace'  => null,
+        // 模版读取器
+        'view_template_reader'  => View::class.'::readTemplate',
         // filter宏
-        'view_filter_macro'         => View::class.'::filterMacro',
+        'view_filter_macro'     => View::class.'::filterMacro',
         // include宏
-        'view_include_macro'        => View::class.'::includeMacro',
+        'view_include_macro'    => View::class.'::includeMacro',
         // container宏
-        'view_container_macro'      => View::class.'::ContainerMacro',
+        'view_container_macro'  => View::class.'::ContainerMacro',
         // check expired宏
         'view_check_expired_macro'  => View::class.'::checkExpiredMacro',
-        // 读取模版内容方法
-        'view_read_template_method' => View::class.'::readTemplate',
     ];
     
     // 内置变量
@@ -77,16 +77,18 @@ class Template
         'concat'        => '($0.$1)',
         // 字符串拼接
         'format'        => 'sprintf($0, $1, ...)',
+        // 字符串补全填充
+        'pad'           => 'str_pad($0, $1, ...)',
         // 字符串替换
         'replace'       => 'str_replace($1, $2, $0)',
         // 字符串中字符位置
-        'search'        => 'strpos($1, $0)',
+        'index'         => 'strpos($1, $0)',
         // 字符串截取
         'substr'        => 'substr($0, $1, $2)',
+        // 字符串截取
+        'slice'         => 'substr($0, $1 > 0 ? $1 - $0 : $1)',
         // 字符串重复
         'repeat'        => 'str_repeat($0, $1)',
-        // 字符串补全填充
-        'pad'           => 'str_pad($0, $1, ...)',
         // 字符串长度
         'length'        => 'strlen($0)',
         // 字符串大写
@@ -96,9 +98,11 @@ class Template
         // 字符串首字母大写
         'ucfirst'       => 'ucfirst($0)',
         // 每个单词的首字母大写
-        'ucwords'       => 'ucwords($0)',
+        'capitalize'    => 'ucwords($0)',
         // 字符串剔除两端空白
         'trim'          => 'trim($0, ...)',
+        // 文本换行符转换成HTML换行符
+        'nl2br'         => 'nl2br($0)',
         // 字符串md5值
         'md5'           => 'md5($0)',
         // 字符串hash值
@@ -131,10 +135,12 @@ class Template
         'keys'          => 'array_keys($0)',
         // 获取数组values
         'values'        => 'array_values($0)',
+        // 合并数组
+        'merge'         => 'array_merge($0, $1)',
         // 最大值
-        'max'           => 'max($0, ...)'
+        'max'           => 'max($0, ...)',
         // 最小值
-        'min'           => 'min($0, ...)'
+        'min'           => 'min($0, ...)',
         // 转为数字
         'num'           => '($0+0)',
         // 数字绝对值
@@ -151,8 +157,10 @@ class Template
         'number_format' => 'number_format($0)',
         // 时间戳
         'time'          => 'time()',
+        // 转为时间戳
+        'totime'        => 'strtotime($0)',
         // 时间格式化
-        'date'          => 'date($1, $0)',
+        'date'          => 'date($0, $1)',
     ];
     
     public static function init()
@@ -172,7 +180,7 @@ class Template
     public static function complie($str, $is_tpl = false)
     {
         if ($is_tpl) {
-            $str = self::$config['view_read_template_method']($str);
+            $str = self::$config['view_template_reader']($str);
         }
         $ret = '';
         $str = self::readInsertAndExtends($str, $ck);
@@ -235,7 +243,7 @@ class Template
             if ($res = self::parseTagWithText($str, self::$config['block_tag'], 'name')) {
                 $blocks += array_column($res, 'text', 'name');
             }
-            $str = self::$config['view_read_template_method']($name);
+            $str = self::$config['view_template_reader']($name);
             $i++;
         }
         if ($i == 0) {
@@ -278,7 +286,7 @@ class Template
             $str = preg_replace_callback(self::tagRegex(self::$config['insert_tag']), function ($matches) use (&$ck) {
                 $name = self::parseSelfEndTagAttrs($matches[0], 'name');
                 $ck[] = $name;
-                return self::$config['view_read_template_method']($name);
+                return self::$config['view_template_reader']($name);
             }, $str, -1, $count);
             $i++;
         } while ($count > 0);
@@ -498,23 +506,6 @@ class Template
     }
     
     /*
-     * 标签属性宏
-     */
-    protected static function readTagAttrMacro($str)
-    {
-        $s = preg_quote(self::$config['argument_attr_prefix']);
-        return preg_replace_callback("/(\w+)$s(\w*)(?:\s*=\s*(\"[^\"]*\"|'[^']*'))?/", function ($matches) {
-            list ($t, $n, $k, $v) = $matches;
-            $v = $v === '' ? null : substr($v, 1, -1);
-            $k = $k === '' ? null : $k;
-            if (isset(self::$config['tag_attr_macro'][$n])) {
-                return $n.'="'.self::$config['tag_attr_macro'][$n]($v, $k).'"';
-            }
-            throw new TemplateException("readAttrMacro error: 未定义宏值");
-        }, $str);
-    }
-    
-    /*
      * 读取语句结构
      */
     protected static function readControlStruct($name, $val)
@@ -563,6 +554,8 @@ class Template
                     return 'for ('.implode(';', $ret).') {';
                 }
                 break;
+            case 'while':
+                return 'while ('.self::readValue($val).') {';
         }
         throw new TemplateException("readControlStruct error: 非法语句 $name ($val)");
     }
@@ -572,10 +565,10 @@ class Template
      */  
     protected static function parseSelfEndTagAttrs($str, $name = null, $self_end = true)
     {
-        if ($self_end && substr($str, -2) != '/>') {
+        if ($self_end === true && substr($str, -2) != '/>') {
             throw new TemplateException("parseTagAttrs error: 必须自闭合标签 $str");
         }
-        if (!$self_end && substr($str, -2) == '/>') {
+        if ($self_end === false && substr($str, -2) == '/>') {
             throw new TemplateException("parseTagAttrs error: 必须非自闭合标签 $str");
         }
         $prefix = preg_quote(self::$config['assign_attr_prefix']);

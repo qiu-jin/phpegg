@@ -61,7 +61,7 @@ class Redis extends Cache
         return $value > 1 ? $this->connection->decrBy($key, $value) : $this->connection->decr($key);
     }
     
-    public function clear()
+    public function clean()
     {
         return $this->connection->flushdb();
     }

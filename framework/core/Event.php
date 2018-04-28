@@ -70,7 +70,7 @@ class Event
     /*
      * 清除事件
      */
-    public static function remove($name = null)
+    public static function clean($name = null)
     {
         if ($name === null) {
             self::$events = null;

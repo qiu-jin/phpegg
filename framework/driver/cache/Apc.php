@@ -9,7 +9,7 @@ class Apc extends Cache
     public function __construct($config)
     {
         $this->prefix = $config['prefix'];
-        $this->global_clear = $config['global_clear'] ?? false;
+        $this->global_clean = $config['global_clean'] ?? false;
     }
     
     public function get($key, $default = null)
@@ -42,9 +42,9 @@ class Apc extends Cache
         return apcu_dec($this->prefix.$key, $value);
     }
     
-    public function clear()
+    public function clean()
     {
-        if ($this->global_clear) {
+        if ($this->global_clean) {
             return apcu_clear_cache();
         }
         foreach (new \APCUIterator("/^{$this->prefix}/", APC_ITER_KEY) as $counter) {
