@@ -14,6 +14,8 @@ class Template
         'blank_tag'             => 'php',
         // 块标签
         'block_tag'             => 'block',
+        // 组件标签
+        'component_tag'         => 'component',
         // 原生标签
         'verbatim_tag'          => 'verbatim',
         // 插入标签
@@ -63,12 +65,12 @@ class Template
     
     // 内置函数
     protected static $filters = [
-        // 是否存在
+        // 是否不为空
         'has'           => '!empty($0)',
-        // 是否存在
-        'isset'         => 'isset($0)',
         // 是否为空
         'empty'         => 'empty($0)',
+        // 是否存在
+        'isset'         => 'isset($0)',
         // 默认值
         'default'       => '($0 ?? $1)',
         // 转为字符串
@@ -170,8 +172,8 @@ class Template
         }
         self::$init = true;
         if ($config = Config::get('template')) {
-            if ($functions = Arr::pull($config, 'functions')) {
-                self::$functions = $functions + self::$functions;
+            if ($filters = Arr::pull($config, 'filters')) {
+                self::$filters = $filters + self::$filters;
             }
             self::$config = $config + self::$config;
         }
@@ -187,7 +189,7 @@ class Template
         self::checkPhpSyntax($str);
         // 检查模版更新
         if ($ck) {
-            $ret = self::wrapCode(self::$config['view_check_expired_macro']($ck)).PHP_EOL;
+            $ret = self::wrapCode(self::$config['view_check_expired_macro'](array_unique($ck))).PHP_EOL;
         }
         $end = [];
         if ($res = self::parseTagWithText($str, self::$config['verbatim_tag'])) {
@@ -320,7 +322,7 @@ class Template
             }
             $code = self::readValue($val);
             return self::wrapCode($escape ? "echo htmlentities($code);" : "echo $code;");
-        }, self::readStructTag(self::readInclude($str), $end));
+        }, self::readInclude(self::readStructTag($str, $end)));
     }
     
     /*
@@ -329,7 +331,7 @@ class Template
     protected static function readInclude($str)
     {
         return preg_replace_callback(self::tagRegex(self::$config['include_tag']), function ($matches) {
-            $name  = self::$config['assign_attr_prefix'].'name';
+            $name  = self::$config['argument_attr_prefix'].'name';
             $attrs = self::parseSelfEndTagAttrs($matches[0]);
             if (isset($attrs['name'])) {
                 $arg = $attrs['name'];
@@ -349,7 +351,9 @@ class Template
     {
         $v = '(?:"[^"]*"|\'[^\']*\')';
         $a = "(?:\s*\w+(?:\s*=\s*$v)?)";
-        $s = preg_quote(self::$config['assign_attr_prefix'].self::$config['struct_attr_prefix']);
+        $s = preg_quote(self::$config['assign_attr_prefix']
+                       .self::$config['struct_attr_prefix']
+                       .self::$config['argument_attr_prefix']);
         $regex  = "/<(\w+)\s+$a*(?:\s*[$s]\w+(?:\s*=\s*$v)?)+$a*\s*\/?>/";
         if (!preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
             return $str;
@@ -571,7 +575,7 @@ class Template
         if ($self_end === false && substr($str, -2) == '/>') {
             throw new TemplateException("parseTagAttrs error: 必须非自闭合标签 $str");
         }
-        $prefix = preg_quote(self::$config['assign_attr_prefix']);
+        $prefix = preg_quote(self::$config['argument_attr_prefix']);
         if (preg_match_all('/([\w-'.$prefix.']+)\s*=\s*(?:"([^"]+)"|\'([^\']+)\')/', $str, $matches)) {
             foreach ($matches[1] as $i => $attr) {
                 $ret[$attr] = $matches[2][$i] ?: $matches[3][$i];
@@ -917,6 +921,9 @@ class Template
                 $args = implode(', ', self::readArguments($val, $len, $pos, $strs));
                 // 函数
                 if (count($arr) == 1) {
+                    if (in_array($tmp, ['parent', 'block'])) {
+                        throw new TemplateException("readFunctionValue error: $tmp 为特殊模版方法");
+                    }
                     $fs = self::$config['allow_php_functions'] ?? null;
                     if ($fs == true || (is_array($fs) && in_array($tmp, $fs))) {
                         return "$tmp($args)";
