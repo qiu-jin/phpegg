@@ -11,13 +11,17 @@ class Template
     // 配置
     protected static $config    = [
         // 空标签
-        'blank_tag'             => 'php',
+        'blank_tag'             => 'tag',
+        // 原生标签
+        'raw_tag'               => 'raw',
+        // php标签
+        'php_tag'               => 'php',
+        // heredoc标签
+        'heredoc_tag'           => 'heredoc',
         // 块标签
         'block_tag'             => 'block',
         // 组件标签
         'component_tag'         => 'component',
-        // 原生标签
-        'verbatim_tag'          => 'verbatim',
         // 插入标签
         'insert_tag'            => 'insert',
         // 引用标签
@@ -29,6 +33,8 @@ class Template
         // 赋值语句前缀符
         'assign_attr_prefix'    => '$',
         // 参数语句前缀符
+        'inject_attr_prefix'    => '#',
+        // 
         'argument_attr_prefix'  => ':',
         // 文本插入左右边界符号
         'text_border_sign'      => ['{{', '}}'],
@@ -40,8 +46,6 @@ class Template
         'note_text_sign'        => '#',
         // 原样输出标识符（不解析文本插入边界符以其内内容）
         'verbatim_text_sign'    => '!',
-        // 是否允许在模版内使用PHP原生语法
-        'allow_php_syntax'      => false,
         // 是否支持PHP函数
         'allow_php_functions'   => false,
         // 静态类公共名称空间
@@ -186,37 +190,22 @@ class Template
         }
         $ret = '';
         $str = self::readInsertAndExtends($str, $ck);
-        self::checkPhpSyntax($str);
+        self::checkPHPSyntax($str);
         // 检查模版更新
         if ($ck) {
             $ret = self::wrapCode(self::$config['view_check_expired_macro'](array_unique($ck))).PHP_EOL;
         }
-        $end = [];
-        if ($res = self::parseTagWithText($str, self::$config['verbatim_tag'])) {
-            $pos = 0;
-            foreach ($res as $v) {
-                $ret .= self::readStructAndText(substr($str, $pos, $v['pos'][0] - $pos), $end);
-                $ret .= $v['text'];
-                $pos  = $v['pos'][1];
-            }
-            $str = substr($str, $pos);
-        }
-        if (!$end) {
-            return $ret.self::readStructAndText($str, $end);
-        }
-        throw new TemplateException('complie error: 结构语句标签未闭合');
+        return $ret.self::readRaw($str);
     }
     
     /*
      * 检查PHP语法
      */
-    protected static function checkPhpSyntax($str)
+    protected static function checkPHPSyntax($str)
     {
-        if (!self::$config['allow_php_syntax']) {
-            $tokens = token_get_all($str);
-            if (count($tokens) != 1 || $tokens[0][0] != T_INLINE_HTML) {
-                throw new TemplateException('checkPhpSyntax error: 禁用PHP原生语法');
-            }
+        $tokens = token_get_all($str);
+        if (count($tokens) != 1 || $tokens[0][0] != T_INLINE_HTML) {
+            throw new TemplateException('checkPhpSyntax error: 禁用PHP原生语法');
         }
     }
     
@@ -243,7 +232,7 @@ class Template
             $ck[] = $name;
             // 读取子模版block
             if ($res = self::parseTagWithText($str, self::$config['block_tag'], 'name')) {
-                $blocks += array_column($res, 'text', 'name');
+                $blocks += array_column($res, 'text', 'attr');
             }
             $str = self::$config['view_template_reader']($name);
             $i++;
@@ -262,10 +251,10 @@ class Template
             foreach ($res as $v) {
                 $ret .= substr($str, $pos, $v['pos'][0] - $pos);
                 $pos  = $v['pos'][1];
-                if (isset($blocks[$v['name']])) {
+                if (isset($blocks[$v['attr']])) {
                     $ret .= preg_replace_callback($regex, function ($matchs) use ($v) {
                         return $v['text'];
-                    }, $blocks[$v['name']]);
+                    }, $blocks[$v['attr']]);
                 } else {
                     $ret .= $v['text'];
                 }
@@ -293,6 +282,80 @@ class Template
             $i++;
         } while ($count > 0);
         return $str;
+    }
+    
+    /*
+     * 读取解析插值语句
+     */
+    protected static function readRaw($str)
+    {
+        $ret = '';
+        $end = [];
+        if ($res = self::parseTagWithText($str, self::$config['raw_tag'], null)) {
+            $pos = 0;
+            foreach ($res as $v) {
+                $ret .= self::readPHPCode(substr($str, $pos, $v['pos'][0] - $pos), $end);
+                $ret .= $v['text'];
+                $pos  = $v['pos'][1];
+            }
+            $str = substr($str, $pos);
+        }
+        if ($str) {
+            $ret .= self::readPHPCode($str, $end);
+        }
+        if (!$end) {
+            return $ret;
+        }
+        throw new TemplateException('complie error: 结构语句标签未闭合');
+    }
+    
+    /*
+     * 读取解析php代码
+     */
+    protected static function readPHPCode($str, &$end)
+    {
+        if (!self::$config['php_tag']) {
+            return self::readHeredoc($str, $end);
+        }
+        $ret = '';
+        if ($res = self::parseTagWithText($str, self::$config['php_tag'], null)) {
+            $pos = 0;
+            foreach ($res as $v) {
+                $ret .= self::readHeredoc(substr($str, $pos, $v['pos'][0] - $pos), $end);
+                $ret .= self::wrapCode(PHP_EOL.$v['text'].PHP_EOL);
+                $pos  = $v['pos'][1];
+            }
+            $str = substr($str, $pos);
+        }
+        if ($str) {
+            $ret.= self::readHeredoc($str, $end);
+        }
+        return $ret;
+    }
+    
+    /*
+     * 读取解析heredoc
+     */
+    protected static function readHeredoc($str, &$end)
+    {
+        if (!self::$config['heredoc_tag']) {
+            return self::readStructAndText($str, $end);
+        }
+        $ret = '';
+        if ($res = self::parseTagWithText($str, self::$config['heredoc_tag'], null)) {
+            $pos = 0;
+            foreach ($res as $v) {
+                $eot  = $v['attr']['name'] ?? 'EOT';
+                $ret .= self::readStructAndText(substr($str, $pos, $v['pos'][0] - $pos), $end);
+                $ret .= self::wrapCode("print <<<$eot".PHP_EOL.$v['text'].PHP_EOL."$eot;");
+                $pos  = $v['pos'][1];
+            }
+            $str = substr($str, $pos);
+        }
+        if ($str) {
+            $ret.= self::readStructAndText($str, $end);
+        }
+        return $ret;
     }
     
     /*
@@ -351,10 +414,7 @@ class Template
     {
         $v = '(?:"[^"]*"|\'[^\']*\')';
         $a = "(?:\s*\w+(?:\s*=\s*$v)?)";
-        $s = preg_quote(self::$config['assign_attr_prefix']
-                       .self::$config['struct_attr_prefix']
-                       .self::$config['argument_attr_prefix']);
-        $regex  = "/<(\w+)\s+$a*(?:\s*[$s]\w+(?:\s*=\s*$v)?)+$a*\s*\/?>/";
+        $regex  = "/<(\w+)\s+$a*(?:\s*[".self::attrPrefixRegex()."]\w+(?:\s*=\s*$v)?)+$a*\s*\/?>/";
         if (!preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
             return $str;
         }
@@ -386,7 +446,6 @@ class Template
             }
             // 补全空白内容
             $ret .= PHP_EOL.$blank;
-            // 如果是空白标签则忽略标签HTML代码
             if ($matches[1][$i][0] != self::$config['blank_tag']) {
                 $ret .= $attrs['html'];
             }
@@ -470,13 +529,11 @@ class Template
         // 标签内结构语句条数
         $count   = 0;
         $is_else = false;
-        //$str     = self::readTagAttrMacro($str);
-        $prefix  = preg_quote(self::$config['assign_attr_prefix'].self::$config['struct_attr_prefix']);
-        $regex   = "/\s*([$prefix])(\w+)(?:\s*=\s*(\"[^\"]*\"|'[^']*'))?/";
+        $regex   = "/\s*([".self::attrPrefixRegex()."])(\w+)(?:\s*=\s*(\"[^\"]*\"|'[^']*'))?/";
         if (preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
             $pos = 0;
             foreach ($matches[1] as $i => $match) {
-                $html .= trim(substr($str, $pos, $matches[0][$i][1] - $pos));
+                $html .= substr($str, $pos, $matches[0][$i][1] - $pos);
                 $pref  = $matches[1][$i][0];
                 $name  = $matches[2][$i][0];
                 if ($matches[3][$i]) {
@@ -486,11 +543,15 @@ class Template
                         throw new TemplateException("readTagAttr error: 标签属性值不能为空");
                     }
                 }
+                // 
+                if ($pref == self::$config['inject_attr_prefix']) {
+                    $q = $matches[3][$i][0][0];
+                    $html .= " $name =$q".self::wrapCode("echo htmlentities(\"$val\");")."$q";
                 // 赋值语句
-                if ($pref == self::$config['assign_attr_prefix']) {
+                } elseif ($pref == self::$config['assign_attr_prefix']) {
                     $code[] = self::wrapCode("$$name = ".self::readValue($val).';');
                 // 流程控制语句
-                } else {
+                } elseif ($pref == self::$config['struct_attr_prefix']) {
                     $count++;
                     if ($name == 'else' || $name == 'elseif') {
                         $is_else = true;
@@ -499,6 +560,8 @@ class Template
                         }
                     }
                     $code[] = self::wrapCode(self::readControlStruct($name, $val ?? null));
+                } else {
+                    $html .= $matches[0][$i][0];
                 }
                 $pos = $matches[0][$i][1] + strlen($matches[0][$i][0]);
             }
@@ -567,7 +630,7 @@ class Template
     /*
      * 解析标签属性
      */  
-    protected static function parseSelfEndTagAttrs($str, $name = null, $self_end = true)
+    protected static function parseSelfEndTagAttrs($str, $name = true, $self_end = true)
     {
         if ($self_end === true && substr($str, -2) != '/>') {
             throw new TemplateException("parseTagAttrs error: 必须自闭合标签 $str");
@@ -580,12 +643,15 @@ class Template
             foreach ($matches[1] as $i => $attr) {
                 $ret[$attr] = $matches[2][$i] ?: $matches[3][$i];
             }
-            if (!$name) {
+            if ($name === true || $name === null) {
                 return $ret;
             }
             if (isset($ret[$name])) {
                 return $ret[$name];
             }
+        }
+        if ($name === null) {
+            return null;
         }
         throw new TemplateException("parseSelfEndTagAttrs error: 标签值为空 $str");
     }
@@ -593,7 +659,7 @@ class Template
     /*
      * 
      */
-    protected static function parseTagWithText($str, $tag, $name = null)
+    protected static function parseTagWithText($str, $tag, $name = true)
     {        
         if (!preg_match_all(self::tagRegex($tag), $str, $matches, PREG_OFFSET_CAPTURE)) {
             return false;
@@ -609,7 +675,7 @@ class Template
                 $ret[] = [
                     'pos'  => [$match[1], $pos + strlen($end_tag)],
                     'text' => substr($str, $start, $pos - $start),
-                    'name' => $name ? self::parseSelfEndTagAttrs($match[0], $name, false) : null
+                    'attr' => self::parseSelfEndTagAttrs($match[0], $name, false)
                 ];
             } else {
                 throw new TemplateException("parseTagWithText error: 标签 $tag 不允许嵌套使用");
@@ -682,6 +748,15 @@ class Template
     protected static function tagRegex($tag)
     {        
         return '/<'.self::$config[$tag.'_tag'].'(?:"[^"]*"|\'[^\']*\'|[^\'">])*>/';
+    }
+    
+    /*
+     * 属性正则前缀
+     */ 
+    protected static function attrPrefixRegex()
+    {        
+        return preg_quote(self::$config['assign_attr_prefix'].self::$config['struct_attr_prefix']
+                         .self::$config['inject_attr_prefix'].self::$config['argument_attr_prefix']);
     }
     
     /*
