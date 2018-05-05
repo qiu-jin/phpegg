@@ -54,7 +54,7 @@ abstract class Db
     
     public function __get($name)
     {
-        return new query\Query($this, $name);
+        return $this->table($name);
     }
    
     public function table($name)

@@ -32,20 +32,22 @@ class Template
         'struct_attr_prefix'    => '@',
         // 赋值语句前缀符
         'assign_attr_prefix'    => '$',
-        // 参数语句前缀符
-        'inject_attr_prefix'    => '#',
         // 
+        'double_attr_prefix'    => '*',
+        // 参数语句前缀符
         'argument_attr_prefix'  => ':',
         // 文本插入左右边界符号
-        'text_border_sign'      => ['{{', '}}'],
+        'text_delimiter_sign'   => ['{{', '}}'],
         // 文本插入是否自动转义
         'auto_escape_text'      => true,
         // 文本转义符号与反转义符号
         'text_escape_sign'      => [':', '!'],
         // 注释符号
+        'not_echo_text_sign'    => '#',
+        // 注释符号
         'note_text_sign'        => '#',
         // 原样输出标识符（不解析文本插入边界符以其内内容）
-        'verbatim_text_sign'    => '!',
+        'raw_text_sign'         => '!',
         // 是否支持PHP函数
         'allow_php_functions'   => false,
         // 静态类公共名称空间
@@ -80,7 +82,7 @@ class Template
         // 转为字符串
         'str'           => 'strval($0)',
         // 字符串拼接
-        'concat'        => '($0.$1)',
+        'cat'           => '($0.$1)',
         // 字符串拼接
         'format'        => 'sprintf($0, $1, ...)',
         // 字符串补全填充
@@ -92,7 +94,7 @@ class Template
         // 字符串截取
         'substr'        => 'substr($0, $1, $2)',
         // 字符串截取
-        'slice'         => 'substr($0, $1 > 0 ? $1 - $0 : $1)',
+        'slice'         => 'substr($0, $1, $2 > 0 ? $2 - $1 : $2)',
         // 字符串重复
         'repeat'        => 'str_repeat($0, $1)',
         // 字符串长度
@@ -167,6 +169,8 @@ class Template
         'totime'        => 'strtotime($0)',
         // 时间格式化
         'date'          => 'date($0, $1)',
+        // 视图文件是否存在
+        'view_exists'   => View::class.'::exists($0)',
     ];
     
     public static function init()
@@ -363,27 +367,32 @@ class Template
      */
     protected static function readStructAndText($str, &$end)
     {
-        $l = preg_quote(self::$config['text_border_sign'][0]);
-        $r = preg_quote(self::$config['text_border_sign'][1]);
-        $p = preg_quote(self::$config['note_text_sign'].self::$config['verbatim_text_sign']);
+        $l = preg_quote(self::$config['text_delimiter_sign'][0]);
+        $r = preg_quote(self::$config['text_delimiter_sign'][1]);
+        $p = preg_quote(self::$config['note_text_sign'].self::$config['raw_text_sign']);
         return preg_replace_callback("/([$p]?)$l(.*?)$r/", function ($matches) use ($str) {
             if ($s = $matches[1]) {
                 // 忽略注释
                 if ($s === self::$config['note_text_sign']) {
                     return '';
                 // 不解析，原样输出
-                } elseif($s === self::$config['verbatim_text_sign']) {
+                } elseif($s === self::$config['raw_text_sign']) {
                     return substr($matches[0], strlen($s));
                 }
             }
             $val = $matches[2];
+            $code = self::readValue($val);
+            // 不输出
+            if ($val[0] === self::$config['not_echo_text_sign']) {
+                return self::wrapCode("$code;");
+            }
             // 是否转义
             $escape = self::$config['auto_escape_text'];
             if (in_array($val[0], self::$config['text_escape_sign'])) {
                 $escape = !array_search($val[0], self::$config['text_escape_sign']);
                 $val = substr($val, 1);
             }
-            $code = self::readValue($val);
+            
             return self::wrapCode($escape ? "echo htmlentities($code);" : "echo $code;");
         }, self::readInclude(self::readStructTag($str, $end)));
     }
@@ -422,7 +431,7 @@ class Template
         $ret = '';
         foreach ($matches[0] as $i => $match) {
             if ($pos > $match[1]) {
-                throw new TemplateException("readTag error: 文本读取偏移地址错误");
+                throw new TemplateException("readStructTag error: 文本读取偏移地址错误");
             }
             // 读取左侧HTML
             $left  = substr($str, $pos, $match[1] - $pos);
@@ -438,7 +447,7 @@ class Template
                     if (preg_match('/\?>\s*$/', $ret, $res)) {
                         $ret = substr($ret, 0, -strlen($res[0])).substr(implode(PHP_EOL.$blank, $attrs['code']), 6);
                     } else {
-                        throw new TemplateException('readTag error: 衔接if else失败');
+                        throw new TemplateException('readStructTag error: 衔接if else失败');
                     }
                 } else {
                     $ret .= implode(PHP_EOL.$blank, $attrs['code']);
@@ -544,9 +553,10 @@ class Template
                     }
                 }
                 // 
-                if ($pref == self::$config['inject_attr_prefix']) {
+                if ($pref == self::$config['double_attr_prefix']) {
                     $q = $matches[3][$i][0][0];
-                    $html .= " $name =$q".self::wrapCode("echo htmlentities(\"$val\");")."$q";
+                    $e = self::$config['auto_escape_text'];
+                    $html .= " $name =$q".self::wrapCode($e ? "echo htmlentities(\"$val\");" : "echo \"$val\";").$q;
                 // 赋值语句
                 } elseif ($pref == self::$config['assign_attr_prefix']) {
                     $code[] = self::wrapCode("$$name = ".self::readValue($val).';');
@@ -756,7 +766,7 @@ class Template
     protected static function attrPrefixRegex()
     {        
         return preg_quote(self::$config['assign_attr_prefix'].self::$config['struct_attr_prefix']
-                         .self::$config['inject_attr_prefix'].self::$config['argument_attr_prefix']);
+                         .self::$config['double_attr_prefix'].self::$config['argument_attr_prefix']);
     }
     
     /*
@@ -764,8 +774,8 @@ class Template
      */  
     protected static function blockFuncRegex($func, $has_arg = true)
     {
-        $l = preg_quote(self::$config['text_border_sign'][0]);
-        $r = preg_quote(self::$config['text_border_sign'][1]);
+        $l = preg_quote(self::$config['text_delimiter_sign'][0]);
+        $r = preg_quote(self::$config['text_delimiter_sign'][1]);
         return "/$l@\s*$func\(\s*".($has_arg ? '"(\w+)"' : '')."\s*\)\s*$r/";
     }
     
@@ -807,7 +817,7 @@ class Template
                         }
                         break;
                     }
-                    throw new TemplateException("readValue error: 非法 $c 语法");
+                    throw new TemplateException("readValue error: 非法 ( 语法 $val");
                 // 数组
                 case '[':
                     if (!isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '[', ']'))) {
@@ -820,7 +830,7 @@ class Template
                         $i = $pos;
                         break;
                     }
-                    throw new TemplateException("readValue error: 非法 $c 语法");
+                    throw new TemplateException("readValue error: 非法 [ 语法 $val");
                 // 数组
                 case '{':
                     if (!isset($ret) && !isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '{', '}'))) {
@@ -828,7 +838,7 @@ class Template
                         $i = $pos;
                         break;
                     }
-                    throw new TemplateException("readValue error: 非法 $c 语法");
+                    throw new TemplateException("readValue error: 非法 { 语法 $val");
                 // 函数 静态方法 容器
                 case '$':
                     if (!isset($ret) && !isset($tmp)) {
@@ -840,7 +850,7 @@ class Template
                         }
                         break;
                     }
-                    throw new TemplateException("readValue error: 非法 $c 语法");
+                    throw new TemplateException("readValue error: 非法 $ 语法 $val");
                 // 三元表达式
                 case '?':
                     $ret  = self::readInitValue($ret, $tmp);
@@ -850,7 +860,7 @@ class Template
                     } else {
                         return "$ret ? ".self::readValue(substr($val, $i + 1), $strs, ':');
                     }
-                    throw new TemplateException("readValue error: 非法字符 $c");
+                    throw new TemplateException("readValue error: 非法 ? 语法 $val");
                 default:
                     if (in_array($c, ['+', '-', '*', '/', '%'])
                         || in_array($c, ['!', '&', '|', '=', '>', '<'])
@@ -866,7 +876,7 @@ class Template
                     } elseif ($end === $c) {
                         return self::readInitValue($ret, $tmp)." $c ".self::readValue(substr($val, $i + 1), $strs);
                     }
-                    throw new TemplateException("readValue error: 非法字符 $c");
+                    throw new TemplateException("readValue error: 非法 $c 字符 $val");
             }
             $tmp = null;
         }
@@ -938,20 +948,23 @@ class Template
         if (empty(self::$filters[$name])) {
             return self::$config['view_filter_macro']($name, $args);
         }
+        if (is_string(self::$filters[$name])) {
+            $ret = preg_replace_callback('/\\$(\d+)/', function ($matches) use (&$args) {
+                if (isset($args[$matches[1]])) {
+                    $val = $args[$matches[1]];
+                    unset($args[$matches[1]]);
+                    return $val;
+                }
+                throw new TemplateException("readFilterValue error: 缺少参数");
+            }, self::$filters[$name]);
+            return preg_replace_callback('/\,\s*\.\.\.\s*\)\s*$/', function ($matches) use ($args) {
+                return $args ? ','.implode(',', $args).')' : ')';
+            }, $ret);
+        }
         if (is_callable(self::$filters[$name])) {
             return self::$filters[$name](...$args);
         }
-        $ret = preg_replace_callback('/\\$(\d+)/', function ($matches) use (&$args) {
-            if (isset($args[$matches[1]])) {
-                $val = $args[$matches[1]];
-                unset($args[$matches[1]]);
-                return $val;
-            }
-            throw new TemplateException("readFilterValue error: 缺少参数");
-        }, self::$filters[$name]);
-        return preg_replace_callback('/\,\s*\.\.\.\s*\)\s*$/', function ($matches) use ($args) {
-            return $args ? ','.implode(',', $args).')' : ')';
-        }, $ret);
+        throw new TemplateException("readFilterValue error: 无效的filter设置");
     }
     
     /*
