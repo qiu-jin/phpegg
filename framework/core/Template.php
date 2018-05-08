@@ -18,6 +18,8 @@ class Template
         'php_tag'               => 'php',
         // heredoc标签
         'heredoc_tag'           => 'heredoc',
+        //
+        'slot_tag'              => 'slot',
         // 块标签
         'block_tag'             => 'block',
         // 组件标签
@@ -245,9 +247,11 @@ class Template
             return $str;
         }
         // 替换父模版block
+        /*
         $str = preg_replace_callback(self::blockFuncRegex('block'), function ($matchs) use ($blocks) {
             return $blocks[$matchs[1]] ?? '';
         }, $str);
+        */
         if ($res = self::parseTagWithText($str, self::$config['block_tag'], 'name')) {
             $pos = 0;
             $ret = '';
@@ -271,7 +275,7 @@ class Template
     /*
      * 读取解析include标签
      */
-    protected static function readInsert($str, &$ck)
+    protected static function _readInsert($str, &$ck)
     {
         $i = 0;
         do {
@@ -288,6 +292,61 @@ class Template
         return $str;
     }
     
+    protected static function readInsert($str, &$ck)
+    {
+        $contents = $block_contents = [];
+        while (true) {
+            if ($i > 9) {
+                throw new TemplateException('readInsert error: 嵌套不能大于9层，防止死循环');
+            }
+            if (!$res = self::parseTagWithText($str, self::$config['insert_tag'], 'name', null)) {
+                break;
+            }
+            $pos = 0;
+            $ret = '';
+            foreach ($res as $v) {
+                $ret .= substr($str, $pos, $v['pos'][0] - $pos);
+                $name = $v['attr'];
+                if (strpos($name, '.')) {
+                    list($name, $block) = explode($name, '.', 2);
+                }
+                $ck[] = $name;
+                $content = $contents[$name] ?? $contents[$name] = self::$config['view_template_reader']($name);
+                if (isset($block)) {
+                    if (!isset($block_contents[$name])) {
+                        $res = self::parseTagWithText($str, self::$config['block_tag'], 'name');
+                        $block_contents[$name] = array_column($res, 'text', 'attr');
+                    }
+                    if (!isset($block_contents[$name][$block])) {
+                        throw new TemplateException("readInsert error: $name.$block block 不存在");
+                    }
+                    $content = $block_contents[$name][$block];
+                }
+                if (!isset($v['text'])) {
+                    $ret .= $content;
+                } else {
+                    $slots = self::parseTagWithText($v['text'], self::$config['slot_tag'], 'name');
+                    $slots = array_column($slots, 'text', 'attr');
+                    $ret .= preg_replace_callback(self::blockFuncRegex('slot'), function ($matchs) use ($v, $slots) {
+                        if (!$n = $matchs[1]) {
+                            return $v['text'];
+                        }
+                        if (isset($slots[$n])) {
+                            return $slots[$n];
+                        }
+                        throw new TemplateException("readInsert error: $name.$block slot $n 不存在");
+                    }, $content);
+                }
+                $pos  = $v['pos'][1];
+            }
+            if ($str = substr($str, $pos)) {
+                $ret .= self::readPHPCode($str, $end);
+            }
+            $str = $ret;
+        }
+        return $str;
+    }
+    
     /*
      * 读取解析插值语句
      */
@@ -295,7 +354,7 @@ class Template
     {
         $ret = '';
         $end = [];
-        if ($res = self::parseTagWithText($str, self::$config['raw_tag'], null)) {
+        if ($res = self::parseTagWithText($str, self::$config['raw_tag'])) {
             $pos = 0;
             foreach ($res as $v) {
                 $ret .= self::readPHPCode(substr($str, $pos, $v['pos'][0] - $pos), $end);
@@ -322,7 +381,7 @@ class Template
             return self::readHeredoc($str, $end);
         }
         $ret = '';
-        if ($res = self::parseTagWithText($str, self::$config['php_tag'], null)) {
+        if ($res = self::parseTagWithText($str, self::$config['php_tag'])) {
             $pos = 0;
             foreach ($res as $v) {
                 $ret .= self::readHeredoc(substr($str, $pos, $v['pos'][0] - $pos), $end);
@@ -346,7 +405,7 @@ class Template
             return self::readStructAndText($str, $end);
         }
         $ret = '';
-        if ($res = self::parseTagWithText($str, self::$config['heredoc_tag'], null)) {
+        if ($res = self::parseTagWithText($str, self::$config['heredoc_tag'])) {
             $pos = 0;
             foreach ($res as $v) {
                 $eot  = $v['attr']['name'] ?? 'EOT';
@@ -669,7 +728,7 @@ class Template
     /*
      * 
      */
-    protected static function parseTagWithText($str, $tag, $name = true)
+    protected static function parseTagWithText($str, $tag, $name = null, $self_end = false)
     {        
         if (!preg_match_all(self::tagRegex($tag), $str, $matches, PREG_OFFSET_CAPTURE)) {
             return false;
@@ -678,15 +737,24 @@ class Template
         $end_tag = "</$tag>";
         foreach ($matches[0] as $i => $match) {
             if ($match[1] >= $pos) {
-                if (!$pos = stripos($str, $end_tag, $match[1])) {
-                    throw new TemplateException("parseTagWithText error: 标签 $tag 未闭合");
+                $attr = self::parseSelfEndTagAttrs($match[0], $name, $self_end);
+                if (substr($match[0], -2) === '/>') {
+                    $ret[] = [
+                        'pos'  => [$match[1], $match[1] + strlen($match[0])],
+                        'text' => null,
+                        'attr' => $attr
+                    ];
+                } else {
+                    if (!$pos = stripos($str, $end_tag, $match[1])) {
+                        throw new TemplateException("parseTagWithText error: 标签 $tag 未闭合");
+                    }
+                    $start = $match[1] + strlen($match[0]);
+                    $ret[] = [
+                        'pos'  => [$match[1], $pos + strlen($end_tag)],
+                        'text' => substr($str, $start, $pos - $start),
+                        'attr' => $attr
+                    ];
                 }
-                $start = $match[1] + strlen($match[0]);
-                $ret[] = [
-                    'pos'  => [$match[1], $pos + strlen($end_tag)],
-                    'text' => substr($str, $start, $pos - $start),
-                    'attr' => self::parseSelfEndTagAttrs($match[0], $name, false)
-                ];
             } else {
                 throw new TemplateException("parseTagWithText error: 标签 $tag 不允许嵌套使用");
             }
@@ -738,7 +806,7 @@ class Template
     
     /*
      * 包装PHP代码
-     */  
+     */
     protected static function wrapCode($code)
     {
         return "<?php $code ?>";
@@ -746,7 +814,7 @@ class Template
     
     /*
      * 是否空白字符
-     */ 
+     */
     protected static function isBlankChar($char)
     {
         return $char === ' ' || $char === "\t";
@@ -754,7 +822,7 @@ class Template
     
     /*
      * 标签正则
-     */  
+     */
     protected static function tagRegex($tag)
     {        
         return '/<'.self::$config[$tag.'_tag'].'(?:"[^"]*"|\'[^\']*\'|[^\'">])*>/';
@@ -762,7 +830,7 @@ class Template
     
     /*
      * 属性正则前缀
-     */ 
+     */
     protected static function attrPrefixRegex()
     {        
         return preg_quote(self::$config['assign_attr_prefix'].self::$config['struct_attr_prefix']
