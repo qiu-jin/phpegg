@@ -18,18 +18,18 @@ class Template
         'php_tag'               => 'php',
         // heredoc标签
         'heredoc_tag'           => 'heredoc',
-        //
+        // 插槽标签
         'slot_tag'              => 'slot',
         // 块标签
         'block_tag'             => 'block',
-        // 组件标签
-        'component_tag'         => 'component',
         // 插入标签
         'insert_tag'            => 'insert',
         // 引用标签
         'include_tag'           => 'include',
         // 继承标签
         'extends_tag'           => 'extends',
+        // 组件标签
+        'component_tag'         => 'component',
         // 结构语句前缀符
         'struct_attr_prefix'    => '@',
         // 赋值语句前缀符
@@ -44,12 +44,12 @@ class Template
         'auto_escape_text'      => true,
         // 文本转义符号与反转义符号
         'text_escape_sign'      => [':', '!'],
-        // 注释符号
+        // 
         'not_echo_text_sign'    => '#',
-        // 注释符号
-        'note_text_sign'        => '#',
         // 原样输出标识符（不解析文本插入边界符以其内内容）
         'raw_text_sign'         => '!',
+        // 注释符号
+        'note_text_sign'        => '#',
         // 是否支持PHP函数
         'allow_php_functions'   => false,
         // 静态类公共名称空间
@@ -223,15 +223,15 @@ class Template
         $i = 0;
         $blocks = [];
         while (true) {
+            if ($i > 9) {
+                throw new TemplateException('readIncludeAndExtends error: 嵌套不能大于9层，防止死循环');
+            }
             $str = self::readInsert($str, $ck);
             if (!preg_match_all(self::tagRegex(self::$config['extends_tag']), $str, $matches, PREG_OFFSET_CAPTURE)) {
                 break;
             }
             if (count($matches[0]) > 1) {
                 throw new TemplateException('readIncludeAndExtends error: extends语句不允许有多条');
-            }
-            if ($i > 9) {
-                throw new TemplateException('readIncludeAndExtends error: 嵌套不能大于9层，防止死循环');
             }
             $str = substr($str, 0, $matches[0][0][1]).substr($str, strlen($matches[0][0][0]));
             $name = self::parseSelfEndTagAttrs($matches[0][0][0], 'name');
@@ -247,19 +247,14 @@ class Template
             return $str;
         }
         // 替换父模版block
-        /*
-        $str = preg_replace_callback(self::blockFuncRegex('block'), function ($matchs) use ($blocks) {
-            return $blocks[$matchs[1]] ?? '';
-        }, $str);
-        */
-        if ($res = self::parseTagWithText($str, self::$config['block_tag'], 'name')) {
+        if ($res = self::parseTagWithText($str, self::$config['block_tag'], 'name', null)) {
             $pos = 0;
             $ret = '';
             $regex = self::blockFuncRegex('parent', false);
             foreach ($res as $v) {
                 $ret .= substr($str, $pos, $v['pos'][0] - $pos);
                 $pos  = $v['pos'][1];
-                if (isset($blocks[$v['attr']])) {
+                if (isset($blocks[$v['attr']]) || !isset($v['text'])) {
                     $ret .= preg_replace_callback($regex, function ($matchs) use ($v) {
                         return $v['text'];
                     }, $blocks[$v['attr']]);
@@ -275,26 +270,9 @@ class Template
     /*
      * 读取解析include标签
      */
-    protected static function _readInsert($str, &$ck)
-    {
-        $i = 0;
-        do {
-            if ($i > 9) {
-                throw new TemplateException('readInsert error: 嵌套不能大于9层，防止死循环');
-            }
-            $str = preg_replace_callback(self::tagRegex(self::$config['insert_tag']), function ($matches) use (&$ck) {
-                $name = self::parseSelfEndTagAttrs($matches[0], 'name');
-                $ck[] = $name;
-                return self::$config['view_template_reader']($name);
-            }, $str, -1, $count);
-            $i++;
-        } while ($count > 0);
-        return $str;
-    }
-    
     protected static function readInsert($str, &$ck)
     {
-        $contents = $block_contents = [];
+        $i = 0;
         while (true) {
             if ($i > 9) {
                 throw new TemplateException('readInsert error: 嵌套不能大于9层，防止死循环');
@@ -308,29 +286,32 @@ class Template
                 $ret .= substr($str, $pos, $v['pos'][0] - $pos);
                 $name = $v['attr'];
                 if (strpos($name, '.')) {
-                    list($name, $block) = explode($name, '.', 2);
+                    list($name, $block) = explode('.', $name, 2);
                 }
                 $ck[] = $name;
                 $content = $contents[$name] ?? $contents[$name] = self::$config['view_template_reader']($name);
                 if (isset($block)) {
                     if (!isset($block_contents[$name])) {
-                        $res = self::parseTagWithText($str, self::$config['block_tag'], 'name');
-                        $block_contents[$name] = array_column($res, 'text', 'attr');
+                        $result = self::parseTagWithText($content, self::$config['block_tag'], 'name');
+                        $blocks[$name] = array_column($result, 'text', 'attr');
                     }
-                    if (!isset($block_contents[$name][$block])) {
+                    if (!isset($blocks[$name][$block])) {
                         throw new TemplateException("readInsert error: $name.$block block 不存在");
                     }
-                    $content = $block_contents[$name][$block];
+                    $content = $blocks[$name][$block];
                 }
                 if (!isset($v['text'])) {
                     $ret .= $content;
                 } else {
-                    $slots = self::parseTagWithText($v['text'], self::$config['slot_tag'], 'name');
-                    $slots = array_column($slots, 'text', 'attr');
+                    $slots = null;
+                    if ($result = self::parseTagWithText($v['text'], self::$config['slot_tag'], 'name')) {
+                        $slots = array_column($result, 'text', 'attr');
+                    }
                     $ret .= preg_replace_callback(self::blockFuncRegex('slot'), function ($matchs) use ($v, $slots) {
-                        if (!$n = $matchs[1]) {
+                        if (!isset($matchs[1])) {
                             return $v['text'];
                         }
+                        $n = substr($matchs[1], 1, -1);
                         if (isset($slots[$n])) {
                             return $slots[$n];
                         }
@@ -339,10 +320,8 @@ class Template
                 }
                 $pos  = $v['pos'][1];
             }
-            if ($str = substr($str, $pos)) {
-                $ret .= self::readPHPCode($str, $end);
-            }
-            $str = $ret;
+            $str = $ret.substr($str, $pos);
+            $i++;
         }
         return $str;
     }
@@ -840,11 +819,11 @@ class Template
     /*
      * 函数正则
      */  
-    protected static function blockFuncRegex($func, $has_arg = true)
+    protected static function blockFuncRegex($func)
     {
         $l = preg_quote(self::$config['text_delimiter_sign'][0]);
         $r = preg_quote(self::$config['text_delimiter_sign'][1]);
-        return "/$l@\s*$func\(\s*".($has_arg ? '"(\w+)"' : '')."\s*\)\s*$r/";
+        return "/$l@\s*$func\(\s*('\w+'|\"\w+\")?\s*\)\s*$r/";
     }
     
     /*
@@ -908,15 +887,18 @@ class Template
                     }
                     throw new TemplateException("readValue error: 非法 { 语法 $val");
                 // 函数 静态方法 容器
+                case '@':
+                    if (!isset($ret) && !isset($tmp)) {
+                        $ret = self::readFunctionValue($ret, $tmp, $val, $len, $i, $strs);
+                    }
+                    throw new TemplateException("readValue error: 非法 @ 语法 $val");
                 case '$':
                     if (!isset($ret) && !isset($tmp)) {
                         if (preg_match("/^\d+/", substr($val, $i + 1), $matchs)) {
                             $ret .= self::injectString('$'.$matchs[0], $strs);
                             $i += strlen($matchs[0]);
-                        } else {
-                            $ret = self::readFunctionValue($ret, $tmp, $val, $len, $i, $strs);
+                            break;
                         }
-                        break;
                     }
                     throw new TemplateException("readValue error: 非法 $ 语法 $val");
                 // 三元表达式
@@ -1077,8 +1059,8 @@ class Template
                 $args = implode(', ', self::readArguments($val, $len, $pos, $strs));
                 // 函数
                 if (count($arr) == 1) {
-                    if (in_array($tmp, ['parent', 'block'])) {
-                        throw new TemplateException("readFunctionValue error: $tmp 为特殊模版方法");
+                    if (in_array($tmp, ['parent', 'block', 'slot'])) {
+                        throw new TemplateException("readFunctionValue error: $tmp 为模版内置特殊方法");
                     }
                     $fs = self::$config['allow_php_functions'] ?? null;
                     if ($fs == true || (is_array($fs) && in_array($tmp, $fs))) {
