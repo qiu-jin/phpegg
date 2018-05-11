@@ -250,12 +250,11 @@ class Template
         if ($res = self::parseTagWithText($str, self::$config['block_tag'], 'name', null)) {
             $pos = 0;
             $ret = '';
-            $regex = self::blockFuncRegex('parent', false);
             foreach ($res as $v) {
                 $ret .= substr($str, $pos, $v['pos'][0] - $pos);
                 $pos  = $v['pos'][1];
                 if (isset($blocks[$v['attr']]) || !isset($v['text'])) {
-                    $ret .= preg_replace_callback($regex, function ($matchs) use ($v) {
+                    $ret .= preg_replace_callback("/<parent\s*\/>/", function ($matchs) use ($v) {
                         return $v['text'];
                     }, $blocks[$v['attr']]);
                 } else {
@@ -300,23 +299,32 @@ class Template
                     }
                     $content = $blocks[$name][$block];
                 }
-                if (!isset($v['text'])) {
-                    $ret .= $content;
-                } else {
-                    $slots = null;
-                    if ($result = self::parseTagWithText($v['text'], self::$config['slot_tag'], 'name')) {
-                        $slots = array_column($result, 'text', 'attr');
+                $slots = null;
+                if ($v['text'] && ($sres = self::parseTagWithText($v['text'], self::$config['slot_tag'], 'name'))) {
+                    $spos = 0;
+                    $sret = '';
+                    foreach ($sres as $sv) {
+                        $sret .= substr($content, $spos, $sv['pos'][0] - $spos);
+                        $spos  = $sv['pos'][1];
                     }
-                    $ret .= preg_replace_callback(self::blockFuncRegex('slot'), function ($matchs) use ($v, $slots) {
-                        if (!isset($matchs[1])) {
-                            return $v['text'];
+                    $v['text'] = $sret.substr($v['text'], $spos);
+                    $slots = array_column($sres, 'text', 'attr');
+                }
+                if ($sres = self::parseTagWithText($content, self::$config['slot_tag'], null, null)) {
+                    $spos = 0;
+                    $sret = '';
+                    foreach ($sres as $sv) {
+                        $sret .= substr($content, $spos, $sv['pos'][0] - $spos);
+                        $spos  = $sv['pos'][1];
+                        if (isset($sv['attr']['name'])) {
+                            $sret .= $slots[$sv['attr']['name']] ?? $sv['text'];
+                        } else {
+                            $sret .= $v['text'] ?? $sv['text'];
                         }
-                        $n = substr($matchs[1], 1, -1);
-                        if (isset($slots[$n])) {
-                            return $slots[$n];
-                        }
-                        throw new TemplateException("readInsert error: $name.$block slot $n 不存在");
-                    }, $content);
+                    }
+                    $ret .= $sret.substr($content, $spos);
+                } else {
+                    $ret .= $content;
                 }
                 $pos  = $v['pos'][1];
             }
@@ -817,16 +825,6 @@ class Template
     }
     
     /*
-     * 函数正则
-     */  
-    protected static function blockFuncRegex($func)
-    {
-        $l = preg_quote(self::$config['text_delimiter_sign'][0]);
-        $r = preg_quote(self::$config['text_delimiter_sign'][1]);
-        return "/$l@\s*$func\(\s*('\w+'|\"\w+\")?\s*\)\s*$r/";
-    }
-    
-    /*
      * 读取语句单元
      */
     protected static function readValue($val, $strs = null, $end = null)
@@ -1059,9 +1057,6 @@ class Template
                 $args = implode(', ', self::readArguments($val, $len, $pos, $strs));
                 // 函数
                 if (count($arr) == 1) {
-                    if (in_array($tmp, ['parent', 'block', 'slot'])) {
-                        throw new TemplateException("readFunctionValue error: $tmp 为模版内置特殊方法");
-                    }
                     $fs = self::$config['allow_php_functions'] ?? null;
                     if ($fs == true || (is_array($fs) && in_array($tmp, $fs))) {
                         return "$tmp($args)";
