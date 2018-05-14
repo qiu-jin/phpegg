@@ -22,6 +22,8 @@ class Template
         'slot_tag'              => 'slot',
         // 块标签
         'block_tag'             => 'block',
+        // 父标签
+        'parent_tag'            => 'parent',
         // 插入标签
         'insert_tag'            => 'insert',
         // 引用标签
@@ -254,7 +256,7 @@ class Template
                 $ret .= substr($str, $pos, $v['pos'][0] - $pos);
                 $pos  = $v['pos'][1];
                 if (isset($blocks[$v['attr']]) || !isset($v['text'])) {
-                    $ret .= preg_replace_callback("/<parent\s*\/>/", function ($matchs) use ($v) {
+                    $ret .= preg_replace_callback("/<".self::$config['parent_tag']."\s*\/>/", function () use ($v) {
                         return $v['text'];
                     }, $blocks[$v['attr']]);
                 } else {
@@ -1064,8 +1066,7 @@ class Template
                     throw new TemplateException("readFunctionValue error: 不支持的内置函数$tmp");
                 }
                 // 静态方法
-                $ns = self::$config['view_class_namespace'] ?? null;
-                if ($ns) {
+                if ($ns = self::$config['view_class_namespace'] ?? null) {
                     $m  = array_pop($arr);
                     $ns = is_string($ns) ? "$ns\\" : '';
                     return $ns.implode('\\', $arr)."::$m($args)";
