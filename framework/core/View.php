@@ -76,27 +76,29 @@ class View
      */
     public static function render($tpl, array $vars = [])
     {
+        if (isset(self::$view['vars'])) {
+            extract(self::$view['vars'], EXTR_SKIP);
+        }
+        if ($vars) {
+            extract($vars, EXTR_SKIP);
+        }
         ob_start();
-        (static function($__file, $__vars) {
-            if ($__vars) {
-                extract($__vars, EXTR_SKIP);
-            }
-            require $__file;
-        })(self::path($tpl), $vars + (self::$view['vars'] ?? []));
+        include self::make($tpl);
         return ob_get_clean();
     }
     
     /*
-     * 获取视图文件路径，并检查更新
+     * 检查更新视图文件，返回路径
      */
-    public static function path($tpl)
+    public static function make($tpl, $force = false)
     {
         $phpfile = self::getView($tpl);
         if (self::$config['template']) {
             if (!is_file($tplfile = self::getTemplate($tpl))) {
                 throw new ViewException("Template file not found: $tplfile");
             }
-            if (self::$config['template']['debug']
+            if ($force
+                || self::$config['template']['debug']
                 || !is_file($phpfile)
                 || filemtime($phpfile) < filemtime($tplfile)
             ) {
@@ -113,7 +115,7 @@ class View
     {
         return self::$config['template'] ? is_file(self::getTemplate($tpl)) : is_php_file(self::getView($tpl));
     }
-
+    
     /*
      * 错误页面，404 500页面等
      */
@@ -151,22 +153,22 @@ class View
     /*
      *  模版编译宏
      */
-    public static function filterMacro($name, $args)
+    private static function filterMacro($name, $args)
     {
         return __CLASS__."::callFilter('$name'".($args ? ', '.implode(', ', $args) : '').")";
     }
     
-    public static function ContainerMacro($name)
+    private static function ContainerMacro($name)
     {
         return Container::class."::make('$name')";
     }
     
-    public static function includeMacro($name, $is_var = false)
+    private static function includeMacro($name, $is_var = false)
     {
-        return 'include '.__CLASS__.'::path('.($is_var ? $name : "'$name'").');';
+        return 'include '.__CLASS__.'::make('.($is_var ? $name : "'$name'").');';
     }
     
-    public static function checkExpiredMacro($names)
+    private static function checkExpiredMacro($names)
     {
         return 'if ('.__CLASS__."::checkExpired(__FILE__, '".implode("', '", $names)."')) return include __FILE__;";
     }
@@ -174,7 +176,7 @@ class View
     /*
      * 读取模版内容
      */
-    public static function readTemplate($tpl)
+    private static function readTemplate($tpl)
     {
         if (is_file($file = self::getTemplate($tpl))) {
             return self::readTemplateFile($file);
@@ -185,7 +187,7 @@ class View
     /*
      * 检查视图文件是否过期
      */
-    public static function checkExpired($phpfile, ...$tpls)
+    private static function checkExpired($phpfile, ...$tpls)
     {
         if (!self::$config['template']) {
             return;
@@ -205,7 +207,7 @@ class View
     /*
      * 调用过滤器
      */
-    public static function callFilter($name, ...$params)
+    private static function callFilter($name, ...$params)
     {
         if (isset(self::$view['filters'][$name])) {
             return self::$view['filters'][$name](...$params);

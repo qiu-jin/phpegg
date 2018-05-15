@@ -3,17 +3,17 @@ namespace framework\util;
 
 class Xml
 {
-    public static function encode($array, $root = null)
+    public static function encode($arr, $root = false)
     {
         $writer = new \XmlWriter();  
         $writer->openMemory();  
         $writer->startDocument('1.0', 'utf-8');
         if ($root) {
             $writer->startElement($root);
-            self::arrayToXml($writer, $array);
+            self::arrayToXml($writer, $arr);
             $writer->endElement();  
         } else {
-            self::arrayToXml($writer, $array);
+            self::arrayToXml($writer, $arr);
         }
         return $writer->outputMemory(true);  
     }
@@ -27,9 +27,9 @@ class Xml
         return false;
     }
     
-    private static function arrayToXml($writer, $array)
+    private static function arrayToXml($writer, $arr)
     {
-        foreach($array as $key => $value){
+        foreach($arr as $key => $value){
             $writer->startElement($key);
             if(is_array($value)){
                 self::arrayToXml($writer, $value);

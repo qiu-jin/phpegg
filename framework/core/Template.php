@@ -30,8 +30,6 @@ class Template
         'include_tag'           => 'include',
         // 继承标签
         'extends_tag'           => 'extends',
-        // 组件标签
-        'component_tag'         => 'component',
         // 结构语句前缀符
         'struct_attr_prefix'    => '@',
         // 赋值语句前缀符

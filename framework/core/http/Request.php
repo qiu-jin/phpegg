@@ -17,13 +17,13 @@ class Request
             return;
         }
         self::$init = true;
-        self::$request = (object) [
-            'get'   => &$_GET,
-            'post'  => &$_POST,
-            'server'=> &$_SERVER,
-            'params'=> &$_REQUEST
+        self::$request = [
+            'query'     => &$_GET,
+            'content'   => &$_POST,
+            'server'    => &$_SERVER,
+            'params'    => &$_REQUEST
         ];
-        Event::on('exit', __CLASS__.'::free');
+        Event::on('exit', __CLASS__.'::clean');
         Event::trigger('request', self::$request);
     }
     
@@ -33,9 +33,9 @@ class Request
     public static function set($name, $key, $val = null)
     {
         if ($val === null) {
-            self::$request->$name = $key;
+            self::$request[$name] = $key;
         } else {
-            self::$request->$name[$key] = $val;
+            self::$request[$name][$key] = $val;
         }
     }
     
@@ -44,7 +44,7 @@ class Request
      */
     public static function has($name, $key = null)
     {
-        return $key === null ? isset(self::$request->$name) : isset(self::$request->$name[$key]);
+        return $key === null ? isset(self::$request[$name]) : isset(self::$request[$name][$key]);
     }
 
     /*
@@ -52,7 +52,7 @@ class Request
      */
     public static function get($name = null, $default = null)
     {
-        return $name === null ? self::$request->get : (self::$request->get[$name] ?? $default);
+        return self::query($name, $default);
     }
     
     /*
@@ -60,7 +60,23 @@ class Request
      */
     public static function post($name = null, $default = null)
     {
-        return $name === null ? self::$request->post : (self::$request->post[$name] ?? $default);
+        return self::content($name, $default);
+    }
+    
+    /*
+     * 获取GET值
+     */
+    public static function query($name = null, $default = null)
+    {
+        return $name === null ? self::$request['query'] : (self::$request['query'][$name] ?? $default);
+    }
+    
+    /*
+     * 获取POST值
+     */
+    public static function content($name = null, $default = null)
+    {
+        return $name === null ? self::$request['content'] : (self::$request['content'][$name] ?? $default);
     }
     
     /*
@@ -76,7 +92,7 @@ class Request
      */
     public static function param($name = null, $default = null)
     {
-       return $name === null ? self::$request->params : (self::$request->params[$name] ?? $default);
+       return $name === null ? self::$request['params'] : (self::$request['params'][$name] ?? $default);
     }
     
     /*
@@ -120,7 +136,7 @@ class Request
      */
     public static function server($name = null, $default = null)
     {
-        return $name === null ? self::$request->server : self::$request->server[$name] ?? $default;
+        return $name === null ? self::$request['server'] : self::$request['server'][$name] ?? $default;
     }
     
     /*
@@ -128,8 +144,7 @@ class Request
      */
     public static function header($name, $default = null)
     {
-        $name = 'HTTP_'.strtoupper(strtr('-', '_', $name));
-        return self::$request->server[$name] ?? $default;
+        return self::$request['server']['HTTP_'.strtoupper(strtr('-', '_', $name))] ?? $default;
     }
     
     /*
@@ -137,7 +152,7 @@ class Request
      */
     public static function url()
     {
-        return self::$request->url ?? self::$request->url = $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+        return self::$request['url'] ?? self::$request['url'] = $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
     }
     
     /*
@@ -145,7 +160,7 @@ class Request
      */
     public static function host()
     {
-        return self::$request->host ?? self::$request->host = $_SERVER['HTTP_HOST'];
+        return self::$request['host'] ?? self::$request['host'] = $_SERVER['HTTP_HOST'];
     }
     
     /*
@@ -153,15 +168,7 @@ class Request
      */
     public static function method()
     {
-        return self::$request->method ?? self::$request->method = $_SERVER['REQUEST_METHOD'];
-    }
-    
-    /*
-     * 获取语言
-     */
-    public static function lang()
-    {
-        return self::$request->lang ?? self::$request->lang = strtolower(strtok($_SERVER['HTTP_ACCEPT_LANGUAGE'], ','));
+        return self::$request['method'] ?? self::$request['method'] = $_SERVER['REQUEST_METHOD'];
     }
     
     /*
@@ -169,23 +176,14 @@ class Request
      */
     public static function ip($proxy = false)
     {
-        if ($proxy) {
-            if (isset(self::$request->ip[1])) {
-                return self::$request->ip[1];
-            }
-            if (isset($_SERVER['HTTP_CLIENT_IP'])) {
-                $ip = $_SERVER['HTTP_CLIENT_IP'];
-            } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-                $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-            } elseif (isset($_SERVER['REMOTE_ADDR'])) {
-                $ip = $_SERVER['REMOTE_ADDR'];
-            } else {
-                $ip = false;
-            }
-            return self::$request->ip[1] = $ip;
-        } else {
-            return self::$request->ip[0] ?? self::$request->ip[0] = $_SERVER['REMOTE_ADDR'] ?? false;
+        if (!$proxy) {
+            return self::$request['ip'][0] ?? self::$request['ip'][0] = $_SERVER['REMOTE_ADDR'] ?? false;
         }
+        return self::$request['ip'][1] ?? self::$request['ip'][1] = (
+            $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] 
+                                       ?? $_SERVER['REMOTE_ADDR'] 
+                                       ?? false
+        );
     }
     
     /*
@@ -193,7 +191,7 @@ class Request
      */
     public static function path()
     {
-        return self::$request->path ?? self::$request->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        return self::$request['path'] ?? self::$request['path'] = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     }
     
     /*
@@ -218,7 +216,7 @@ class Request
      */
     public static function agent($str = null)
     {
-        return new UserAgent($str ?: $_SERVER['HTTP_USER_AGENT']);
+        return new UserAgent($str ?? $_SERVER['HTTP_USER_AGENT']);
     }
     
     /*
@@ -236,14 +234,6 @@ class Request
     {
         return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
-    
-    /*
-     * 是否为Pjax请求
-     */
-    public static function isPjax()
-    {
-        return self::isAjax() && isset($_SERVER['HTTP_X_PJAX']);
-    }
 
     /*
      * 是否为Https请求
@@ -257,11 +247,15 @@ class Request
     }
     
     /*
-     * 清理资源
+     * 清理
      */
-    public static function free()
+    public static function clean($name = null)
     {
-        self::$request = null;
+        if ($name === null) {
+            self::$request = null;
+        } elseif (isset(self::$request[$name])) {
+            unset(self::$request[$name]);
+        }
     }
 }
 Request::init();

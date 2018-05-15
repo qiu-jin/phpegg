@@ -19,7 +19,6 @@ class Response
             return;
         }
         self::$init = true;
-        self::$response = new \stdClass();
         Event::on('flush', __CLASS__.'::flush');
     }
     
@@ -28,7 +27,7 @@ class Response
      */
     public static function get($name, $default = null)
     {
-        return self::$response->$name ?? $default;
+        return self::$response[$name] ?? $default;
     }
     
     /*
@@ -36,7 +35,7 @@ class Response
      */
     public static function has($name, $key = null)
     {
-        return $key === null ? isset(self::$response->$name) : isset(self::$response->$name[$key]);
+        return $key === null ? isset(self::$response[$name]) : isset(self::$response[$name][$key]);
     }
     
     /*
@@ -44,7 +43,7 @@ class Response
      */
     public static function status($code = 200)
     {
-        self::$response->status = isset(Status::CODE[$code]) ? $code : 500;
+        self::$response['status'] = isset(Status::CODE[$code]) ? $code : 500;
     }
     
     /*
@@ -52,7 +51,7 @@ class Response
      */
     public static function header($key, $value)
     {
-        self::$response->headers[$key] = $value;
+        self::$response['headers'][$key] = $value;
     }
     
     /*
@@ -60,10 +59,10 @@ class Response
      */
     public static function headers(array $headers)
     {
-        if (isset(self::$response->headers)) {
-            self::$response->headers = $headers + self::$response->headers;
+        if (isset(self::$response['headers'])) {
+            self::$response['headers'] = $headers + self::$response['headers'];
         } else {
-            self::$response->headers = $headers;
+            self::$response['headers'] = $headers;
         }
     }
     
@@ -80,7 +79,7 @@ class Response
      */
     public static function wirte($body)
     {
-        self::$response->body = isset(self::$response->body) ? self::$response->body.$body : $body;
+        self::$response['body'] = isset(self::$response['body']) ? self::$response['body'].$body : $body;
     }
     
     /*
@@ -113,9 +112,9 @@ class Response
     public static function send($body, $type = null, $exit = true)
     {
         if ($type) {
-            self::$response->headers['Content-Type'] = $type;
+            self::$response['headers']['Content-Type'] = $type;
         }
-        self::$response->body = $body;
+        self::$response['body'] = $body;
         if ($exit) {
             App::exit();
         }
@@ -126,9 +125,9 @@ class Response
      */
     public static function redirect($url, $permanently = false, $exit = true)
     {
-        self::$response->status = $permanently ? 301 : 302;
-        self::$response->headers['Location'] = $url;
-        self::$response->body = null;
+        self::$response['status'] = $permanently ? 301 : 302;
+        self::$response['headers']['Location'] = $url;
+        self::$response['body'] = null;
         if ($exit) {
             App::exit();
         }
@@ -139,12 +138,10 @@ class Response
      */
     public static function clean($name = null)
     {
-        if ($name) {
-            if (isset(self::$response->$name)) {
-                unset(self::$response->$name);
-            }
-        } else {
-            self::$response = new \stdClass();
+        if ($name === null) {
+            self::$response = null;
+        } elseif (isset(self::$response[$name])) {
+            unset(self::$response[$name]);
         }
     }
     
@@ -157,16 +154,16 @@ class Response
         if (headers_sent()) {
             throw new \Exception('Response headers sent failure');
         }
-        if (isset(self::$response->status)) {
-            http_response_code(self::$response->status);
+        if (isset(self::$response['status'])) {
+            http_response_code(self::$response['status']);
         }
-        if (isset(self::$response->headers)) {
-            foreach (self::$response->headers as $k => $v) {
+        if (isset(self::$response['headers'])) {
+            foreach (self::$response['headers'] as $k => $v) {
                 header("$k: $v");
             }
         }
-        if (isset(self::$response->body)) {
-            echo self::$response->body;
+        if (isset(self::$response['body'])) {
+            echo self::$response['body'];
         }
         self::$response = null;
     }
