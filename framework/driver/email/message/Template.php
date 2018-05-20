@@ -5,12 +5,12 @@ use framework\core\View;
 
 class Template
 {
-    public static function view($template, array $vars = null)
+    public static function view($tpl, array $vars = null)
     {
-        return View::render($template, $vars);
+        return View::render($tpl, $vars);
     }
     
-    public static function simple($template, array $vars = null)
+    public static function simple($tpl, array $vars = null)
     {
         if ($vars) {
             foreach ($vars as $k => $v) {
@@ -20,7 +20,7 @@ class Template
         }
     }
     
-    public static function makedown()
+    public static function makedown($tpl, array $vars = null)
     {
         
     }
