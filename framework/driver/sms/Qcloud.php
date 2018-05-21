@@ -20,8 +20,7 @@ class Qcloud extends Sms
             $message = strtr($message, $replace);
         }
         if (is_array($to)) {
-            $nationcode = $to[0];
-            $to         = $to[1];
+            list($nationcode, $to) = $to;
         } else {
             $nationcode = '86';
         }
