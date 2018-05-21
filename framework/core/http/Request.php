@@ -160,9 +160,7 @@ class Request
             return self::$request['ip'][0] ?? self::$request['ip'][0] = $_SERVER['REMOTE_ADDR'] ?? false;
         }
         return self::$request['ip'][1] ?? self::$request['ip'][1] = (
-            $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] 
-                                       ?? $_SERVER['REMOTE_ADDR'] 
-                                       ?? false
+            $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? false
         );
     }
     
@@ -186,9 +184,10 @@ class Request
     /*
      * 获取请求body内容
      */
-    public static function body()
+    public static function body($cache = false)
     {
-        return file_get_contents('php://input');
+        return $cache ? self::$request['path'] ?? self::$request['path'] = file_get_contents('php://input') 
+                      : file_get_contents('php://input');
     }
     
     /*
@@ -224,6 +223,14 @@ class Request
             return true;
         }
         return $proxy && isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https';
+    }
+    
+    /*
+     *
+     */
+    public static function apply(callable $call)
+    {
+        return $call(self::$request);
     }
     
     /*

@@ -118,6 +118,14 @@ class Response
     }
     
     /*
+     *
+     */
+    public static function apply(callable $call)
+    {
+        return $call(self::$response);
+    }
+    
+    /*
      * 清除响应值
      */
     public static function clean($name = null)
