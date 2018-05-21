@@ -23,22 +23,6 @@ class Response
     }
     
     /*
-     * 获取response值
-     */
-    public static function get($name, $default = null)
-    {
-        return self::$response[$name] ?? $default;
-    }
-    
-    /*
-     * 检查response值是否存在
-     */
-    public static function has($name, $key = null)
-    {
-        return $key === null ? isset(self::$response[$name]) : isset(self::$response[$name][$key]);
-    }
-    
-    /*
      * 设置响应状态码
      */
     public static function status($code = 200)
@@ -49,9 +33,9 @@ class Response
     /*
      * 设置响应单个header头
      */
-    public static function header($key, $value)
+    public static function header($name, $value)
     {
-        self::$response['headers'][$key] = $value;
+        self::$response['headers'][$name] = $value;
     }
     
     /*

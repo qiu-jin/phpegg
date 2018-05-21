@@ -26,26 +26,6 @@ class Request
         Event::on('exit', __CLASS__.'::clean');
         Event::trigger('request', self::$request);
     }
-    
-    /*
-     * 设置request值
-     */
-    public static function set($name, $key, $val = null)
-    {
-        if ($val === null) {
-            self::$request[$name] = $key;
-        } else {
-            self::$request[$name][$key] = $val;
-        }
-    }
-    
-    /*
-     * 检查request值是否存在
-     */
-    public static function has($name, $key = null)
-    {
-        return $key === null ? isset(self::$request[$name]) : isset(self::$request[$name][$key]);
-    }
 
     /*
      * 获取GET值
