@@ -106,12 +106,12 @@ class Rest extends App
     protected function error($code = null, $message = null)
     {
         Response::status(isset(Status::CODE[$code]) ? $code : 500);
-        Response::json(['error' => compact('code', 'message')], false);
+        Response::json(['error' => compact('code', 'message')]);
     }
     
     protected function response($return = null)
     {
-        Response::json($return, false);
+        Response::json($return);
     }
     
     /*

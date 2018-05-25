@@ -189,7 +189,7 @@ class Jsonrpc extends App
     
     protected function response($return = null)
     {
-        Response::send(($this->config['response_serialize'])($return), $this->config['response_content_type'], false);
+        Response::send(($this->config['response_serialize'])($return), $this->config['response_content_type']);
     }
     
     protected function defaultDispatch($item)

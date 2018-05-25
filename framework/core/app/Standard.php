@@ -104,18 +104,18 @@ class Standard extends App
             Response::status($code);
         }
         if ($this->config['enable_view']) {
-            Response::html(View::error($code, $message), false);
+            Response::html(View::error($code, $message));
         } else {
-            Response::json(['error' => compact('code', 'message')], false);
+            Response::json(['error' => compact('code', 'message')]);
         }
     }
     
     protected function response($return = [])
     {
         if ($this->config['enable_view']) {
-            Response::view($this->getViewPath(), $return, false);
+            Response::view($this->getViewPath(), $return);
         } else {
-            Response::json(['result' => $return], false);
+            Response::json(['result' => $return]);
         }
     }
     

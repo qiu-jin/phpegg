@@ -69,39 +69,37 @@ class Response
     /*
      * 设置响应html
      */
-    public static function html($html, $exit = true)
+    public static function html($html)
     {
-        self::send($html, 'text/html; charset=UTF-8', $exit);
+        self::send($html, 'text/html; charset=UTF-8');
     }
     
     /*
      * 设置视图响应
      */
-    public static function view($tpl, $vars = null, $exit = true)
+    public static function view($tpl, $vars = null)
     {
-        self::send(View::render($tpl, $vars), 'text/html; charset=UTF-8', $exit);
+        self::send(View::render($tpl, $vars), 'text/html; charset=UTF-8');
     }
     
     /*
      * 设置响应json格式化数据
      */
-    public static function json($data, $exit = true)
+    public static function json($data)
     {
-        self::send(jsonencode($data), 'application/json; charset=UTF-8', $exit);
+        self::send(jsonencode($data), 'application/json; charset=UTF-8');
     }
     
     /*
      * 设置响应body内容
      */
-    public static function send($body, $type = null, $exit = true)
+    public static function send($body, $type = null)
     {
         if ($type) {
             self::$response['headers']['Content-Type'] = $type;
         }
         self::$response['body'] = $body;
-        if ($exit) {
-            App::exit();
-        }
+        App::exit();
     }
     
     /*
@@ -112,13 +110,11 @@ class Response
         self::$response['status'] = $permanently ? 301 : 302;
         self::$response['headers']['Location'] = $url;
         self::$response['body'] = null;
-        if ($exit) {
-            App::exit();
-        }
+        App::exit();
     }
     
     /*
-     *
+     * 处理response
      */
     public static function apply(callable $call)
     {

@@ -125,7 +125,7 @@ class Grpc extends App
         }
         $size = strlen($data);
         Response::header('grpc-status', '0');
-        Response::send(pack('C1N1a'.$size, $encode, $size, $data), 'application/grpc+proto', false);
+        Response::send(pack('C1N1a'.$size, $encode, $size, $data), 'application/grpc+proto');
     }
     
     protected function readParams()

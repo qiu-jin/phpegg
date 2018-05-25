@@ -70,18 +70,18 @@ class Inline extends App
             Response::status($code);
         }
         if (empty($this->config['enable_view'])) {
-            Response::json(['error' => compact('code', 'message')], false);
+            Response::json(['error' => compact('code', 'message')]);
         } else {
-            Response::html(View::error($code, $message), false);
+            Response::html(View::error($code, $message));
         }
     }
     
     protected function response($return = null)
     {
         if (empty($this->config['enable_view'])) {
-            Response::json(['result' => $return], false);
+            Response::json(['result' => $return]);
         } else {
-            Response::view('/'.$this->dispatch['controller'], $return, false);
+            Response::view('/'.$this->dispatch['controller'], $return);
         }
     }
     
