@@ -187,9 +187,7 @@ abstract class App
      */
     public static function abort($code = null, $message = null)
     {
-        if ((self::$error_handler === null || self::$error_handler($code, $message) === true)
-            && isset(self::$app)
-        ) {
+        if (isset(self::$app) && (self::$error_handler === null || self::$error_handler($code, $message) === true)) {
             self::$app->error($code, $message);
         }
         self::exit();

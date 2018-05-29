@@ -95,10 +95,10 @@ class Response
      */
     public static function send($body, $type = null)
     {
+        self::$response['body'] = $body;
         if ($type) {
             self::$response['headers']['Content-Type'] = $type;
         }
-        self::$response['body'] = $body;
         App::exit();
     }
     

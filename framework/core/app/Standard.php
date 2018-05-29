@@ -30,8 +30,6 @@ class Standard extends App
         'bind_request_params' => null,
         // 缺少的参数设为null值
         'missing_params_to_null' => false,
-        // 控制器方法参数验证器类
-        'params_validator' => 'validator\{controller}\{method}Validator',
         /* 默认调度的参数模式
          * 0 无参数
          * 1 顺序参数
