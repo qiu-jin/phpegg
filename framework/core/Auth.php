@@ -25,7 +25,7 @@ abstract class Auth
     /*
      * 初始化
      */
-    public static function init()
+    public static function __init()
     {
         if (self::$init) {
             return;
@@ -93,4 +93,4 @@ abstract class Auth
         self::$auth = null;
     }
 }
-Auth::init();
+Auth::__init();

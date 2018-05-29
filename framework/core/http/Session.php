@@ -8,7 +8,7 @@ class Session
 {
     private static $init;
     
-    public static function init()
+    public static function __init()
     {
         if (self::$init) {
             return;
@@ -71,4 +71,4 @@ class Session
         session_destroy();
     }
 }
-Session::init();
+Session::__init();

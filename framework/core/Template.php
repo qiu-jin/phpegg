@@ -175,7 +175,7 @@ class Template
         'view_exists'   => View::class.'::exists($0)',
     ];
     
-    public static function init()
+    public static function __init()
     {
         if (self::$init) {
             return;
@@ -1218,4 +1218,4 @@ class Template
         return false;
     }
 }
-Template::init();
+Template::__init();

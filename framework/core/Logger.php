@@ -23,7 +23,7 @@ class Logger
     /*
      * 初始化
      */
-    public static function init()
+    public static function __init()
     {
         if (self::$init) {
             return;
@@ -72,4 +72,4 @@ class Logger
         };
     }
 }
-Logger::init();
+Logger::__init();

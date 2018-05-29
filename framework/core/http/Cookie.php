@@ -20,7 +20,7 @@ class Cookie
     private static $crypt_except = ['PHPSESSID'];
     private static $crypt_handler;
     
-    public static function init()
+    public static function __init()
     {
         if (self::$init) {
             return;
@@ -147,4 +147,4 @@ class Cookie
         return self::$crypt_handler ?? self::$crypt_handler = Container::driver('crypt', self::$crypt_config);
     }
 }
-Cookie::init();
+Cookie::__init();

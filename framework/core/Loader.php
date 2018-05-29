@@ -21,7 +21,7 @@ class Loader
     /*
      * 初始化
      */
-    public static function init()
+    public static function __init()
     {
         if (self::$init) {
             return;
@@ -86,4 +86,4 @@ class Loader
         }
     }
 }
-Loader::init();
+Loader::__init();

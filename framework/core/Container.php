@@ -37,7 +37,7 @@ class Container
     // 
     protected static $instances;
 
-    public static function init()
+    public static function __init()
     {
         if (self::$init) {
             return;
@@ -176,4 +176,4 @@ class Container
         self::$instances = null;
     }
 }
-Container::init();
+Container::__init();

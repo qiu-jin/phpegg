@@ -13,7 +13,7 @@ class Response
     /*
      * 初始化
      */
-    public static function init()
+    public static function __init()
     {
         if (self::$init) {
             return;
@@ -156,4 +156,4 @@ class Response
         self::$response = null;
     }
 }
-Response::init();
+Response::__init();

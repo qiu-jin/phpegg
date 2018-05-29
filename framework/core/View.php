@@ -27,7 +27,7 @@ class View
     /*
      * 初始化
      */
-    public static function init()
+    public static function __init()
     {
         if (self::$init) {
             return;
@@ -273,4 +273,4 @@ class View
         }
     }
 }
-View::init();
+View::__init();
