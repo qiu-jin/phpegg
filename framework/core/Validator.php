@@ -94,7 +94,7 @@ class Validator
     
     public static function checkMobile($var)
     {
-        return preg_match('/^1[34578]\d{9}$/', $var);
+        return preg_match('/^1[3456789]\d{9}$/', $var);
     }
     
     public static function checkMin($var, $min)

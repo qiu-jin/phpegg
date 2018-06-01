@@ -14,13 +14,20 @@ class View
     private static $view;
     // 配置
     private static $config = [
+        // 视图文件扩展名
         'ext'       => '.php',
+        // 视图文件目录
         'dir'       => APP_DIR.'view/',
+        // 模版配置
         'template'  => [
-            'ext'       => '.html',
-            //'dir'       => APP_DIR.'view/',
-            'debug'     => APP_DEBUG,
-            'engine'    => Template::class,
+            // 模版文件扩展名
+            'ext'           => '.html',
+            // 模版文件目录，为空则默认为视图文件目录
+            'dir'           => null,
+            // 模版引擎，为空则不起用模版
+            'engine'        => Template::class,
+            // 是否强制编译模版，默认开启APP_DEBUG时启用
+            'force_complie' => APP_DEBUG,
         ]
     ];
 
@@ -34,15 +41,12 @@ class View
         }
         self::$init = true;
         if ($config = Config::get('view')) {
-            $template = Arr::pull($config, 'template');
-            if ($template === false) {
-                self::$config['template'] = false;
-            } elseif (is_array($template)) {
+            if ($template = Arr::pull($config, 'template')) {
                 self::$config['template'] = $template + self::$config['template'];
             }
             self::$config = $config + self::$config;
         }
-        Event::on('exit', __CLASS__.'::clean');
+        Event::on('exit', [__CLASS__, 'clean']);
     }
     
     /*
@@ -93,13 +97,11 @@ class View
     public static function make($tpl, $force = false)
     {
         $phpfile = self::getView($tpl);
-        if (self::$config['template']) {
+        if (self::$config['template']['engine']) {
             if (!is_file($tplfile = self::getTemplate($tpl))) {
                 throw new ViewException("Template file not found: $tplfile");
             }
-            if ($force
-                || self::$config['template']['debug']
-                || !is_file($phpfile)
+            if ($force || self::$config['template']['force_complie'] || !is_file($phpfile)
                 || filemtime($phpfile) < filemtime($tplfile)
             ) {
                 self::complieTo(self::readTemplateFile($file), $phpfile);
@@ -113,7 +115,7 @@ class View
      */
     public static function exists($tpl)
     {
-        return self::$config['template'] ? is_file(self::getTemplate($tpl)) : is_php_file(self::getView($tpl));
+        return self::$config['template']['engine'] ? is_file(self::getTemplate($tpl)) : is_php_file(self::getView($tpl));
     }
     
     /*
@@ -189,7 +191,7 @@ class View
      */
     private static function checkExpired($phpfile, ...$tpls)
     {
-        if (!self::$config['template']) {
+        if (!self::$config['template']['engine']) {
             return;
         }
         foreach ($tpls as $tpl) {
@@ -228,11 +230,7 @@ class View
      */
     private static function getTemplate($tpl)
     {
-        if (empty(self::$config['template']['dir'])) {
-            return self::$config['dir'].$tpl.self::$config['template']['ext'];
-        } else {
-            return self::$config['template']['dir'].$tpl.self::$config['template']['ext'];
-        }
+        return (self::$config['template']['dir'] ?? self::$config['dir']).$tpl.self::$config['template']['ext'];
     }
     
     /*

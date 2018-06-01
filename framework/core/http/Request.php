@@ -23,7 +23,7 @@ class Request
             'server'    => &$_SERVER,
             'params'    => &$_REQUEST
         ];
-        Event::on('exit', __CLASS__.'::clean');
+        Event::on('exit',[__CLASS__, 'clean']);
         Event::trigger('request', self::$request);
     }
 

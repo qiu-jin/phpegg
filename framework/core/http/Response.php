@@ -19,7 +19,7 @@ class Response
             return;
         }
         self::$init = true;
-        Event::on('flush', __CLASS__.'::flush');
+        Event::on('flush', [__CLASS__, 'flush']);
     }
     
     /*
