@@ -39,7 +39,7 @@ abstract class Auth
         if (!isset($config['auto_auth']) || $config['auto_auth'] !== false) {
             self::$auth->user = self::$auth->auth();
         }
-        Event::on('exit', [__CLASS__, 'free']);
+        Event::on('exit', [__CLASS__, 'clean']);
     }
     
     /*
@@ -88,7 +88,7 @@ abstract class Auth
     }
     
     // 清除
-    public static function free()
+    public static function clean()
     {
         self::$auth = null;
     }

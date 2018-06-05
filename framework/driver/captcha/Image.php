@@ -37,6 +37,11 @@ class Image
         return "<$tag $str></$tag><image src='$this->src' />";
     }
     
+    public function template($html = null)
+    {
+        
+    }
+    
     public function verify($value = null)
     {
         if ($value === null) {

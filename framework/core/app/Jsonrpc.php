@@ -39,9 +39,11 @@ class Jsonrpc extends App
          * true，使用close event实现伪后台任务
          * string，使用异步队列任务实现，string为队列任务名
          */
-        'notification_type' => null,
+        'notification_type'     => null,
         // 通知回调方法
         'notification_callback' => null,
+        // Response content type header
+        'response_content_type' => null
         /* 请求反序列化与响应序列化，支持设置除默认json外多种序列化方法
          * serialize 原生方法 'unserialize' 'serialize'
          * msgpack https://pecl.php.net/package/msgpack 'msgpack_unserialize' 'msgpack_serialize'
@@ -49,10 +51,8 @@ class Jsonrpc extends App
          * bson http://php.net/manual/zh/book.bson.php 'MongoDB\BSON\toPHP' 'MongoDB\BSON\fromPHP'
          * hprose https://github.com/hprose/hprose-pecl 'hprose_unserialize' 'hprose_serialize'
          */
-        'request_unserialize' => 'jsondecode',
-        'response_serialize'  => 'jsonencode',
-        // Response content type header
-        'response_content_type' => null
+        'request_unserialize'   => 'jsondecode',
+        'response_serialize'    => 'jsonencode',
     ];
     // 核心错误
     protected $core_errors = [
@@ -68,7 +68,6 @@ class Jsonrpc extends App
     protected $controller_instances;
     // 批请求控制器方法反射实例缓存
     protected $controller_reflection_methods;
-    
 
     protected function dispatch()
     {

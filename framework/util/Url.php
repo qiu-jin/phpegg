@@ -57,7 +57,7 @@ class Url
     
     public function make()
     {
-        $url = '';
+        $url = null;
         foreach (self::$types as $type) {
             if (isset($this->url[$type])) {
                 $url .= $this->build($type, $this->url[$type]);

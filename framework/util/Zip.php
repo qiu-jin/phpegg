@@ -5,14 +5,11 @@ class Zip extends \ZipArchive
 {
     public function __construct($file = null)
     {
-        if ($file == null) {
-            return;
-        }
         if (is_file($file)) {
             $ret = $this->open($file);
         } else {
             if (!is_dir($dir = dirname($file)) && !mkdir($dir)) {
-                throw new \Exception('Illegal zip file');
+                throw new \Exception('Create zip file failed');
             }
             $ret = $this->open($file, \ZipArchive::CREATE);
         }
