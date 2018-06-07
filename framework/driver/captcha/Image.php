@@ -13,19 +13,24 @@ use Gregwar\Captcha\CaptchaBuilder;
 class Image
 {
     protected $src;
-    protected $name = 'image-captcha';
-    protected $store = 'framework\core\http\Session';
+    protected $name;
+    protected $store;
 
     public function __construct($config)
     {
         $this->src = $config['src'];
-        isset($config['name']) && $this->name = $config['name'];
-        isset($config['store']) && $this->store = $config['store'];
+        $this->name = $config['name'] ?? 'image-captcha';
+        $this->store = $config['store'] ?? 'framework\core\http\Session';
     }
     
     public function src()
     {
         return $this->src;
+    }
+    
+    public function name()
+    {
+        return $this->name;
     }
 
     public function render($tag = 'input', $attrs = [])
@@ -39,7 +44,7 @@ class Image
     
     public function template($html = null)
     {
-        
+        return "<input name='$this->name'></input><image src='$this->src' />";
     }
     
     public function verify($value = null)

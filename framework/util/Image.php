@@ -36,7 +36,7 @@ class Image
         return new self($image, compact('width', 'height'));
     }
     
-    public function __construct($image, $info = null)
+    private function __construct($image, $info = null)
     {
         if (is_resource($image)) {
             $this->image = $image;
