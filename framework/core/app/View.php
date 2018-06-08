@@ -37,7 +37,7 @@ class View extends App
         // 路由调度的路由表
         'route_dispatch_routes' => null,
         // 是否路由动态调用
-        'route_dispatch_dynamic_call' => false,
+        'route_dispatch_dynamic' => false,
     ];
     
     protected function dispatch()
@@ -117,7 +117,7 @@ class View extends App
             }
             $path = empty($path) ? null : explode('/', $path);
             if ($route = (new Router($path))->route($routes)) {
-                if ($this->config['route_dispatch_dynamic_call']) {
+                if ($this->config['route_dispatch_dynamic']) {
                     $route['dispatch'] = Dispatcher::dynamicCall($route['dispatch'], $route['matches']);
                 }
                 return [

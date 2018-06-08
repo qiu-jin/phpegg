@@ -25,7 +25,7 @@ class Micro extends App
         // Getter providers
         'getter_providers' => null,
         // 是否路由动态调用
-        'route_dispatch_dynamic_call' => false,
+        'route_dispatch_dynamic' => false,
         // 路由模式下允许的HTTP方法
         'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
     ];
@@ -113,7 +113,7 @@ class Micro extends App
                     $route['matches']
                 ];
             } elseif (is_string($route['dispatch'])) {
-                $dispatch = Dispatcher::dispatch($route, 1, $this->config['route_dispatch_dynamic_call']);
+                $dispatch = Dispatcher::dispatch($route, 1, $this->config['route_dispatch_dynamic']);
                 list($controller, $action) = explode('::', $dispatch[0]);
                 return [[instance($this->getControllerClass($controller)), $action], $dispatch[1]];
             }

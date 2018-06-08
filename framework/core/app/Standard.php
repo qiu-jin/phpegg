@@ -53,7 +53,7 @@ class Standard extends App
         // 路由调度的路由表，如果值为字符串则作为PHP文件include
         'route_dispatch_routes' => null,
         // 是否路由动态调用
-        'route_dispatch_dynamic_call' => false,
+        'route_dispatch_dynamic' => false,
         // 路由调度是否允许访问受保护的方法
         'route_dispatch_access_protected' => false,
         // 设置动作路由属性名，为null则不启用动作路由
@@ -208,8 +208,7 @@ class Standard extends App
                 return;
             }
             $param_mode   = $this->config['route_dispatch_param_mode'];
-            $dynamic_call = $this->config['route_dispatch_dynamic_call'];
-            if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic_call)) {
+            if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $this->config['route_dispatch_dynamic'])) {
                 if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->getControllerClass($controller);
@@ -248,8 +247,7 @@ class Standard extends App
         if (empty($routes)) {
             return;
         }
-        $dynamic_call = $this->config['route_dispatch_dynamic_call'];
-        if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic_call)) {
+        if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $this->config['route_dispatch_dynamic'])) {
             if ($this->config['route_dispatch_access_protected']) {
                 $this->checkMethodAccessible($class, $dispatch[0]);
             }

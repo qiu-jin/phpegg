@@ -282,7 +282,11 @@ class Image
                 return isset($options['quality']) ? [(int) $options['quality']] : [];
             case 'png':
                 imagesavealpha($this->image, true);
-                return isset($options['quality']) ? [min((int) ($quality / 10), 9)] : [];
+                $params = isset($options['quality']) ? [(int) $options['quality']] : [6];
+                if (isset($options['filters'])) {
+                    $params[] = (int) $options['filters'];
+                }
+                return $params;
             default:
                 return [];
         }

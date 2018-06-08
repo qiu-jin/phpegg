@@ -58,7 +58,7 @@ class Rest extends App
         // 路由调度的路由表
         'route_dispatch_routes' => null,
         // 是否路由动态调用
-        'route_dispatch_dynamic_call' => false,
+        'route_dispatch_dynamic' => false,
         // 设置动作路由属性名，为null则不启用动作路由
         'route_dispatch_action_routes' => null,
     ];
@@ -206,9 +206,9 @@ class Rest extends App
             return;
         }
         if ($class = $this->getControllerClass($controller, isset($check))) {
-            $routes        = $this->config['resource_dispatch_routes'];
-            $dynamic_call  = $this->config['route_dispatch_dynamic_call'];
-            if (($dispatch = Dispatcher::route($action_path, $routes, 0, $dynamic_call, $this->method))
+            $routes  = $this->config['resource_dispatch_routes'];
+            $dynamic = $this->config['route_dispatch_dynamic'];
+            if (($dispatch = Dispatcher::route($action_path, $routes, 0, $dynamic, $this->method))
                 && is_callable([$controller_instance = new $class(), $dispatch[0]])
             ) {
                 return [
@@ -239,9 +239,9 @@ class Rest extends App
                     return;
                 }
             }
-            $param_mode   = $this->config['route_dispatch_param_mode'];
-            $dynamic_call = $this->config['route_dispatch_dynamic_call'];
-            if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic_call, $this->method)) {
+            $dynamic = $this->config['route_dispatch_dynamic'];
+            $param_mode = $this->config['route_dispatch_param_mode'];
+            if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic, $this->method)) {
                 if (strpos($dispatch[0], '::')) {
                     list($controller, $action) = explode('::', $dispatch[0]);
                     $class = $this->getControllerClass($controller);
@@ -277,8 +277,8 @@ class Rest extends App
         if (empty($routes)) {
             return;
         }
-        $dynamic_call = $this->config['route_dispatch_dynamic_call'];
-        if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic_call, $this->method)) {
+        $dynamic = $this->config['route_dispatch_dynamic'];
+        if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic, $this->method)) {
             return [
                 'controller'            => $controller,
                 'controller_instance'   => new $class,

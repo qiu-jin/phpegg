@@ -35,7 +35,7 @@ class Inline extends App
         // 路由调度的路由表
         'route_dispatch_routes' => null,
         // 是否路由动态调用
-        'route_dispatch_dynamic_call' => false,
+        'route_dispatch_dynamic' => false,
     ];
     
     protected function dispatch()
@@ -120,8 +120,8 @@ class Inline extends App
             }
             $path = empty($path) ? null : explode('/', $path);
             if ($route = (new Router($path))->route($routes)) {
-                if ($this->config['route_dispatch_dynamic_call']) {
-                    $route['dispatch'] = Dispatcher::dynamicCall($route['dispatch'], $route['matches']);
+                if ($this->config['route_dispatch_dynamic'] && strpos('$', $route['dispatch']) !== false) {
+                    $route['dispatch'] = Dispatcher::dynamicDispatch($route['dispatch'], $route['matches']);
                 }
                 return [
                     'controller'        => $route['dispatch'],
