@@ -5,35 +5,32 @@ class SubQuery extends QueryChain
 {
     protected $cur;
     protected $master;
-    protected $options = [];
+    protected $table_options = [];
     protected static $sub_exp = ['=', '>', '<', '>=', '<=', '<>', 'ANY', 'IN', 'SOME', 'ALL', 'EXISTS'];
     protected static $sub_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
     
-    protected function init($table, $option, $sub, $exp, $logic)
+    protected function init($table, $options, $sub, $exp, $logic)
     {
         $this->checkExpLogic($exp, $logic);
         $this->cur = $sub;
         $this->table = $table;
-        $this->master = $option;
-        $this->option['exp'] = $exp;
-        $this->option['logic'] = $logic;
+        $this->master = $options;
+        $this->options['exp'] = $exp;
+        $this->options['logic'] = $logic;
     }
 
     public function sub($sub, $exp = 'IN', $logic = 'AND')
     {
         $this->checkExpLogic($exp, $logic);
-        $this->options[$this->cur] = $this->option;
+        $this->table_options[$this->cur] = $this->options;
         $this->cur = $sub;
-        $this->option = [
-            'exp' => $exp,
-            'logic' => $logic
-        ];
+        $this->options = compact('exp', 'logic');
         return $this;
     }
 
     public function on($fields1, $fields2 = null)
     {
-        $this->option['on'] = [$fields1, $fields2];
+        $this->options['on'] = [$fields1, $fields2];
         return $this;
     }
     
@@ -48,7 +45,7 @@ class SubQuery extends QueryChain
         if ($limit) {
             $this->master['limit'] = $limit;
         }
-        $this->options[$this->cur] = $this->option;
+        $this->table_options[$this->cur] = $this->options;
         return $this->db->exec(...$this->buildSelect());
     }
     
@@ -99,26 +96,26 @@ class SubQuery extends QueryChain
             $sql = $this->builder::whereClause($this->master['where'], $params);
             $logic = true;
         }
-        foreach ($this->options as $table => $option) {
+        foreach ($this->table_options as $table => $options) {
             if (isset($logic)) {
-                $sql .= " {$option['logic']} ";
+                $sql .= " {$options['logic']} ";
             }
             $logic = true;
-            if (isset($option['on'])) {
-                if (is_array($option['on'][0])) {
-                    $sql .= '('.$this->builder::keywordEscape(implode($this->builder::keywordEscape(','), $option['on'][0])).')';
+            if (isset($options['on'])) {
+                if (is_array($options['on'][0])) {
+                    $sql .= '('.$this->builder::keywordEscape(implode($this->builder::keywordEscape(','), $options['on'][0])).')';
                 } else {
-                    $sql .= $this->builder::keywordEscape($option['on'][0]);
+                    $sql .= $this->builder::keywordEscape($options['on'][0]);
                 }
-                $sql .= " {$option['exp']} ";
-                if (isset($option['on'][1])) {
-                    $option['fields'] = (array) $option['on'][1];
+                $sql .= " {$options['exp']} ";
+                if (isset($options['on'][1])) {
+                    $options['fields'] = (array) $options['on'][1];
                 }
             } else {
-                $sql .= $this->builder::keywordEscape('id')." {$option['exp']} ";
-                $option['fields'] = [$this->table.'_id'];
+                $sql .= $this->builder::keywordEscape('id')." {$options['exp']} ";
+                $options['fields'] = [$this->table.'_id'];
             }
-            $sub = $this->builder::select($table, $option);
+            $sub = $this->builder::select($table, $options);
             $sql .= '('.$sub[0].') ';
             $params = array_merge($params, $sub[1]);
         }

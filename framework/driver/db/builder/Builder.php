@@ -10,24 +10,27 @@ class Builder
     protected static $where_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
     protected static $where_operator = ['=', '!=', '>', '>=', '<', '<=', 'LIKE', 'IN', 'IS', 'BETWEEN'];
 
-    public static function select($table, array $option)
+    public static function select($table, array $options)
     {
         $params = [];
-        $sql = static::selectFrom($table, $option['fields'] ?? null);
-        if (isset($option['where'])) {
-            $sql .= ' WHERE '.static::whereClause($option['where'], $params);
+        $sql = static::selectFrom($table, $options['fields'] ?? null);
+        if (isset($options['where'])) {
+            $sql .= ' WHERE '.static::whereClause($options['where'], $params);
         }
-        if (isset($option['group'])) {
-            $sql .= static::groupClause($option['group']);
+        if (isset($options['group'])) {
+            $sql .= static::groupClause($options['group']);
         }
-        if (isset($option['having'])) {
-            $sql .= ' HAVING '.static::whereClause($option['having'], $params);
+        if (isset($options['having'])) {
+            if (!isset($options['group'])) {
+                throw new \Exception('SQL having ERROR: must follow group');
+            }
+            $sql .= ' HAVING '.static::whereClause($options['having'], $params);
         }
-        if (isset($option['order'])) {
-            $sql .= static::orderClause($option['order']);
+        if (isset($options['order'])) {
+            $sql .= static::orderClause($options['order']);
         }
-        if (isset($option['limit'])) {
-            $sql .= static::limitClause($option['limit']);
+        if (isset($options['limit'])) {
+            $sql .= static::limitClause($options['limit']);
         }
         return [$sql, $params];
     }
@@ -40,28 +43,28 @@ class Builder
         return [$sql, array_values($data)];
     }
     
-    public static function update($table, $data, $option)
+    public static function update($table, $data, $options)
     {
         list($set, $params) = static::setData($data);
         $sql =  "UPDATE ".self::keywordEscape($table)." SET $set";
-        if (isset($option['where'])) {
-            $sql .= ' WHERE '.static::whereClause($option['where'], $params);
+        if (isset($options['where'])) {
+            $sql .= ' WHERE '.static::whereClause($options['where'], $params);
         }
-        if (isset($option['limit'])) {
-            $sql .= static::limitClause($option['limit']);
+        if (isset($options['limit'])) {
+            $sql .= static::limitClause($options['limit']);
         }
         return [$sql, $params];
     }
     
-    public static function delete($table, $option)
+    public static function delete($table, $options)
     {
         $params = [];
         $sql = "DELETE FROM ".self::keywordEscape($table);
-        if (isset($option['where'])) {
-            $sql .= ' WHERE '.static::whereClause($option['where'], $params);
+        if (isset($options['where'])) {
+            $sql .= ' WHERE '.static::whereClause($options['where'], $params);
         }
-        if (isset($option['limit'])) {
-            $sql .= static::limitClause($option['limit']);
+        if (isset($options['limit'])) {
+            $sql .= static::limitClause($options['limit']);
         }
         return [$sql, $params];
     }

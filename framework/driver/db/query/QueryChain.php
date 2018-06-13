@@ -5,7 +5,7 @@ abstract class QueryChain
 {
     protected $db;
     protected $table;
-    protected $option = ['where' => null, 'fields' => null];
+    protected $options = ['where' => null, 'fields' => null];
     protected $builder;
     
 	public function __construct($db, ...$params)
@@ -27,7 +27,7 @@ abstract class QueryChain
     
     public function select(...$fields)
     {
-        $this->option['fields'] = $fields;
+        $this->options['fields'] = $fields;
         return $this;
     }
     
@@ -37,15 +37,31 @@ abstract class QueryChain
         return $this;
     }
     
+    public function  whereOr(...$where)
+    {
+        $key = 'OR#'.count($this->options['where']);
+        $count = count($where);
+        if ($count === 1) {
+            $this->options['where'][$key] = $where[0];
+        } elseif ($count === 2) {
+            $this->options['where'][$key] = [$where[0], '=', $where[1]];
+        } elseif ($count === 3) {
+            $this->options['where'][$key] = $where;
+        } else {
+            throw new \Exception("SQL where ERROR: ".var_export($where, true));
+        }
+        return $this;
+    }
+    
     public function order($field, $desc = false)
     {
-        $this->option['order'][] = [$field, $desc];
+        $this->options['order'][] = [$field, $desc];
         return $this;
     }
     
     public function group($field)
     {
-        $this->option['group'] = $field;
+        $this->options['group'] = $field;
         return $this;
     }
     
@@ -57,29 +73,13 @@ abstract class QueryChain
     
     public function limit($limit, $offset = null)
     {
-        $this->option['limit'] = isset($offset) ? [$limit, $offset] : $limit;
+        $this->options['limit'] = isset($offset) ? [$limit, $offset] : $limit;
         return $this;
     }
     
     public function page($page, $num = 30)
     {
-        $this->option['limit'] = [($page - 1) * $num, $num];
-        return $this;
-    }
-    
-    public function  whereOr(...$where)
-    {
-        $key = 'OR#'.count($this->option['where']);
-        $count = count($where);
-        if ($count === 1) {
-            $this->option['where'][$key] = $where[0];
-        } elseif ($count === 2) {
-            $this->option['where'][$key] = [$where[0], '=', $where[1]];
-        } elseif ($count === 3) {
-            $this->option['where'][$key] = $where;
-        } else {
-            throw new \Exception("SQL where ERROR: ".var_export($where, true));
-        }
+        $this->options['limit'] = [($page - 1) * $num, $num];
         return $this;
     }
     
@@ -87,15 +87,15 @@ abstract class QueryChain
     {
         $count = count($where);
         if ($count === 1 && is_array($where[0])) {
-            if (empty($this->option[$type])) {
-                $this->option[$type] = $where[0];
+            if (empty($this->options[$type])) {
+                $this->options[$type] = $where[0];
             } else {
-                $this->option[$type] = array_merge($this->option[$type], $where[0]);
+                $this->options[$type] = array_merge($this->options[$type], $where[0]);
             }
         } elseif ($count === 2) {
-            $this->option[$type][] = [$where[0], '=', $where[1]];
+            $this->options[$type][] = [$where[0], '=', $where[1]];
         } elseif ($count === 3) {
-            $this->option[$type][] = $where;
+            $this->options[$type][] = $where;
         } else {
             throw new \Exception("SQL $type ERROR: ".var_export($where, true));
         }

@@ -12,13 +12,13 @@ class With extends QueryChain
         $this->with = $with;
         $this->table = $table;
         $this->alias = $alias ?? $with;
-        $this->option['where'] = [];
+        $this->options['where'] = [];
         $this->query = $query;
     }
     
     public function on($field1, $field2)
     {
-        $this->option['on'] = [$field1, $field2];
+        $this->options['on'] = [$field1, $field2];
         return $this;
     }
     
@@ -36,7 +36,7 @@ class With extends QueryChain
     {
         if ($data = $this->query->find($limit)) {
             $count = count($data);
-            if ($count > 1 && !array_diff(array_keys($this->option), ['on', 'fields', 'where', 'order'])) {
+            if ($count > 1 && !array_diff(array_keys($this->options), ['on', 'fields', 'where', 'order'])) {
                 $this->withOptimizeData($count, $data);
             } else {
                 $this->withData($count, $data);
@@ -47,11 +47,11 @@ class With extends QueryChain
     
     protected function withData($count, &$data)
     {
-        $where = $this->option['where'];
+        $where = $this->options['where'];
         list($field1, $field2) = $this->getOnFields();
         for ($i = 0; $i < $count;  $i++) {
-            $this->option['where'] = array_merge([[$field2, '=', $data[$i][$field1]]], $where);
-            $data[$i][$this->alias] = $this->db->exec(...$this->builder::select($this->with, $this->option));
+            $this->options['where'] = array_merge([[$field2, '=', $data[$i][$field1]]], $where);
+            $data[$i][$this->alias] = $this->db->exec(...$this->builder::select($this->with, $this->options));
         }
     }
     
@@ -60,11 +60,11 @@ class With extends QueryChain
         list($field1, $field2) = $this->getOnFields();
         $cols = array_unique(array_column($data, $field1));
 
-        array_unshift($this->option['where'], [$field2, 'IN', $cols]);
-        if (isset($this->option['fields']) && !in_array($field2, $this->option['fields'])) {
-            $this->option['fields'][] = $field2;
+        array_unshift($this->options['where'], [$field2, 'IN', $cols]);
+        if (isset($this->options['fields']) && !in_array($field2, $this->options['fields'])) {
+            $this->options['fields'][] = $field2;
         }
-        if ($with_data = $this->db->exec(...$this->builder::select($this->with, $this->option))) {
+        if ($with_data = $this->db->exec(...$this->builder::select($this->with, $this->options))) {
             foreach ($with_data as $wd) {
                 $sub_data[$wd[$field2]][] = $wd;
             }
@@ -77,8 +77,8 @@ class With extends QueryChain
 
     protected function getOnFields()
     {
-        if (isset($this->option['on'])) {
-            return $this->option['on'];
+        if (isset($this->options['on'])) {
+            return $this->options['on'];
         } else {
             return ['id', $this->table.'_id'];
         }

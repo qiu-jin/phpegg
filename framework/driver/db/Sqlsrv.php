@@ -25,6 +25,6 @@ class Sqlsrv extends Pdo
     
     protected function getFields($table)
     {
-        //return array_column($this->exec("sp_columns `$table`"), 'Field');
+        //return array_column($this->exec("sp_columns [$table]"), 'Field');
     }
 }

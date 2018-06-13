@@ -14,6 +14,6 @@ class Oracle extends Pdo
     
     protected function getFields($table)
     {
-        //return array_column($this->exec("describe `$table`"), 'Field');
+        //return array_column($this->exec("describe \"$table\""), 'Field');
     }
 }
