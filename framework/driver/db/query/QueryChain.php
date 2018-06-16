@@ -33,7 +33,20 @@ abstract class QueryChain
     
     public function where(...$where)
     {
-        $this->setWhere($where);
+        $count = count($where);
+        if ($count === 1 && is_array($where[0])) {
+            if (empty($this->options['where'])) {
+                $this->options['where'] = $where[0];
+            } else {
+                $this->options['where'] = array_merge($this->options['where'], $where[0]);
+            }
+        } elseif ($count === 2) {
+            $this->options['where'][] = [$where[0], '=', $where[1]];
+        } elseif ($count === 3) {
+            $this->options['where'][] = $where;
+        } else {
+            throw new \Exception("SQL $type ERROR: ".var_export($where, true));
+        }
         return $this;
     }
     
@@ -67,7 +80,18 @@ abstract class QueryChain
     
     public function having(...$having)
     {
-        $this->setWhere($having, 'having');
+        $count = count($having);
+        if ($count === 3 || $count === 4) {
+            $this->options['having'][] = $where;
+        } elseif ($count === 1 && is_array($having[0]) {
+            if (empty($this->options['having'])) {
+                $this->options['having'] = $having[0];
+            } else {
+                $this->options['having'] = array_merge($this->options['having'], $having[0]);
+            }
+        } else {
+            throw new \Exception("SQL $type ERROR: ".var_export($having, true));
+        }
         return $this;
     }
     
@@ -81,23 +105,5 @@ abstract class QueryChain
     {
         $this->options['limit'] = [($page - 1) * $num, $num];
         return $this;
-    }
-    
-    protected function setWhere($where, $type = 'where') 
-    {
-        $count = count($where);
-        if ($count === 1 && is_array($where[0])) {
-            if (empty($this->options[$type])) {
-                $this->options[$type] = $where[0];
-            } else {
-                $this->options[$type] = array_merge($this->options[$type], $where[0]);
-            }
-        } elseif ($count === 2) {
-            $this->options[$type][] = [$where[0], '=', $where[1]];
-        } elseif ($count === 3) {
-            $this->options[$type][] = $where;
-        } else {
-            throw new \Exception("SQL $type ERROR: ".var_export($where, true));
-        }
     }
 }
