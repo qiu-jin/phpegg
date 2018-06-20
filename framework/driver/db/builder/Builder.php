@@ -100,14 +100,14 @@ class Builder
 		foreach ($data as $k => $v) {
             if (is_integer($k)) {
                 if ($i > 0) {
-                    $sql = $sql.' AND ';
+                    $sql = "$sql AND ";
                 }
             } else {
                 $k = strtoupper(strtok($k, '#'));
                 if (!in_array($k, static::$where_logic, true)) {
                     throw new \Exception('SQL WHERE ERROR: '.var_export($k, true));
                 }
-                $sql = $sql.' '.$k.' ';
+                $sql = "$sql $k ";
             }
             if (isset($v[1]) && in_array($v[1], static::$where_operator, true)) {
                 if ($prefix !== null) {
@@ -116,7 +116,7 @@ class Builder
                 $sql .= static::whereItem($params, ...$v);
             } else {
                 $where = static::whereClause($v, $params, $prefix);
-                $sql .= '('.$where.')';
+                $sql .= "($where)";
             }
             $i++;
         }
@@ -145,16 +145,15 @@ class Builder
     public static function limitClause($limit)
     {
         if (is_array($limit)) {
-            return " LIMIT ".$limit[0].",".$limit[1];
+            return " LIMIT $limit[0],$limit[1]";
         } else {
-            return " LIMIT ".$limit;
+            return " LIMIT $limit";
         }
     }
     
 	public static function setData($data , $glue = ',')
     {
-        $item = [];
-        $params = [];
+        $params = $item = [];
 		foreach ($data as $k => $v) {
             $item[] = self::keywordEscape($k)."=?";
             $params[] = $v;
@@ -164,7 +163,7 @@ class Builder
     
     public static function whereItem(&$params, $field, $exp, $value)
     {
-        switch ($exp) {
+        switch (strtoupper($exp)) {
             case 'IN':
                 if(is_array($value)) {
                     $params = array_merge($params, $value);
