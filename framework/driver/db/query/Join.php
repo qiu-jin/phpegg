@@ -85,7 +85,7 @@ class Join extends QueryChain
                         $group = [$value, $table];
                         break;
                     case 'having':
-                        $having[] = $this->builder::whereClause($value, $params, $table);
+                        $having[] = $this->builder::havingClause($value, $params, $table);
                         break;
                     case 'order':
                         foreach ($value as $v) {

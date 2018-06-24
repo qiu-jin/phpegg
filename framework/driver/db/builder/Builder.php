@@ -24,7 +24,7 @@ class Builder
             if (!isset($options['group'])) {
                 throw new \Exception('SQL having ERROR: must follow group');
             }
-            $sql .= ' HAVING '.static::whereClause($options['having'], $params);
+            $sql .= ' HAVING '.static::havingClause($options['having'], $params);
         }
         if (isset($options['order'])) {
             $sql .= static::orderClause($options['order']);
@@ -109,7 +109,7 @@ class Builder
                 }
                 $sql = "$sql $k ";
             }
-            if (isset($v[1]) && in_array($v[1], static::$where_operator, true)) {
+            if (isset($v[1]) && in_array($v[1] = strtoupper($v[1]), static::$where_operator, true)) {
                 if ($prefix !== null) {
                     $sql .= self::keywordEscape($prefix).'.';
                 }
@@ -126,6 +126,11 @@ class Builder
     public static function groupClause($field, $table = null)
     {
         return " GROUP BY ".($table === null ? '' : self::keywordEscape($table).'.').self::keywordEscape($field);
+    }
+    
+    public static function havingClause($data, &$params, $prefix = null)
+    {
+        return self::whereClause($data, $params, $prefix);
     }
     
 	public static function orderClause($orders)
@@ -163,7 +168,7 @@ class Builder
     
     public static function whereItem(&$params, $field, $exp, $value)
     {
-        switch (strtoupper($exp)) {
+        switch ($exp) {
             case 'IN':
                 if(is_array($value)) {
                     $params = array_merge($params, $value);

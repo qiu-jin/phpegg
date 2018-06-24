@@ -78,7 +78,7 @@ class SubQuery extends QueryChain
             $sql .= $this->builder::groupClause($this->master['group']);
         }
         if (isset($this->master['having'])) {
-            $sql .= ' HAVING '.$this->builder::whereClause($this->master['having'], $params);
+            $sql .= ' HAVING '.$this->builder::havingClause($this->master['having'], $params);
         }
         if (isset($this->master['order'])) {
             $sql .= $this->builder::orderClause($this->master['order']);

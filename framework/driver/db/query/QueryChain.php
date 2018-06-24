@@ -5,8 +5,8 @@ abstract class QueryChain
 {
     protected $db;
     protected $table;
-    protected $options = ['where' => null, 'fields' => null];
     protected $builder;
+    protected $options = ['where' => null, 'fields' => null];
     
 	public function __construct($db, ...$params)
     {
