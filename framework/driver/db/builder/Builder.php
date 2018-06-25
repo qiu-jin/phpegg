@@ -22,7 +22,7 @@ class Builder
         }
         if (isset($options['having'])) {
             if (!isset($options['group'])) {
-                throw new \Exception('SQL having ERROR: must follow group');
+                throw new \Exception('SQL having ERROR: must follow group method');
             }
             $sql .= ' HAVING '.static::havingClause($options['having'], $params);
         }
@@ -80,9 +80,8 @@ class Builder
                 if ($count === 2) {
                     $select[] = self::keywordEscape($field[0]).' AS '.self::keywordEscape($field[1]);
                 } elseif ($count === 3){
-                    $select[] = "$field[0](".(
-                        $field[1] === '*' ? '*' : self::keywordEscape($field[1])).") AS ".self::keywordEscape($field[2]
-                    );
+                    $select[] = "$field[0](".($field[1] === '*' ? '*' : self::keywordEscape($field[1]))
+                              . ") AS ".self::keywordEscape($field[2]);
                 } else {
                     throw new \Exception('SQL Field ERROR: '.var_export($field, true));
                 }
@@ -98,22 +97,9 @@ class Builder
         $i = 0;
         $sql = '';
 		foreach ($data as $k => $v) {
-            if (is_integer($k)) {
-                if ($i > 0) {
-                    $sql = "$sql AND ";
-                }
-            } else {
-                $k = strtoupper(strtok($k, '#'));
-                if (!in_array($k, static::$where_logic, true)) {
-                    throw new \Exception('SQL WHERE ERROR: '.var_export($k, true));
-                }
-                $sql = "$sql $k ";
-            }
+            $sql .= self::whereLogicClause($i, $k);
             if (isset($v[1]) && in_array($v[1] = strtoupper($v[1]), static::$where_operator, true)) {
-                if ($prefix !== null) {
-                    $sql .= self::keywordEscape($prefix).'.';
-                }
-                $sql .= static::whereItem($params, ...$v);
+                $sql .= static::whereItem($prefix, $params, ...$v);
             } else {
                 $where = static::whereClause($v, $params, $prefix);
                 $sql .= "($where)";
@@ -130,7 +116,20 @@ class Builder
     
     public static function havingClause($data, &$params, $prefix = null)
     {
-        return self::whereClause($data, $params, $prefix);
+        $i = 0;
+        $sql = '';
+		foreach ($data as $k => $v) {
+            $sql .= self::whereLogicClause($i, $k);
+            $n = count($v) - 2;
+            if (isset($v[$n]) && in_array($v[$n] = strtoupper($v[$n]), static::$where_operator, true)) {
+                $sql .= static::havingItem($prefix, $params, $n + 1, $v);
+            } else {
+                $where = static::havingClause($v, $params, $prefix);
+                $sql .= "($where)";
+            }
+            $i++;
+        }
+        return $sql;
     }
     
 	public static function orderClause($orders)
@@ -158,38 +157,68 @@ class Builder
     
 	public static function setData($data , $glue = ',')
     {
-        $params = $item = [];
+        $params = $items = [];
 		foreach ($data as $k => $v) {
-            $item[] = self::keywordEscape($k)."=?";
+            $items[] = self::keywordEscape($k)."=?";
             $params[] = $v;
 		}
-        return [implode(" $glue ", $item), $params];
+        return [implode(" $glue ", $items), $params];
 	}
     
-    public static function whereItem(&$params, $field, $exp, $value)
+    public static function whereLogicClause($i, $k)
+    {
+        if (is_integer($k)) {
+            if ($i > 0) {
+                return " AND ";
+            }
+        } else {
+            if (in_array($k = strtoupper(strtok($k, '#')), static::$where_logic, true)) {
+                return " $k ";
+            }
+            throw new \Exception('SQL WHERE ERROR: '.var_export($k, true));
+        }
+    }
+    
+    public static function whereItem($prefix, &$params, $field, $exp, $value)
+    {
+        return (isset($prefix) ? self::keywordEscapePair($prefix, $field) : self::keywordEscape($field))
+               .self::whereItemValue($params, $exp, $value);
+    }
+    
+    public static function havingItem($prefix, &$params, $n, $values)
+    {
+        $sql = isset($prefix) ? self::keywordEscapePair($prefix, $values[$n]) : self::keywordEscape($values[$n]);
+        if ($n == 1) {
+            $sql = " $values[0]($sql) ";
+        }
+        return $sql.self::whereItemValue($params, $values[$n + 1], $values[$n + 2]);
+    }
+    
+    public static function whereItemValue(&$params, $exp, $value)
     {
         switch ($exp) {
             case 'IN':
                 if(is_array($value)) {
                     $params = array_merge($params, $value);
-                    return self::keywordEscape($field)." IN (".implode(",", array_fill(0, count($value), '?')).")";
+                    return " IN (".implode(",", array_fill(0, count($value), '?')).")";
                 }
                 break;
             case 'BETWEEN':
                 if (count($value) === 2) {
                     $params = array_merge($params, $value);
-                    return self::keywordEscape($field)." BETWEEN ?  AND ?";
+                    return " BETWEEN ?  AND ?";
                 }
                 break;
             case 'IS':
                 if ($value === NULL) {
-                    return self::keywordEscape($field)." IS NULL";
+                    return " IS NULL";
                 }
                 break;
             default :
                 $params[] = $value;
-                return self::keywordEscape($field)." $exp ?";
+                return " $exp ?";
         }
+        throw new \Exception("SQL where ERROR: $exp ".var_export($value, true));
     }
     
     public static function keywordEscape($kw)
@@ -199,7 +228,6 @@ class Builder
     
     public static function keywordEscapePair($kw1, $kw2)
     {
-        return static::KEYWORD_ESCAPE_LEFT.$kw1.static::KEYWORD_ESCAPE_RIGHT.'.'.
-               static::KEYWORD_ESCAPE_LEFT.$kw2.static::KEYWORD_ESCAPE_RIGHT;
+        return self::keywordEscape($kw1).'.'.self::keywordEscape($kw2);
     }
 }

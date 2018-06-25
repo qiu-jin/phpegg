@@ -6,14 +6,16 @@ class With extends QueryChain
     protected $with;
     protected $alias;
     protected $query;
+    protected $optimize;
     
-    protected function init($table, $query, $with, $alias = null)
+    protected function init($table, $query, $with, $alias = null, $optimize = true)
     {
         $this->with = $with;
         $this->table = $table;
-        $this->alias = $alias ?? $with;
-        $this->options['where'] = [];
         $this->query = $query;
+        $this->alias = $alias ?? $with;
+        $this->optimize = $optimize;
+        $this->options['where'] = [];
     }
     
     public function on($field1, $field2)
@@ -36,7 +38,7 @@ class With extends QueryChain
     {
         if ($data = $this->query->find($limit)) {
             $count = count($data);
-            if ($count > 1 && !array_diff(array_keys($this->options), ['on', 'fields', 'where', 'order'])) {
+            if ($this->optimize && $count > 1 && !array_diff(array_keys($this->options), ['on', 'fields', 'where', 'order'])) {
                 $this->withOptimizeData($count, $data);
             } else {
                 $this->withData($count, $data);
