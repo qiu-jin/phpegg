@@ -34,8 +34,7 @@ class Relate extends QueryChain
 
     public function find($limit = 0)
     {
-        $data = $this->query->find($limit);
-        $data && $this->withSubData($data);
+        ($data = $this->query->find($limit)) && $this->withSubData($data);
         return $data;
     }
     
@@ -59,7 +58,7 @@ class Relate extends QueryChain
             $params = [];
             $sql = $this->builder::whereItem($params, $field1[1], 'IN', $in_data);
             $sql = 'SELECT '.$this->builder::keywordEscape($field1[1]).', '
-                 . $this->builder::keywordEscape($field2[1]).' FROM '.$this->builder::keywordEscape($related).' WHERE '.$sql;
+                 . $this->builder::keywordEscape($field2[1]).' FROM '.$this->builder::keywordEscape($related)." WHERE $sql";
             $related_data = $this->db->exec($sql, $params);
             if ($related_data) {
                 foreach ($related_data as $rd) {

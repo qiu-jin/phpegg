@@ -3,7 +3,6 @@ namespace framework\driver\db\builder;
 
 class Pgsql extends Builder
 {
-    const ORDER_RANDOM = 'RANDOM()';
     const KEYWORD_ESCAPE_LEFT = '"';
     const KEYWORD_ESCAPE_RIGHT = '"';
     

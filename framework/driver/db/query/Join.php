@@ -18,7 +18,9 @@ class Join extends QueryChain
         $this->table = $table;
         $this->join[$join] = compact('type');
         $options['prefix'] = false;
-        isset($options['fields']) || $options['fields'] = null;
+        if (!isset($options['fields'])) {
+            $options['fields'] = null;
+        }
         $this->options = ['prefix' => $prefix, 'fields' => null];
         $this->table_options[$table] = $options;
     }
@@ -31,7 +33,7 @@ class Join extends QueryChain
         $this->table_options[$this->cur] = $this->options;
         $this->cur = $join;
         $this->options = ['prefix' => $prefix, 'fields' => null];
-        $this->join[$join] = array('type' => $type);
+        $this->join[$join] = compact('type');
         return $this;
     }
     
@@ -101,13 +103,13 @@ class Join extends QueryChain
         }
         $sql = 'SELECT '.implode(',', $fields).' FROM '.$this->builder::keywordEscape($this->table);
         foreach ($this->join as $table => $join) {
-            $sql .= " {$join['type']} JOIN ".$this->builder::keywordEscape($table)." ON ";
+            $sql .= " {$join['type']} JOIN ".$this->builder::keywordEscape($table).' ON ';
             if (isset($join['on'])) {
                 $sql .= $this->builder::keywordEscapePair($this->table, $join['on'][0])
-                     .  " = ".$this->builder::keywordEscapePair($table, $join['on'][1]);
+                     .  ' = '.$this->builder::keywordEscapePair($table, $join['on'][1]);
             } else {
                 $sql .= $this->builder::keywordEscapePair($this->table, 'id')
-                     .  " = ".$this->builder::keywordEscapePair($table, "{$this->table}_id");
+                     .  ' = '.$this->builder::keywordEscapePair($table, "{$this->table}_id");
             }
         }
         if ($where) {
@@ -137,7 +139,7 @@ class Join extends QueryChain
             if (!$value) {
                 foreach ($this->db->fields($table) as $field) {
                     $fields[] = $this->builder::keywordEscapePair($table, $field)
-                              . " AS ".$this->builder::keywordEscape("{$prefix}_$field");
+                              . ' AS '.$this->builder::keywordEscape("{$prefix}_$field");
                 }
             } else {
                 foreach ($value as $field) {
@@ -145,7 +147,7 @@ class Join extends QueryChain
                         $fields[] = $this->fields($field, $table);
                     } else {
                         $fields[] = $this->builder::keywordEscapePair($table, $field)
-                                  . " AS ".$this->builder::keywordEscape("{$prefix}_$field");
+                                  . ' AS '.$this->builder::keywordEscape("{$prefix}_$field");
                     }
                 }
             }

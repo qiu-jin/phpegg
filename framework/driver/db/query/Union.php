@@ -13,32 +13,24 @@ class Union extends QueryChain
         $this->all = $all;
         $this->table = $table;
         $this->union = $union;
-        if (isset($options['fields'])) {
-            $this->fields = $options['fields'];
-            unset($options['fields']);
-        } else {
-            $this->fields = null;
-        }
         $this->table_options[$table] = $options;
     }
     
 	public function union($table)
     {
+        $this->options['fields'] = $this->table_options[$this->table]['fields'];
         $this->table_options[$this->union] = $this->options;
-        $this->options = [];
         $this->union = $table;
         return $this;
     }
     
     public function find()
     {
-        $sql = [];
-        $params = [];
+        $sql = $params = [];
         $this->table_options[$this->union] = $this->options;
         foreach ($this->table_options as $table => $options) {
-            $options['fields'] = $this->fields;
             $select = $this->builder::select($table, $options);
-            $sql[] = '('.$select[0].')';
+            $sql[] = "($select[0])";
             $params = array_merge($params, $select[1]);
         }
         $union = $this->all ? ' UNION ALL ' : ' UNION ';

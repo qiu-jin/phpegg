@@ -94,13 +94,11 @@ class SubQuery extends QueryChain
         $sql = '';
         if (isset($this->master['where'])) {
             $sql = $this->builder::whereClause($this->master['where'], $params);
-            $logic = true;
         }
         foreach ($this->table_options as $table => $options) {
-            if (isset($logic)) {
+            if ($sql) {
                 $sql .= " {$options['logic']} ";
             }
-            $logic = true;
             if (isset($options['on'])) {
                 if (is_array($options['on'][0])) {
                     $sql .= '('.$this->builder::keywordEscape(implode($this->builder::keywordEscape(','), $options['on'][0])).')';
@@ -116,7 +114,7 @@ class SubQuery extends QueryChain
                 $options['fields'] = [$this->table.'_id'];
             }
             $sub = $this->builder::select($table, $options);
-            $sql .= '('.$sub[0].') ';
+            $sql .= "($sub[0]) ";
             $params = array_merge($params, $sub[1]);
         }
         return $sql;

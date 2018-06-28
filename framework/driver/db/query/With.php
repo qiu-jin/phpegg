@@ -37,8 +37,10 @@ class With extends QueryChain
     public function find($limit = 0)
     {
         if ($data = $this->query->find($limit)) {
-            $count = count($data);
-            if ($this->optimize && $count > 1 && !array_diff(array_keys($this->options), ['on', 'fields', 'where', 'order'])) {
+            if ($this->optimize
+                && ($count = count($data)) > 1
+                && !array_diff(array_keys($this->options), ['on', 'fields', 'where', 'order'])
+            ) {
                 $this->withOptimizeData($count, $data);
             } else {
                 $this->withData($count, $data);
@@ -61,7 +63,6 @@ class With extends QueryChain
     {
         list($field1, $field2) = $this->getOnFields();
         $cols = array_unique(array_column($data, $field1));
-
         array_unshift($this->options['where'], [$field2, 'IN', $cols]);
         if (isset($this->options['fields']) && !in_array($field2, $this->options['fields'])) {
             $this->options['fields'][] = $field2;
@@ -79,10 +80,6 @@ class With extends QueryChain
 
     protected function getOnFields()
     {
-        if (isset($this->options['on'])) {
-            return $this->options['on'];
-        } else {
-            return ['id', $this->table.'_id'];
-        }
+        return $this->options['on'] ?? ['id', $this->table.'_id'];
     }
 }

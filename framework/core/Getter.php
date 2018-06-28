@@ -7,15 +7,15 @@ trait Getter
 {
     public function __get($name)
     {
-        $gpn = \app\env\GETTER_PROVIDERS_NAME;
-        if (isset($this->$gpn) && isset($this->$gpn[$name])) {
-            $value = $this->$gpn[$name];
-            if (is_string($value)) {
-                return $this->$name = Container::make($value);
-            } elseif (is_array($value)) {
-                return $this->$name = new $value[0](...array_slice($value, 1));
+        $n = \app\env\GETTER_PROVIDERS_NAME;
+        if (isset($this->$n) && isset($this->$n[$name])) {
+            $v = $this->$n[$name];
+            if (is_string($v)) {
+                return $this->$name = Container::make($v);
+            } elseif (is_array($v)) {
+                return $this->$name = new $v[0](...array_slice($v, 1));
             } elseif ($value instanceof \Closure) {
-                return $this->$name = $value();
+                return $this->$name = $v();
             }
             throw new \Exception("Provider $name invalid type");
         } else {

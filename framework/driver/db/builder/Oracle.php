@@ -3,7 +3,6 @@ namespace framework\driver\db\builder;
 
 class Oracle extends Builder
 {
-    const ORDER_RANDOM = 'DBMS_RANDOM.value';
     const KEYWORD_ESCAPE_LEFT = '"';
     const KEYWORD_ESCAPE_RIGHT = '"';
     

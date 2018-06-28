@@ -54,7 +54,7 @@ abstract class QueryChain
     {
         $key = 'OR#'.count($this->options['where']);
         $count = count($where);
-        if ($count === 1) {
+        if ($count === 1 && is_array($where[0])) {
             $this->options['where'][$key] = $where[0];
         } elseif ($count === 2) {
             $this->options['where'][$key] = [$where[0], '=', $where[1]];
@@ -82,7 +82,7 @@ abstract class QueryChain
     {
         $count = count($having);
         if ($count === 3 || $count === 4) {
-            $this->options['having'][] = $where;
+            $this->options['having'][] = $having;
         } elseif ($count === 1 && is_array($having[0]) {
             if (empty($this->options['having'])) {
                 $this->options['having'] = $having[0];

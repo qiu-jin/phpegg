@@ -13,6 +13,11 @@ class Exception extends \Exception
         $this->message  = $message;
     }
     
+    public static function export($message, $data)
+    {
+        return new self($message.var_export($data, true));
+    }
+    
     public function getData()
     {
         return $this->data;

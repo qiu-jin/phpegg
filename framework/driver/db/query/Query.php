@@ -44,7 +44,7 @@ class Query extends QueryChain
     {
         $this->options['limit'] = 1;
         $select = $this->builder::select($this->table, $this->options);
-        $query = $this->db->query('SELECT EXISTS('.$select[0].')', $select[1]);
+        $query = $this->db->query("SELECT EXISTS($select[0])", $select[1]);
         return $query && !empty($this->db->fetchRow($query)[0]);
     }
     
@@ -76,7 +76,7 @@ class Query extends QueryChain
     public function aggregate($func, $field)
     {
         $alias = $func.'_'.$field;
-        $this->options['fields'] = [[$func, $field, "{$func}_{$field}"]];
+        $this->options['fields'] = [[$func, $field, $alias]];
         $data = $this->db->exec(...$this->builder::select($this->table, $this->options));
         return $data ? $data[0][$alias] : false;
     }
@@ -144,11 +144,11 @@ class Query extends QueryChain
             list($dataset, $params) = $this->builder::setData($data);
             $set = $set.','.$dataset;
         }
-        $sql = "UPDATE ".$this->builder::keywordEscape($this->table)." SET $set WHERE ".$this->builder::whereClause($this->options['where'], $params);
+        $sql = " SET $set WHERE ".$this->builder::whereClause($this->options['where'], $params);
         if (isset($this->options['limit'])) {
-            $sql = "$sql LIMIT ".$this->options['limit'];
+            $sql .= ' LIMIT '.$this->options['limit'];
         }
-        return $this->db->exec($sql, $params);
+        return $this->db->exec('UPDATE '.$this->builder::keywordEscape($this->table).$sql, $params);
     }
     
     public function delete($id = null, $pk = 'id')
