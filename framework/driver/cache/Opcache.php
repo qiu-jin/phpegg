@@ -5,7 +5,6 @@ class Opcache extends Cache
 {
     protected $dir;
     protected $ext;
-    protected $gc_maxlife;
     protected $enable_filter_value;
 
     protected function init($config)
@@ -18,7 +17,6 @@ class Opcache extends Cache
             $this->dir .= '/';
         }
         $this->ext = $config['ext'] ?? '.cache.php';
-        $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
         $this->enable_filter_value = $config['enable_filter_value'] ?? false;
     }
     

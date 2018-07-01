@@ -6,8 +6,7 @@ class File extends Cache
 {
     protected $dir;
     protected $ext;
-    protected $gc_maxlife;
-
+    
     protected function init($config)
     {
         if (!is_dir($config['dir']) || !is_writable($config['dir'])) {
@@ -18,7 +17,6 @@ class File extends Cache
             $this->dir .= '/';
         }
         $this->ext = $config['ext'] ?? '.cache.txt';
-        $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
     }
     
     public function get($key, $default = null)

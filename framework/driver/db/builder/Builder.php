@@ -6,7 +6,7 @@ class Builder
     const KEYWORD_ESCAPE_LEFT = '`';
     const KEYWORD_ESCAPE_RIGHT = '`';
 
-    protected static $where_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
+    protected static $where_logic = ['AND', 'OR', 'XOR', 'NOT', 'AND NOT', 'OR NOT', 'XOR NOT'];
     protected static $where_operator = ['=', '!=', '>', '>=', '<', '<=', 'LIKE', 'IN', 'IS', 'BETWEEN'];
 
     public static function select($table, array $options)
@@ -80,7 +80,7 @@ class Builder
                     $select[] = self::keywordEscape($field[0]).' AS '.self::keywordEscape($field[1]);
                 } elseif ($count === 3){
                     $select[] = "$field[0](".($field[1] === '*' ? '*'
-                              : self::keywordEscape($field[1])).") AS ".self::keywordEscape($field[2]);
+                              : self::keywordEscape($field[1])).') AS '.self::keywordEscape($field[2]);
                 } else {
                     throw new \Exception('SQL Field ERROR: '.var_export($field, true));
                 }
@@ -88,21 +88,19 @@ class Builder
                 $select[] = self::keywordEscape($field);
             }
         }
-        return 'SELECT '.implode(',', (array) $select).' FROM '.self::keywordEscape($table);
+        return 'SELECT '.implode(',', $select).' FROM '.self::keywordEscape($table);
     }
 
     public static function whereClause($data, &$params, $prefix = null)
     {
-        $i = 0;
-        $sql = '';
+        $sql = null;
 		foreach ($data as $k => $v) {
-            $sql .= self::whereLogicClause($i, $k);
+            $sql .= self::whereLogicClause($k, isset($sql));
             if (isset($v[1]) && in_array($v[1] = strtoupper($v[1]), self::$where_operator, true)) {
                 $sql .= self::whereItem($prefix, $params, ...$v);
             } else {
                 $sql .= '('.self::whereClause($v, $params, $prefix).')';
             }
-            $i++;
         }
         return $sql;
     }
@@ -114,17 +112,15 @@ class Builder
     
     public static function havingClause($data, &$params, $prefix = null)
     {
-        $i = 0;
-        $sql = '';
+        $sql = null;
 		foreach ($data as $k => $v) {
-            $sql .= self::whereLogicClause($i, $k);
+            $sql .= self::whereLogicClause($k, isset($sql));
             $n = count($v) - 2;
             if (isset($v[$n]) && in_array($v[$n] = strtoupper($v[$n]), self::$where_operator, true)) {
                 $sql .= self::havingItem($prefix, $params, $n + 1, $v);
             } else {
                 $sql .= '('.self::havingClause($v, $params, $prefix).')';
             }
-            $i++;
         }
         return $sql;
     }
@@ -157,17 +153,17 @@ class Builder
         return [implode(" $glue ", $items), $params];
 	}
     
-    public static function whereLogicClause($i, $k)
+    public static function whereLogicClause($logic, $and)
     {
-        if (is_integer($k)) {
-            if ($i > 0) {
+        if (is_integer($logic)) {
+            if ($and) {
                 return ' AND ';
             }
         } else {
-            if (in_array($k = strtoupper(strtok($k, '#')), self::$where_logic, true)) {
-                return " $k ";
+            if (in_array($logic = strtoupper(strtok($logic, '#')), self::$where_logic, true)) {
+                return " $logic ";
             }
-            throw new \Exception('SQL WHERE ERROR: '.var_export($k, true));
+            throw new \Exception('SQL WHERE ERROR: '.var_export($logic, true));
         }
     }
     

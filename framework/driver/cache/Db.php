@@ -12,18 +12,18 @@ class Db extends Cache
 {
     protected $db;
     protected $table;
-    protected $gc_maxlife;
+    protected $prefix;
 
     protected function init($config)
     {
         $this->db = Container::driver('db', $config['db']);
         $this->table = $config['table'] ?? 'cache';
-        $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
+        $this->prefix = $config['prefix'] ?? '_';
     }
     
     public function get($key, $default = null)
     {
-        $cache = $this->db->exec("SELECT _value FROM $this->table WHERE _key = ? AND _expiration > ?", [
+        $cache = $this->db->exec("SELECT {$this->prefix}value FROM $this->table WHERE _key = ? AND _expiration > ?", [
             $key, time()
         ]);
         return $cache ? $this->unserialize($cache[0]['value']) : $default;

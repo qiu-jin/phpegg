@@ -6,6 +6,7 @@ use framework\core\Event;
 abstract class Cache
 {
     protected $serializer;
+    protected $gc_maxlife;
     
     abstract public function get($key, $default);
     
@@ -25,6 +26,7 @@ abstract class Cache
             && method_exists($this, 'gc')
             && mt_rand(1, $config['gc_random'][1]) <= $config['gc_random'][0]
         ) {
+            $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
             Event::on('close', [$this, 'gc']);
         }
     }
