@@ -10,9 +10,9 @@ class Ip2location extends Geoip
 {
     // 数据库实例
     protected $db;
-    // IP数据表名
+    // 数据表名
     protected $table;
-    // IP数据表除id主键外的字段名
+    // 数据表字段名
     protected $fields;
 
     protected function init($config)
@@ -22,15 +22,19 @@ class Ip2location extends Geoip
         $this->fields = $config['fields'] ?? ['begin_ip_num', 'end_ip_num', 'country_code', 'country_name'];
     }
     
-    protected function handle($ip, $raw = false)
+    protected function handle($ip, $raw)
     {
-        if ($ip_num = ip2long($ip)) {
+        if ($long = ip2long($ip)) {
+            $builder = $this->db::Builder;
+            foreach ($this->fields as $v) {
+                $fields[] = $builder::keywordEscape($v);
+            }
             $result = $this->db->exec(sprintf("SELECT %s FROM %s WHERE %u BETWEEN %s AND %s",
-                implode(',', array_slice($this->fields, 2)),
-                $this->table,
-                $ip_num,
-                $this->fields[0],
-                $this->fields[1]
+                implode(',', array_slice($fields, 2)),
+                $builder::keywordEscape($this->table),
+                $long,
+                $fields[0],
+                $fields[1]
             ));
             if ($result) {
                 if ($raw) {

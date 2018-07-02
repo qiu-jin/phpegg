@@ -13,7 +13,7 @@ class Amap extends Geoip
         $this->acckey = $config['acckey'];
     }
     
-    protected function handle($ip, $raw = false)
+    protected function handle($ip, $raw)
     {
         $client = Client::get(self::$endpoint."?ip=$ip&key=$this->acckey");
         $result = $client->response->json();

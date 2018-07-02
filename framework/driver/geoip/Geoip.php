@@ -7,8 +7,6 @@ abstract class Geoip
 {
     // 缓存实例
     protected $cache;
-    // 处理器，部分驱动有本地数据处理器和在线接口处理器
-    protected $handle = 'handle';
     
     public function __construct($config)
     {
@@ -24,19 +22,18 @@ abstract class Geoip
      */
     public function locate($ip, $fitler = false)
     {
-        $handle = $this->handle;
         if ($fitler === false) {
-            return $this->$handle($ip, true);
+            return $this->handle($ip, true);
         }
         if (empty($this->cache)) {
-            $location = $this->$handle($ip);
+            $location = $this->handle($ip, false);
         } else {
             $location = $this->cache->get($ip);
             if (!isset($location)) {
-                $location = $this->$handle($ip);
+                $location = $this->handle($ip, false);
                 $this->cache->set($ip, $location);
             }
         }
-        return $location && $fitler === true ? $location : $location[$fitler];
+        return ($location && $fitler === true) ? $location : $location[$fitler];
     }
 }

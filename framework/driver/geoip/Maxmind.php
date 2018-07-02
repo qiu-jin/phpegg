@@ -13,8 +13,9 @@ class Maxmind extends Geoip
 {
     protected $db;
     protected $api;
-    protected $lang = 'en';
-    protected $type = 'country';
+    protected $lang;
+    protected $type;
+    protected $handle;
     protected static $endpoint = 'https://geoip.maxmind.com/geoip/v2.1';
     
     protected function init($config)
@@ -29,18 +30,23 @@ class Maxmind extends Geoip
         } else {
             throw new \Exception("Invalid configuration");
         }
-        isset($config['lang']) && $this->lang = $config['lang'];
-        isset($config['type']) && $this->type = $config['type'];
+        $this->lang = $config['lang'] ?? 'en';
+        $this->type = $config['type'] ?? 'country';
     }
     
-    protected function dbHandle($ip, $raw = false)
+    protected function handle($ip,  $raw)
+    {
+        return $this->{$this->handle}($ip, $raw);
+    }
+    
+    protected function dbHandle($ip, $raw)
     {
         if ($result = $this->db->get($ip)) {
             return $raw ? $result : $this->result($result);
         }
     }
     
-    protected function apiHandle($ip, $raw = false)
+    protected function apiHandle($ip, $raw)
     {
         $client = Client::get(self::$endpoint."/$this->type/$ip");
         $client->header('Authorization', 'Basic '.base64_encode("$this->api[acckey]:$this->api[seckey]"));

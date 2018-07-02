@@ -42,7 +42,7 @@ class File extends Cache
         if ($fp = fopen($this->filename($key), 'w')) {
             if (flock($fp, LOCK_EX)) {
                 $expiration = $ttl ? $ttl + time() : 0;
-                fwrite($fp, "$expiration".PHP_EOL);
+                fwrite($fp, $expiration.PHP_EOL);
                 fwrite($fp, $this->serialize($value));
                 fflush($fp);
                 flock($fp, LOCK_UN);

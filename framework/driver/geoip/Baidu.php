@@ -13,7 +13,7 @@ class Baidu extends Geoip
         $this->acckey = $config['acckey'];
     }
     
-    protected function handle($ip, $raw = false)
+    protected function handle($ip, $raw)
     {
         $client = Client::get(self::$endpoint."?ip=$ip&ak=$this->acckey");
         $result = $client->response->json();
