@@ -2,7 +2,7 @@
 namespace framework\driver\email\query;
 
 use framework\core\Hook;
-use framework\core\View;
+use framework\driver\email\message\Template;
 
 class Query
 {
@@ -63,12 +63,12 @@ class Query
         return $this;
     }
     
-    public function template($template, $vars = null)
+    public function template($template, $vars = null, $type = 'view')
     {
         if (!isset($this->options['ishtml'])) {
             $this->options['ishtml'] = true;
         }
-        $this->options['template'] = View::render($template, $vars);
+        $this->options['template'] = Template::render($template, $vars, $type);
         return $this;
     }
     

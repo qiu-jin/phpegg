@@ -42,7 +42,7 @@ class Image
         return "<$tag $str></$tag><image src='$this->src' />";
     }
     
-    public function template($html = null)
+    public function __template($html = null)
     {
         return "<input name='$this->name'></input><image src='$this->src' />";
     }

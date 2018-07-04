@@ -5,6 +5,11 @@ use framework\core\View;
 
 class Template
 {
+    public static function render($tpl, array $vars = null, $type)
+    {
+        return View::{$type}($tpl, $vars);
+    }
+    
     public static function view($tpl, array $vars = null)
     {
         return View::render($tpl, $vars);
