@@ -5,7 +5,7 @@ class Sqlsrv extends Pdo
 {
     const BUILDER = builder\Sqlsrv::class;
     
-    protected function dsn($config)
+    protected function getDsn($config)
     {
         if (strstr(PHP_OS, 'WIN')) {
             $dsn = 'sqlsrv:Database='.$config['dbname'].';Server='.$config['host'];
@@ -25,6 +25,7 @@ class Sqlsrv extends Pdo
     
     protected function getFields($table)
     {
-        //return array_column($this->exec("sp_columns [$table]"), 'Field');
+        // 待测
+        return array_column($this->exec("sp_columns [$table]"), 'Field');
     }
 }

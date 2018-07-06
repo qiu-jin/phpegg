@@ -1,105 +1,75 @@
 <?php
 namespace framework\driver\db;
 
+use framework\core\Container;
 
-class Cluster extends Mysqli
+class Cluster
 {
-    protected $work_connection;
-    protected $read_connection;
-    protected $wirte_connection;
+    protected $work;
+    protected $read;
+    protected $write;
+    protected $config;
+    protected $builder;
+    
+    protected static $write_methods = ['insertId', 'affectedRows', 'begin', 'rollback', 'commit', 'transaction'];
     
     public function __construct($config)
     {
         $this->config = $config;
-        $config['host'] = $config['read'];
-        $this->connection = $this->connect($config);
-        $this->work_connection = $this->connection;
-        $this->read_connection = $this->connection;
+        $this->builder = (__NAMESPACE__.'\\'.ucfirst($config['dbtype']))::BUILDER;
+    }
+    
+    public function __get($name)
+    {
+        return $this->table($name);
+    }
+
+    public function table($name)
+    {
+        return new query\Query($this, $name);
+    }
+    
+    public function __call($method, $params)
+    {
+        if (in_array($method, self::$write_methods)) {
+            return $this->getDatabase('write')->$method(...$params);
+        } else {
+            return ($this->work ?? $this->getDatabase('read'))->$method(...$params);
+        }
     }
     
     public function exec($sql, $params = null)
     {
-        return $this->callMethod('exec', $sql, $params);
+        return $this->getDatabase($this->sqlType($sql))->exec($sql, $params);
     }
     
     public function query($sql, $params = null)
     {
-        return $this->callMethod('query', $sql, $params);
+        return $this->getDatabase($this->sqlType($sql))->query($sql, $params);
     }
     
-    public function prepare($sql)
+    public function getBuilder()
     {
-        return $this->getConnection($this->isWirte($sql))->prepare($sql);
+        return $this->builder;
     }
     
-    public function insertId()
+    public function selectDatabase($type)
     {
-        return $this->getConnection()->lastInsertId();
+        return $this->work = $this->$type ?? (
+            $this->$type = Container::makeDriverInstance('db', ['driver' => $this->config['dbtype']] + $this->config[$type])
+        );
     }
     
-    public function begin()
+    protected function getDatabase($type)
     {
-		return $this->getConnection()->beginTransaction();
-    }
-    
-    public function rollback()
-    {
-        return $this->getConnection()->rollBack();
-    }
-    
-    public function commit()
-    {
-		return $this->getConnection()->commit();
-    }
-    
-    public function error($query = null)
-    {
-        return parent::error($query ? $query : $this->work_connection);
-    }
-    
-    public function getConnection($is_wirte = true)
-    {
-        if ($is_wirte) {
-            if (isset($this->wirte_connection)) {
-                return $this->wirte_connection;
-            }
-            $config = $this->config;
-            $config['host'] = $config['wirte'];
-            return $this->wirte_connection = $this->connect($config);
-        } else {
-            return $this->read_connection;
+        if (!empty($this->config['sticky']) && isset($this->write)) {
+            $type = 'write';
         }
+        return $this->selectDatabase($type);
     }
     
-    protected function isWirte(&$sql)
+    protected function sqlType($sql)
     {
-        return trim(strtoupper(strtok($sql, ' ')), "\t(") !== 'SELECT';
-    }
-    
-    protected function callMethod($method, $sql, $params)
-    {
-        if ($this->isWirte($sql)) {
-            $this->connection = $this->getConnection();
-            $this->work_connection = $this->connection;
-            try {
-                $return = parent::{$method}($sql, $params);
-                $this->connection = $this->read_connection;
-                return $return;
-            } catch (\Exception $e) {
-                $this->connection = $this->read_connection;
-                throw $e;
-            }
-        } else {
-            $this->work_connection = $this->connection;
-            return $parent::{$method}($sql, $params);
-        }
-    }
-    
-    public function __destruct()
-    {
-        $this->connection       = null;
-        $this->work_connection  = null;
-        $this->read_connection  = null;
-        $this->wirte_connection = null;
+        return strtoupper(substr(ltrim($sql), 0, 6)) == 'SELECT' ? 'read' : 'write';
     }
 }

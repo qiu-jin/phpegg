@@ -5,7 +5,7 @@ class Oracle extends Pdo
 {
     const BUILDER = builder\Oracle::class;
     
-    protected function dsn($config)
+    protected function getDsn($config)
     {
         $dsn = 'oci:dbname='.$config['dbname'].';host='.$config['host'];
         $dsn .= isset($config['port']) ? ':'.$config['port'] : '/';
@@ -14,6 +14,7 @@ class Oracle extends Pdo
     
     protected function getFields($table)
     {
-        //return array_column($this->exec("describe \"$table\""), 'Field');
+        // 待测
+        return array_column($this->exec("describe \"$table\""), 'Field');
     }
 }

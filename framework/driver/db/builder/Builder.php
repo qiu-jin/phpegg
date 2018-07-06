@@ -117,7 +117,7 @@ class Builder
             $sql .= self::whereLogicClause($k, isset($sql));
             $n = count($v) - 2;
             if (isset($v[$n]) && in_array($v[$n] = strtoupper($v[$n]), self::$where_operator, true)) {
-                $sql .= self::havingItem($prefix, $params, $n + 1, $v);
+                $sql .= self::havingItem($prefix, $params, $n - 1, $v);
             } else {
                 $sql .= '('.self::havingClause($v, $params, $prefix).')';
             }
@@ -175,8 +175,11 @@ class Builder
     
     public static function havingItem($prefix, &$params, $num, $values)
     {
-        $sql = isset($prefix) ? self::keywordEscapePair($prefix, $values[$num]) : self::keywordEscape($values[$num]);
-        if ($n == 1) {
+        $sql = $values[$num] == '*' ? '*' : self::keywordEscape($values[$num]);
+        if (isset($prefix)) {
+            $sql = self::keywordEscape($prefix).".$sql";
+        }
+        if ($num == 1) {
             $sql = "$values[0]($sql)";
         }
         return " $sql ".self::whereItemValue($params, $values[$num + 1], $values[$num + 2]);

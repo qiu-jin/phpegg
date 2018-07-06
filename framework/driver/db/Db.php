@@ -7,9 +7,9 @@ abstract class Db
 {
     protected $sql;
     protected $debug;
-    protected $fields;
     protected $dbname;
     protected $connection;
+    protected $fields;
     protected $fields_cache;
     protected $fields_cache_config;
     
@@ -41,14 +41,13 @@ abstract class Db
     
     abstract public function error();
     
-    
     public function __construct($config)
     {
         $this->connection = $this->connect($config);
         $this->dbname = $config['dbname'];
         $this->debug  = !empty($config['debug']) || APP_DEBUG;
-        if (isset($config['fields_cache'])) {
-            $this->fields_cache_config = $config['fields_cache'];
+        if (isset($config['fields_cache_config'])) {
+            $this->fields_cache_config = $config['fields_cache_config'];
         }
     }
     
@@ -70,20 +69,20 @@ abstract class Db
             return $return;
         } catch (\Exception $e) {
             $this->rollback();
-            throw new \Exception($e->getMessage());
+            throw $e;
         }
     }
     
     public function fields($table)
     {
-        if (isset($this->fields[$table])) {
-            return $this->fields[$table];
+        if (isset($this->fields[$this->dbname][$table])) {
+            return $this->fields[$this->dbname][$table];
         } else {
             if (isset($this->fields_cache_config)) {
                 if (!isset($this->fields_cache)) {
                     $this->fields_cache = Container::driver('cache', $this->fields_cache_config);
                 }
-                if ($fields = $this->fields_cache->get($key = "_db_$this->dbname$table")) {
+                if ($fields = $this->fields_cache->get($key = "$this->dbname-$table")) {
                     return $fields;
                 }
             }
@@ -91,13 +90,18 @@ abstract class Db
             if (isset($this->fields_cache)) {
                 $this->fields_cache->set($key, $fields);
             }
-            return $this->fields[$table] = $fields;
+            return $this->fields[$this->dbname][$table] = $fields;
         }
     }
     
     public function debug($bool = true)
     {
         $this->debug = (bool) $bool;
+    }
+    
+    public function getBuilder()
+    {
+        return static::BUILDER;
     }
     
     public function getConnection()

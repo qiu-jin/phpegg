@@ -25,7 +25,7 @@ class Ip2location extends Geoip
     protected function handle($ip, $raw)
     {
         if ($long = ip2long($ip)) {
-            $builder = $this->db::Builder;
+            $builder = $this->db->getBuilder();
             foreach ($this->fields as $v) {
                 $fields[] = $builder::keywordEscape($v);
             }

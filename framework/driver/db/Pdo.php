@@ -7,13 +7,13 @@ abstract class Pdo extends Db
 {
     protected $commands;
     
-    abstract protected function dsn($config);
+    abstract protected function getDsn($config);
     
     abstract protected function getFields($table);
     
     protected function connect($config)
     {
-        $connection = new \PDO($this->dsn($config), $config['username'], $config['password'], $config['options'] ?? null);
+        $connection = new \PDO($this->getDsn($config), $config['username'], $config['password'], $config['options'] ?? null);
         if (isset($config['attributes'])) {
             foreach ($config['attributes'] as $attribute => $value) {
                 $connection->setAttribute($attribute, $value);

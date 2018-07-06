@@ -138,16 +138,16 @@ class Join extends QueryChain
             }
             if (!$value) {
                 foreach ($this->db->fields($table) as $field) {
-                    $fields[] = $this->builder::keywordEscapePair($table, $field)
-                              . ' AS '.$this->builder::keywordEscape("{$prefix}_$field");
+                    $fields[] = $this->builder::keywordEscapePair($table, $field).' AS '
+                              . $this->builder::keywordEscape("{$prefix}_$field");
                 }
             } else {
                 foreach ($value as $field) {
                     if (is_array($field)) {
                         $fields[] = $this->fields($field, $table);
                     } else {
-                        $fields[] = $this->builder::keywordEscapePair($table, $field)
-                                  . ' AS '.$this->builder::keywordEscape("{$prefix}_$field");
+                        $fields[] = $this->builder::keywordEscapePair($table, $field).' AS '
+                                  . $this->builder::keywordEscape("{$prefix}_$field");
                     }
                 }
             }

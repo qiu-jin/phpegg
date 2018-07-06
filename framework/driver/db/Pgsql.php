@@ -5,7 +5,7 @@ class Pgsql extends Pdo
 {
     const BUILDER = builder\Pgsql::class;
     
-    protected function dsn($config)
+    protected function getDsn($config)
     {
         $dsn = 'pgsql:host='.$config['host'].';dbname='.$config['dbname'];
         if (isset($config['port'])) {

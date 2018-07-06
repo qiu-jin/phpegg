@@ -11,7 +11,7 @@ abstract class QueryChain
 	public function __construct($db, ...$params)
     {
         $this->db = $db;
-        $this->builder = $db::BUILDER;
+        $this->builder = $db->getBuilder();
         $this->init(...$params);
     }
     
@@ -83,7 +83,7 @@ abstract class QueryChain
         $count = count($having);
         if ($count === 3 || $count === 4) {
             $this->options['having'][] = $having;
-        } elseif ($count === 1 && is_array($having[0]) {
+        } elseif ($count === 1 && is_array($having[0])) {
             if (empty($this->options['having'])) {
                 $this->options['having'] = $having[0];
             } else {

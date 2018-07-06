@@ -5,7 +5,7 @@ class Sqlite extends Pdo
 {
     const BUILDER = builder\Sqlite::class;
     
-    protected function dsn($config)
+    protected function getDsn($config)
     {
         return 'sqlite:'.$config['database'];
     }
