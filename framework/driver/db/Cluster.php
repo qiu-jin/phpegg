@@ -29,23 +29,14 @@ class Cluster
         return new query\Query($this, $name);
     }
     
-    public function __call($method, $params)
-    {
-        if (in_array($method, self::$write_methods)) {
-            return $this->getDatabase('write')->$method(...$params);
-        } else {
-            return ($this->work ?? $this->getDatabase('read'))->$method(...$params);
-        }
-    }
-    
     public function exec($sql, $params = null)
     {
-        return $this->getDatabase($this->sqlType($sql))->exec($sql, $params);
+        return $this->selectDatabase($this->sqlType($sql))->exec($sql, $params);
     }
     
     public function query($sql, $params = null)
     {
-        return $this->getDatabase($this->sqlType($sql))->query($sql, $params);
+        return $this->selectDatabase($this->sqlType($sql))->query($sql, $params);
     }
     
     public function getBuilder()
@@ -53,19 +44,27 @@ class Cluster
         return $this->builder;
     }
     
-    public function selectDatabase($type)
+    public function getDatabase($type = null, $sticky = true)
     {
+        if ($type == 'write' || $type == 'read') {
+            return $this->selectDatabase($type, $sticky);
+        }
+        return $this->work ?? $this->selectDatabase('read', $sticky);
+    }
+    
+    public function __call($method, $params)
+    {
+        return $this->getDatabase(in_array($method, self::$write_methods) ? 'write' : null)->$method(...$params);
+    }
+    
+    protected function selectDatabase($type, $sticky = true)
+    {
+        if (!empty($this->config['sticky']) && $sticky && $this->write) {
+            return $this->work = $this->write;
+        }
         return $this->work = $this->$type ?? (
             $this->$type = Container::makeDriverInstance('db', ['driver' => $this->config['dbtype']] + $this->config[$type])
         );
-    }
-    
-    protected function getDatabase($type)
-    {
-        if (!empty($this->config['sticky']) && isset($this->write)) {
-            $type = 'write';
-        }
-        return $this->selectDatabase($type);
     }
     
     protected function sqlType($sql)
