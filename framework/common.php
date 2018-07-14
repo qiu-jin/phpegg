@@ -105,6 +105,11 @@ function error($message, $limit = 1)
     Error::trigger($message, E_USER_ERROR, $limit + 1);
 }
 
+function warning($message, $limit = 1)
+{
+    Error::trigger($message, E_USER_WARNING, $limit + 1);
+}
+
 function instance($class, ...$params)
 {
     return new $class(...$params);

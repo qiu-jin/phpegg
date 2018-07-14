@@ -54,7 +54,7 @@ class Error
             }
         }
         list($level, $prefix) = self::getErrorInfo($code);
-        if (Config::env('STRICT_ERROR_MODE')) {
+        if ($code === self::ERROR) {
             throw new ErrorException("[$prefix] $message", $code, $file, $line, $trace);
         }
         self::record('error.user', $level, $code, "User Error: [$prefix] $message", $file, $line, $trace);

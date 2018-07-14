@@ -3,7 +3,7 @@ namespace framework\driver\sms;
 
 use framework\core\http\Client;
 
-class Qcloud extends Sms
+class Tencent extends Sms
 {
     protected static $endpoint = 'https://yun.tim.qq.com/v5/tlssmssvr/sendsms';
 
@@ -42,8 +42,8 @@ class Qcloud extends Sms
             if ($result['result'] >= 1022 && $result['result'] <= 1026) {
                 return false;
             }
-            return error("[{$result['result']}]".$result['errmsg']);
+            return warning("[{$result['result']}] ".$result['errmsg']);
         }
-        return error($client->error);
+        return warning($client->error);
     }
 }

@@ -3,7 +3,7 @@ namespace framework\driver\db;
 
 class Mysql extends Pdo
 {   
-    protected function dsn($config)
+    protected function getDsn($config)
     {
         $dsn = 'mysql:dbname='.$config['dbname'];
         if (isset($config['host'])) {

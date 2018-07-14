@@ -22,10 +22,10 @@ class Elastic
     public function find($query, $options = null)
     {
         if (is_array($query)) {
-            $this->options['query'] = $query;
+            $options['query'] = $query;
             $result = $this->call('POST', '_search', null, $options);
         } else {
-            $this->options['q'] = $query;
+            $options['q'] = $query;
             $result = $this->call('GET', '_search', $options) ;
         }
         if ($this->raw) return $result;

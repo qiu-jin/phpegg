@@ -28,8 +28,8 @@ class Amap extends Geoip
                     'city'  => $result['city']
                 ];
             }
-            return error("[$result[infocode]]$result[info]");
+            return warning("[$result[infocode]] $result[info]");
         }
-        return error($client->error);
+        return warning($client->error);
     }
 }

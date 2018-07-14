@@ -43,8 +43,8 @@ class Aliyun extends Sms
             if ($result['Code'] === 'isv.BUSINESS_LIMIT_CONTROL') {
                 return false;
             }
-            return error("[{$result['Code']}]".$result['Message']);
+            return warning("[{$result['Code']}] ".$result['Message']);
         }
-        return error($client->error);
+        return warning($client->error);
     }
 }

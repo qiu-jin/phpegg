@@ -42,9 +42,9 @@ class Mongo
         return $this->raw ? $result : $result->getInsertedCount();
     }
     
-    public function update($data, $options = null)
+    public function update($data)
     {
-        $result = $this->bulkWrite('update', $this->where, $data, $options ?? $this->options);
+        $result = $this->bulkWrite('update', $this->where, $data, $this->options);
         return $this->raw ? $result : $result->getModifiedCount();
     }
     

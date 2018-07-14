@@ -10,8 +10,9 @@ class Cluster
     protected $write;
     protected $config;
     protected $builder;
-    
-    protected static $write_methods = ['insertId', 'affectedRows', 'begin', 'rollback', 'commit', 'transaction'];
+    protected static $write_methods = [
+        'insertId', 'affectedRows', 'begin', 'rollback', 'commit', 'transaction', 'switch'
+    ];
     
     public function __construct($config)
     {

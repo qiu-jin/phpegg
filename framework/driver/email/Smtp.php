@@ -31,18 +31,18 @@ class Smtp extends Email
         list($addrs, $mime) = Mime::build($options);
         $data = $this->command("MAIL FROM: <{$options['from'][0]}>");
         if (substr($data, 0, 3) != '250') {
-            return error($data);
+            return warning($data);
         }
         foreach ($addrs as $addr) {
             $data = $this->command("RCPT TO: <$addr>");
             if (substr($data, 0, 3) != '250') {
-                return error($data);
+                return warning($data);
             }
         }
         $this->command('DATA');
         $data = $this->command($mime.Mime::EOL.".");
         if (substr($data, 0, 3) != '250') {
-            return error($data);
+            return warning($data);
         }
         $this->command('QUIT');
         return true;

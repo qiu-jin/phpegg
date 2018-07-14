@@ -27,8 +27,8 @@ class Baidu extends Geoip
                 // Baidu地图无法定位国外IP，不触发错误。
                 return;
             }
-            return error("[$result[status]]$result[message]");
+            return warning("[$result[status]] $result[message]");
         }
-        return error($client->error);
+        return warning($client->error);
     }
 }

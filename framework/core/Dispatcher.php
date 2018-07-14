@@ -17,9 +17,7 @@ class Dispatcher
      */
     public static function dispatch($route, $param_mode = 0, $dynamic = false)
     {
-        $lpos = strpos($route['dispatch'], '(');
-        $rpos = strpos($route['dispatch'], ')');
-        if ($lpos && $rpos) {
+        if (($lpos = strpos($route['dispatch'], '(')) && ($rpos = strpos($route['dispatch'], ')'))) {
             $dispatch = substr($route['dispatch'], 0, $lpos);
             $param_name = substr($route['dispatch'], $lpos + 1, $rpos - $lpos);
         } else {

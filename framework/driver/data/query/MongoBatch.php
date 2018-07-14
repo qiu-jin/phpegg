@@ -28,9 +28,9 @@ class MongoBatch
         return $this->bulkWrite('insert', $data);
     }
     
-    public function update($data, $options = null)
+    public function update($data)
     {
-       return $this->bulkWrite('update', $this->where, $data, $options ?? $this->options);
+       return $this->bulkWrite('update', $this->where, $data, $this->options);
     }
     
     public function delete($id = null)

@@ -97,7 +97,7 @@ class Config
     }
     
     /*
-     * 获取配置项值，不缓存，不支持多级配置项
+     * 获取配置项值，不缓存（仅支持顶级配置项）
      */
     public static function flash($name)
     {
@@ -105,7 +105,7 @@ class Config
     }
     
     /*
-     * 设置配置项第一个值，不支持多级配置项
+     * 设置配置项第一个值（仅支持顶级配置项）
      */
     public static function first($name)
     {
@@ -113,7 +113,7 @@ class Config
     }
     
     /*
-     * 设置配置项随机值，不支持多级配置项
+     * 设置配置项随机值（仅支持顶级配置项）
      */
     public static function random($name)
     {
@@ -121,7 +121,7 @@ class Config
     }
     
     /*
-     * 设置配置项第一个键值对，不支持多级配置项
+     * 设置配置项第一个键值对（仅支持顶级配置项）
      */
     public static function firstPair($name)
     {

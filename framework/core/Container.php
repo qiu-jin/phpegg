@@ -50,7 +50,7 @@ class Container
                 }
             }
         }
-        Event::on('exit', __CLASS__.'::free');
+        Event::on('exit', [__CLASS__, 'clean']);
     }
     
     public static function get($name)
@@ -171,7 +171,7 @@ class Container
         return self::$providers[$type][$name] ?? null;
     }
     
-    public static function free()
+    public static function clean()
     {
         self::$instances = null;
     }

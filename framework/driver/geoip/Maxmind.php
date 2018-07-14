@@ -53,7 +53,7 @@ class Maxmind extends Geoip
         if ($result = $client->response->json()) {
             return $raw ? $result : $this->result($result);
         }
-        return error($result['error'] ?? $client->error);
+        return warning($result['error'] ?? $client->error);
     }
     
     protected function result($result)

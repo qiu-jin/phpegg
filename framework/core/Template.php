@@ -34,7 +34,7 @@ class Template
         'struct_attr_prefix'    => '@',
         // 赋值语句前缀符
         'assign_attr_prefix'    => '$',
-        // 
+        // 双引号语句前缀符
         'double_attr_prefix'    => '*',
         // 参数语句前缀符
         'argument_attr_prefix'  => ':',
@@ -44,7 +44,7 @@ class Template
         'auto_escape_text'      => true,
         // 文本转义符号与反转义符号
         'text_escape_sign'      => [':', '!'],
-        // 
+        // 不输出标识符
         'not_echo_text_sign'    => '#',
         // 原样输出标识符（不解析文本插入边界符以其内内容）
         'raw_text_sign'         => '!',

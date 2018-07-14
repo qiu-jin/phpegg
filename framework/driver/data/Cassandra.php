@@ -42,8 +42,7 @@ class Cassandra
         if (isset($this->sessions[$name])) {
             return $this->sessions[$name];
         }
-        $session = $this->cluster->contect($name);
-        return $this->sessions[$name] = new class ($session) extends Cassandra {
+        return $this->sessions[$name] = new class ($this->cluster->contect($name)) extends Cassandra {
             public function __construct($session) {
                 $this->session = $session;
             }

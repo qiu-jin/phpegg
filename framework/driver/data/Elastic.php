@@ -11,7 +11,7 @@ class Elastic
     
     public function __construct($config)
     {
-        $this->type = $config['type'] ?? 'doc';
+        $this->type = $config['type'] ?? '_doc';
         $this->endpoint = $config['host'].':'.($config['port'] ?? '9200');
     }
 

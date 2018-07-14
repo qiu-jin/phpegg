@@ -60,8 +60,7 @@ abstract class Pdo extends Db
                     return true;
                 }
             }
-            $error = $this->connection->errorInfo();
-            throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
+            throw new \Exception($this->exceptionMessage());
         }
     }
     
@@ -74,8 +73,7 @@ abstract class Pdo extends Db
             if ($query = $this->connection->query($sql)) {
                 return $query;
             }
-            $error = $this->connection->errorInfo();
-            throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
+            throw new \Exception($this->exceptionMessage());
         }
     }
     
@@ -93,7 +91,7 @@ abstract class Pdo extends Db
         if ($error[0] === 'HY093') {
             throw new \Exception('DB ERROR: Invalid parameter number');
         }
-        throw new \Exception('DB ERROR: ['.$error[1].']'.$error[2]);
+        throw new \Exception($this->exceptionMessage($error));
     }
     
     public function fetch($query)
@@ -150,5 +148,11 @@ abstract class Pdo extends Db
     {   
         $error = $query ? $query->errorInfo() : $this->connection->errorInfo();
         return array($error[1], $error[2]);
+    }
+    
+    protected function exceptionMessage($error = null)
+    {
+        $err = $error ?? $this->connection->errorInfo();
+        return "DB ERROR: [$err[1]] $err[2]";
     }
 }

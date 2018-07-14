@@ -16,7 +16,7 @@ class Mysqli extends Db
             $config['socket'] ?? null
         );
         if ($connection->connect_error) {
-            throw new \Exception("Server Connect Error [$connection->connect_errno]$connection->connect_error");
+            throw new \Exception("Server Connect Error [$connection->connect_errno] $connection->connect_error");
         }
         if (isset($config['charset'])) {
             $connection->set_charset($config['charset']);
@@ -43,15 +43,6 @@ class Mysqli extends Db
         }
     }
     
-    public function async($sql)
-    {
-        $this->debug && DBDebug::write($sql);
-        if ($query = $this->connection->query($sql, MYSQLI_ASYNC)) {
-            return $query;
-        }
-        throw new \Exception('DB ERROR: ['.$this->connection->errno.']'.$this->connection->error);
-    }
-    
     public function exec($sql, array $params = null, $is_assoc = false)
     {
         $this->debug && DBDebug::write($sql, $params, $is_assoc);
@@ -72,7 +63,7 @@ class Mysqli extends Db
             }
         } else {
             if (!$query = $this->connection->query($sql)) {
-                throw new \Exception('DB ERROR: ['.$this->connection->errno.']'.$this->connection->error);
+                throw new \Exception($this->exceptionMessage());
             }
             switch ($cmd) {
                 case 'SELECT':
@@ -98,7 +89,7 @@ class Mysqli extends Db
             if ($query = $this->connection->query($sql)) {
                 return $query;
             }
-            throw new \Exception('DB ERROR: ['.$this->connection->errno.']'.$this->connection->error);
+            throw new \Exception($this->exceptionMessage());
         }
     }
     
@@ -132,7 +123,7 @@ class Mysqli extends Db
                 return $query;
             }
         }
-        throw new \Exception('DB ERROR: ['.$this->connection->errno.']'.$this->connection->error);
+        throw new \Exception($this->exceptionMessage());
     }
     
     public function fetch($query)
@@ -172,26 +163,17 @@ class Mysqli extends Db
     
     public function begin()
     {
-		$this->connection->autocommit(false);
-		return $this->connection->begin_transaction();
+		return $this->connection->autocommit(false) && $this->connection->begin_transaction();
     }
     
     public function rollback()
     {
-		if ($this->connection->rollback()) {
-			$this->connection->autocommit(true);
-			return true;
-		}
-        return false;
+        return $this->connection->rollback() && $this->connection->autocommit(true);
     }
     
     public function commit()
     {
-		if ($this->connection->commit()) {
-			$this->connection->autocommit(true);
-			return true;
-		}
-		return false;
+		return $this->connection->commit() && $this->connection->autocommit(true);
     }
     
     public function error($query = null)
@@ -203,6 +185,11 @@ class Mysqli extends Db
     protected function getFields($table)
     {
         return array_column($this->exec("desc `$table`"), 'Field');
+    }
+    
+    protected function exceptionMessage()
+    {
+        return 'DB ERROR: ['.$this->connection->errno.'] '.$this->connection->error;
     }
 
     public function __destruct()
