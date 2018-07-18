@@ -5,6 +5,8 @@ use framework\extend\debug\Db as DBDebug;
 
 class Mysqli extends Db
 {
+    const BUILDER = builder\Builder::class;
+    
     protected function connect($config)
     {
         $connection = new \mysqli(

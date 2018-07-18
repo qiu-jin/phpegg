@@ -2,7 +2,9 @@
 namespace framework\driver\db;
 
 class Mysql extends Pdo
-{   
+{
+    const BUILDER = builder\Builder::class;
+    
     protected function getDsn($config)
     {
         $dsn = 'mysql:dbname='.$config['dbname'];

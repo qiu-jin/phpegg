@@ -32,9 +32,12 @@ class Cassandra
         return new query\Cassandra($this, $name);
     }
     
-    public function exec($sql, array $params = [])
+    public function exec($sql, array $params = null, array $options = null)
     {
-        return $this->session->execute($sql, $params ? ['arguments' => $params] : null);
+        if ($params) {
+            $options['arguments'] = $params;
+        }
+        return $this->session->execute($sql, $options);
     }
     
     public function keyspace($name)
@@ -49,10 +52,15 @@ class Cassandra
         };
     }
     
+    public function getSession()
+    {
+        return $this->session;
+    }
+    
     protected function initBuild($object, $options)
     {
         foreach ($options as $key => $value) {
-            $ssl->{"with$key"}(...(array) $value);
+            $object->{"with$key"}(...(array) $value);
         }
         $object->build();
         return $object;

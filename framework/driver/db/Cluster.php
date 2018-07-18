@@ -11,7 +11,7 @@ class Cluster
     protected $config;
     protected $builder;
     protected static $write_methods = [
-        'insertId', 'affectedRows', 'begin', 'rollback', 'commit', 'transaction', 'switch'
+        'insertid', 'affectedrows', 'begin', 'rollback', 'commit', 'transaction', 'switch'
     ];
     
     public function __construct($config)
@@ -55,7 +55,8 @@ class Cluster
     
     public function __call($method, $params)
     {
-        return $this->getDatabase(in_array($method, self::$write_methods) ? 'write' : null)->$method(...$params);
+        $m = strtolower($method);
+        return $this->getDatabase(in_array($m, self::$write_methods) ? 'write' : null)->$method(...$params);
     }
     
     protected function selectDatabase($type, $sticky = true)

@@ -15,54 +15,46 @@ class Elastic
     
     public function get($id, $options = null)
     {
-        $result = $this->call('GET', $id, $options);
-        return $this->raw ? $result : ($result['_source'] ?? null);
+        return $this->result($this->call('GET', $id, $options), '_source', null);
     }
     
     public function find($query, $options = null)
     {
-        if (is_array($query)) {
-            $options['query'] = $query;
-            $result = $this->call('POST', '_search', null, $options);
+        if (!is_array($query)) {
+            $result = $this->call('GET', '_search', ['q' => $query] + $options);
         } else {
-            $options['q'] = $query;
-            $result = $this->call('GET', '_search', $options) ;
+            $result = $this->call('POST', '_search', null, compact('query') + $options);
         }
-        if ($this->raw) return $result;
+        if ($this->raw) {
+            return $result;
+        }
         return isset($result['hits']['hits']) ? array_column($result['hits']['hits'], '_source') : null;
     }
     
     public function set($id, $data, $options = null)
     {
-        $result = $this->call('PUT', $id, $options, $data);
-        return $this->raw ? $result : ($result['created'] ?? false);
+        return $this->result($this->call('PUT', $id, $options, $data), 'created');
     }
 
     public function create($data, $options = null)
     {
-        $result = $this->call('POST', null, $options, $data);
-        return $this->raw ? $result : ($result['created'] ?? false);
+        return $this->result($this->call('POST', null, $options, $data), 'created');
     }
     
     public function update($query, $data, $options = null)
     {
-        if (is_array($query)) {
-            $data['query'] = $query;
-            $result = $this->call('POST', '_update_by_query', $options, $data);
-        } else {
-            $result = $this->call('POST', "$query/_update", $options, $data);
+        if (!is_array($query)) {
+            return $this->result($this->call('POST', "$query/_update", $options, $data), 'updated');
         }
-        return $this->raw ? $result : ($result['updated'] ?? false);
+        return $this->result($this->call('POST', '_update_by_query', $options, compact('query') + $data), 'updated');
     }
     
     public function delete($query, $options = null)
     {
         if (!is_array($query)) {
-            $result = $this->call('DELETE', $query, $options);
-        } else {
-            $result = $this->call('POST', '_delete_by_query', $options, ['query' => $this->where]);
+            return $this->result($this->call('DELETE', $query, $options), 'found');
         }
-        return $this->raw ? $result : ($result['found'] ?? false);
+        return $this->result($this->call('POST', '_delete_by_query', $options, compact('query')), 'found');
     }
     
     public function raw($bool = true)
@@ -71,14 +63,14 @@ class Elastic
         return $this;
     }
 
-    protected function call($method, $path = null, array $query = null, array $data = null)
+    public function call($method, $path = null, array $query = null, array $data = null)
     {
         $url = $this->endpoint;
         if ($path) {
             $url .= "/$path";
         }
         if ($query) {
-            $url .= "?".http_build_query($query);
+            $url .= '?'.http_build_query($query);
         }
         $client = new Client($method, $url);
         if ($data) {
@@ -89,5 +81,10 @@ class Elastic
             return $response->json();
         }
         error($client->error);
+    }
+    
+    protected function result($result, $key, $default = false)
+    {
+        return $this->raw ? $result : ($result[$key] ?? $default);
     }
 }

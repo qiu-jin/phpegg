@@ -13,8 +13,6 @@ abstract class Db
     protected $fields_cache;
     protected $fields_cache_config;
     
-    const BUILDER = builder\Builder::class;
-    
     abstract public function exec($sql);
     
     abstract public function query($sql);
