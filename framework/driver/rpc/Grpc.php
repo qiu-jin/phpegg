@@ -35,7 +35,7 @@ class Grpc
     
     public function __construct($config)
     {
-        foreach (Arr::pull($config, 'service_schemes') as $type => $rules) {
+        foreach (Arr::poll($config, 'service_schemes') as $type => $rules) {
             Loader::add($type, $rules);
         }
         $this->config = $config + $this->config;

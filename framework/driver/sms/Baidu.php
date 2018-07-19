@@ -32,9 +32,9 @@ class Baidu extends Sms
             if ($result['code'] === '1000') {
                 return true;
             }
-            return warning("[$result[code]] $result[message]");
+            return warn("[$result[code]] $result[message]");
         }
-        return warning($client->error);
+        return warn($client->error);
     }
     
     protected function buildHeaders($url, $body)

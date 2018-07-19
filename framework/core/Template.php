@@ -182,7 +182,7 @@ class Template
         }
         self::$init = true;
         if ($config = Config::get('template')) {
-            if ($filters = Arr::pull($config, 'filters')) {
+            if ($filters = Arr::poll($config, 'filters')) {
                 self::$filters = $filters + self::$filters;
             }
             self::$config = $config + self::$config;

@@ -42,8 +42,8 @@ class Tencent extends Sms
             if ($result['result'] >= 1022 && $result['result'] <= 1026) {
                 return false;
             }
-            return warning("[{$result['result']}] ".$result['errmsg']);
+            return warn("[{$result['result']}] ".$result['errmsg']);
         }
-        return warning($client->error);
+        return warn($client->error);
     }
 }

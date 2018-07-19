@@ -194,10 +194,10 @@ class Cli extends App
         if (!App::IS_CLI) {
             throw new \RuntimeException('NOT CLI SAPI');
         }
-        if (is_array($templates = Arr::pull($this->config, 'templates'))) {
+        if (is_array($templates = Arr::poll($this->config, 'templates'))) {
             $this->templates += $templates;
         }
-        return Arr::pull($this->config, 'default_commands', []);
+        return Arr::poll($this->config, 'default_commands', []);
     }
     
     protected function call()

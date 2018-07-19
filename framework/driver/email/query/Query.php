@@ -2,7 +2,7 @@
 namespace framework\driver\email\query;
 
 use framework\core\Hook;
-use framework\driver\email\message\Template;
+use framework\core\View;
 
 class Query
 {
@@ -57,19 +57,21 @@ class Query
         return $this;
     }
     
-    public function content($content)
+    public function content($content, $encoding = null)
     {
         $this->options['content'] = $content;
+        if ($encoding) {
+            $this->options['encoding'] = $encoding;
+        }
         return $this;
     }
     
-    public function template($template, $vars = null, $type = 'view')
+    public function template($tpl, $vars = null, $encoding = null)
     {
         if (!isset($this->options['ishtml'])) {
             $this->options['ishtml'] = true;
         }
-        $this->options['template'] = Template::render($template, $vars, $type);
-        return $this;
+        return $this->content(View::render($tpl, $vars), $encoding);
     }
     
     public function attach($content, $filename = null, $mimetype = null, $is_buffer = false)
@@ -89,7 +91,7 @@ class Query
     
     public function send($to = null, $subject = null, $content = null)
     {
-        $to      && $this->options['to']      = [[$to]];
+        $to      && $this->options['to']      = is_array($to) ? [$to] : [[$to]];
         $subject && $this->options['subject'] = $subject;
         $content && $this->options['content'] = $content;
         return $this->email->handle($this->options);

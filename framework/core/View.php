@@ -41,7 +41,7 @@ class View
         }
         self::$init = true;
         if ($config = Config::get('view')) {
-            if ($template = Arr::pull($config, 'template')) {
+            if ($template = Arr::poll($config, 'template')) {
                 self::$config['template'] = $template + self::$config['template'];
             }
             self::$config = $config + self::$config;

@@ -29,8 +29,8 @@ class Nexmo extends Sms
             if ($result['messages'][0]['status'] === '0') {
                 return true;
             }
-            return warning('['.$result['messages'][0]['status'].'] '.$result['messages'][0]['error-text']);
+            return warn('['.$result['messages'][0]['status'].'] '.$result['messages'][0]['error-text']);
         }
-        return warning($client->error);
+        return warn($client->error);
     }
 }

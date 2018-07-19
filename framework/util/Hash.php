@@ -1,5 +1,5 @@
 <?php
-namespace Framework\Util;
+namespace framework\util;
 
 class Hash
 {
@@ -27,9 +27,9 @@ class Hash
         return hash_equals($data1, $data2);
     }
     
-    public static function password($password, array $options = [])
+    public static function password($password, $algo = PASSWORD_DEFAULT, array $options = [])
     {
-        return password_hash($password, Arr::pull($options, 'algo', PASSWORD_DEFAULT), $options);
+        return password_hash($password, $algo, $options);
     }
 
     public static function verify($password, $hash)

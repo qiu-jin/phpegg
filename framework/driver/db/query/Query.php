@@ -108,7 +108,7 @@ class Query extends QueryChain
                 return true;
             } catch (\Exception $e) {
                 $this->db->rollback();
-                throw new \Exception($e->getMessage());
+                throw $e;
             }
         } else {
             foreach ($datas as $data) {

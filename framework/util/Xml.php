@@ -20,8 +20,7 @@ class Xml
 
     public static function decode($xml, $root = false)
     {
-        if ($object = simplexml_load_string($xml, null, LIBXML_NOCDATA)) {
-            $array = (array) $object;
+        if ($array = (array) simplexml_load_string($xml, null, LIBXML_NOCDATA)) {
             return $root ? [$object->getName() => $array] : $array;
         }
         return false;

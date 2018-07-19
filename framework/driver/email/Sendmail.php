@@ -15,9 +15,8 @@ class Sendmail extends Email
     
     public function handle($options)
     {
-        $subject = Mime::encodeHeader(Arr::pop($options, 'subject'));
-        list($addrs, $mime) = Mime::build($options);
-        list($header, $content) = explode(Mime::EOL.Mime::EOL, $mime, 2);
-        return mail(implode(',', $addrs), Mime::encodeHeader($subject), $content, $header);
+        $subject = Mime::encodeHeader(Arr::poll($options, 'subject'));
+        list($header, $body) = explode(Mime::EOL.Mime::EOL, Mime::build($options, $addrs), 2);
+        return mail(implode(',', $addrs), $subject, $body, $header);
     }
 }

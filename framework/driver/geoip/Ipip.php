@@ -3,6 +3,9 @@ namespace framework\driver\geoip;
 
 use framework\core\http\Client;
 
+/*
+ * https://www.ipip.net/product/ip.html
+ */
 class Ipip extends Geoip
 {
     protected $db;

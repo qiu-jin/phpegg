@@ -21,7 +21,7 @@ abstract class Email
     public function send($to, $subject, $content)
     {
         return $this->handle([
-            'to'        => [[$to]],
+            'to'        => is_array($to) ? [$to] : [[$to]],
             'from'      => $this->from,
             'subject'   => $subject,
             'content'   => $content
