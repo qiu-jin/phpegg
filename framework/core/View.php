@@ -104,7 +104,7 @@ class View
             if ($force || self::$config['template']['force_complie'] || !is_file($phpfile)
                 || filemtime($phpfile) < filemtime($tplfile)
             ) {
-                self::complieTo(self::readTemplateFile($file), $phpfile);
+                self::complieTo(self::readTemplateFile($tplfile), $phpfile);
             }
         }
         return $phpfile;

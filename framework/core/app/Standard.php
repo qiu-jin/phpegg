@@ -268,7 +268,7 @@ class Standard extends App
     {
         $path = $this->dispatch['controller'];
         if (empty($this->config['template_to_snake'])) {
-            return '/'.strtr('\\', '/', $path).'/'.$this->dispatch['action'];
+            return '/'.strtr($path,'\\', '/').'/'.$this->dispatch['action'];
         } else {
             $array = explode('\\', $path);
             $array[] = Str::toSnake(array_pop($array));
