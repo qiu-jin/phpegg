@@ -153,7 +153,7 @@ class Http
     {
         switch ($this->config['url_style']) {
             case 'snake_to_spinal':
-                return strtr('_', '-', $path);
+                return strtr($path, '_', '-');
             case 'camel_to_spinal':
                 return Str::toSnake($path, '-');
             case 'snake_to_camel':

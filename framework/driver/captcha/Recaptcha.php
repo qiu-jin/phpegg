@@ -27,16 +27,9 @@ class Recaptcha
         return $this->acckey;
     }
     
-    public function render($tag = 'div', $attr = [])
+    public function template($html = null)
     {
-        if (empty($attr['class'])) {
-            $attr['class'] = 'g-recaptcha';
-        }
-        $attr['data-sitekey'] = $this->acckey;
-        foreach ($attr as $k => $v) {
-            $str .= "$k='$v' ";
-        }
-        return "<script src='$this->script' async defer></script>\r\n<$tag $str></$tag>";
+        return "<script src='$this->script' async defer></script><div class='g-recaptcha' data-sitekey='$this->acckey'></div>";
     }
     
     public function verify($value = null)

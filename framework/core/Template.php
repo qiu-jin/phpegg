@@ -50,18 +50,20 @@ class Template
         'raw_text_sign'         => '!',
         // 注释符号
         'note_text_sign'        => '#',
-        // 是否支持PHP函数
+        // 允许的函数
         'allow_php_functions'   => false,
-        // 静态类公共名称空间
-        'view_class_namespace'  => null,
+        // 允许的静态类
+        'allow_static_classes'  => false,
+        // 允许的容器
+        'allow_container_providers' => false,
         // 模版读取器
-        'view_template_reader'  => View::class.'::readTemplate',
+        'view_template_reader'      => View::class.'::readTemplate',
         // filter宏
-        'view_filter_macro'     => View::class.'::filterMacro',
+        'view_filter_macro'         => View::class.'::filterMacro',
         // include宏
-        'view_include_macro'    => View::class.'::includeMacro',
+        'view_include_macro'        => View::class.'::includeMacro',
         // container宏
-        'view_container_macro'  => View::class.'::ContainerMacro',
+        'view_container_macro'      => View::class.'::ContainerMacro',
         // check expired宏
         'view_check_expired_macro'  => View::class.'::checkExpiredMacro',
     ];
@@ -811,7 +813,7 @@ class Template
      * 标签正则
      */
     protected static function tagRegex($tag)
-    {        
+    {
         return '/<'.self::$config[$tag.'_tag'].'(?:"[^"]*"|\'[^\']*\'|[^\'">])*>/';
     }
     
@@ -819,7 +821,7 @@ class Template
      * 属性正则前缀
      */
     protected static function attrPrefixRegex()
-    {        
+    {
         return preg_quote(self::$config['assign_attr_prefix'].self::$config['struct_attr_prefix']
                          .self::$config['double_attr_prefix'].self::$config['argument_attr_prefix']);
     }
@@ -862,7 +864,7 @@ class Template
                         }
                         break;
                     }
-                    throw new TemplateException("readValue error: 非法 ( 语法 $val");
+                    throw new TemplateException("readValue error: 非法 $c 语法 $val");
                 // 数组
                 case '[':
                     if (!isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '[', ']'))) {
@@ -875,7 +877,7 @@ class Template
                         $i = $pos;
                         break;
                     }
-                    throw new TemplateException("readValue error: 非法 [ 语法 $val");
+                    throw new TemplateException("readValue error: 非法 $c 语法 $val");
                 // 数组
                 case '{':
                     if (!isset($ret) && !isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '{', '}'))) {
@@ -883,13 +885,13 @@ class Template
                         $i = $pos;
                         break;
                     }
-                    throw new TemplateException("readValue error: 非法 { 语法 $val");
+                    throw new TemplateException("readValue error: 非法 $c 语法 $val");
                 // 函数 静态方法 容器
                 case '@':
                     if (!isset($ret) && !isset($tmp)) {
                         $ret = self::readFunctionValue($ret, $tmp, $val, $len, $i, $strs);
                     }
-                    throw new TemplateException("readValue error: 非法 @ 语法 $val");
+                    throw new TemplateException("readValue error: 非法 $c 语法 $val");
                 case '$':
                     if (!isset($ret) && !isset($tmp)) {
                         if (preg_match("/^\d+/", substr($val, $i + 1), $matchs)) {
@@ -898,7 +900,7 @@ class Template
                             break;
                         }
                     }
-                    throw new TemplateException("readValue error: 非法 $ 语法 $val");
+                    throw new TemplateException("readValue error: 非法 $c 语法 $val");
                 // 三元表达式
                 case '?':
                     $ret  = self::readInitValue($ret, $tmp);
@@ -908,7 +910,7 @@ class Template
                     } else {
                         return "$ret ? ".self::readValue(substr($val, $i + 1), $strs, ':');
                     }
-                    throw new TemplateException("readValue error: 非法 ? 语法 $val");
+                    throw new TemplateException("readValue error: 非法 $c 语法 $val");
                 default:
                     if (in_array($c, ['+', '-', '*', '/', '%'])
                         || in_array($c, ['!', '&', '|', '=', '>', '<'])
@@ -1064,17 +1066,18 @@ class Template
                     throw new TemplateException("readFunctionValue error: 不支持的内置函数$tmp");
                 }
                 // 静态方法
-                if ($ns = self::$config['view_class_namespace'] ?? null) {
-                    $m  = array_pop($arr);
-                    $ns = is_string($ns) ? "$ns\\" : '';
-                    return $ns.implode('\\', $arr)."::$m($args)";
+                $m  = array_pop($arr);
+                $class = implode('\\', $arr);
+                if (isset(self::$config['allow_static_classes'][$class])) {
+                    return self::$config['allow_static_classes'][$class]."::$m($args)";
                 }
                 throw new TemplateException("readFunctionValue error: 未开启静态方法支持");
             } elseif ($c == '-' && substr($val, $i + 1, 1) == '>') {
                 // 容器
-                if (self::$config['view_container_macro']) {
+                $provider = implode('.', $arr);
+                if (in_array($provider, self::$config['allow_container_providers'])) {
                     $pos = $i - 1;
-                    return self::$config['view_container_macro'](implode('.', $arr));
+                    return self::$config['view_container_macro']($provider);
                 }
                 throw new TemplateException("readFunctionValue error: 未开启容器支持");
             } else {

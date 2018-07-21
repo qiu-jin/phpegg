@@ -124,7 +124,7 @@ class Request
      */
     public static function header($name, $default = null)
     {
-        return self::$request['server']['HTTP_'.strtoupper(strtr('-', '_', $name))] ?? $default;
+        return self::$request['server']['HTTP_'.strtoupper(strtr($name, '-', '_'))] ?? $default;
     }
     
     /*

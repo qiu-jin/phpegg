@@ -33,16 +33,7 @@ class Image
         return $this->name;
     }
 
-    public function render($tag = 'input', $attrs = [])
-    {
-        $attrs['name'] = $this->name;
-        foreach ($attrs as $k => $v) {
-            $str = " $k = '$v'";
-        }
-        return "<$tag $str></$tag><image src='$this->src' />";
-    }
-    
-    public function __template($html = null)
+    public function template($html = null)
     {
         return "<input name='$this->name'></input><image src='$this->src' />";
     }

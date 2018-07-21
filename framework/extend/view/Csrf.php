@@ -1,7 +1,7 @@
 <?php
 namespace framework\extend\view;
 
-use framework\util\Hash;
+use framework\util\Str;
 use framework\core\http\Request;
 use framework\core\http\Session;
 
@@ -11,16 +11,13 @@ class Csrf
     
     public static function token($name = null)
     {
-        Session::set($name ?? self::$name, $token = hash('md5', Hash::salt()));
+        Session::set($name ?? self::$name, $token = Str::random());
         return $token;
     }
     
-    public static function render($name = null)
+    public static function template($html = null)
     {
-        if ($name === null) {
-            $name = self::$name;
-        }
-        return '<input type="hidden" name="'.$name.'" value="'.self::token($name).'" />';
+        return '<input type="hidden" name="'.self::$name.'" value="'.self::token($name).'" />';
     }
     
     public static function verify($name = null, $value = null)
