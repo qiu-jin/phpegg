@@ -170,7 +170,7 @@ class Template
         // 时间戳
         'time'          => 'time()',
         // 转为时间戳
-        'totime'        => 'strtotime($0)',
+        'to_time'       => 'strtotime($0)',
         // 时间格式化
         'date'          => 'date($0, $1)',
         // 视图文件是否存在
@@ -1059,8 +1059,7 @@ class Template
                 $args = implode(', ', self::readArguments($val, $len, $pos, $strs));
                 // 函数
                 if (count($arr) == 1) {
-                    $fs = self::$config['allow_php_functions'] ?? null;
-                    if ($fs == true || (is_array($fs) && in_array($tmp, $fs))) {
+                    if (in_array($tmp, self::$config['allow_php_functions'])) {
                         return "$tmp($args)";
                     }
                     throw new TemplateException("readFunctionValue error: 不支持的内置函数$tmp");

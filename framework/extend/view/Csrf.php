@@ -14,12 +14,12 @@ class Csrf
         Session::set($name ?? self::$name, $token = Str::random());
         return $token;
     }
-    
+    /*
     public static function template($html = null)
     {
         return '<input type="hidden" name="'.self::$name.'" value="'.self::token($name).'" />';
     }
-    
+    */
     public static function verify($name = null, $value = null)
     {
         if ($name === null) {

@@ -26,12 +26,12 @@ class Recaptcha
     {
         return $this->acckey;
     }
-    
+    /*
     public function template($html = null)
     {
         return "<script src='$this->script' async defer></script><div class='g-recaptcha' data-sitekey='$this->acckey'></div>";
     }
-    
+    */
     public function verify($value = null)
     {
         $client = Client::post(self::$endpoint)->form([

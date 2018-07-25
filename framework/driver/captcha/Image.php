@@ -32,12 +32,12 @@ class Image
     {
         return $this->name;
     }
-
+    /*
     public function template($html = null)
     {
         return "<input name='$this->name'></input><image src='$this->src' />";
     }
-    
+    */
     public function verify($value = null)
     {
         if ($value === null) {
