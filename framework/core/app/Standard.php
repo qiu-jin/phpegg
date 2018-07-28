@@ -192,7 +192,7 @@ class Standard extends App
                 }
                 return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
             } elseif (isset($this->config['route_dispatch_action_routes']) && isset($allow_action_route)) {
-                return $this->actionRouteDispatch($param_mode, $controller, array_slice($path, $depth), $class);
+                return $this->actionRouteDispatchHandler($param_mode, $controller, array_slice($path, $depth), $class);
             }
         }
     }
@@ -224,7 +224,7 @@ class Standard extends App
                     ];
                 }
                 if (isset($this->config['route_dispatch_action_routes'])
-                    && ($action_route_dispatch = $this->actionRouteDispatch($param_mode, ...$dispatch))
+                    && ($action_route_dispatch = $this->actionRouteDispatchHandler($param_mode, ...$dispatch))
                 ) {
                     return $action_route_dispatch;
                 }
@@ -236,7 +236,7 @@ class Standard extends App
     /*
      * Action 路由调度
      */
-    protected function actionRouteDispatch($param_mode, $controller, $path, $class = null)
+    protected function actionRouteDispatchHandler($param_mode, $controller, $path, $class = null)
     {
         if ($class === null) {
             $class = $this->getControllerClass($controller);

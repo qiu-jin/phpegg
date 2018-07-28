@@ -8,8 +8,8 @@ class Dispatcher
      */
     public static function route($path, $rules, $param_mode, $dynamic = false, $method = null)
     {
-        $router = new framework\core\Router($path, $method);
-        return ($route = $router->route($rules)) && self::dispatch($route, $param_mode, $dynamic);
+        $route = (new Router($path, $method))->route($rules);
+        return $route && self::dispatch($route, $param_mode, $dynamic);
     }
     
     /*

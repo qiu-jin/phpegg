@@ -95,14 +95,16 @@ abstract class App
         define('FW_DIR', __DIR__.'/');
         defined('APP_DEBUG')|| define('APP_DEBUG', false);
         defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
+        require FW_DIR.'common.php';
         if (!defined('APP_DIR')) {
             if (self::IS_CLI) {
-                exit('APP_DIR constant not defined');
+                // exit('APP_DIR constant not defined');
+                define('APP_DIR', dirname(get_script_name(), 2).'/');
+            } else {
+                define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
             }
-            define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
         }
         // define('EGGCORE_LOADED', extension_loaded('eggcore'));
-        require FW_DIR.'common.php';
         require FW_DIR.'core/Config.php';
         require FW_DIR.'core/Loader.php';
         set_error_handler(function (...$e) {

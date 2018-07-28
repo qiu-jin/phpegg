@@ -220,7 +220,7 @@ class Rest extends App
                 ];
             } elseif (isset($this->config['route_dispatch_action_routes'])
                 && !isset($this->dispatch)
-                && ($action_route_dispatch = $this->actionRouteDispatch(0, $controller, $action_path, $class))
+                && ($action_route_dispatch = $this->actionRouteDispatchHandler(0, $controller, $action_path, $class))
             ) {
                 return $action_route_dispatch;
             }
@@ -254,7 +254,7 @@ class Rest extends App
                     ];
                 }
                 if (isset($this->config['route_dispatch_action_routes'])
-                    && ($action_route_dispatch = $this->actionRouteDispatch($param_mode, ...$dispatch))
+                    && ($action_route_dispatch = $this->actionRouteDispatchHandler($param_mode, ...$dispatch))
                 ) {
                     return $action_route_dispatch;
                 }
@@ -266,7 +266,7 @@ class Rest extends App
     /*
      * Action 路由调度
      */
-    protected function actionRouteDispatch($param_mode, $controller, $path, $class = null)
+    protected function actionRouteDispatchHandler($param_mode, $controller, $path, $class = null)
     {
         if ($class === null) {
             $class = $this->getControllerClass($controller);

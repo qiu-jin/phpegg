@@ -27,7 +27,7 @@ trait Getter
                 }
             }
         }
-        throw new \Exception('Undefined property: $'.$name);
+        throw new \Exception("Undefined property: $$name");
     }
     
     private function __makeModelNs($ns, $depth)

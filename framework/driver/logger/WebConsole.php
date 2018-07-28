@@ -31,25 +31,19 @@ class WebConsole extends Logger
         'groupCollapsed' => 'groupCollapsed'
             
     ];
-    
-    protected $send = true;
+
     protected $header_limit_size;
     
     protected function init($config)
     {
-        if (isset($config['allow_ips']) && !in_array(Request::ip(), $config['allow_ips'], true)) {
-            return $this->send = false;
-        }
-        if (isset($config['check_header_accept']) && $config['check_header_accept'] !== $_SERVER['HTTP_ACCEPT_LOGGER_DATA']) {
-            return $this->send = false;
-        }
         $this->header_limit_size = $config['header_limit_size'] ?? 4000;
-        Event::on('exit', [$this, 'send']);
-    }
-    
-    public function write($level, $message, $context = null)
-    {
-        $this->send && $this->logs[] = [$level, $message, $context];
+        if (isset($config['allow_ips']) && !in_array(Request::ip(), $config['allow_ips'], true)) {
+            return;
+        }
+        if (isset($config['check_header_accept']) && $config['check_header_accept'] != $_SERVER['HTTP_ACCEPT_LOGGER_DATA']) {
+            return;
+        }
+        Event::on('exit', [$this, 'flush']);
     }
     
     public function table(array $values, $contex = null)
@@ -72,7 +66,7 @@ class WebConsole extends Logger
         $this->write('groupEnd', $value);
     }
     
-    public function send()
+    public function flush()
     {        
         if ($this->logs && !headers_sent()) {
             foreach ($this->logs as $log) {

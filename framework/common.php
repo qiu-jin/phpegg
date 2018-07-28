@@ -163,3 +163,15 @@ function is_php_file($file)
 {
     return (OPCACHE_LOADED && opcache_is_script_cached($file)) || is_file($file);
 }
+
+if (App::IS_CLI) {
+    function get_script_name()
+    {
+        $fn = $_SERVER['SCRIPT_FILENAME'];
+        if ($fn[0] == '/' || substr($fn, 0, 2) == '~/') {
+            return realpath($fn); 
+        } else {
+            return realpath($_SERVER['PWD'].'/'.$fn); 
+        }
+    }
+}

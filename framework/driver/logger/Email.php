@@ -22,10 +22,10 @@ class Email extends Logger
             'dir'       => APP_DIR.'storage/cache/',
         ];
         $this->interval = $config['interval'] ?? 900;
-        Event::on('close', [$this, 'send']);
+        Event::on('close', [$this, 'flush']);
     }
     
-    public function send()
+    public function flush()
     {
         if (!$this->logs) {
             return;

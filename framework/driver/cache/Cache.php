@@ -21,7 +21,6 @@ abstract class Cache
     public function __construct($config)
     {
         $this->init($config);
-        isset($config['serializer']) && $this->serializer = $config['serializer'];
         if (isset($config['gc_random'])
             && method_exists($this, 'gc')
             && mt_rand(1, $config['gc_random'][1]) <= $config['gc_random'][0]
@@ -29,6 +28,7 @@ abstract class Cache
             $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
             Event::on('close', [$this, 'gc']);
         }
+        isset($config['serializer']) && $this->serializer = $config['serializer'];
     }
     
     public function getMultiple(array $keys, $default = null)

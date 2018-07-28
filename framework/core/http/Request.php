@@ -148,7 +148,7 @@ class Request
      */
     public static function method()
     {
-        return self::$request['method'] ?? self::$request['method'] = $_SERVER['REQUEST_METHOD'];
+        return self::$request['method'] ?? self::$request['method'] = strtoupper($_SERVER['REQUEST_METHOD']);
     }
     
     /*
@@ -186,7 +186,7 @@ class Request
      */
     public static function body($cache = false)
     {
-        return $cache ? self::$request['path'] ?? self::$request['path'] = file_get_contents('php://input') 
+        return $cache ? (self::$request['body'] ?? self::$request['body'] = file_get_contents('php://input'))
                       : file_get_contents('php://input');
     }
     

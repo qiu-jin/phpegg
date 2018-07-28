@@ -15,8 +15,7 @@ class Cassandra extends QueryChain
         if (isset($id)) {
             $this->options['where'] = [[$pk, '=', $id]];
         }
-        $data = $this->find(1);
-        return $data->count() > 0 ? $data[0] : null;
+        return ($data = $this->find(1))->count() > 0 ? $data[0] : null;
     }
 
     public function find($num = null)

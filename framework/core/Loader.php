@@ -46,18 +46,18 @@ class Loader
         switch ($type) {
             case 'prefix':
                 self::$class_prefix = $rules + self::$class_prefix;
-                return;
+                break;
             case 'map':
                 self::$class_map    = $rules + self::$class_map;
-                return;
+                break;
             case 'alias':
                 self::$class_alias  = $rules + self::$class_alias;
-                return;
+                break;
             case 'files':
                 foreach ($rules as $name) {
                     self::import($name, false);
                 }
-                return;
+                break;
         }
     }
 

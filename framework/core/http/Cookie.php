@@ -80,11 +80,11 @@ class Cookie
         self::setCookie($name, null);
     }
     
-    public static function clear($except = true)
+    public static function clean($except = true)
     {
         if ($_COOKIE) {
             if ($except === true) {
-                $except = $crypt_except;
+                $except = self::$crypt_except;
             }
             foreach (array_keys($_COOKIE) as $name) {
                 if (empty($except) || !in_array($name, $except, true)) {

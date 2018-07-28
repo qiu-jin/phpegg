@@ -62,7 +62,7 @@ class Session
         }
     }
     
-    public static function clear()
+    public static function clean()
     {
         session_unset();
         if ($_SESSION) {
