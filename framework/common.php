@@ -171,7 +171,7 @@ if (App::IS_CLI) {
         if ($fn[0] == '/' || substr($fn, 0, 2) == '~/') {
             return realpath($fn); 
         } else {
-            return realpath($_SERVER['PWD'].'/'.$fn); 
+            return realpath($_SERVER['PWD']."/$fn"); 
         }
     }
 }

@@ -4,16 +4,24 @@ namespace framework\driver\logger;
 use framework\core\Event;
 
 class File extends Logger
-{   
+{
+    // 日志文件
     protected $logfile;
+    // 日志格式化处理器
+    protected $formatter;
+    // 是否实时写入日志
     protected $real_write;
     
-    protected function init($config)
+    public function __construct($config)
     {
         $this->logfile = $config['logfile'];
         if (!$this->real_write = $config['real_write'] ?? false) {
             Event::on('close', [$this, 'flush']);
         }
+        $this->formatter = new formatter\Formatter(
+            $config['format'] ?? "[{date}] [{level}] {message}",
+            $config['format_options'] ?? null
+        );
     }
     
     public function write($level, $message, $context = null)
@@ -37,14 +45,6 @@ class File extends Logger
     
     protected function realWrite($level, $message, $context)
     {
-        if ($this->formatter) {
-            $log = $this->formatter->make($level, $message, $context);
-        } else {
-            $log = "[$level] $message";
-            if ($context) {
-                $log .= PHP_EOL.var_export($context, true);
-            }
-        }
-        error_log($log.PHP_EOL, 3, $this->logfile);
+        error_log($this->formatter->make($level, $message, $context).PHP_EOL, 3, $this->logfile);
     }
 }

@@ -70,7 +70,9 @@ class Container
     
     public static function delete($name)
     {
-        if (isset(self::$instances[$name])) unset(self::$instances[$name]);
+        if (isset(self::$instances[$name])) {
+            unset(self::$instances[$name]);
+        }
     }
     
     public static function bindAlias($name, $value)
@@ -153,7 +155,11 @@ class Container
     
     public static function makeDriverInstance($type, $config)
     {
-        $class = "framework\driver\\$type\\".ucfirst($config['driver']);
+        if ($config['driver'] == 'custom') {
+            $class = $config['class'];
+        } else {
+            $class = "framework\driver\\$type\\".ucfirst($config['driver']);
+        }
         return new $class($config);
     }
     

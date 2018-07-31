@@ -1,20 +1,9 @@
 <?php
 namespace framework\driver\logger;
 
-use framework\driver\logger\formatter\Formatter;
-
 abstract class Logger
 {
     protected $logs;
-    protected $formatter;
-    
-    public function __construct($config)
-    {
-        $this->init($config);
-        if (isset($config['format'])) {
-            $this->formatter = new Formatter($config['format'], $config['format_options'] ?? null);
-        }
-    }
     
     public function write($level, $message, $context = null)
     {

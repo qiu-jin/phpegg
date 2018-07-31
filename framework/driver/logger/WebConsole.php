@@ -10,12 +10,10 @@ use framework\core\http\Response;
  * https://github.com/qiu-jin/chromelogger
  * Firefox
  * https://developer.mozilla.org/en-US/docs/Tools/Web_Console/Console_messages#Server
- */ 
-
+ */
 class WebConsole extends Logger
 {
     const VERSION = '4.0.0';
-    
     protected static $loglevel = [
         'emergency'  => 'error',
         'alert'      => 'error',
@@ -31,19 +29,31 @@ class WebConsole extends Logger
         'groupCollapsed' => 'groupCollapsed'
             
     ];
-
-    protected $header_limit_size;
+    // 是否刷新输出日志
+    protected $flush;
+    // 最大日志数据大小
+    protected $data_max_size;
     
-    protected function init($config)
+    public function __construct($config)
     {
-        $this->header_limit_size = $config['header_limit_size'] ?? 4000;
         if (isset($config['allow_ips']) && !in_array(Request::ip(), $config['allow_ips'], true)) {
             return;
         }
-        if (isset($config['check_header_accept']) && $config['check_header_accept'] != $_SERVER['HTTP_ACCEPT_LOGGER_DATA']) {
+        if (isset($config['check_header_accept'])
+             && $config['check_header_accept'] != Request::server('HTTP_ACCEPT_LOGGER_DATA')
+        ) {
             return;
         }
+        $this->flush = true;
+        $this->data_max_size = $config['data_max_size'] ?? 4000;
         Event::on('exit', [$this, 'flush']);
+    }
+    
+    public function write($level, $message, $context = null)
+    {
+        if ($this->flush) {
+            $this->logs[] = [$level, $message, $context];
+        }
     }
     
     public function table(array $values, $contex = null)
@@ -68,34 +78,36 @@ class WebConsole extends Logger
     
     public function flush()
     {        
-        if ($this->logs && !headers_sent()) {
-            foreach ($this->logs as $log) {
-                $rows[] = [
-                    null,
-                    $log[1],
-                    isset($log[2]['file']) ? $log[2]['file'].' : '.($log[2]['line'] ?? '') : null,
-                    self::$loglevel[$log[0]] ?? ''
+        if ($this->logs) {
+            if ($this->flush && !headers_sent()) {
+                foreach ($this->logs as $log) {
+                    $rows[] = [
+                        null,
+                        $log[1],
+                        isset($log[2]['file']) ? $log[2]['file'].' : '.($log[2]['line'] ?? '') : null,
+                        self::$loglevel[$log[0]] ?? ''
+                    ];
+                }
+                $format = [
+                    'version' => self::VERSION,
+                    'columns' => ['label', 'log', 'backtrace', 'type'],
+                    'rows'    => $rows
                 ];
-            }
-            $format = [
-                'version' => self::VERSION,
-                'columns' => ['label', 'log', 'backtrace', 'type'],
-                'rows'    => $rows
-            ];
-            $data = $this->encode($format);
-            if (strlen($data) > $this->header_limit_size) {
-                $format['rows'] = [[
-                    "header_limit_size: $this->header_limit_size", '', 'warn'
-                ]];
                 $data = $this->encode($format);
+                if (strlen($data) > $this->data_max_size) {
+                    $format['rows'] = [[
+                        "data_max_size: $this->data_max_size", '', 'warn'
+                    ]];
+                    $data = $this->encode($format);
+                }
+                Response::header('X-ChromeLogger-Data', $data);
             }
-            Response::header('X-ChromeLogger-Data', $data);
+            $this->logs = null;
         }
-        $this->logs = null;
     }
     
     protected function encode ($data)
     {
-        return base64_encode(json_encode($data));//utf8_encode()
+        return base64_encode(json_encode($data));
     }
 }
