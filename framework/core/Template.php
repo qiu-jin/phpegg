@@ -470,8 +470,8 @@ class Template
     protected static function readStructTag($str, &$end)
     {
         $v = '(?:"[^"]*"|\'[^\']*\')';
-        $a = "(?:\s*\w+(?:\s*=\s*$v)?)";
-        $regex  = "/<(\w+)\s+$a*(?:\s*[".self::attrPrefixRegex()."]\w+(?:\s*=\s*$v)?)+$a*\s*\/?>/";
+        $a = "(?:\s*[\w-]+(?:\s*=\s*$v)?)";
+        $regex  = "/<([\w-]+)\s+$a*(?:\s*[".self::attrPrefixRegex()."][\w-]+(?:\s*=\s*$v)?)+$a*\s*\/?>/";
         if (!preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
             return $str;
         }
@@ -586,7 +586,7 @@ class Template
         // 标签内结构语句条数
         $count   = 0;
         $is_else = false;
-        $regex   = "/\s*([".self::attrPrefixRegex()."])(\w+)(?:\s*=\s*(\"[^\"]*\"|'[^']*'))?/";
+        $regex   = "/\s*([".self::attrPrefixRegex()."])([\w-]+)(?:\s*=\s*(\"[^\"]*\"|'[^']*'))?/";
         if (preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
             $pos = 0;
             foreach ($matches[1] as $i => $match) {

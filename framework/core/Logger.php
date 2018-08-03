@@ -28,9 +28,9 @@ class Logger
     private static $level_handler;
     // 分组日志处理器
     private static $group_handlers;
-    // 分级日志包含的驱动处理器名
+    // 分级日志包含的处理器名集合
     private static $level_handler_names;
-    // 分组日志包含的驱动处理器名
+    // 分组日志包含的处理器名集合
     private static $group_handler_names;
     
     /*
@@ -102,7 +102,7 @@ class Logger
         if (Config::env('ENABLE_NULL_LOGGER')) {
             return self::getNullHandler();
         }
-        throw new \Exception("Undefined channel: $name");
+        throw new \Exception("Invalid logger channel: $name");
     }
     
     /*

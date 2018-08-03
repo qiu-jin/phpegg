@@ -15,7 +15,6 @@ class Client
     // 响应内容
     private $response;
     
-    
     public function __construct($method, $url)
     {
         $this->debug = APP_DEBUG;
@@ -41,7 +40,7 @@ class Client
     /*
      * 批量请求
      */
-    public static function multi($queries, callable $handle = null, $select_timeout = 0.1)
+    public static function multi(array $queries, callable $handle = null, $select_timeout = 0.1)
     {
         $mh = curl_multi_init();
         foreach ($queries as $i => $query) {
@@ -82,7 +81,7 @@ class Client
     {
         $this->request->body = $body;
         if ($type) {
-             $this->request->headers[] = 'Content-Type: '.$type;
+            $this->request->headers[] = "Content-Type: $type";
         }
         return $this;
     }
@@ -217,7 +216,7 @@ class Client
     }
     
     /*
-     * 
+     * 设置debug模式
      */
     public function debug($bool = true)
     {
@@ -225,6 +224,9 @@ class Client
         return $this;
     }
     
+    /*
+     * 魔术方法，获取request response error信息
+     */
     public function __get($name)
     {
         switch ($name) {
@@ -241,26 +243,33 @@ class Client
     /*
      * 将请求的获得的body数据直接写入到本地文件，在body内容过大时可节约内存
      */
-    public function save($path)
+    public function save($file)
     {
         if (isset($this->response)) {
             return false;
         }
-        if ($fp = fopen($path, 'w+')) {
-            $this->request['curlopts'][CURLOPT_FILE] = $fp;
+        if ($fp = fopen($file, 'w+')) {
+            $this->request->curlopts[CURLOPT_FILE] = $fp;
+            $this->request->curlopts[CURLOPT_HEADER] = false;
             $this->send();
             fclose($fp);
-            return $this->getStatus() === 200 && $this->response['body'] === true;
+            return $this->response->status === 200 && $this->response->body === true;
         }
         return $this->response = false;
     }
     
+    /*
+     * 获取Curl信息
+     */
     public function getCurlInfo($name)
     {
         isset($this->response) || $this->send();
         return curl_getinfo($this->ch, $name);
     }
     
+    /*
+     * 发送请求
+     */
     protected function send()
     {
         if ($this->debug) {
@@ -270,6 +279,9 @@ class Client
         $this->response(curl_exec($this->build()));
     }
     
+    /*
+     * build请求数据
+     */
     protected function build()
     {
         $ch = curl_init($this->request->url);
@@ -288,6 +300,9 @@ class Client
         return $this->ch = $ch;
     }
     
+    /*
+     * 处理错误信息
+     */
     protected function error()
     {
         if ($this->response->status) {
@@ -311,6 +326,9 @@ class Client
         };
     }
     
+    /*
+     * 处理请求响应内容
+     */
     protected function response($content)
     {
         $this->response = new class () {
@@ -329,6 +347,9 @@ class Client
         }
     }
     
+    /*
+     * 处理请求响应内容和头数据
+     */
     protected function responseWithHeaders($content)
     {
         // 跳过HTTP/1.1 100 continue
