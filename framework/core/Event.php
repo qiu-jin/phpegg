@@ -51,16 +51,7 @@ class Event
     }
     
     /*
-     * 获取已注册事件
-     * return SplPriorityQueue
-     */
-    public static function get($name)
-    {
-        return self::$events[$name] ?? null;
-    }
-    
-    /*
-     * 是否已注册事件
+     * 事件是否注册
      */
     public static function has($name)
     {

@@ -5,6 +5,9 @@ defined('app\env\GETTER_PROVIDERS_NAME') || define('app\env\GETTER_PROVIDERS_NAM
 
 trait Getter
 {
+    /*
+     * 获取容器实例
+     */
     public function __get($name)
     {
         $n = \app\env\GETTER_PROVIDERS_NAME;
@@ -30,6 +33,9 @@ trait Getter
         throw new \Exception("Undefined property: $$name");
     }
     
+    /*
+     * 获取模型名称空间链实例
+     */
     private function __makeModelNs($ns, $depth)
     {
         return new class($ns, $depth) {

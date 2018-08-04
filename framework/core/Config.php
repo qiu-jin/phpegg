@@ -105,30 +105,25 @@ class Config
     }
     
     /*
-     * 设置配置项第一个值（仅支持顶级配置项）
+     * 获取配置项首个键值对（仅支持顶级配置项）
      */
-    public static function first($name)
-    {
-        return self::check($name) ? current(self::$configs[$name]) : null;
-    }
-    
-    /*
-     * 设置配置项随机值（仅支持顶级配置项）
-     */
-    public static function random($name)
-    {
-        return self::check($name) ? self::$configs[$name][array_rand(self::$configs[$name])] : null;
-    }
-    
-    /*
-     * 设置配置项第一个键值对（仅支持顶级配置项）
-     */
-    public static function firstPair($name)
+    public static function firstKv($name)
     {
         if (self::check($name)) {
             foreach (self::$configs[$name] as $key => $value) {
                 return [$key, $value];
             }
+        }
+    }
+    
+    /*
+     * 获取配置项随机键值对（仅支持顶级配置项）
+     */
+    public static function randomKv($name)
+    {
+        if (self::check($name)) {
+            $key = array_rand(self::$configs[$name]);
+            return [$key, self::$configs[$name][$key]];
         }
     }
     

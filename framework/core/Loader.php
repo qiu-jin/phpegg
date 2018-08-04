@@ -4,14 +4,16 @@ namespace framework\core;
 class Loader
 {
     private static $init;
-    // 类对应文件
+    // 类文件
     private static $class_map = [];
-    // 类前缀对应目录
+    // 类PSR-4
+    private static $class_psr4 = [];
+    // 类前缀目录
     private static $class_prefix = [
         'app' => APP_DIR,
         'framework' => FW_DIR
     ];
-    // 类别名设置
+    // 类别名
     private static $class_alias = [
         'App'       => 'framework\App',
         'Request'   => 'framework\core\http\Request',
@@ -44,7 +46,7 @@ class Loader
      */
     public static function add($type, array $rules)
     {
-        switch ($type) {
+        switch (strtolower($type)) {
             case 'prefix':
                 self::$class_prefix = $rules + self::$class_prefix;
                 break;
@@ -53,6 +55,9 @@ class Loader
                 break;
             case 'alias':
                 self::$class_alias  = $rules + self::$class_alias;
+                break;
+            case 'psr4':
+                self::addPsr4($rules);
                 break;
             case 'files':
                 foreach ($rules as $name) {
@@ -67,50 +72,22 @@ class Loader
      */
     private static function autoload($class)
     {
-        $arr = explode('\\', $class, 2);
-        if (isset($arr[1]) && isset(self::$class_prefix[$arr[0]])) {
-            self::import(self::$class_prefix[$arr[0]].strtr($arr[1], '\\', '/'));
-        } elseif (isset(self::$class_map[$class])) {
+        if (isset(self::$class_map[$class])) {
             self::import(self::$class_map[$class]);
         } elseif (isset(self::$class_alias[$class])) {
             class_alias(self::$class_alias[$class], $class);
-        }
-    }
-    
-    /**/
-    private static function addPsr4($rules)
-    {
-        foreach ($rules as $ns => $dir) {
-            $val =& self::$class_psr4;
-            foreach (explode('\\', $ns) as $n) {
-                if (!isset($val[$n])) {
-                    $val[$n] = [];
+        } else {
+            $arr = explode('\\', $class, 2);
+            if (isset($arr[1])) {
+                if (isset(self::$class_prefix[$arr[0]])) {
+                    self::import(self::$class_prefix[$arr[0]].strtr($arr[1], '\\', '/'));
+                } elseif (isset(self::$class_psr4[$arr[0]])) {
+                    self::loadPsr4($arr[0], $class);
                 }
-                $val =& $val[$n];
-            }
-            $val['_v'] = $dir;
-        }
-    }
-    
-    private static function loadPsr4($class)
-    {
-        $arr = explode('\\', $class);
-        $val =& self::$class_psr4[$prefix];
-        foreach ($arr as $i => $n) {
-            if (isset($val[$n])) {
-                if (isset($val[$n]['_v'])) {
-                    $v = $val[$n]['_v'];
-                    $o = $i;
-                }
-            } else {
-                if (isset($v)) {
-                    self::import($v.implode('/', array_slice($class, $o + 1)));
-                }
-                return;
             }
         }
     }
-    
+
     /*
      * 加载php文件，忽略.php后缀
      */
@@ -119,6 +96,35 @@ class Loader
         $file = "$name.php";
         if (!$check || is_php_file($file)) {
             __include($file);
+        }
+    }
+    
+    /*
+     * 添加PSR-4规则
+     */
+    private static function addPsr4($rules)
+    {
+        foreach ($rules as $k => $v) {
+            $k = trim($k, '\\');
+            self::$class_psr4[strstr($k, '\\', true) ?: $k]["$k\\"] = $v;
+        }
+    }
+    
+    /*
+     * 加载PSR-4规则
+     */
+    private static function loadPsr4($prefix, $class)
+    {
+        $i = 0;
+        foreach (self::$class_psr4[$prefix] as $k => $v) {
+            $l = strlen($k);
+            if ($l > $i && strncmp($k, $class, $l) === 0) {
+                $i = $l;
+                $d = $v;
+            }
+        }
+        if ($i > 0) {
+            self::import($d.strtr(substr($class, $i), '\\', '/'));
         }
     }
 }

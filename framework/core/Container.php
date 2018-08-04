@@ -148,7 +148,7 @@ class Container
         if ($index) {
             return self::makeDriverInstance($type, Config::get("$type.$index"));
         }
-        list($index, $config) = Config::firstPair($type);
+        list($index, $config) = Config::firstKv($type);
         $key = "$type.$index";
         return self::$instances[$key] ?? self::$instances[$key] = self::makeDriverInstance($type, $config);
     }
