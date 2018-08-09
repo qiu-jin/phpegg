@@ -70,9 +70,9 @@ function driver($type, $name = null)
     return Container::driver($type, $name);
 }
 
-function model($name)
+function model($type, $name)
 {
-    return Container::model($name);
+    return Container::model($type, $name);
 }
 
 function view($path, array $vars = null)

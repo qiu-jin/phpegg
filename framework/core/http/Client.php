@@ -202,7 +202,7 @@ class Client
      */
     public function curlopts(array $values)
     {
-        $this->request->curlopts = array_merge($this->request->curlopts ?? [], $values);
+        $this->request->curlopts = $values + ($this->request->curlopts ?? []);
         return $this;
     }
 
@@ -333,7 +333,7 @@ class Client
     {
         $this->response = new class () {
             public function json() {
-                return $this->body ? jsondecode($this->body) : false;
+                return $this->body ? jsondecode($this->body) : null;
             }
         };
         $this->response->status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);

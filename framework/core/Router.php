@@ -57,12 +57,10 @@ class Router
                 // 递归处理
                 && ($route = self::route($v, $matches[1]))
             ) {
-                if ($matches[0]) {
-                    if (empty($route['matches'])) {
-                        $route['matches'] = $matches[0];
-                    } else {
-                        $route['matches'] = array_merge($matches[0], $route['matches']);
-                    }
+                if (empty($route['matches'])) {
+                    $route['matches'] = $matches[0];
+                } elseif ($matches[0]) {
+                    $route['matches'] = array_merge($matches[0], $route['matches']);
                 }
                 return $route;
             }
@@ -107,7 +105,7 @@ class Router
                         && preg_match("/^$n$/", $s, $m)
                     ) {
                         if (count($m) > 1) {
-                            $ret = array_merge($ret, array_slice($m, 1)),
+                            $ret = array_merge($ret, array_slice($m, 1));
                         } else {
                             $ret[] = $s;
                         }
@@ -122,7 +120,7 @@ class Router
                         && preg_match('/^'.self::$patterns[$n].'$/', $s, $m)
                     ) {
                         if (count($m) > 1) {
-                            $ret = array_merge($ret, array_slice($m, 1)),
+                            $ret = array_merge($ret, array_slice($m, 1));
                         } else {
                             $ret[] = $s;
                         }

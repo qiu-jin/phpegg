@@ -4,28 +4,31 @@ namespace framework\core;
 class Container
 {
     protected static $init;
-    // 
+    // 容器实例
+    protected static $instances;
+    // 容器提供者
     protected static $providers = [
         // 驱动
         'driver'    => [
-            'db'        => true,
-            'rpc'       => true,
-            'cache'     => true,
-            'storage'   => true,
-            'search'    => true,
-            'data'      => true,
-            'queue'     => true,
-            'email'     => true,
-            'sms'       => true,
-            'geoip'     => true,
-            'crypt'     => true,
-            'captcha'   => true,
+            'db'        => 'framework\driver\db',
+            'rpc'       => 'framework\driver\rpc',
+            'cache'     => 'framework\driver\cache',
+            'storage'   => 'framework\driver\storage',
+            'search'    => 'framework\driver\search',
+            'data'      => 'framework\driver\data',
+            'queue'     => 'framework\driver\queue',
+            'email'     => 'framework\driver\email',
+            'sms'       => 'framework\driver\sms',
+            'geoip'     => 'framework\driver\geoip',
+            'crypt'     => 'framework\driver\crypt',
+            'captcha'   => 'framework\driver\captcha',
+            'logger'    => 'framework\driver\logger',
         ],
         // 模型
         'model'     => [
-            'model'     => 1,
-            'logic'     => 1,
-            'service'   => 1
+            'model'     => ['app\model', 1],
+            'logic'     => ['app\logic', 1],
+            'service'   => ['app\service', 1],
         ],
         // 闭包
         'closure'   => [],
@@ -34,8 +37,6 @@ class Container
         // 别名
         'alias'     => [],
     ];
-    // 
-    protected static $instances;
 
     public static function __init()
     {
@@ -44,9 +45,9 @@ class Container
         }
         self::$init = true;
         if ($config = Config::flash('container')) {
-            foreach (array_keys(self::$providers) as $type) {
-                if (isset($config[$type])) {
-                    self::$providers[$type] = $config[$type] + self::$providers[$type];
+            foreach ($config as $type => $value) {
+                if (isset(self::$providers[$type])) {
+                    self::$providers[$type] = $value + self::$providers[$type];
                 }
             }
         }
@@ -75,19 +76,9 @@ class Container
         }
     }
     
-    public static function bindAlias($name, $value)
+    public static function bind($type, $name, $value)
     {
-        self::$providers['alias'][$name] = $value;
-    }
-    
-    public static function bindClass($name, $value)
-    {
-        self::$providers['class'][$name] = $value;
-    }
-    
-    public static function bindClosure($name, $value)
-    {
-        self::$providers['closure'][$name] = $value;
+        self::$providers[$type][$name] = $value;
     }
     
     public static function make($name)
@@ -111,11 +102,13 @@ class Container
     
     public static function driver($type, $name = null)
     {
-        if (is_array($name)) {
-            return self::makeDriverInstance($type, $name);
+        if (isset(self::$providers['driver'][$type])) {
+            if (is_array($name)) {
+                return self::makeDriverInstance($type, $name);
+            }
+            $key = $name ? "$type.$name" : $type;
+            return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($type, $name);
         }
-        $key = $name ? "$type.$name" : $type;
-        return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($type, $name);
     }
     
     public static function makeAlias($name)
@@ -139,8 +132,8 @@ class Container
     
     public static function makeModel($type, ...$ns)
     {
-        $class = 'app\\'.$type.'\\'.implode('\\', $ns);
-        return new $class(); 
+        $class = self::$providers['model'][$type][0].'\\'.implode('\\', $ns);
+        return new $class();
     }
 
     public static function makeDriver($type, $index = null)
@@ -155,10 +148,10 @@ class Container
     
     public static function makeDriverInstance($type, $config)
     {
-        if ($config['driver'] == 'custom') {
+        if ($config['driver'] === 'custom') {
             $class = $config['class'];
         } else {
-            $class = "framework\driver\\$type\\".ucfirst($config['driver']);
+            $class = self::$providers['driver'][$type].'\\'.ucfirst($config['driver']);
         }
         return new $class($config);
     }

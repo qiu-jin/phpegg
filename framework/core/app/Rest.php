@@ -144,8 +144,10 @@ class Rest extends App
             } elseif ($param_mode === 0) {
                 $controller_array = $path;
             }
-            if ($to_camel = $this->config['default_dispatch_to_camel'] ?? null) {
-                $controller_array[] = Str::toCamel(array_pop($controller_array), $to_camel);
+            if (isset($this->config['default_dispatch_to_camel'])) {
+                $controller_array[] = Str::toCamel(
+                    array_pop($controller_array), $this->config['default_dispatch_to_camel']
+                );
             }
             $controller = implode('\\', $controller_array);
             if (!isset($this->config['default_dispatch_controllers'])) {
@@ -192,8 +194,8 @@ class Rest extends App
             $controller  = $this->dispatch['route'][0];
             $action_path = $this->dispatch['route'][1];
         } elseif (count($path) >= $depth) {
-            if ($to_camel = $this->config['resource_dispatch_controller_to_camel'] ?? null) {
-                $path[$depth] = Str::toCamel($path[$depth], $to_camel);
+            if (isset($this->config['resource_dispatch_controller_to_camel'])) {
+                $path[$depth] = Str::toCamel($path[$depth], $this->config['resource_dispatch_controller_to_camel']);
             }
             $controller = implode('\\', array_slice($path, 0, $depth));
             if (!isset($this->config['resource_dispatch_controllers'])) {
@@ -307,7 +309,7 @@ class Rest extends App
     protected function setPostParams()
     {
         if ($type = Request::header('Content-Type')) {
-            switch (trim(strtolower(strtok($type, ';')))) {
+            switch (strtolower(trim(strtok($type, ';')))) {
                 case 'application/json':
                     Request::set('post', jsondecode(Request::body()));
                     break;
@@ -317,9 +319,6 @@ class Rest extends App
                 case 'multipart/form-data'; 
                     break;
                 case 'application/x-www-form-urlencoded'; 
-                    break;
-                default:
-                    Request::set('post', Request::body());
                     break;
             }
         }

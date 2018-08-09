@@ -32,7 +32,7 @@ class WebConsole extends Logger
     // 是否刷新输出日志
     protected $flush;
     // 最大日志数据大小
-    protected $data_max_size;
+    protected $message_size_limit;
     
     public function __construct($config)
     {
@@ -45,7 +45,7 @@ class WebConsole extends Logger
             return;
         }
         $this->flush = true;
-        $this->data_max_size = $config['data_max_size'] ?? 4000;
+        $this->message_size_limit = $config['message_size_limit'] ?? 4000;
         Event::on('exit', [$this, 'flush']);
     }
     
@@ -94,9 +94,9 @@ class WebConsole extends Logger
                     'rows'    => $rows
                 ];
                 $data = $this->encode($format);
-                if (strlen($data) > $this->data_max_size) {
+                if (($size = strlen($data)) > $this->message_size_limit) {
                     $format['rows'] = [[
-                        "data_max_size: $this->data_max_size", '', 'warn'
+                        "Message size($size) than message_size_limit($this->message_size_limit)", '', 'warn'
                     ]];
                     $data = $this->encode($format);
                 }

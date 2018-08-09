@@ -167,8 +167,10 @@ class Standard extends App
                 if (!isset($controller_array)) {
                     return;
                 }
-                if ($to_camel = $this->config['default_dispatch_to_camel'] ?? null) {
-                    $controller_array[] = Str::toCamel(array_pop($controller_array), $to_camel);
+                if (isset($this->config['default_dispatch_to_camel'])) {
+                    $controller_array[] = Str::toCamel(
+                        array_pop($controller_array), $this->config['default_dispatch_to_camel']
+                    );
                 }
                 $controller = implode('\\', $controller_array);
                 if (!isset($this->config['default_dispatch_controllers'])) {
@@ -177,7 +179,7 @@ class Standard extends App
                     return;
                 }
             }
-            if (isset($this->config['default_dispatch_to_camel']) && isset($action)) {
+            if (isset($action) && isset($this->config['default_dispatch_to_camel'])) {
                 $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
             }
         }

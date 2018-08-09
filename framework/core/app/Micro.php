@@ -42,6 +42,12 @@ class Micro extends App
         return $this;
     }
     
+    public function route(array $roles)
+    {
+        $this->mergeRouteRoles($this->dispatch['route'], $roles);
+        return $this;
+    }
+    
     public function __call($method, $params)
     {
         if (in_array($m = strtoupper($method), $this->config['route_dispatch_http_methods'])) {
@@ -49,12 +55,6 @@ class Micro extends App
             return $this;
         }
         throw new \Exception('Call to undefined method '.__CLASS__."::$method");
-    }
-    
-    public function route(array $roles)
-    {
-        $this->dispatch['route'] = array_merge_recursive($this->dispatch['routes'] ?? [], $roles);
-        return $this;
     }
     
     protected function dispatch()
@@ -102,14 +102,14 @@ class Micro extends App
     protected function routeDispatch()
     {
         if (in_array($m = Request::method(), $this->config['route_dispatch_http_methods'])
-            && $route = (new Router(Request::pathArr(), $m))->route($this->dispatch['route'])
+            && ($route = (new Router(Request::pathArr(), $m))->route($this->dispatch['route']))
         ) {
             if ($route['dispatch'] instanceof \Closure) {
                 return [
-                    empty($this->config['enable_closure_getter']) ? $route['dispatch'] : closure_bind_getter(
+                    $this->config['enable_closure_getter'] ? closure_bind_getter(
                         $route['dispatch'],
                         $this->config['getter_providers'] ?? null
-                    ),
+                    ) : $route['dispatch'],
                     $route['matches']
                 ];
             } elseif (is_string($route['dispatch'])) {
@@ -117,6 +117,21 @@ class Micro extends App
                 list($controller, $action) = explode('::', $dispatch[0]);
                 return [[instance($this->getControllerClass($controller)), $action], $dispatch[1]];
             }
+        }
+    }
+    
+    protected function mergeRouteRoles(&$route, $roles)
+    {
+        if (is_array($roles)) {
+            foreach ($roles as $k => $v) {
+                if (isset($route[$k])) {
+                    $this->mergeRouteRoles($route[$k], $v);
+                } else {
+                    $route[$k] = $v;
+                }
+            }
+        } else {
+            $route = $roles;
         }
     }
 }

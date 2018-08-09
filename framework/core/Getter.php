@@ -24,7 +24,8 @@ trait Getter
         } else {
             if ($type = Container::getProviderType($name)) {
                 if ($type === 'model') {
-                    return $this->$name = $this->__makeModelNs($name, Container::getProviderValue('model', $name));
+                    $depth = Container::getProviderValue('model', $name)[1] ?? 1;
+                    return $this->$name = $this->__makeModelNs($name, $depth);
                 } else {
                     return $this->$name = Container::{"make$type"}($name);
                 }

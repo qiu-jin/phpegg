@@ -76,21 +76,8 @@ class Grpc extends App
     
     protected function call()
     {
-        if ($this->config['enable_timeout']
-            && ($grpc_timeout = Request::header('grpc-timeout'))
-            && ($num = (int) substr($grpc_timeout, 0, -1)) > 0
-        ) {
-            switch (substr($grpc_timeout, -1)) {
-                case 'S':
-                    set_time_limit($num);
-                    break;
-                case 'M':
-                    set_time_limit($num * 60);
-                    break;
-                case 'H':
-                    set_time_limit($num * 3600);
-                    break;
-            }
+        if ($this->config['enable_timeout']) {
+            $this->setTimeout();
         }
         if (isset($this->config['service_schemes'])) {
             foreach ($this->config['service_schemes'] as $type => $rules) {
@@ -200,6 +187,25 @@ class Grpc extends App
                     $response_object = new $response_class
                 );
                 return $response_object;
+            }
+        }
+    }
+    
+    protected function setTimeout()
+    {
+        if (($timeout = Request::header('grpc-timeout'))
+            && ($num = (int) substr($timeout, 0, -1)) > 0
+        ) {
+            switch (substr($timeout, -1)) {
+                case 'S':
+                    set_time_limit($num);
+                    break;
+                case 'M':
+                    set_time_limit($num * 60);
+                    break;
+                case 'H':
+                    set_time_limit($num * 3600);
+                    break;
             }
         }
     }

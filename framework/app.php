@@ -9,6 +9,8 @@ abstract class App
 {
     // 版本号
     const VERSION = '1.0.0';
+    // 内核版本号
+    const CORE_VERSION = '1.0.0';
     // 是否命令行环境
     const IS_CLI  = PHP_SAPI == 'cli';
     // 内置支持的应用模式
@@ -102,9 +104,18 @@ abstract class App
                 define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
             }
         }
-        require FW_DIR.'common.php';
-        require FW_DIR.'core/Config.php';
-        require FW_DIR.'core/Loader.php';
+        define('EGGCORE_LOADED', extension_loaded('eggcore'));
+        if (EGGCORE_LOADED) {
+            if (EGGCORE_VERSION >= self::CORE_VERSION && EGG_VERSION >= self::VERSION) {
+                eggcore_bootstrap();
+            } else {
+                throw new \RuntimeException("Invalid eggcore extension version: ".EGGCORE_VERSION);
+            }
+        } else {
+            require FW_DIR.'common.php';
+            require FW_DIR.'core/Config.php';
+            require FW_DIR.'core/Loader.php';
+        }
         set_error_handler(function (...$e) {
             Error::errorHandler(...$e);
         });
