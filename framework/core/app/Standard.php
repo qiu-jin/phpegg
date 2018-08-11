@@ -24,8 +24,8 @@ class Standard extends App
         'controller_suffix' => null,
         // 是否启用视图
         'enable_view' => false,
-        // 视图模版文件名是否转为下划线风格
-        'template_to_snake' => false,
+        // 视图模版路径是否转为下划线风格
+        'template_path_to_snake' => false,
         // request参数是否转为控制器方法参数
         'bind_request_params' => null,
         // 缺少的参数设为null值
@@ -43,7 +43,7 @@ class Standard extends App
         // 默认调度的控制器缺省方法
         'default_dispatch_default_action' => 'index',
         // 默认调度的路径转为驼峰风格
-        'default_dispatch_to_camel' => null,
+        'default_dispatch_path_to_camel' => null,
         /* 路由调度的参数模式
          * 0 无参数
          * 1 循序参数
@@ -77,8 +77,9 @@ class Standard extends App
         extract($this->dispatch);
         if ($param_mode) {
             $rm = $this->reflection_method ?? new \ReflectionMethod($controller_instance, $action);
+            $to_null = $this->config['missing_params_to_null'];
             if ($param_mode === 1) {
-                $params = MethodParameter::bindListParams($rm, $params, $this->config['missing_params_to_null']);
+                $params = MethodParameter::bindListParams($rm, $params, $to_null);
             } elseif ($param_mode === 2) {
                 if (isset($this->config['bind_request_params'])) {
                     foreach ($this->config['bind_request_params'] as $param) {
@@ -87,7 +88,7 @@ class Standard extends App
                         }
                     }
                 }
-                $params = MethodParameter::bindKvParams($rm, $params, $this->config['missing_params_to_null']);
+                $params = MethodParameter::bindKvParams($rm, $params, $to_null);
             }
             if ($params === false) {
                 self::abort(400, 'Missing argument');
@@ -131,17 +132,15 @@ class Standard extends App
             }
             list($controller, $action) = explode('::', $this->config['default_dispatch_index']);
         } else {
-            if (isset($this->dispatch['route'])) {
-                if (empty($this->dispatch['route'][1])) {
-                    if (!isset($this->config['default_dispatch_default_action'])) {
-                        return;
-                    }
+            if (isset($this->dispatch['continue'])) {
+                list($controller, $params) = $this->dispatch['continue'];
+                if ($params) {
+                    $action = array_shift($params);
+                } elseif (isset($this->config['default_dispatch_default_action'])) {
                     $action = $this->config['default_dispatch_default_action'];
                 } else {
-                    $action = array_shift($this->dispatch['route'][1]);
-                    $params = $this->dispatch['route'][1];
+                    return;
                 }
-                $controller = $this->dispatch['route'][0];
             } else {
                 if ($depth > 0) {
                     if ($count >= $depth) {
@@ -167,9 +166,10 @@ class Standard extends App
                 if (!isset($controller_array)) {
                     return;
                 }
-                if (isset($this->config['default_dispatch_to_camel'])) {
+                if (isset($this->config['default_dispatch_path_to_camel'])) {
                     $controller_array[] = Str::toCamel(
-                        array_pop($controller_array), $this->config['default_dispatch_to_camel']
+                        array_pop($controller_array),
+                        $this->config['default_dispatch_path_to_camel']
                     );
                 }
                 $controller = implode('\\', $controller_array);
@@ -230,7 +230,7 @@ class Standard extends App
                 ) {
                     return $action_route_dispatch;
                 }
-                $this->dispatch = ['route' => $dispatch];
+                $this->dispatch = ['continue' => $dispatch];
             }
         }
     }
@@ -269,7 +269,7 @@ class Standard extends App
     protected function getViewPath()
     {
         $path = $this->dispatch['controller'];
-        if (empty($this->config['template_to_snake'])) {
+        if (empty($this->config['template_path_to_snake'])) {
             return '/'.strtr($path, '\\', '/').'/'.$this->dispatch['action'];
         } else {
             $array = explode('\\', $path);

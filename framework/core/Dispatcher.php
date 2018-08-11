@@ -17,24 +17,28 @@ class Dispatcher
      */
     public static function dispatch($route, $param_mode = 0, $dynamic = false)
     {
-        if (($lpos = strpos($route['dispatch'], '(')) && ($rpos = strpos($route['dispatch'], ')'))) {
-            $dispatch = substr($route['dispatch'], 0, $lpos);
-            $param_name = substr($route['dispatch'], $lpos + 1, $rpos - $lpos);
-        } else {
-            $dispatch = $route['dispatch'];
-        }
         $params = $route['matches'];
-        if $dynamic && strpos('$', $dispatch) !== false) {
+        $dispatch = self::parseDispatch($route['dispatch'], $param_names);
+        if ($dynamic && strpos('$', $dispatch) !== false) {
             $dispatch = self::dynamicDispatch($dispatch, $params);
         }
-        if ($param_mode && $params && isset($param_name)) {
+        if ($param_mode && $params && isset($param_names)) {
             if ($param_mode === 2) {
-                $params = self::bindKvParams($param_name, $params);
+                $params = self::bindKvParams($param_names, $params);
             } else {
-                $params = self::bindListParams($param_name, $params);
+                $params = self::bindListParams($param_names, $params);
             }
         } 
         return [$dispatch, $params];
+    }
+    
+    public static function parseDispatch($dispatch, &$param_names = null)
+    {
+        if (($lpos = strpos($dispatch, '(')) && ($rpos = strpos($dispatch, ')'))) {
+            $param_names = substr($dispatch, $lpos + 1, $rpos - $lpos);
+            return substr($dispatch, 0, $lpos);
+        }
+        return $dispatch;
     }
     
     /*

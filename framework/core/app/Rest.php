@@ -27,7 +27,7 @@ class Rest extends App
         // 解析request body并注入到post
         'parse_request_to_post' => false,
         // 默认调度的路径转为驼峰风格
-        'default_dispatch_to_camel' => null,
+        'default_dispatch_path_to_camel' => null,
         /* 默认调度的参数模式
          * 0 无参数
          * 1 顺序参数
@@ -48,7 +48,7 @@ class Rest extends App
             '*/edit'=> [':GET' => 'edit']
         ],
         // 资源调度的控制器路径转为驼峰风格
-        'resource_dispatch_controller_to_camel' => null,
+        'resource_dispatch_controller_path_to_camel' => null,
         /* 路由调度的参数模式
          * 0 无参数
          * 1 循序参数
@@ -125,8 +125,8 @@ class Rest extends App
         $count      = count($path);
         $depth      = $this->config['controller_depth'];
         $param_mode = $this->config['default_dispatch_param_mode'];
-        if (isset($this->dispatch['route'])) {
-            list($controller, $params) = $this->dispatch['route'];
+        if (isset($this->dispatch['continue'])) {
+            list($controller, $params) = $this->dispatch['continue'];
         } else {
             if ($depth > 0) {
                 if ($count < $depth) {
@@ -144,9 +144,10 @@ class Rest extends App
             } elseif ($param_mode === 0) {
                 $controller_array = $path;
             }
-            if (isset($this->config['default_dispatch_to_camel'])) {
+            if (isset($this->config['default_dispatch_path_to_camel'])) {
                 $controller_array[] = Str::toCamel(
-                    array_pop($controller_array), $this->config['default_dispatch_to_camel']
+                    array_pop($controller_array),
+                    $this->config['default_dispatch_path_to_camel']
                 );
             }
             $controller = implode('\\', $controller_array);
@@ -173,12 +174,12 @@ class Rest extends App
                     'param_mode'            => $param_mode
                 ];
             } elseif (isset($this->config['route_dispatch_action_routes'])
-                && !isset($this->dispatch)
+                && !isset($this->dispatch['continue'])
                 && ($action_route_dispatch = $this->actionRouteDispatch($param_mode, $controller, $params, $class))
             ) {
                 return $action_route_dispatch;
             }
-            $this->dispatch = ['default' => $controller];
+            $this->dispatch = ['continue' => [$controller, $params ?? []]];
         }
     }
     
@@ -190,12 +191,14 @@ class Rest extends App
         if (($depth = $this->config['controller_depth']) < 1) {
             throw new \Exception('If use resource dispatch, must controller_depth > 0');
         }
-        if (isset($this->dispatch['route'])) {
-            $controller  = $this->dispatch['route'][0];
-            $action_path = $this->dispatch['route'][1];
+        if (isset($this->dispatch['continue'])) {
+            list($controller, $action_path) = $this->dispatch['continue'];
         } elseif (count($path) >= $depth) {
-            if (isset($this->config['resource_dispatch_controller_to_camel'])) {
-                $path[$depth] = Str::toCamel($path[$depth], $this->config['resource_dispatch_controller_to_camel']);
+            if (isset($this->config['resource_dispatch_controller_path_to_camel'])) {
+                $path[$depth] = Str::toCamel(
+                    $path[$depth],
+                    $this->config['resource_dispatch_controller_path_to_camel']
+                );
             }
             $controller = implode('\\', array_slice($path, 0, $depth));
             if (!isset($this->config['resource_dispatch_controllers'])) {
@@ -221,12 +224,12 @@ class Rest extends App
                     'param_mode'            => 0
                 ];
             } elseif (isset($this->config['route_dispatch_action_routes'])
-                && !isset($this->dispatch)
+                && !isset($this->dispatch['continue'])
                 && ($action_route_dispatch = $this->actionRouteDispatchHandler(0, $controller, $action_path, $class))
             ) {
                 return $action_route_dispatch;
             }
-            $this->dispatch = ['resource' => $controller];
+            $this->dispatch = ['continue' => [$controller, $action_path]];
         }
     }
     
@@ -260,7 +263,7 @@ class Rest extends App
                 ) {
                     return $action_route_dispatch;
                 }
-                $this->dispatch = ['route' => $dispatch];
+                $this->dispatch = ['continue' => $dispatch];
             }
         }
     }
