@@ -16,22 +16,22 @@ class Jsonrpc extends App
     
     protected $config = [
         // 控制器namespace
-        'controller_ns' => 'controller',
+        'controller_ns'         => 'controller',
         // 控制器类名后缀
-        'controller_suffix' => null,
+        'controller_suffix'     => null,
         // 控制器别名
-        'controller_alias'  => null,
+        'controller_alias'      => null,
         // 允许调度的控制器，为空不限制
-        'dispatch_controllers' => null,
+        'dispatch_controllers'  => null,
         /* 参数模式
          * 0 单参数
          * 1 顺序参数（不检查）
          * 2 顺序参数（检查绑定）
          * 3 键值参数
          */
-        'param_mode'    => 1,
+        'param_mode'            => 1,
         // 最大批调用数，1不启用批调用，0无限批调用数
-        'batch_max_num' => 1,
+        'batch_limit'           => 1,
         // 批调用异常中断
         'batch_exception_abort' => false,
         /* 通知调用类型
@@ -43,7 +43,7 @@ class Jsonrpc extends App
         // 通知回调方法
         'notification_callback' => null,
         // Response content type header
-        'response_content_type' => null
+        'response_content_type' => null,
         /* 请求反序列化与响应序列化，支持设置除默认json外多种序列化方法
          * serialize 原生方法 'unserialize' 'serialize'
          * msgpack https://pecl.php.net/package/msgpack 'msgpack_unserialize' 'msgpack_serialize'
@@ -73,10 +73,10 @@ class Jsonrpc extends App
     {
         $body = Request::body();
         if ($body && $data = ($this->config['request_unserialize'])($body)) {
-            $num = $this->config['batch_max_num'];
-            if ($num !== 1 && !Arr::isAssoc($data)) {
-                if ($num !== 0 && count($data) > $num) {
-                    $this->abort(-32001, "Than batch max num $num");
+            $limit = $this->config['batch_limit'];
+            if ($limit !== 1 && !Arr::isAssoc($data)) {
+                if ($limit !== 0 && count($data) > $limit) {
+                    $this->abort(-32001, "Than batch limit $limit");
                 }
                 $this->is_batch_call = true;
                 foreach ($data as $item) {

@@ -145,11 +145,11 @@ class Grpc extends App
         if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
             $request_object = new $request_class;
             $request_object->mergeFromString($this->readParams());
-            $params = \Closure::bind(function ($ref) {
+            $params = \Closure::bind(function ($rm) {
                 foreach (array_keys(get_class_vars(get_class($this))) as $k) {
                     $params[$k] = $this->$k;
                 }
-                return MethodParameter::bindKvParams($ref, $params);
+                return MethodParameter::bindKvParams($rm, $params);
             }, $request_object, $request_class)($reflection_method);
             $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}(...$params);
             if ($this->config['check_response_type']) {

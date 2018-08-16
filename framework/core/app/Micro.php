@@ -51,8 +51,11 @@ class Micro extends App
     public function __call($method, $params)
     {
         if (in_array($m = strtoupper($method), $this->config['route_dispatch_http_methods'])) {
-            $this->dispatch['route'][$params[0]][":$m"] = $params[1];
-            return $this;
+            if (isset($params[1])) {
+                $this->dispatch['route'][$params[0]][":$m"] = $params[1];
+                return $this;
+            }
+            throw new \Exception('Missing argument');
         }
         throw new \Exception('Call to undefined method '.__CLASS__."::$method");
     }
