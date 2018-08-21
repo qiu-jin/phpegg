@@ -20,9 +20,6 @@ class Builder
             $sql .= self::groupClause($options['group']);
         }
         if (isset($options['having'])) {
-            if (!isset($options['group'])) {
-                throw new \Exception('SQL having ERROR: must follow group method');
-            }
             $sql .= ' HAVING '.self::havingClause($options['having'], $params);
         }
         if (isset($options['order'])) {

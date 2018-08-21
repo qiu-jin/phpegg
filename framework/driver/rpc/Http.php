@@ -72,7 +72,7 @@ class Http
             $url .= $this->config['suffix'];
         }
         if ($filters) {
-            $url .= (strpos($url, '?') ? '&' : '?').$this->setfilter($filters);
+            $url .= (strpos($url, '?') ? '&' : '?').$this->setFilter($filters);
         }
         $client = new Client($method, $url);
         if (isset($this->config['headers'])) {
@@ -127,7 +127,7 @@ class Http
         return error(isset($error_code) ? "[$error_code]".($error_message ?? '')  : $client->error, 2);
     }
     
-    protected function setfilter($filters)
+    protected function setFilter($filters)
     {
         foreach ($filters as $filter) {
             $count = count($filter);

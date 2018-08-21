@@ -48,8 +48,7 @@ class Join extends QueryChain
         if (isset($id)) {
             $this->table_options[$this->table]['where'] = [[$pk, '=', $id]];
         }
-        $data = $this->find(1);
-        return $data ? $data[0] : null;
+        return $this->find(1)[0] ?? null;
     }
 
     public function find($limit = 0)

@@ -34,7 +34,9 @@ class Relate extends QueryChain
 
     public function find($limit = 0)
     {
-        ($data = $this->query->find($limit)) && $this->withSubData($data);
+        if ($data = $this->query->find($limit)) {
+            $this->withSubData($data);
+        }
         return $data;
     }
     

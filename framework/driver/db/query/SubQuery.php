@@ -36,8 +36,7 @@ class SubQuery extends QueryChain
     
     public function get()
     {
-        $data = $this->find(1);
-        return $data ? $data[0] : null;
+        return $this->find(1)[0] ?? null;
     }
     
     public function find($limit = 0)

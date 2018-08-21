@@ -80,6 +80,9 @@ abstract class QueryChain
     
     public function having(...$having)
     {
+        if (!isset($this->options['group'])) {
+            throw new \Exception('SQL having ERROR: must follow group method');
+        }
         $count = count($having);
         if ($count === 3 || $count === 4) {
             $this->options['having'][] = $having;

@@ -70,6 +70,6 @@ class Smtp extends Email
     
     public function __destruct()
     {
-        $this->fp && fclose($this->fp);
+        empty($this->fp) || fclose($this->fp);
     }
 }

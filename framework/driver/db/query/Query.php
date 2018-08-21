@@ -28,12 +28,12 @@ class Query extends QueryChain
         if (isset($id)) {
             $this->options['where'] = [[$pk, '=', $id]];
         }
-        return ($data = $this->find(1)) ? $data[0] : null;
+        return $this->find(1)[0] ?? null;
     }
 
     public function find($limit = 0)
     {
-        if ($limit) {
+        if ($limit > 0) {
             $this->options['limit'] = $limit;
         }
         return $this->db->exec(...$this->builder::select($this->table, $this->options));
@@ -77,19 +77,13 @@ class Query extends QueryChain
         $alias = $func.'_'.$field;
         $this->options['fields'] = [[$func, $field, $alias]];
         $data = $this->db->exec(...$this->builder::select($this->table, $this->options));
-        return $data ? $data[0][$alias] : false;
+        return $data[0][$alias] ?? false;
     }
     
     public function insert(array $data, $return_id = false)
     {
         $params = $this->builder::insert($this->table, $data);
         return $return_id ? $this->db->exec(...$params) : $this->db->query(...$params);
-    }
-    
-    public function replace(array $data)
-    {
-        $result = $this->builder::setData($data);
-        return $this->db->exec("REPLACE INTO ".$this->builder::keywordEscape($this->table)." SET $result[0]", $result[1]);
     }
 
     public function insertAll($datas, $rollback = false)
@@ -115,6 +109,12 @@ class Query extends QueryChain
             }
         }
     }
+    
+    public function replace(array $data)
+    {
+        $set = $this->builder::setData($data);
+        return $this->db->exec("REPLACE INTO ".$this->builder::keywordEscape($this->table)." SET $set[0]", $set[1]);
+    }
    
     public function update($data, $id = null, $pk = 'id')
     {
@@ -126,26 +126,29 @@ class Query extends QueryChain
     
     public function updateAuto($auto, $data = null)
     {
-        if (is_string($auto)) {
-            $set = "$auto = $auto+1";
-        } elseif (is_array($auto)) {
+        if (is_array($auto)) {
             foreach ($auto as $key => $val) {
                 if (is_int($key)) {
-                    $set[] = "$val = $val+1";
-                } elseif (is_int($val)) {
-                    $set[] = $val > 0 ? "$key = $key+$val" : "$key = $key$val";
+                    $v = $this->builder::keywordEscape($val);
+                    $set[] = "$v = $v+1";
+                } else {
+                    $v = $this->builder::keywordEscape($key);
+                    $val = (int) $val;
+                    $set[] = $val > 0 ? "$v = $v+$val" : "$v = $v$val";
                 }
             }
-            $set = implode(',', $set);
+        } else {
+            $v = $this->builder::keywordEscape($auto);
+            $set[] = "$v = $v+1";
         }
         $params = [];
         if ($data) {
             list($dataset, $params) = $this->builder::setData($data);
-            $set = $set.','.$dataset;
+            $set[] = $dataset;
         }
-        $sql = " SET $set WHERE ".$this->builder::whereClause($this->options['where'], $params);
+        $sql = ' SET '.implode(',', $set).' WHERE '.$this->builder::whereClause($this->options['where'], $params);
         if (isset($this->options['limit'])) {
-            $sql .= ' LIMIT '.$this->options['limit'];
+            $sql .= $this->limitClause($this->options['limit']);
         }
         return $this->db->exec('UPDATE '.$this->builder::keywordEscape($this->table).$sql, $params);
     }
