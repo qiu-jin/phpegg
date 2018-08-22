@@ -33,10 +33,8 @@ class Builder
     
     public static function insert($table, $data)
     {
-        $sql = 'INSERT INTO '.self::keywordEscape($table).' ('
-             . self::keywordEscape(implode(self::keywordEscape(','), array_keys($data)))
-             . ') VALUES ('.implode(',', array_fill(0, count($data), '?')).')';
-        return [$sql, array_values($data)];
+        list($fields, $values, $params) = self::insertData($data);
+        return ['INSERT INTO '.self::keywordEscape($table)." ($fields) VALUES ($values)", $params];
     }
     
     public static function update($table, $data, $options)
@@ -63,6 +61,15 @@ class Builder
             $sql .= static::limitClause($options['limit']);
         }
         return [$sql, $params];
+    }
+    
+    public static function insertData($data)
+    {
+        return [
+            self::keywordEscape(implode(self::keywordEscape(','), array_keys($data))),
+            implode(',', array_fill(0, count($data), '?')),
+            array_values($data)
+        ];
     }
     
     public static function selectFrom($table, array $fields = null)

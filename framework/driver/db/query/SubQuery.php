@@ -45,7 +45,7 @@ class SubQuery extends QueryChain
             $this->master['limit'] = $limit;
         }
         $this->table_options[$this->cur] = $this->options;
-        return $this->db->exec(...$this->buildSelect());
+        return $this->db->select(...$this->buildSelect());
     }
     
     public function update($data)
@@ -55,17 +55,16 @@ class SubQuery extends QueryChain
         if (isset($this->master['limit'])) {
             $sql .= $this->builder::limitClause($this->master['limit']);
         }
-        return $this->exec($sql, $params);
+        return $this->db->update($sql, $params);
     }
     
     public function delete()
     {
-        $params = [];
         $sql = "DELETE FROM ".$this->builder::keywordEscape($this->table).self::buildSubQuery($params);
         if (isset($this->master['limit'])) {
             $sql .= $this->builder::limitClause($this->master['limit']);
         }
-        return $this->exec($sql, $params);
+        return $this->db->delete($sql, $params);
     }
     
     protected function buildSelect()
@@ -88,7 +87,7 @@ class SubQuery extends QueryChain
         return [$sql, $params];
     }
     
-    protected function buildSubQuery(&$params)
+    protected function buildSubQuery(&$params = [])
     {
         $sql = '';
         if (isset($this->master['where'])) {

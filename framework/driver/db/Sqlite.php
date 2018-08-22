@@ -12,6 +12,6 @@ class Sqlite extends Pdo
     
     protected function getFields($table)
     {
-        return array_column($this->fetchAll($this->query("PRAGMA table_info(`$table`)")), 'name');
+        return array_column($this->select("PRAGMA table_info(`$table`)"), 'name');
     }
 }

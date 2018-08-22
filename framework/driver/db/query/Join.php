@@ -57,7 +57,7 @@ class Join extends QueryChain
             $this->table_options[$this->cur]['limit'] = $limit;
         }
         $this->table_options[$this->cur] = $this->options;
-        return $this->db->exec(...$this->build());
+        return $this->db->select(...$this->build());
     }
     
     protected function build()

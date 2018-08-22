@@ -28,9 +28,36 @@ abstract class Pdo extends Db
         return $connection;
     }
     
+    public function select($sql, $params = null)
+    {
+        $query = $params ? $this->prepareExecute($sql, $params) : $this->connection->query($sql);
+        return $query->fetchAll(\PDO::FETCH_ASSOC);
+    }
+    
+    public function insert($sql, $params = null, $return_id = false)
+    {
+        $params ? $this->prepareExecute($sql, $params) : $this->connection->exec($sql);
+        if ($return_id) {
+            return $this->connection->lastInsertId();
+        }
+    }
+    
+    public function update($sql, $params = null)
+    {
+        if ($params) {
+            $this->prepareExecute($sql, $params)->rowCount();
+        } else {
+            return $this->connection->exec($sql);
+        }
+    }
+    
+    public function delete($sql, $params = null)
+    {
+        return $this->update($sql, $params);
+    }
+    
     public function exec($sql, $params = null)
     {
-        $this->debug && DBDebug::write($sql, $params);
         $cmd = trim(strtoupper(strtok($sql, ' ')), "\t(");
         if ($params) {
             $query = $this->prepareExecute($sql, $params);
@@ -40,58 +67,30 @@ abstract class Pdo extends Db
                 case 'INSERT':
                     return $this->connection->lastInsertId();
                 case 'UPDATE':
-                    return $query->rowCount();
                 case 'DELETE':
                     return $query->rowCount();
                 default:
                     return true;
             }
         } else {
-            if ($cmd === 'SELECT') {
-                if ($query = $this->connection->query($sql)) {
-                    return $query->fetchAll(\PDO::FETCH_ASSOC);
-                }
-            } elseif ($cmd === 'INSERT' || $cmd === 'UPDATE' || $cmd === 'DELETE') {
-                if ($affected = $this->connection->exec($sql)) {
-                    return $cmd === 'INSERT' ? $this->connection->lastInsertId() : $affected;
-                }
-            } else {
-                if (($query = $this->connection->query($sql))) {
-                    return true;
-                }
+            switch ($cmd) {
+                case 'SELECT':
+                    return $this->realQuery($sql)->fetchAll(\PDO::FETCH_ASSOC);
+                case 'INSERT':
+                    $this->connection->exec($sql);
+                    return $this->connection->lastInsertId();
+                case 'UPDATE':
+                case 'DELETE':
+                    return $this->connection->exec($sql);
+                default:
+                    return (bool) $this->realQuery($sql);
             }
-            throw new \Exception($this->exceptionMessage());
         }
     }
     
     public function query($sql, $params = null)
     {
-        $this->debug && DBDebug::write($sql, $params);
-        if ($params) {
-            return $this->prepareExecute($sql, $params);
-        } else {
-            if ($query = $this->connection->query($sql)) {
-                return $query;
-            }
-            throw new \Exception($this->exceptionMessage());
-        }
-    }
-    
-    public function prepareExecute($sql, $params)
-    {
-        if ($query = $this->connection->prepare($sql)) {
-            if ($query->execute($params)) {
-                return $query;
-            } else {
-                $error = $query->errorInfo();
-            }
-        } else {
-            $error = $this->connection->errorInfo();
-        }
-        if ($error[0] === 'HY093') {
-            throw new \Exception('DB ERROR: Invalid parameter number');
-        }
-        throw new \Exception($this->exceptionMessage($error));
+        return $params ? $this->prepareExecute($sql, $params) : $this->realQuery($sql);
     }
     
     public function fetch($query)
@@ -148,6 +147,42 @@ abstract class Pdo extends Db
     {   
         $error = $query ? $query->errorInfo() : $this->connection->errorInfo();
         return array($error[1], $error[2]);
+    }
+    
+    public function realQuery($sql)
+    {
+        $this->debug && DBDebug::write($sql);
+        if ($query = $this->connection->query($sql)) {
+            return $query;
+        }
+        throw new \Exception($this->exceptionMessage());
+    }
+    
+    public function realExec($sql)
+    {
+        $this->debug && DBDebug::write($sql);
+        if ($result = $this->connection->exec($sql)) {
+            return $result;
+        }
+        throw new \Exception($this->exceptionMessage());
+    }
+    
+    public function prepareExecute($sql, $params)
+    {
+        $this->debug && DBDebug::write($sql, $params);
+        if ($query = $this->connection->prepare($sql)) {
+            if ($query->execute($params)) {
+                return $query;
+            } else {
+                $error = $query->errorInfo();
+            }
+        } else {
+            $error = $this->connection->errorInfo();
+        }
+        if ($error[0] === 'HY093') {
+            throw new \Exception('DB ERROR: Invalid parameter number');
+        }
+        throw new \Exception($this->exceptionMessage($error));
     }
     
     protected function exceptionMessage($error = null)

@@ -61,13 +61,13 @@ class Relate extends QueryChain
             $sql = $this->builder::whereItem($params, $field1[1], 'IN', $in_data);
             $sql = 'SELECT '.$this->builder::keywordEscape($field1[1]).', '
                  . $this->builder::keywordEscape($field2[1]).' FROM '.$this->builder::keywordEscape($related)." WHERE $sql";
-            $related_data = $this->db->exec($sql, $params);
+            $related_data = $this->db->select($sql, $params);
             if ($related_data) {
                 foreach ($related_data as $rd) {
                     $field2_field1_related[$rd[$field2[1]]][] = $rd[$field1[1]];
                 }
                 unset($related_data);
-                $with_data = $this->db->exec(...$this->builder::select($this->with, [
+                $with_data = $this->db->select(...$this->builder::select($this->with, [
                     'order' => $this->options['order'],
                     'fields'=> $this->options['fields'],
                     'where' => array_merge([[$field2[0], 'IN', array_keys($field2_field1_related)]], $this->options['where'])

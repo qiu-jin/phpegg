@@ -5,7 +5,7 @@ use framework\core\Logger;
 
 class Db
 {
-    public static function write($sql, $params)
+    public static function write($sql, $params = null)
     {
         if ($params) {
             if (isset($params[0])) {

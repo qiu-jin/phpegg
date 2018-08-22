@@ -24,6 +24,6 @@ class Mysql extends Pdo
     
     protected function getFields($table)
     {
-        return array_column($this->exec("desc `$table`"), 'Field');
+        return array_column($this->select("desc `$table`"), 'Field');
     }
 }

@@ -16,6 +16,6 @@ class Pgsql extends Pdo
     
     protected function getFields($table)
     {
-        return array_column($this->exec("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_NAME = '$table'"), 'column_name');
+        return array_column($this->select("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_NAME = '$table'"), 'column_name');
     }
 }

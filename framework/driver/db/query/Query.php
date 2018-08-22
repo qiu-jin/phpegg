@@ -36,15 +36,17 @@ class Query extends QueryChain
         if ($limit > 0) {
             $this->options['limit'] = $limit;
         }
-        return $this->db->exec(...$this->builder::select($this->table, $this->options));
+        return $this->db->select(...$this->builder::select($this->table, $this->options));
     }
     
-    public function has()
+    public function has($id = null, $pk = 'id')
     {
-        $this->options['limit'] = 1;
+        if (isset($id)) {
+            $this->options['where'] = [[$pk, '=', $id]];
+        }
         $select = $this->builder::select($this->table, $this->options);
-        $query = $this->db->query("SELECT EXISTS($select[0])", $select[1]);
-        return $query && !empty($this->db->fetchRow($query)[0]);
+        $query  = $this->db->query("SELECT EXISTS($select[0])", $select[1]);
+        return $this->db->fetchRow($query)[0] ?? 0;
     }
     
     public function max($field)
@@ -76,44 +78,34 @@ class Query extends QueryChain
     {
         $alias = $func.'_'.$field;
         $this->options['fields'] = [[$func, $field, $alias]];
-        $data = $this->db->exec(...$this->builder::select($this->table, $this->options));
+        $data = $this->db->select(...$this->builder::select($this->table, $this->options));
         return $data[0][$alias] ?? false;
     }
     
     public function insert(array $data, $return_id = false)
     {
-        $params = $this->builder::insert($this->table, $data);
-        return $return_id ? $this->db->exec(...$params) : $this->db->query(...$params);
+        list($sql, $params) = $this->builder::insert($this->table, $data);
+        return $this->db->insert($sql, $params, $return_id);
     }
-
-    public function insertAll($datas, $rollback = false)
+    
+    public function insertAll($datas)
     {
-        if ($rollback) {
-            try {
-                $this->db->begin();
-                foreach ($datas as $data) {
-                    if (!$this->insert($data)) {
-                        $this->db->rollback();
-                        return false;
-                    }
-                }
-                $this->db->commit();
-                return true;
-            } catch (\Exception $e) {
-                $this->db->rollback();
-                throw $e;
-            }
-        } else {
+        list($fields, $values, $params) = $this->builder::insertData(array_shift($datas));
+        $sql = 'INSERT INTO '.$this->builder::keywordEscape($this->table)." ($fields) VALUES ($values)";
+        if ($datas) {
             foreach ($datas as $data) {
-                $this->insert($data);
+                $sql .= ", ($values)";
+                $params = array_merge($params, array_values($data));
             }
         }
+        return $this->db->affectedRows($this->db->prepareExecute($sql, $params));
     }
     
     public function replace(array $data)
     {
         $set = $this->builder::setData($data);
-        return $this->db->exec("REPLACE INTO ".$this->builder::keywordEscape($this->table)." SET $set[0]", $set[1]);
+        $sql = "REPLACE INTO ".$this->builder::keywordEscape($this->table)." SET $set[0]";
+        return $this->db->affectedRows($this->db->prepareExecute($sql, $set[1]));
     }
    
     public function update($data, $id = null, $pk = 'id')
@@ -121,7 +113,7 @@ class Query extends QueryChain
         if (isset($id)) {
             $this->options['where'] = [[$pk, '=', $id]];
         }
-        return $this->db->exec(...$this->builder::update($this->table, $data, $this->options));
+        return $this->db->update(...$this->builder::update($this->table, $data, $this->options));
     }
     
     public function updateAuto($auto, $data = null)
@@ -150,7 +142,7 @@ class Query extends QueryChain
         if (isset($this->options['limit'])) {
             $sql .= $this->limitClause($this->options['limit']);
         }
-        return $this->db->exec('UPDATE '.$this->builder::keywordEscape($this->table).$sql, $params);
+        return $this->db->update('UPDATE '.$this->builder::keywordEscape($this->table).$sql, $params);
     }
     
     public function delete($id = null, $pk = 'id')
@@ -158,6 +150,6 @@ class Query extends QueryChain
         if (isset($id)) {
             $this->options['where'] = [[$pk, '=', $id]];
         }
-        return $this->db->exec(...$this->builder::delete($this->table, $this->options));
+        return $this->db->delete(...$this->builder::delete($this->table, $this->options));
     }
 }

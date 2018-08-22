@@ -31,6 +31,83 @@ class Mysqli extends Db
         return $connection;
     }
     
+    public function select($sql, $params = null)
+    {
+        $query = $params ? $this->prepareExecute($sql, $params)->get_result() : $this->connection->query($sql);
+        return $query->fetch_all(MYSQLI_ASSOC);
+    }
+    
+    public function insert($sql, $params = null, $return_id = false)
+    {
+        if ($params) {
+            $query = $this->prepareExecute($sql, $params);
+            if ($return_id) {
+                return $query->insert_id; 
+            }
+        } else {
+            $this->connection->query($sql);
+            if ($return_id) {
+                return $this->connection->insert_id; 
+            }
+        }
+    }
+    
+    public function update($sql, $params = null)
+    {
+        if ($params) {
+            return $this->prepareExecute($sql, $params)->affected_rows;
+        } else {
+            $this->connection->query($sql);
+            $this->connection->affected_rows; 
+        }
+    }
+    
+    public function delete($sql, $params = null)
+    {
+        return $this->update($sql, $params);
+    }
+    
+    public function exec($sql, array $params = null, $is_assoc = false)
+    {
+        $cmd = trim(strtoupper(strtok($sql, ' ')),"\t(");
+        if ($params) {
+            $query = $this->prepareExecute($sql, $params, $is_assoc);
+            switch ($cmd) {
+                case 'SELECT':
+                    return $query->get_result()->fetch_all(MYSQLI_ASSOC);
+                case 'INSERT':
+                    return $query->insert_id;
+                case 'UPDATE':
+                case 'DELETE':
+                    return $query->affected_rows;
+                default:
+                    return true;
+            }
+        } else {
+            $query = $this->realQuery($sql);
+            switch ($cmd) {
+                case 'SELECT':
+                    return $query->fetch_all(MYSQLI_ASSOC);
+                case 'INSERT':
+                    return $this->connection->insert_id;
+                case 'UPDATE':
+                case 'DELETE':
+                    return $this->connection->affected_rows;
+                default:
+                    return (bool) $query;
+            }
+        }
+    }
+    
+    public function query($sql, array $params = null, $is_assoc = false)
+    {
+        if ($params) {
+            return $this->prepareExecute($sql, $params, $is_assoc)->get_result();
+        } else {
+            return $this->realQuery($sql);
+        }
+    }
+    
     public function switch($dbname, callable $call)
     {
         $raw_dbname = $this->dbname;
@@ -43,89 +120,6 @@ class Mysqli extends Db
             $this->dbname = $raw_dbname;
             $this->connection->select_db($raw_dbname);
         }
-    }
-    
-    public function exec($sql, array $params = null, $is_assoc = false)
-    {
-        $this->debug && DBDebug::write($sql, $params, $is_assoc);
-        $cmd = trim(strtoupper(strtok($sql, ' ')),"\t(");
-        if ($params) {
-            $query = $this->prepareExecute($sql, $params, $is_assoc);
-            switch ($cmd) {
-                case 'SELECT':
-                    return $query->get_result()->fetch_all(MYSQLI_ASSOC);
-                case 'INSERT':
-                    return $query->insert_id;
-                case 'UPDATE':
-                    return $query->affected_rows;
-                case 'DELETE':
-                    return $query->affected_rows;
-                default:
-                    return true;
-            }
-        } else {
-            if (!$query = $this->connection->query($sql)) {
-                throw new \Exception($this->exceptionMessage());
-            }
-            switch ($cmd) {
-                case 'SELECT':
-                    return $query->fetch_all(MYSQLI_ASSOC);
-                case 'INSERT':
-                    return $this->connection->insert_id;
-                case 'UPDATE':
-                    return $this->connection->affected_rows;
-                case 'DELETE':
-                    return $this->connection->affected_rows;
-                default:
-                    return (bool) $query;
-            }
-        }
-    }
-    
-    public function query($sql, array $params = null, $is_assoc = false)
-    {
-        $this->debug && DBDebug::write($sql, $params, $is_assoc);
-        if ($params) {
-            return $this->prepareExecute($sql, $params, $is_assoc)->get_result();
-        } else {
-            if ($query = $this->connection->query($sql)) {
-                return $query;
-            }
-            throw new \Exception($this->exceptionMessage());
-        }
-    }
-    
-    public function prepareExecute($sql, $params, $is_assoc)
-    {
-        $bind_params = [];
-        if ($is_assoc) {
-            if (preg_match_all('/\:(\w+)/', $sql, $matchs, PREG_OFFSET_CAPTURE)) {
-                $str = '';
-                $start = 0;
-                foreach ($matchs[0] as $i => $match) {
-                    $str .= substr($sql, $start, $match[1]-$start).'?';
-                    $bind_params[] = &$params[$matchs[1][$i][0]];
-                    $start = strlen($match[0]) + $match[1];
-                }
-                if ($start < strlen($sql)) {
-                    $str .= substr($sql, $start);
-                }
-                $sql = $str;
-            }
-        } else {
-            foreach ($params as $k => $v) {
-                $bind_params[] = &$params[$k];
-            }
-        }
-        if ($query = $this->connection->prepare($sql)) {
-            $type  = str_pad('', count($bind_params), 's');
-            array_unshift($bind_params, $type);
-            $query->bind_param(...$bind_params);
-            if ($query->execute()) {
-                return $query;
-            }
-        }
-        throw new \Exception($this->exceptionMessage());
     }
     
     public function fetch($query)
@@ -184,9 +178,52 @@ class Mysqli extends Db
         return array($q->errno, $q->error);
     }
     
-    protected function getFields($table)
+    public function getFields($table)
     {
-        return array_column($this->exec("desc `$table`"), 'Field');
+        return array_column($this->select("desc `$table`"), 'Field');
+    }
+    
+    public function realQuery($sql)
+    {
+        $this->debug && DBDebug::write($sql);
+        if ($query = $this->connection->query($sql)) {
+            return $query;
+        }
+        throw new \Exception($this->exceptionMessage());
+    }
+    
+    public function prepareExecute($sql, $params, $is_assoc = false)
+    {
+        $this->debug && DBDebug::write($sql, $params, $is_assoc);
+        $bind_params = [];
+        if ($is_assoc) {
+            if (preg_match_all('/\:(\w+)/', $sql, $matchs, PREG_OFFSET_CAPTURE)) {
+                $str = '';
+                $start = 0;
+                foreach ($matchs[0] as $i => $match) {
+                    $str .= substr($sql, $start, $match[1]-$start).'?';
+                    $bind_params[] = &$params[$matchs[1][$i][0]];
+                    $start = strlen($match[0]) + $match[1];
+                }
+                if ($start < strlen($sql)) {
+                    $str .= substr($sql, $start);
+                }
+                $sql = $str;
+            }
+        } else {
+            foreach ($params as $k => $v) {
+                $bind_params[] = &$params[$k];
+            }
+        }
+        if ($query = $this->connection->prepare($sql)) {
+            $type  = str_pad('', count($bind_params), 's');
+            array_unshift($bind_params, $type);
+            $query->bind_param(...$bind_params);
+            if ($query->execute()) {
+                return $query;
+            }
+        }
+        throw new \Exception($this->exceptionMessage());
     }
     
     protected function exceptionMessage()
