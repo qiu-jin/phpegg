@@ -92,7 +92,7 @@ class Query extends QueryChain
             try {
                 $this->db->begin();
                 foreach ($datas as $data) {
-                    if (!$this->db->insert($this->table, $data)) {
+                    if (!$this->insert($this->table, $data)) {
                         $this->db->rollback();
                         return false;
                     }
@@ -105,7 +105,7 @@ class Query extends QueryChain
             }
         } else {
             foreach ($datas as $data) {
-                $this->db->insert($this->table, $data);
+                $this->insert($this->table, $data);
             }
         }
     }
