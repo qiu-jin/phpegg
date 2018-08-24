@@ -14,11 +14,12 @@ use Thrift\Protocol\TMultiplexedProtocol;
 
 class Thrift
 {
-    protected $prefix;
+    
     protected $services;
     protected $protocol;
     protected $transport;
     protected $tmultiplexed;
+    protected $service_prefix;
     protected $auto_bind_params;
     protected $service_method_params;
     
@@ -34,11 +35,11 @@ class Thrift
         $this->transport = new TBufferedTransport($socket, 1024, 1024);
         $this->protocol  = new TBinaryProtocol($this->transport);
         $this->transport->open();
-        foreach ($config['service_schemes'] as $type => $rules) {
+        foreach ($config['service_load_rules'] as $type => $rules) {
             Loader::add($type, $rules);
         }
-        $this->prefix = $config['prefix'] ?? null;
         $this->tmultiplexed = $config['tmultiplexed'] ?? false;
+        $this->service_prefix = $config['service_prefix'] ?? null;
         $this->auto_bind_param = $config['auto_bind_param'] ?? false;
     }
 
@@ -59,8 +60,8 @@ class Thrift
     
     public function call($ns, $method, $params)
     {
-        if (isset($this->prefix)) {
-            array_unshift($ns, $this->prefix);
+        if (isset($this->service_prefix)) {
+            array_unshift($ns, $this->service_prefix);
         }
         if (!$ns) {
             throw new \Exception('service is empty');

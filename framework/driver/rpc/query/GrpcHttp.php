@@ -8,7 +8,7 @@ use framework\core\http\Client;
  */
 use Google\Protobuf\Internal\Message;
 
-class GrpcSimple
+class GrpcHttp
 {
     protected $ns;
     protected $rpc;

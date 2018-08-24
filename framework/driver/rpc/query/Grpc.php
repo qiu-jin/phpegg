@@ -41,7 +41,7 @@ class Grpc
             $params = $this->rpc->arrayToRequest($request_class, $params);
         }
         $class = $service.'Client';
-        $client = new $class($this->options['endpoint'], [
+        $client = new $class($this->options['host'].':'.($this->options['port'] ?? 50051), [
             'credentials' => \Grpc\ChannelCredentials::createInsecure()
         ]);
         list($response, $status) = $client->$method($params)->wait();

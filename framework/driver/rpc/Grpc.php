@@ -7,10 +7,11 @@ use framework\core\Loader;
 class Grpc
 {
     protected $config = [
-        // 服务端点
+        //'host'                    => null,
+        //'port'                    => null,
         //'endpoint'                => null,
         // service类名前缀
-        //'prefix'                  => null,
+        //'service_prefix'          => null,
         // 简单模式，简单模式下使用CURL请求，不支持流处理
         'simple_mode'               => false,
         // 是否启用HTTP2（简单模式）
@@ -35,7 +36,7 @@ class Grpc
     
     public function __construct($config)
     {
-        foreach (Arr::poll($config, 'service_schemes') as $type => $rules) {
+        foreach (Arr::poll($config, 'service_load_rules') as $type => $rules) {
             Loader::add($type, $rules);
         }
         $this->config = $config + $this->config;
@@ -54,16 +55,16 @@ class Grpc
     public function query($name = null)
     {
         $ns = [];
-        if (isset($this->config['prefix'])) {
-            $ns[] = $this->config['prefix'];
+        if (isset($this->config['service_prefix'])) {
+            $ns[] = $this->config['service_prefix'];
         }
         if (isset($name)) {
             $ns[] = $name;
         }
-        if (empty($this->config['simple_mode'])) {
+        if (isset($this->config['host'])) {
             return new query\Grpc($this, $ns, $this->config);
         }
-        return new query\GrpcSimple($this, $ns, $this->config);
+        return new query\GrpcHttp($this, $ns, $this->config);
     }
     
     public function arrayToRequest($request, $params)

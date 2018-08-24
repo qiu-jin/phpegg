@@ -25,22 +25,23 @@ class Grpc extends App
         'controller_alias'      => null,
         // 允许调度的控制器，为空不限制
         'dispatch_controllers'  => null,
-        // 服务定义文件
-        'service_schemes'       => null,
-        // 忽略service类名前缀
-        'ignore_service_prefix' => 0,
+        // service前缀
+        'service_prefix'        => null,
+        // 服务定义文件加载规则
+        'service_load_rules'    => null,
         // 是否启用timeout（只支持时H/分M/秒S）
         'enable_timeout'        => false,
         /* 参数模式
-         * 0 键值参数模式
-         * 1 request response 参数模式
+         * 0 普通参数模式
+         * 1 request response 参数模式（默认）
+         * 2 request response 参数模式（自定义）
          */
         'param_mode'            => 0,
-        // 检查响应数据类型（键值参数模式下有效）
+        // 检查响应数据类型（普通参数模式下有效）
         'check_response_type'   => false,
-        // 请求scheme格式（键值参数模式下有效）
+        // 默认请求scheme格式
         'request_scheme_format' => '{service}{method}Request',
-        // 响应scheme格式（键值参数模式下有效）
+        // 默认响应scheme格式
         'response_scheme_format'=> '{service}{method}Response',
         // 请求解压处理器
         'request_decode'        => ['gzip' => 'gzdecode'],
@@ -50,15 +51,18 @@ class Grpc extends App
     
     protected function dispatch()
     {
-        if (count($path_array = Request::pathArr()) !== 2) {
+        if (count($arr = Request::pathArr()) !== 2) {
             return false;
         }
-        $action = $path_array[1];
-        $controller_array = explode('.', $path_array[0]);
-        if ($this->config['ignore_service_prefix'] > 0) {
-            $controller_array = array_slice($controller_array, $this->config['ignore_service_prefix']);
+        $action = $arr[1];
+        $controller = strtr($arr[0], '.', '\\');
+        if ($this->config['service_prefix']) {
+            $len = strlen($this->config['service_prefix']);
+            if (strncasecmp($this->config['service_prefix'], $controller, $len) !== 0) {
+                return false;
+            }
+            $controller = substr($controller, $len + 1);
         }
-        $controller = implode('\\', $controller_array);
         if (isset($this->config['controller_alias'][$controller])) {
             $controller = $this->config['controller_alias'][$controller];
         } elseif (!isset($this->config['dispatch_controllers'])) {
@@ -79,13 +83,13 @@ class Grpc extends App
         if ($this->config['enable_timeout']) {
             $this->setTimeout();
         }
-        if (isset($this->config['service_schemes'])) {
-            foreach ($this->config['service_schemes'] as $type => $rules) {
+        if (isset($this->config['service_load_rules'])) {
+            foreach ($this->config['service_load_rules'] as $type => $rules) {
                 Loader::add($type, $rules);
             }
         }
         $rm = new \ReflectionMethod($this->dispatch['controller_instance'], $this->dispatch['action']);
-        if ($return = $this->config['param_mode'] ? $this->callWithReqResParams($rm) : $this->callWithKvParams($rm)) {
+        if ($return = $this->config['param_mode'] ? $this->callWithReqResParams($rm) : $this->callWithParams($rm)) {
             return $return;
         }
         self::abort(500, 'Illegal message scheme class');
@@ -102,10 +106,10 @@ class Grpc extends App
         $encode = 0;
         if ($grpc_accept_encoding = strtolower(Request::header('grpc-accept-encoding'))) {
             foreach (explode(',', $grpc_accept_encoding) as $encoding) {
-                if (isset($this->config['request_decode'][$encoding])) {
+                if (isset($this->config['response_encode'][$encoding])) {
                     $encode = 1;
                     Response::header('grpc-encoding', $encoding);
-                    $data = ($this->config['request_decode'][$encoding])($data);
+                    $data = ($this->config['response_encode'][$encoding])($data);
                     break;
                 }
             }
@@ -134,14 +138,9 @@ class Grpc extends App
         self::abort(400, 'Invalid params');
     }
     
-    protected function callWithKvParams($reflection_method)
+    protected function callWithParams($reflection_method)
     {
-        $replace = [
-            '{service}' => $this->dispatch['controller'],
-            '{method}'  => ucfirst($this->dispatch['action'])
-        ];
-        $request_class  = strtr($this->config['request_scheme_format'], $replace);
-        $response_class = strtr($this->config['response_scheme_format'], $replace);
+        list($request_class, $response_class) = $this->getDefaultRequestResponseClass();
         if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
             $request_object = new $request_class;
             $request_object->mergeFromString($this->readParams());
@@ -175,19 +174,24 @@ class Grpc extends App
     
     protected function callWithReqResParams($reflection_method)
     {
-        if ($reflection_method->getnumberofparameters() === 2) {
+        if ($this->config['param_mode'] == '2') {
+            if ($reflection_method->getnumberofparameters() !== 2) {
+                return;
+            }
             list($request, $response) = $reflection_method->getParameters();
             $request_class = (string) $request->getType();
             $response_class = (string) $response->getType();
-            if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
-                $request_object = new $request_class;
-                $request_object->mergeFromString($this->readParams());
-                $this->dispatch['controller_instance']->{$this->dispatch['action']}(
-                    $request_object,
-                    $response_object = new $response_class
-                );
-                return $response_object;
-            }
+        } else {
+            list($request_class, $response_class) = $this->getDefaultRequestResponseClass();
+        }
+        if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
+            $request_object = new $request_class;
+            $request_object->mergeFromString($this->readParams());
+            $this->dispatch['controller_instance']->{$this->dispatch['action']}(
+                $request_object,
+                $response_object = new $response_class
+            );
+            return $response_object;
         }
     }
     
@@ -208,5 +212,20 @@ class Grpc extends App
                     break;
             }
         }
+    }
+    
+    protected function getDefaultRequestResponseClass()
+    {
+        $replace = [
+            '{service}' => $this->dispatch['controller'],
+            '{method}'  => ucfirst($this->dispatch['action'])
+        ];
+        $request_class  = strtr($this->config['request_scheme_format'], $replace);
+        $response_class = strtr($this->config['response_scheme_format'], $replace);
+        if ($this->config['service_prefix']) {
+            $request_class = $this->config['service_prefix']."\\$request_class";
+            $response_class = $this->config['service_prefix']."\\$response_class";
+        }
+        return [$request_class, $response_class];
     }
 }
