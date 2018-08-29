@@ -37,16 +37,14 @@ class Grpc extends App
          * 2 request response 参数模式（自定义）
          */
         'param_mode'            => 0,
-        // 检查响应数据类型（普通参数模式下有效）
-        'check_response_type'   => false,
-        // 默认请求scheme格式
-        'request_scheme_format' => '{service}{method}Request',
-        // 默认响应scheme格式
-        'response_scheme_format'=> '{service}{method}Response',
         // 请求解压处理器
         'request_decode'        => ['gzip' => 'gzdecode'],
         // 响应压缩处理器
         'response_encode'       => ['gzip' => 'gzencode'],
+        // 默认请求message格式
+        'request_message_format'    => '{service}{method}Request',
+        // 默认响应message格式
+        'response_message_format'   => '{service}{method}Response',
     ];
     
     protected function dispatch()
@@ -142,33 +140,16 @@ class Grpc extends App
     {
         list($request_class, $response_class) = $this->getDefaultRequestResponseClass();
         if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
-            $request_object = new $request_class;
-            $request_object->mergeFromString($this->readParams());
-            $params = \Closure::bind(function ($rm) {
-                foreach (array_keys(get_class_vars(get_class($this))) as $k) {
-                    $params[$k] = $this->$k;
-                }
-                return MethodParameter::bindKvParams($rm, $params);
-            }, $request_object, $request_class)($reflection_method);
+            $request_message = new $request_class;
+            $request_message->mergeFromString($this->readParams());
+            $params = MethodParameter::bindKvParams(
+                $reflection_method,
+                json_decode($request_message->serializeToJsonString(), true)
+            );
             $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}(...$params);
-            if ($this->config['check_response_type']) {
-                $response_object = new $response_class;
-                foreach (get_class_methods($response_class) as $method) {
-                    if (strpos($method, 'set') === 0 && ($m = lcfirst(substr($method, 3))) && isset($return[$m])) {
-                        $response_object->$method($return[$m]);
-                    }
-                }
-                return $response_object;
-            } else {
-                return \Closure::bind(function (array $params) {
-                    foreach (array_keys(get_class_vars(get_class($this))) as $k) {
-                        if (isset($params[$k])) {
-                            $this->$k = $params[$k];
-                        }
-                    }
-                    return $this;
-                }, new $response_class, $response_class)($return);
-            }
+            $response_message = new $response_class;
+            $response_message->mergeFromJsonString(json_encode($return));
+            return $response_message;
         }
     }
     
@@ -178,20 +159,20 @@ class Grpc extends App
             if ($reflection_method->getnumberofparameters() !== 2) {
                 return;
             }
-            list($request, $response) = $reflection_method->getParameters();
-            $request_class = (string) $request->getType();
-            $response_class = (string) $response->getType();
+            list($request_param, $response_param) = $reflection_method->getParameters();
+            $request_class = (string) $request_param->getType();
+            $response_class = (string) $response_param->getType();
         } else {
             list($request_class, $response_class) = $this->getDefaultRequestResponseClass();
         }
         if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
-            $request_object = new $request_class;
-            $request_object->mergeFromString($this->readParams());
+            $request_message = new $request_class;
+            $request_message->mergeFromString($this->readParams());
             $this->dispatch['controller_instance']->{$this->dispatch['action']}(
-                $request_object,
-                $response_object = new $response_class
+                $request_message,
+                $response_message = new $response_class
             );
-            return $response_object;
+            return $response_message;
         }
     }
     
@@ -220,8 +201,8 @@ class Grpc extends App
             '{service}' => $this->dispatch['controller'],
             '{method}'  => ucfirst($this->dispatch['action'])
         ];
-        $request_class  = strtr($this->config['request_scheme_format'], $replace);
-        $response_class = strtr($this->config['response_scheme_format'], $replace);
+        $request_class  = strtr($this->config['request_message_format'], $replace);
+        $response_class = strtr($this->config['response_message_format'], $replace);
         if ($this->config['service_prefix']) {
             $request_class = $this->config['service_prefix']."\\$request_class";
             $response_class = $this->config['service_prefix']."\\$response_class";

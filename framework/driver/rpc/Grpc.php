@@ -6,40 +6,45 @@ use framework\core\Loader;
 
 class Grpc
 {
+    protected $client;
+    // 默认配置
     protected $config = [
         //'host'                    => null,
         //'port'                    => null,
         //'endpoint'                => null,
         // service类名前缀
         //'service_prefix'          => null,
-        // 简单模式，简单模式下使用CURL请求，不支持流处理
-        'simple_mode'               => false,
-        // 是否启用HTTP2（简单模式）
-        //'enable_http2'=> false,
         // 公共headers（简单模式）
-        //'headers'     => null,
+        //'headers'                 => null,
         // CURL设置（简单模式）
-        //'curlopts'    => null,
-        // 自动绑定参数
-        'auto_bind_param'           => true,
-        
-        //'response_to_array'       => true,
+        //'curlopts'                => null,
+        /* 参数模式
+         * 0 普通参数模式
+         * 1 哈希数组参数模式
+         * 2 原生message参数模式
+         */
+        'param_mode'                => 0,
+        // response转化为数组
+        'response_to_array'         => true,
         // 请求参数协议类格式
-        'request_scheme_format'     => '{service}{method}Request',
+        'request_message_format'    => '{service}{method}Request',
         // 响应结构协议类格式
-        'response_scheme_format'    => '{service}{method}Response',
+        'response_message_format'   => '{service}{method}Response',
     ];
-    
-    protected $simple_mode;
-    
-    protected $request_classes;
     
     public function __construct($config)
     {
-        foreach (Arr::poll($config, 'service_load_rules') as $type => $rules) {
-            Loader::add($type, $rules);
-        }
         $this->config = $config + $this->config;
+        if (isset($this->config['endpoint'])) {
+            $this->client = new client\GrpcHttp($this->config);
+        } else {
+            $this->client = new client\GrpcGoogle($this->config);
+        }
+        if (isset($this->config['service_load_rules'])) {
+            foreach ($this->config['service_load_rules'] as $type => $rules) {
+                Loader::add($type, $rules);
+            }
+        }
     }
     
     public function __get($name)
@@ -61,33 +66,6 @@ class Grpc
         if (isset($name)) {
             $ns[] = $name;
         }
-        if (isset($this->config['host'])) {
-            return new query\Grpc($this, $ns, $this->config);
-        }
-        return new query\GrpcHttp($this, $ns, $this->config);
-    }
-    
-    public function arrayToRequest($request, $params)
-    {
-        return \Closure::bind(function ($params) {
-            $i = 0;
-            foreach (array_keys(get_class_vars(get_class($this))) as $k) {
-                if (isset($params[$i])) {
-                    $this->$k = $params[$i];
-                    $i++;
-                }
-            }
-            return $this;
-        }, new $request, $request)($params);
-    }
-    
-    public function responseToArray($response)
-    {
-        return \Closure::bind(function () {
-            foreach (array_keys(get_class_vars(get_class($this))) as $k) {
-                $return[$k] = $this->$k;
-            }
-            return $return;
-        }, $response, $response)();
+        return new query\Grpc($ns, $this->client, $this->config);
     }
 }

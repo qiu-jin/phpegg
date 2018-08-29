@@ -1,20 +1,20 @@
 <?php
 namespace framework\driver\rpc\query;
 
+use framework\driver\rpc\Jsonrpc as Jrpc;
+
 class Jsonrpc
 {
     protected $id;
     protected $ns;
-    protected $rpc;
+    protected $client;
     protected $options = [
-        'id_method_alias' => 'id',
-        'client_methods_alias'  => null
+        'id_method_alias' => 'id'
     ];
-    protected $client_methods;
     
-    public function __construct($rpc, $name, $options)
+    public function __construct($name, $client, $options)
     {
-        $this->rpc = $rpc;
+        $this->client = $client;
         if (isset($name)) {
             $this->ns[] = $name;
         }
@@ -34,12 +34,6 @@ class Jsonrpc
         if ($method === $this->options['id_method_alias']) {
             $this->id = $params[0];
             return $this;
-        } elseif (isset($this->options['client_methods_alias'][$method])) {
-            $this->client_methods[$this->options['client_methods_alias'][$method]] = $params;
-            return $this;
-        } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
-            $this->client_methods[] = [$method, $params];
-            return $this;
         }
         $this->ns[] = $method;
         return $this->call($params);
@@ -47,13 +41,13 @@ class Jsonrpc
     
     protected function call($params)
     {
-        $body = [
-            'jsonrpc'   => $this->rpc::VERSION,
+        $data = [
+            'jsonrpc'   => Jrpc::VERSION,
             'method'    => implode('.', $this->ns),
             'params'    => $params,
             'id'        => $this->id ?? 0
         ];
-        $result = $this->rpc->getResult($body, $this->client_methods);
+        $result = $this->client->send($data);
         if (isset($result['result'])) {
             return $result['result'];
         }

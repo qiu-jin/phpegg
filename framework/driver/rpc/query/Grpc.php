@@ -1,20 +1,22 @@
 <?php
 namespace framework\driver\rpc\query;
 
-/* 
- * https://grpc.io/docs/quickstart/php.html
+/*
+ * https://github.com/google/protobuf
  */
+use Google\Protobuf\Internal\Message;
+
 class Grpc
 {
     protected $ns;
-    protected $rpc;
-    protected $options;
+    protected $client;
+    protected $config;
 
-    public function __construct($rpc, $ns, $options)
+    public function __construct($ns, $client, $config)
     {
         $this->ns = $ns;
-        $this->rpc = $rpc;
-        $this->options = $options;
+        $this->client = $client;
+        $this->config = $config;
     }
     
     public function __get($name)
@@ -28,29 +30,51 @@ class Grpc
         if (!$this->ns) {
             throw new \Exception('Service is empty');
         }
-        $service  = implode('\\', $this->ns);
-        if (!empty($this->options['auto_bind_param'])) {
-            if (isset($this->options['request_scheme_format'])) {
-                $request_class = strtr($this->options['request_scheme_format'], [
+        $service = implode('\\', $this->ns);
+        $message = $this->makeRequestMessage($service, $method, $params);
+        return $this->response($this->client->send($service, $method, $message));
+    }
+    
+    protected function response($message)
+    {
+        if (empty($this->config['response_to_array'])) {
+            return $message;
+        }
+        return json_decode($message->serializeToJsonString(), true);
+    }
+    
+    protected function makeRequestMessage($service, $method, $params)
+    {
+        switch ($this->config['param_mode']) {
+            case '1':
+                if (!is_array($params[0])) {
+                    throw new \Exception('Invalid params');
+                }
+                $class = strtr($this->config['request_message_format'], [
                     '{service}' => $service,
                     '{method}'  => ucfirst($method)
                 ]);
-            } else {
-                $request_class = (string) (new \ReflectionMethod($class, $method))->getParameters()[0]->getType();
-            }
-            $params = $this->rpc->arrayToRequest($request_class, $params);
+                $message = new $class;
+                $message->mergeFromJsonString(json_encode($return));
+                return $message;
+            case '2':
+                if (is_subclass_of($params[0], Message::class)) {
+                    return $params[0];
+                }
+                throw new \Exception('Invalid params');
+            default:
+                $class = strtr($this->config['request_message_format'], [
+                    '{service}' => $service,
+                    '{method}'  => ucfirst($method)
+                ]);
+                return \Closure::bind(function ($params) {
+                    foreach (array_keys(get_class_vars(get_class($this))) as $i => $k) {
+                        if (isset($params[$i])) {
+                            $this->$k = $params[$i];
+                        }
+                    }
+                    return $this;
+                }, new $class, $class)($params);
         }
-        $class = $service.'Client';
-        $client = new $class($this->options['host'].':'.($this->options['port'] ?? 50051), [
-            'credentials' => \Grpc\ChannelCredentials::createInsecure()
-        ]);
-        list($response, $status) = $client->$method($params)->wait();
-        if ($status->code === 0) {
-            if (empty($this->options['response_to_array'])) {
-                return $response;
-            }
-            return $this->rpc->responseToArray($response);
-        }
-        error("[$status->code]$status->details");
     }
 }

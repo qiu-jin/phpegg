@@ -247,7 +247,7 @@ class Cli extends App
     protected function error($code = null, $message = null)
     {
         $status = $this->formatStyle(($this->core_errors[$code] ?? $code).':', ['bold' => true]);
-        fwrite(STDERR, $this->formatTemplate("<error>$status</error>").var_export($message, true).PHP_EOL);
+        fwrite(STDERR, $this->formatTemplate("<error>$status</error>").print_r($message, true).PHP_EOL);
     }
     
     protected function response($return = null)

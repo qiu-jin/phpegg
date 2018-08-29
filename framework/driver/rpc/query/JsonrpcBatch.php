@@ -1,28 +1,28 @@
 <?php
 namespace framework\driver\rpc\query;
 
+use framework\driver\rpc\Jsonrpc;
+
 class JsonrpcBatch
 {
     protected $id;
     protected $ns;
-    protected $rpc;
+    protected $client;
     protected $queries;
     protected $options = [
-        'id_method_alias' => 'id',
-        'call_method_alias'     => 'call',
+        'id_method_alias'   => 'id',
+        'call_method_alias' => 'call',
     ];
     protected $common_ns;
-    protected $common_client_methods;
     
-    public function __construct($rpc, $common_ns, $common_client_methods, $options)
+    public function __construct($common_ns, $client, $options)
     {
-        $this->rpc = $rpc;
+        $this->client = $client;
+        if ($options) {
+            $this->options = $options + $this->options;
+        }
         if ($common_ns) {
             $this->ns[] = $this->common_ns[] = $common_ns;
-        }
-        $this->common_client_methods = $common_client_methods;
-        if (isset($options)) {
-            $this->options = $options + $this->options;
         }
     }
 
@@ -41,7 +41,7 @@ class JsonrpcBatch
         } else {
             $this->ns[] = $method;
             $this->queries[] = [
-                'jsonrpc'   => $this->rpc::VERSION,
+                'jsonrpc'   => Jsonrpc::VERSION,
                 'method'    => implode('.', $this->ns),
                 'params'    => $params,
                 'id'        => $this->id ?? count($this->queries)
@@ -52,15 +52,18 @@ class JsonrpcBatch
         return $this;
     }
 
-    protected function call(callable $handle = null)
+    protected function call($handler = null)
     {
-        $result = $this->rpc->getResult($this->queries, $this->common_client_methods);
-        if (!isset($handle)) {
+        $result = $this->client->send($this->queries);
+        if ($handler === null) {
             return $result;
+        } elseif ($handler === true) {
+            return array_map(function ($v) {
+                return $v['result'] ?? (isset($v['result']) ? false : null);
+            }, $result);
+        } elseif (is_callable($handler)) {
+            return array_map($handler, $result);
         }
-        foreach ($result as $item) {
-            $return[] = $handle($item);
-        }
-        return $return;
+        throw new \Exception('Invalid call handler type');
     }
 }
