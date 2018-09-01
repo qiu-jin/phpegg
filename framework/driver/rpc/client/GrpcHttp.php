@@ -19,11 +19,11 @@ class GrpcHttp
         $size   = strlen($data);
         $body   = pack('C1N1a'.$size, 0, $size, $data);
         $client = Client::post($url)->body($body);
-        if (!empty($this->config['headers'])) {
-            $client->headers($this->config['headers']);
+        if (!empty($this->config['http_headers'])) {
+            $client->headers($this->config['http_headers']);
         }
-        if (!empty($this->config['curlopts'])) {
-            $client->curlopts($this->config['curlopts']);
+        if (!empty($this->config['http_curlopts'])) {
+            $client->curlopts($this->config['http_curlopts']);
         }
         $response = $client->response;
         if (isset($response->headers['grpc-status'])) {

@@ -9,24 +9,30 @@ class Jsonrpc
     protected $client;
     // 默认配置
     protected $config = [
-        // HTTP端点
-        //'endpoint'          => null,
+        /*
+        // 服务端点
+        'endpoint'          => null,
         // HTTP请求headers
-        //'headers'           => null,
+        'http_headers'      => null,
         // HTTP请求curlopts
-        //'curlopts'        => null,
+        'http_curlopts'     => null,
         // TCP host
-        //'host'            => '127.0.0.1',
+        'host'              => null,
         // TCP port
-        //'port'            => 123456,
+        'port'              => null,
         // 持久TCP链接
-        //'persistent'      => false,
+        'tcp_persistent'    => false,
         // TCP连接超时
-        //'timeout'         => 3,
+        'tcp_timeout'       => 3,
+        // 
+        //'id_method_alias' => 'id',
+        // 
+        //'call_method_alias'   => 'call',
+        */
         // 请求内容序列化
-        'requset_serialize' => 'jsonencode',
+        'requset_serialize'     => 'jsonencode',
         // 响应内容反序列化
-        'response_unserialize' => 'jsondecode',
+        'response_unserialize'  => 'jsondecode',
     ];
     
     public function __construct($config)
@@ -49,13 +55,13 @@ class Jsonrpc
         return $this->query()->$method(...$params);
     }
     
-    public function query($name = null, $options = null)
+    public function query($name = null)
     {
-        return new query\Jsonrpc($name, $this->client, $options);
+        return new query\Jsonrpc($name, $this->client, $this->config);
     }
     
-    public function batch($common_ns = null, $options = null)
+    public function batch($common_ns = null)
     {
-        return new query\JsonrpcBatch($common_ns, $this->client, $options);
+        return new query\JsonrpcBatch($common_ns, $this->client, $this->config);
     }
 }

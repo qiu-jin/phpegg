@@ -4,26 +4,19 @@ namespace framework\driver\rpc\query;
 class Http
 {
     protected $ns;
-    protected $rpc;
+    protected $config;
+    protected $client;
     protected $filters;
-    protected $callback;
-    protected $options = [
-        'ns_method_alias'       => 'with',
-        'filter_method_alias'   => 'filter',
-        'callback_method_alias' => 'callback',
-        'client_methods_alias'  => null
-    ];
-    protected $client_methods;
+    protected $build_handler;
+    protected $response_handler;
     
-    public function __construct($rpc, $name , $options)
+    public function __construct($client, $name , $config)
     {
-        $this->rpc = $rpc;
         if (isset($name)) {
             $this->ns[] = $name;
         }
-        if (isset($options)) {
-            $this->options = $options + $this->options;
-        }
+        $this->client = $client;
+        $this->config = $config;
     }
 
     public function __get($name)
@@ -35,23 +28,19 @@ class Http
     public function __call($method, $params)
     {
         switch ($method) {
-            case $this->options['filter_method_alias']:
+            case $this->config['filter_method_alias']   ?? 'filter':
                 $this->filters[] = $params;
                 return $this;
-            case $this->options['ns_method_alias']:
+            case $this->config['ns_method_alias']       ?? 'ns':
                 $this->ns[] = $params[0];
                 return $this;
-            case $this->options['callback_method_alias']:
-                $this->callback = $params[0];
+            case $this->config['then_method_alias']     ?? 'then':
+                $this->response_handler = $params[0];
+                return $this;
+            case $this->config['build_method_alias']    ?? 'build':
+                $this->build_handler = $params[0];
                 return $this;
             default:
-                if (isset($this->options['client_methods_alias'][$method])) {
-                    $this->client_methods[$this->options['client_methods_alias'][$method]] = $params;
-                    return $this;
-                } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
-                    $this->client_methods[$method] = $params;
-                    return $this;
-                }
                 $this->ns[] = $method;
                 return $this->call($params);
         }
@@ -60,11 +49,14 @@ class Http
     protected function call($params)
     {
         $method = $params && is_array(end($params)) ? 'POST' : 'GET';
-        $client = $this->rpc->requestHandle($method, $this->ns ?? [], $this->filters, $params, $this->client_methods);
-        if (isset($this->callback)) {
-            return $$this->callback($client);
+        $client = $this->client->make($method, $this->ns ?? [], $this->filters, $params);
+        if (isset($this->build_handler)) {
+            $this->build_handler($client);
+        }
+        if (isset($this->response_handler)) {
+            return $$this->response_handler($client);
         } else {
-            return $this->rpc->responseHandle($client);
+            return $this->client->response($client);
         }
     }
 }

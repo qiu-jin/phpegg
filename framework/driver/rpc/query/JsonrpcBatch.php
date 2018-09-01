@@ -7,20 +7,16 @@ class JsonrpcBatch
 {
     protected $id;
     protected $ns;
+    protected $config;
     protected $client;
     protected $queries;
-    protected $options = [
-        'id_method_alias'   => 'id',
-        'call_method_alias' => 'call',
-    ];
     protected $common_ns;
     
-    public function __construct($common_ns, $client, $options)
+    
+    public function __construct($common_ns, $client, $config)
     {
         $this->client = $client;
-        if ($options) {
-            $this->options = $options + $this->options;
-        }
+        $this->config = $config;
         if ($common_ns) {
             $this->ns[] = $this->common_ns[] = $common_ns;
         }
@@ -34,9 +30,9 @@ class JsonrpcBatch
     
     public function __call($method, $params)
     {
-        if ($method === $this->options['call_method_alias']) {
+        if ($method === ($this->config['call_method_alias'] ?? 'call')) {
             return $this->call(...$params);
-        } elseif ($method === $this->options['id_method_alias']) {
+        } elseif ($method === $this->config['id_method_alias'] ?? 'id') {
             $this->id = $params[0];
         } else {
             $this->ns[] = $method;

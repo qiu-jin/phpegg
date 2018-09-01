@@ -1,17 +1,19 @@
 <?php
 namespace framework\driver\rpc\query;
 
+use framework\driver\rpc\Rest as Restrpc;
+
 class Rest
 {
     protected $ns;
-    protected $rpc;
+    protected $client;
     protected $filters;
-    protected $callback;
-    protected $client_methods;
+    protected $build_handler;
+    protected $response_handler;
     
-    public function __construct($rpc, $name)
+    public function __construct($client, $name)
     {
-        $this->rpc = $rpc;
+        $this->client = $client;
         if (isset($name)) {
             $this->ns[] = $name;
         }
@@ -19,12 +21,18 @@ class Rest
 
     public function __get($name)
     {
-        return $this->with($name);
+        return $this->ns($name);
     }
     
-    public function with($name)
+    public function ns($name)
     {
         $this->ns[] = $name;
+        return $this;
+    }
+    
+    public function build(callable $handler)
+    {
+        $this->build_handler = $handler;
         return $this;
     }
     
@@ -34,31 +42,30 @@ class Rest
         return $this;
     }
     
-    public function callback(callable $call)
+    public function then(callable $handler)
     {
-        $this->callback = $call;
+        $this->response_handler = $response_handler;
         return $this;
     }
     
     public function __call($method, $params)
     {
-        if (in_array($method, $this->rpc::ALLOW_HTTP_METHODS, true)) {
+        if (in_array($method, Restrpc::ALLOW_HTTP_METHODS, true)) {
             return $this->call($method, $params);
         }
-        if (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
-            $this->client_methods[$method][] = $params;
-            return $this;
-        }
-        throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
+        throw new \Exception('Call to undefined method '.__CLASS__."::$method");
     }
     
     protected function call($method, $params)
     {
-        $client = $this->rpc->requestHandle($method, $this->ns ?? [], $this->filters, $params, $this->client_methods);
-        if (isset($this->callback)) {
-            return $$this->callback($client);
+        $client = $this->client->make($method, $this->ns ?? [], $this->filters, $params, $this->client_methods);
+        if (isset($this->build_handler)) {
+            $this->build_handler($client);
+        }
+        if (isset($this->response_handler)) {
+            return $$this->response_handler($client);
         } else {
-            return $this->rpc->responseHandle($client);
+            return $this->client->response($client);
         }
     }
 }

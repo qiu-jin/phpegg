@@ -8,19 +8,15 @@ class Jsonrpc
     protected $id;
     protected $ns;
     protected $client;
-    protected $options = [
-        'id_method_alias' => 'id'
-    ];
+    protected $config;
     
-    public function __construct($name, $client, $options)
+    public function __construct($name, $client, $config)
     {
         $this->client = $client;
         if (isset($name)) {
             $this->ns[] = $name;
         }
-        if (isset($options)) {
-            $this->options = $options + $this->options;
-        }
+        $this->config = $config;
     }
 
     public function __get($name)
@@ -31,7 +27,7 @@ class Jsonrpc
     
     public function __call($method, $params)
     {
-        if ($method === $this->options['id_method_alias']) {
+        if ($method === ($this->config['id_method_alias'] ?? 'id')) {
             $this->id = $params[0];
             return $this;
         }

@@ -9,15 +9,17 @@ class Grpc
     protected $client;
     // 默认配置
     protected $config = [
-        //'host'                    => null,
-        //'port'                    => null,
-        //'endpoint'                => null,
+        /*
+        'host'                      => null,
+        'port'                      => null,
+        'endpoint'                  => null,
         // service类名前缀
-        //'service_prefix'          => null,
+        'service_prefix'            => null,
         // 公共headers（简单模式）
-        //'headers'                 => null,
+        'http_headers'              => null,
         // CURL设置（简单模式）
-        //'curlopts'                => null,
+        'http_curlopts'             => null,
+        */
         /* 参数模式
          * 0 普通参数模式
          * 1 哈希数组参数模式

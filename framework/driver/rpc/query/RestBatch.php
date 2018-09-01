@@ -2,38 +2,43 @@
 namespace framework\driver\rpc\query;
 
 use framework\core\http\Client;
+use framework\driver\rpc\Rest as Restrpc;
 
 class RestBatch
 {
     protected $ns;
-    protected $rpc;
+    protected $config;
+    protected $client;
     protected $queries;
     protected $filters;
-    protected $options = [
-        'select_timeout' => 0.1
-    ];
-    protected $client_methods;
     protected $common_ns;
-    protected $common_client_methods;
+    protected $build_handler;
+    protected $common_build_handler;
     
-    public function __construct($rpc, $common_ns, $common_client_methods, $options)
+    public function __construct($client, $common_ns, $config, $common_build_handler)
     {
-        $this->rpc = $rpc;
-        $this->ns[] = $this->common_ns[] = $common_ns;
-        $this->client_methods = $this->common_client_methods = $common_client_methods;
-        if (isset($options)) {
-            $this->options = $options + $this->options;
+        $this->client = $client;
+        $this->config = $config;
+        if (isset($common_ns)) {
+            $this->ns[] = $this->common_ns[] = $common_ns;
         }
+        $this->common_build_handler = $common_build_handler;
     }
 
     public function __get($name)
     {
-        return $this->with($name);
+        return $this->ns($name);
     }
     
-    public function with($name)
+    public function ns($name)
     {
         $this->ns[] = $name;
+        return $this;
+    }
+    
+    public function build(callable $handler)
+    {
+        $this->build_handler = $handler;
         return $this;
     }
     
@@ -44,26 +49,34 @@ class RestBatch
     
     public function __call($method, $params)
     {
-        if (in_array($method, $this->rpc::ALLOW_HTTP_METHODS, true)) {
+        if (in_array($method, Restrpc::ALLOW_HTTP_METHODS, true)) {
             $this->queries[] = $this->buildQuery($method, $params);
-            $this->ns = $this->common_ns;
-            $this->client_methods = $this->common_client_methods;
-            $this->filters = null;
-        } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
-            $this->client_methods[$method][] = $params;
-        } else {
-            throw new \Exception('Call to undefined method '.__CLASS__.'::'.$method);
+            return $this;
         }
-        return $this;
+        throw new \Exception('Call to undefined method '.__CLASS__."::$method");
     }
     
-    public function call(callable $handle = null)
+    public function call(callable $handler = null)
     {
-        return Client::multi($this->queries, $handle ?? [$this->rpc, 'responseHandle'], $this->options['select_timeout']);
+        return Client::multi(
+            $this->queries,
+            $handler ?? [$this->client, 'response'],
+            $this->config['batch_select_timeout'] ?? 0.1
+        );
     }
     
     protected function buildQuery($method, $params)
     {
-        return $this->rpc->requestHandle($method, $this->ns ?? [], $this->filters, $params, $this->client_methods);
+        $client = $this->client->make($method, $this->ns ?? [], $this->filters, $params);
+        if (isset($this->common_build_handler)) {
+            $this->common_build_handler($client);
+        }
+        if (isset($this->build_handler)) {
+            $this->build_handler($client);
+            $this->build_handler = null;
+        }
+        $this->ns = $this->common_ns;
+        $this->filters = null;
+        return $client;
     }
 }

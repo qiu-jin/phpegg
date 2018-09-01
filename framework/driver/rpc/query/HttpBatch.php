@@ -6,28 +6,22 @@ use framework\core\http\Client;
 class HttpBatch
 {
     protected $ns;
-    protected $rpc;
+    protected $config;
+    protected $client;
     protected $filters;
     protected $queries;
-    protected $options = [
-        'select_timeout'        => 0.1,
-        'ns_method_alias'       => 'with',
-        'call_method_alias'     => 'call',
-        'filter_method_alias'   => 'filter',
-        'client_methods_alias'  => null
-    ];
-    protected $client_methods;
     protected $common_ns;
-    protected $common_client_methods;
+    protected $build_handler;
+    protected $common_build_handler;
     
-    public function __construct($rpc, $common_ns, $common_client_methods, $options)
+    public function __construct($client, $common_ns, $config, $common_build_handler)
     {
-        $this->rpc = $rpc;
-        $this->ns[] = $this->common_ns[] = $common_ns;
-        $this->client_methods = $this->common_client_methods = $common_client_methods;
-        if (isset($options)) {
-            $this->options = $options + $this->options;
+        $this->client = $client;
+        $this->config = $config;
+        if (isset($common_ns)) {
+            $this->ns[] = $this->common_ns[] = $common_ns;
         }
+        $this->common_build_handler = $common_build_handler;
     }
 
     public function __get($name)
@@ -39,39 +33,47 @@ class HttpBatch
     public function __call($method, $params)
     {
         switch ($method) {
-            case $this->options['call_method_alias']:
+            case $this->config['call_method_alias']     ?? 'call':
                 return $this->call(...$params);
-            case $this->options['filter_method_alias']:
+            case $this->config['filter_method_alias']   ?? 'filter':
                 $this->filters[] = $params;
                 return $this;
-            case $this->options['ns_method_alias']:
+            case $this->config['ns_method_alias']       ?? 'ns':
                 $this->ns[] = $params[0];
                 return $this;
+            case $this->config['build_method_alias']    ?? 'build':
+                $this->build_handler = $params[0];
+                return $this;
             default:
-                if (isset($this->options['client_methods_alias'][$method])) {
-                    $this->client_methods[$this->options['client_methods_alias'][$method]] = $params;
-                } elseif (in_array($method, $this->rpc::ALLOW_CLIENT_METHODS, true)) {
-                    $this->client_methods[$method] = $params;
-                } else {
-                    $this->ns[] = $method;
-                    $this->queries[] = $this->buildQuery($params);
-                    $this->ns = $this->common_ns;
-                    $this->client_methods = $this->common_client_methods;
-                    $this->filters = null;
-                }
+                $this->ns[] = $method;
+                $this->queries[] = $this->buildQuery($params);
                 return $this;
         }
     }
     
-    protected function call(callable $handle = null)
+    protected function call(callable $handler = null)
     {
-        return Client::multi($this->queries, $handle ?? [$this->rpc, 'responseHandle'], $this->options['select_timeout']);
+        return Client::multi(
+            $this->queries,
+            $handler ?? [$this->client, 'response'],
+            $this->config['batch_select_timeout'] ?? 0.1
+        );
     }
     
     protected function buildQuery($params)
     {
         $method = $params && is_array(end($params)) ? 'POST' : 'GET';
-        return $this->rpc->requestHandle($method, $this->ns ?? [], $this->filters, $params, $this->client_methods);
+        $client = $this->client->make($method, $this->ns, $this->filters, $params);
+        if (isset($this->common_build_handler)) {
+            $this->common_build_handler($client);
+        }
+        if (isset($this->build_handler)) {
+            $this->build_handler($client);
+            $this->build_handler = null;
+        }
+        $this->ns = $this->common_ns;
+        $this->filters = null;
+        return $client;
     }
     
 }

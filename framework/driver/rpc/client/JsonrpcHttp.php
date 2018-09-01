@@ -15,11 +15,11 @@ class JsonrpcHttp
     public function send($data)
     {
         $client = Client::post($this->config['endpoint']);
-        if (isset($this->config['headers'])) {
-            $client->headers($this->config['headers']);
+        if (isset($this->config['http_headers'])) {
+            $client->headers($this->config['http_headers']);
         }
-        if (isset($this->config['curlopts'])) {
-            $client->curlopts($this->config['curlopts']);
+        if (isset($this->config['http_curlopts'])) {
+            $client->curlopts($this->config['http_curlopts']);
         }
         $client->body($this->config['requset_serialize']($data));
         if (($result = $client->response->body) !== false) {

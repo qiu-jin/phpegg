@@ -9,11 +9,11 @@ class JsonrpcTcp
     public function __construct($config)
     {
         $this->config = $config;
-        $this->socket = (empty($config['persistent']) ? 'pfsockopen' : 'fsockopen')(
+        $this->socket = (empty($config['tcp_persistent']) ? 'pfsockopen' : 'fsockopen')(
             $config['host'],
             $config['port'],
             $errno, $errstr,
-            $config['timeout'] ?? 3
+            $config['tcp_timeout'] ?? 3
         );
         if (!$this->socket) {
             error("-32000: Internet error $errstr[$errno] connecting to $host:$port");
