@@ -91,13 +91,13 @@ class S3 extends Storage
     {
         $path = $this->path($path);
         $client = new Client($method, "$this->endpoint/$this->bucket$path");
+        if ($auth) {
+            $client->headers($this->setHeaders($method, $path, $headers));
+        }
         if ($client_methods) {
             foreach ($client_methods as $client_method => $params) {
                 $client->$client_method(...$params);
             }
-        }
-        if ($auth) {
-            $client->headers($this->setHeaders($method, $path, $headers));
         }
         $response = $client->response;
         if ($response->status >= 200 && $response->status < 300) {

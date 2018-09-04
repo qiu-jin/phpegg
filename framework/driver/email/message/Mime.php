@@ -87,9 +87,8 @@ class Mime
                 return $str;
             case 'binary':
                 return $str;
-            default:
-                throw new \Exception("Encoding invalid: $encoding");
         }
+        throw new \Exception("Encoding invalid: $encoding");
     }
     
     public static function buildAttachments($attachs, $boundary, $is_buffer)

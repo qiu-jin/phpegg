@@ -99,13 +99,13 @@ class Qiniu extends Storage
     protected function send($host, $path, $client_methods = null, $method = 'POST')
     {
         $client = new Client($method, $host.$path);
+        if ($path) {
+            $client->header('Authorization', 'QBox '.$this->sign($path."\n"));
+        }
         if ($client_methods) {
             foreach ($client_methods as $client_method => $params) {
                 $client->$client_method(...$params);
             }
-        }
-        if ($path) {
-            $client->header('Authorization', 'QBox '.$this->sign($path."\n"));
         }
         if (($response = $client->response)->status === 200) {
             return $method === 'GET' ? $response->body : true;

@@ -1,6 +1,9 @@
 <?php
 namespace framework\driver\storage;
 
+/*
+ * http://php.net/manual/en/book.ftp.php
+ */
 class Ftp extends Storage
 {
     protected $connection;
@@ -28,7 +31,7 @@ class Ftp extends Storage
         if ($to) {
             return ftp_get($this->connection, $to, $from, 2);
         } else {
-            if (ftp_fget($this->connection, $fp = fopen('php://memory', 'r+'), $from, 2)) {
+            if (ftp_fget($this->connection, $fp = fopen('php://temp', 'r+'), $from, 2)) {
                 rewind($fp);
                 $content = stream_get_contents($fp);
                 fclose($fp);
@@ -47,7 +50,7 @@ class Ftp extends Storage
     {
         if ($this->ckdir($to = $this->path($to))) {
             if ($is_buffer) {
-                fwrite($fp = fopen('php://memory', 'r+'), $from);
+                fwrite($fp = fopen('php://temp', 'r+'), $from);
                 rewind($fp);
                 $return = ftp_fput($this->connection, $to, $fp, 2);
                 fclose($fp);
@@ -70,7 +73,7 @@ class Ftp extends Storage
     public function copy($from, $to)
     {
         if ($this->ckdir($to = $this->path($to))) {
-            $fp = fopen('php://memory', 'r+');
+            $fp = fopen('php://temp', 'r+');
             if (ftp_fget($this->connection, $fp, $this->path($from), 2)) {
                 rewind($fp);
                 $return = ftp_fput($this->connection, $to, $fp, 2);

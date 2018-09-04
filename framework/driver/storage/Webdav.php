@@ -92,16 +92,16 @@ class Webdav extends Storage
     protected function send($method, $url, $headers = null, $client_methods = null, $auth = true)
     {
         $client = new Client($method, $url);
-        if ($client_methods) {
-            foreach ($client_methods as $client_method => $params) {
-                $client->$client_method(...$params);
-            }
-        }
         if ($auth) {
             $headers[] = $this->auth();
         }
         if ($headers) {
             $client->headers($headers);
+        }
+        if ($client_methods) {
+            foreach ($client_methods as $client_method => $params) {
+                $client->$client_method(...$params);
+            }
         }
         $response = $client->response;
         if ($response->status >= 200 && $response->status < 300) {

@@ -88,13 +88,13 @@ class Oss extends Storage
     {
         $path = $this->path($path);
         $client = new Client($method, 'http://'.$this->bucket.'.'.$this->endpoint.$path);
+        if ($auth) {
+            $client->headers($this->setHeaders($method, $path, $headers));
+        }
         if ($client_methods) {
             foreach ($client_methods as $client_method => $params) {
                 $client->$client_method(...$params);
             }
-        }
-        if ($auth) {
-            $client->headers($this->setHeaders($method, $path, $headers));
         }
         $response = $client->response;
         if ($response->status >= 200 && $response->status < 300) {
@@ -114,7 +114,7 @@ class Oss extends Storage
             return false;
         }
         $result = Xml::decode($response->body);
-        return error($result['Message'] ?? $client->error, 2);
+        return error("[{$result['Code']}] {$result['Message']}" ?? $client->error, 2);
     }
 
     protected function setHeaders($method, $path, $headers)
@@ -124,7 +124,7 @@ class Oss extends Storage
              . ($headers['Content-Md5'] ?? '')."\n"
              . ($headers['Content-Type'] ?? '')."\n"
              . $headers['Date']."\n"
-             . isset($headers['x-oss-copy-source']) ? 'x-oss-copy-source:'.$headers['x-oss-copy-source']."\n" : ''
+             . (isset($headers['x-oss-copy-source']) ? "x-oss-copy-source:{$headers['x-oss-copy-source']}\n" : '')
              . '/'.$this->bucket.$path;
         $headers['Authorization'] = "OSS $this->acckey:".base64_encode(hash_hmac('sha1', $str, $this->seckey, true));
         foreach ($headers as $k => $v) {

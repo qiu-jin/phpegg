@@ -14,6 +14,8 @@ class Client
     private $request;
     // 响应内容
     private $response;
+    // 是否返回响应headers
+    private $return_headers;
     
     public function __construct($method, $url)
     {
@@ -211,7 +213,7 @@ class Client
      */
     public function returnHeaders($bool = true)
     {
-        $this->request->curlopts[CURLOPT_HEADER] = (bool) $bool;
+        $this->return_headers = $bool;
         return $this;
     }
     
@@ -250,10 +252,17 @@ class Client
         }
         if ($fp = fopen($file, 'w+')) {
             $this->request->curlopts[CURLOPT_FILE] = $fp;
-            $this->request->curlopts[CURLOPT_HEADER] = false;
             $this->send();
-            fclose($fp);
-            return $this->response->status === 200 && $this->response->body === true;
+            $return = $this->response->status === 200 && $this->response->body === true;
+            if ($return) {
+                fclose($fp);
+            } else {
+                rewind($fp);
+                $this->response->body = stream_get_contents($fp);
+                fclose($fp);
+                unlink($file);
+            }
+            return $return;
         }
         return $this->response = false;
     }
@@ -273,8 +282,11 @@ class Client
     protected function send()
     {
         if ($this->debug) {
-            $this->request->curlopts[CURLOPT_HEADER] = true;
+            $this->return_headers = true;
             $this->request->curlopts[CURLINFO_HEADER_OUT] = true;
+        }
+        if ($this->return_headers) {
+            $this->request->curlopts[CURLOPT_WRITEHEADER] = fopen('php://temp', 'r+');
         }
         $this->response(curl_exec($this->build()));
     }
@@ -337,10 +349,9 @@ class Client
             }
         };
         $this->response->status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-        if (empty($this->request->curlopts[CURLOPT_HEADER]) || $content === false) {
-            $this->response->body = $content;
-        } else {
-            $this->responseWithHeaders($content);
+        $this->response->body = $content;
+        if ($this->return_headers) {
+            $this->response->headers = $this->getResponseHeaders();
         }
         if (!($this->response->status >= 200 && $this->response->status < 300)) {
             $this->error();
@@ -348,17 +359,42 @@ class Client
     }
     
     /*
-     * 处理请求响应内容和头数据
+     * 获取headers
      */
-    protected function responseWithHeaders($content)
+    protected function getResponseHeaders()
     {
-        // 跳过HTTP/1.1 100 continue
-        if (substr($content, 9, 3) === '100') {
-            list(, $header, $this->response->body) = explode(self::EOL.self::EOL, $content, 3);
-        } else {
-            list($header, $this->response->body) = explode(self::EOL.self::EOL, $content, 2);
+        if ($fp = $this->request->curlopts[CURLOPT_WRITEHEADER]) {
+            rewind($fp);
+            $str = stream_get_contents($fp);
+            fclose($fp);
+            if ($str) {
+                return $this->parseHeaders($str);
+            }
         }
-        $arr = explode(self::EOL, $header);
+    }
+    
+    /*
+     * 获取headers
+     */
+    protected function getResponseHeadersFromResult()
+    {
+        if (is_string($body = $this->response->body)) {
+            // 跳过HTTP/1.1 100 continue
+            if (substr($body, 9, 3) === '100') {
+                list(, $str, $this->response->body) = explode(self::EOL.self::EOL, $body, 3);
+            } else {
+                list($str, $this->response->body) = explode(self::EOL.self::EOL, $body, 2);
+            }
+            return $this->parseHeaders($str);
+        }
+    }
+    
+    /*
+     * 解析header字符串
+     */
+    protected function parseHeaders($str)
+    {
+        $arr = explode(self::EOL, $str);
         foreach ($arr as $v) {
             $line = explode(":", $v, 2);
             if(count($line) === 2) {
@@ -375,7 +411,7 @@ class Client
                 }
             }
         }
-        $this->response->headers = $headers;
+        return $headers ?? null;
     }
     
     /*
