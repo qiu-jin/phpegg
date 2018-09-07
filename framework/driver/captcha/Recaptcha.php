@@ -4,10 +4,16 @@ namespace framework\driver\captcha;
 use framework\core\http\Client;
 use framework\core\http\Request;
 
+/*
+ * <script src='$this->script' async defer></script><div class='g-recaptcha' data-sitekey='$this->acckey'></div>
+ */
 class Recaptcha
 {
+    // 访问key
     protected $acckey;
+    // 加密key
     protected $seckey;
+    // javascript地址
     protected $script = 'https://www.google.com/recaptcha/api.js';
     protected static $endpoint = 'https://www.google.com/recaptcha/api/siteverify';
     
@@ -26,12 +32,7 @@ class Recaptcha
     {
         return $this->acckey;
     }
-    /*
-    public function template($html = null)
-    {
-        return "<script src='$this->script' async defer></script><div class='g-recaptcha' data-sitekey='$this->acckey'></div>";
-    }
-    */
+
     public function verify($value = null)
     {
         $client = Client::post(self::$endpoint)->form([

@@ -5,7 +5,14 @@ use framework\core\http\Client;
 
 class Nexmo extends Sms
 {
+    protected $area_code;
     protected static $endpoint = 'https://rest.nexmo.com/sms/json';
+    
+    public function __construct(array $config)
+    {
+        parent::__construct($config);
+        $this->area_code = $config['area_code'] ?? '86';
+    }
     
     protected function handle($to, $template, $data, $signname = null)
     {
@@ -19,7 +26,7 @@ class Nexmo extends Sms
         $client = Client::post(self::$endpoint)->json([
             'from'      => $signname ?? $this->signname,
             'text'      => $message,
-            'to'        => is_array($to) ? "$to[0]$to[1]" : "86$to",
+            'to'        => is_array($to) ? "$to[0]$to[1]" : $this->area_code.$to,
             'api_key'   => $this->acckey,
             'api_secret'=> $this->seckey,
             'type'      => strlen($message) === mb_strlen($message) ? 'text' : 'unicode'

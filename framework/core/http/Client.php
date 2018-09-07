@@ -222,7 +222,7 @@ class Client
      */
     public function debug($bool = true)
     {
-        $this->debug = (bool) $bool;
+        $this->debug = $bool;
         return $this;
     }
     
@@ -394,10 +394,9 @@ class Client
      */
     protected function parseHeaders($str)
     {
-        $arr = explode(self::EOL, $str);
-        foreach ($arr as $v) {
+        foreach (explode(self::EOL, $str) as $v) {
             $line = explode(":", $v, 2);
-            if(count($line) === 2) {
+            if(isset($line[1])) {
                 $k = trim($line[0]);
                 $v = trim($line[1]);
                 if (isset($headers[$k])) {
@@ -454,6 +453,6 @@ class Client
     
     public function __destruct()
     {
-        isset($this->ch) && curl_close($this->ch);
+        empty($this->ch) || curl_close($this->ch);
     }
 }

@@ -24,7 +24,7 @@ class View
             'ext'           => '.html',
             // 模版文件目录，为空则默认为视图文件目录
             'dir'           => null,
-            // 模版引擎，为空则不起用模版
+            // 模版引擎，为空则不启用模版
             'engine'        => Template::class,
             // 是否强制编译模版，默认开启APP_DEBUG时启用
             'force_complie' => APP_DEBUG,

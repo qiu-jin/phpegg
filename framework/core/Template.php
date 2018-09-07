@@ -1059,7 +1059,9 @@ class Template
                 $args = implode(', ', self::readArguments($val, $len, $pos, $strs));
                 // 函数
                 if (count($arr) == 1) {
-                    if (in_array($tmp, self::$config['allow_php_functions'])) {
+                    if (self::$config['allow_php_functions'] === true
+                        || in_array($tmp, self::$config['allow_php_functions'])
+                    ) {
                         return "$tmp($args)";
                     }
                     throw new TemplateException("readFunctionValue error: 不支持的内置函数$tmp");
@@ -1074,7 +1076,9 @@ class Template
             } elseif ($c == '-' && substr($val, $i + 1, 1) == '>') {
                 // 容器
                 $provider = implode('.', $arr);
-                if (in_array($provider, self::$config['allow_container_providers'])) {
+                if (self::$config['allow_container_providers'] === true
+                    || in_array($provider, self::$config['allow_container_providers'])
+                ) {
                     $pos = $i - 1;
                     return self::$config['view_container_macro']($provider);
                 }

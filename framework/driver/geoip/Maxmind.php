@@ -4,6 +4,7 @@ namespace framework\driver\geoip;
 use framework\core\http\Client;
 
 /* 
+ * 使用离线数据库
  * composer require maxmind-db/reader
  * https://github.com/maxmind/MaxMind-DB-Reader-php
  */
@@ -53,7 +54,7 @@ class Maxmind extends Geoip
         if ($result = $client->response->json()) {
             return $raw ? $result : $this->result($result);
         }
-        return warning($result['error'] ?? $client->error);
+        return warn($result['error'] ?? $client->error);
     }
     
     protected function result($result)

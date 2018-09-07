@@ -31,6 +31,26 @@ abstract class Cache
         isset($config['serializer']) && $this->serializer = $config['serializer'];
     }
     
+    public function poll($key)
+    {
+        $value = $this->get($key);
+        $this->delete($key);
+        return $value;
+    }
+    
+    public function remember($key, $value, $ttl = null)
+    {
+        if (!$this->has($key)) {
+            if ($value instanceof \Closure) {
+                $value = call_user_func($value);
+            }
+            $this->set($key, $value, $ttl);
+        } else {
+            $value = $this->get($key);
+        }
+        return $value;
+    }
+    
     public function getMultiple(array $keys, $default = null)
     {
         foreach ($keys as $key) {
@@ -57,26 +77,6 @@ abstract class Cache
             }
         }
         return true;
-    }
-    
-    public function pull($key)
-    {
-        $value = $this->get($key);
-        $this->delete($key);
-        return $value;
-    }
-    
-    public function remember($key, $value, $ttl = null)
-    {
-        if (!$this->has($key)) {
-            if ($value instanceof \Closure) {
-                $value = call_user_func($value);
-            }
-            $this->set($key, $value, $ttl);
-        } else {
-            $value = $this->get($key);
-        }
-        return $value;
     }
     
     protected function serialize($data)

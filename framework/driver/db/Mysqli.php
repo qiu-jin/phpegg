@@ -78,6 +78,7 @@ class Mysqli extends Db
                 case 'INSERT':
                     return $query->insert_id;
                 case 'UPDATE':
+                case 'REPLACE':
                 case 'DELETE':
                     return $query->affected_rows;
                 default:
@@ -91,6 +92,7 @@ class Mysqli extends Db
                 case 'INSERT':
                     return $this->connection->insert_id;
                 case 'UPDATE':
+                case 'REPLACE':
                 case 'DELETE':
                     return $this->connection->affected_rows;
                 default:

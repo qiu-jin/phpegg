@@ -67,6 +67,7 @@ abstract class Pdo extends Db
                 case 'INSERT':
                     return $this->connection->lastInsertId();
                 case 'UPDATE':
+                case 'REPLACE':
                 case 'DELETE':
                     return $query->rowCount();
                 default:
@@ -80,6 +81,7 @@ abstract class Pdo extends Db
                     $this->connection->exec($sql);
                     return $this->connection->lastInsertId();
                 case 'UPDATE':
+                case 'REPLACE':
                 case 'DELETE':
                     return $this->connection->exec($sql);
                 default:

@@ -3,6 +3,11 @@ namespace framework\util;
 
 class Arr
 {
+    public static function rand(array $array)
+    {
+        return $array[array_rand($array)];
+    }
+    
     public static function poll(array &$array, $key, $default = null)
     {
         if (isset($array[$key])) {

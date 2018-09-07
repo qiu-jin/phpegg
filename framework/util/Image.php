@@ -24,7 +24,7 @@ class Image
         throw new \Exception("Illegal image file: $path");
     }
     
-    public static function blank(int $width, int $height, $color = null)
+    public static function blank(int $width, int $height, $color = null, $type = 'png')
     {
         $image = imagecreate($width, $height);
         if ($color) {
@@ -33,7 +33,12 @@ class Image
             }
             imagecolorallocatealpha($image, ...$color);
         }
-        return new self($image, compact('width', 'height'));
+        return new self($image, [
+            'type'      => $type,
+            'mime'      => "image/$type",
+            'width'     => $width,
+            'height'    => $height,
+        ]);
     }
     
     private function __construct($image, $info = null)
@@ -196,6 +201,17 @@ class Image
     }
     
     /*
+     * apply
+     */
+    public function apply(callable $handler)
+    {
+        if (is_resource($image = $handler($this->resource()))) {
+            $this->reset($image);
+        }
+        return $this;
+    }
+    
+    /*
      * resource
      */
     public function resource()
@@ -315,7 +331,7 @@ class Image
     /*
      * parse string color
      */
-    private static function parseStringColor($color)
+    public static function parseStringColor($color)
     {
         if (strpos($color, '#') == 0 && isset($color[6])) {
             $color = array_map('hexdec', str_split(substr($color, 1), 2));

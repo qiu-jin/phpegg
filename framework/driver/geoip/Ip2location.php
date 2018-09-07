@@ -12,7 +12,15 @@ class Ip2location extends Geoip
     protected $db;
     // 数据表名
     protected $table;
-    // 数据表字段名
+    /*
+     * 数据表字段名
+     * 0 起始位置
+     * 1 结束位置
+     * 2 国家代码
+     * 3 国家名称
+     * 4 地区（可选）
+     * 5 城市（可选）
+     */
     protected $fields;
 
     protected function init($config)
@@ -29,7 +37,7 @@ class Ip2location extends Geoip
             foreach ($this->fields as $v) {
                 $fields[] = $builder::keywordEscape($v);
             }
-            $result = $this->db->exec(sprintf("SELECT %s FROM %s WHERE %u BETWEEN %s AND %s",
+            $result = $this->db->select(sprintf("SELECT %s FROM %s WHERE %u BETWEEN %s AND %s",
                 implode(',', array_slice($fields, 2)),
                 $builder::keywordEscape($this->table),
                 $long,

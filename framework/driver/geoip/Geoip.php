@@ -18,7 +18,7 @@ abstract class Geoip
     
     /*
      * ip定位
-     * $fitler用于过滤处理结果，false不过滤，true默认过滤，string过滤获取指定值
+     * $fitler用于过滤处理结果，false不过滤，true过滤，string过滤获取指定值
      */
     public function locate($ip, $fitler = false)
     {
