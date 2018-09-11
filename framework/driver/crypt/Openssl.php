@@ -14,7 +14,7 @@ class Openssl extends Crypt
             $this->serialize($data),
             $this->config['method'],
             $this->config['key'],
-            intval($raw),
+            (bool) $raw,
             $this->getIv()
         );
     }
@@ -25,7 +25,7 @@ class Openssl extends Crypt
             $data,
             $this->config['method'],
             $this->config['key'],
-            intval($raw),
+            (bool) $raw,
             $this->getIv()
         ));
     }

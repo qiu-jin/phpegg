@@ -34,6 +34,6 @@ abstract class Geoip
                 $this->cache->set($ip, $location);
             }
         }
-        return ($location && $fitler === true) ? $location : $location[$fitler];
+        return ($location && $fitler === true) ? $location : ($location[$fitler] ?? null);
     }
 }

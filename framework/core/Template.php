@@ -16,6 +16,8 @@ class Template
         'raw_tag'               => 'raw',
         // php标签
         'php_tag'               => 'php',
+        // 注释标签
+        'note_tag'              => 'note',
         // heredoc标签
         'heredoc_tag'           => 'heredoc',
         // 插槽标签
@@ -45,9 +47,9 @@ class Template
         // 文本转义符号与反转义符号
         'text_escape_sign'      => [':', '!'],
         // 不输出标识符
-        'not_echo_text_sign'    => '#',
+        'not_echo_text_sign'    => '%',
         // 原样输出标识符（不解析文本插入边界符以其内内容）
-        'raw_text_sign'         => '!',
+        'raw_text_sign'         => '*',
         // 注释符号
         'note_text_sign'        => '#',
         // 允许的函数
@@ -197,13 +199,14 @@ class Template
             $str = self::$config['view_template_reader']($str);
         }
         $ret = '';
+        $str = self::removeNote($str);
         $str = self::readInsertAndExtends($str, $ck);
         self::checkPHPSyntax($str);
         // 检查模版更新
         if ($ck) {
             $ret = self::wrapCode(self::$config['view_check_expired_macro'](array_unique($ck))).PHP_EOL;
         }
-        return $ret.self::readRaw($str);
+        return $ret.self::readRawAndPHPCode($str);
     }
     
     /*
@@ -215,6 +218,26 @@ class Template
         if (count($tokens) != 1 || $tokens[0][0] != T_INLINE_HTML) {
             throw new TemplateException('checkPhpSyntax error: 禁用PHP原生语法');
         }
+    }
+    
+    /*
+     * 解析去除模版注释
+     */
+    protected static function removeNote($str)
+    {
+        $ret = '';
+        if ($res = self::parseTagWithText($str, self::$config['note_tag'])) {
+            $pos = 0;
+            foreach ($res as $v) {
+                $ret .= substr($str, $pos, $v['pos'][0] - $pos);
+                $pos  = $v['pos'][1];
+            }
+            $str = substr($str, $pos);
+        }
+        if ($str) {
+            $ret .= $str;
+        }
+        return $ret;
     }
     
     /*
@@ -242,7 +265,7 @@ class Template
             if ($res = self::parseTagWithText($str, self::$config['block_tag'], 'name')) {
                 $blocks += array_column($res, 'text', 'attr');
             }
-            $str = self::$config['view_template_reader']($name);
+            $str = self::removeNote(self::$config['view_template_reader']($name));
             $i++;
         }
         if ($i == 0) {
@@ -290,7 +313,7 @@ class Template
                     list($name, $block) = explode('.', $name, 2);
                 }
                 $ck[] = $name;
-                $content = $contents[$name] ?? $contents[$name] = self::$config['view_template_reader']($name);
+                $content = $contents[$name] ?? $contents[$name] = self::removeNote(self::$config['view_template_reader']($name));
                 if (isset($block)) {
                     if (!isset($block_contents[$name])) {
                         $result = self::parseTagWithText($content, self::$config['block_tag'], 'name');
@@ -337,23 +360,23 @@ class Template
     }
     
     /*
-     * 读取解析插值语句
+     * 读取解析原生语句
      */
-    protected static function readRaw($str)
+    protected static function readRawAndPHPCode($str)
     {
         $ret = '';
         $end = [];
         if ($res = self::parseTagWithText($str, self::$config['raw_tag'])) {
             $pos = 0;
             foreach ($res as $v) {
-                $ret .= self::readPHPCode(substr($str, $pos, $v['pos'][0] - $pos), $end);
+                $ret .= self::readPHPCodeAndHeredoc(substr($str, $pos, $v['pos'][0] - $pos), $end);
                 $ret .= $v['text'];
                 $pos  = $v['pos'][1];
             }
             $str = substr($str, $pos);
         }
         if ($str) {
-            $ret .= self::readPHPCode($str, $end);
+            $ret .= self::readPHPCodeAndHeredoc($str, $end);
         }
         if (!$end) {
             return $ret;
@@ -364,23 +387,23 @@ class Template
     /*
      * 读取解析php代码
      */
-    protected static function readPHPCode($str, &$end)
+    protected static function readPHPCodeAndHeredoc($str, &$end)
     {
         if (!self::$config['php_tag']) {
-            return self::readHeredoc($str, $end);
+            return self::readHeredocAndMore($str, $end);
         }
         $ret = '';
         if ($res = self::parseTagWithText($str, self::$config['php_tag'])) {
             $pos = 0;
             foreach ($res as $v) {
-                $ret .= self::readHeredoc(substr($str, $pos, $v['pos'][0] - $pos), $end);
+                $ret .= self::readHeredocAndMore(substr($str, $pos, $v['pos'][0] - $pos), $end);
                 $ret .= self::wrapCode(PHP_EOL.$v['text'].PHP_EOL);
                 $pos  = $v['pos'][1];
             }
             $str = substr($str, $pos);
         }
         if ($str) {
-            $ret.= self::readHeredoc($str, $end);
+            $ret.= self::readHeredocAndMore($str, $end);
         }
         return $ret;
     }
@@ -388,7 +411,7 @@ class Template
     /*
      * 读取解析heredoc
      */
-    protected static function readHeredoc($str, &$end)
+    protected static function readHeredocAndMore($str, &$end)
     {
         if (!self::$config['heredoc_tag']) {
             return self::readStructAndText($str, $end);
@@ -417,31 +440,28 @@ class Template
     {
         $l = preg_quote(self::$config['text_delimiter_sign'][0]);
         $r = preg_quote(self::$config['text_delimiter_sign'][1]);
-        $p = preg_quote(self::$config['note_text_sign'].self::$config['raw_text_sign']);
-        return preg_replace_callback("/([$p]?)$l(.*?)$r/", function ($matches) use ($str) {
-            if ($s = $matches[1]) {
-                // 忽略注释
-                if ($s === self::$config['note_text_sign']) {
-                    return '';
-                // 不解析，原样输出
-                } elseif($s === self::$config['raw_text_sign']) {
-                    return substr($matches[0], strlen($s));
-                }
-            }
-            $val = $matches[2];
+        return preg_replace_callback("/$l(.*?)$r/", function ($matches) use ($str) {
+            $val = $matches[1];
             $code = self::readValue($val);
-            // 不输出
-            if ($val[0] === self::$config['not_echo_text_sign']) {
-                return self::wrapCode("$code;");
+            switch ($val[0]) {
+                // 忽略注释
+                case self::$config['note_text_sign']:
+                    return '';
+                // 不输出
+                case self::$config['not_echo_text_sign']:
+                    return self::wrapCode("$code;");
+                // 不解析，原样输出
+                case self::$config['raw_text_sign']:
+                    return substr($matches[0], strlen($s));
+                default:
+                    // 是否转义
+                    $escape = self::$config['auto_escape_text'];
+                    if (in_array($val[0], self::$config['text_escape_sign'])) {
+                        $escape = !array_search($val[0], self::$config['text_escape_sign']);
+                        $val = substr($val, 1);
+                    }
+                    return self::wrapCode($escape ? "echo htmlentities($code);" : "echo $code;");
             }
-            // 是否转义
-            $escape = self::$config['auto_escape_text'];
-            if (in_array($val[0], self::$config['text_escape_sign'])) {
-                $escape = !array_search($val[0], self::$config['text_escape_sign']);
-                $val = substr($val, 1);
-            }
-            
-            return self::wrapCode($escape ? "echo htmlentities($code);" : "echo $code;");
         }, self::readInclude(self::readStructTag($str, $end)));
     }
     

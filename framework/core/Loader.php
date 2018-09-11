@@ -15,9 +15,7 @@ class Loader
     ];
     // 类别名
     private static $class_alias = [
-        'App'       => 'framework\App',
-        'Request'   => 'framework\core\http\Request',
-        'Response'  => 'framework\core\http\Response',
+        'App' => 'framework\App'
     ];
     
     /*

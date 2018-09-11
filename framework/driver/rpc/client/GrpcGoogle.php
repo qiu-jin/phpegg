@@ -31,8 +31,10 @@ class GrpcGoogle
             return $this->clients[$service];
         }
         $class = $service.'Client';
-        return $this->clients[$service] = new $class($this->config['host'].':'.($this->config['port'] ?? 50051), [
-            'credentials' => ChannelCredentials::createInsecure()
-        ]);
+        $options = $this->config['grpc_options'] ?? null;
+        if (!isset($options['credentials'])) {
+            $options['credentials'] = ChannelCredentials::createInsecure();
+        }
+        return $this->clients[$service] = new $class($this->config['host'].':'.($this->config['port'] ?? 50051), $options);
     }
 }

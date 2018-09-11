@@ -19,6 +19,8 @@ class Grpc
         'http_headers'              => null,
         // CURL设置（简单模式）
         'http_curlopts'             => null,
+        // google grpc 设置
+        'grpc_options'              => null,
         */
         /* 参数模式
          * 0 普通参数模式
