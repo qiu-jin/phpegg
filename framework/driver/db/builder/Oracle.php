@@ -9,9 +9,9 @@ class Oracle extends Builder
     public static function limitClause($limit)
     {
         if (is_array($limit)) {
-            return " OFFSET $limit[0] ROWS FETCH NEXT $limit[1] ROWS ONLY";
+            return sprintf(' OFFSET %d ROWS FETCH NEXT %d ROWS ONLY', $limit[0], $limit[1]);
         } else {
-            return " FETCH FIRST $limit ROWS ONLY";
+            return sprintf(' FETCH FIRST %d ROWS ONLY', $limit);
         }
     }
 }

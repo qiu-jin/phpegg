@@ -1,6 +1,8 @@
 <?php 
 namespace framework\core;
 
+use framework\App;
+
 class Loader
 {
     private static $init;
@@ -8,14 +10,14 @@ class Loader
     private static $class_map = [];
     // 类PSR-4
     private static $class_psr4 = [];
+    // 类别名
+    private static $class_alias = [
+        'App' => App::class
+    ];
     // 类前缀目录
     private static $class_prefix = [
         'app' => APP_DIR,
         'framework' => FW_DIR
-    ];
-    // 类别名
-    private static $class_alias = [
-        'App' => 'framework\App'
     ];
     
     /*

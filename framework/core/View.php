@@ -18,16 +18,18 @@ class View
         'ext'       => '.php',
         // 视图文件目录
         'dir'       => APP_DIR.'view/',
+        // 错误页面
+        'error'     => null,
         // 模版配置
         'template'  => [
             // 模版文件扩展名
-            'ext'           => '.html',
+            'ext'       => '.html',
             // 模版文件目录，为空则默认为视图文件目录
-            'dir'           => null,
+            'dir'       => null,
+            // 调试模式下强制编译模版
+            'debug'     => APP_DEBUG,
             // 模版引擎，为空则不启用模版
-            'engine'        => Template::class,
-            // 是否强制编译模版，默认开启APP_DEBUG时启用
-            'force_complie' => APP_DEBUG,
+            'engine'    => Template::class,
         ]
     ];
 
@@ -59,20 +61,20 @@ class View
     
     public static function vars(array $values)
     {
-        self::$view['vars'] = $values + (self::$view['vars'] ?? []);
+        self::$view['vars'] = isset(self::$view['vars']) ? $values + self::$view['vars'] : $values;
     }
     
     /*
      * 设置过滤器
      */
-    public static function filter($name, callable $value)
+    public static function filter($name, $value)
     {
         self::$view['filters'][$name] = $value;
     }
     
     public static function filters(array $values)
     {
-        self::$view['filters'] = $values + (self::$view['filters'] ?? []);
+        self::$view['filters'] = isset(self::$view['filters']) ? $values + self::$view['filters'] : $values;
     }
     
     /*
@@ -81,10 +83,10 @@ class View
     public static function render($tpl, array $vars = [])
     {
         if (isset(self::$view['vars'])) {
-            extract(self::$view['vars'], EXTR_SKIP);
+            extract(self::$view['vars']);
         }
         if ($vars) {
-            extract($vars, EXTR_SKIP);
+            extract($vars);
         }
         ob_start();
         include self::make($tpl);
@@ -101,7 +103,7 @@ class View
             if (!is_file($tplfile = self::getTemplate($tpl))) {
                 throw new ViewException("Template file not found: $tplfile");
             }
-            if ($force || self::$config['template']['force_complie'] || !is_file($phpfile)
+            if ($force || self::$config['template']['debug'] || !is_file($phpfile)
                 || filemtime($phpfile) < filemtime($tplfile)
             ) {
                 self::complieTo(self::readTemplateFile($tplfile), $phpfile);
@@ -115,7 +117,8 @@ class View
      */
     public static function exists($tpl)
     {
-        return self::$config['template']['engine'] ? is_file(self::getTemplate($tpl)) : is_php_file(self::getView($tpl));
+        return isset(self::$config['template']['engine']) ? is_file(self::getTemplate($tpl)) 
+                                                          : is_php_file(self::getView($tpl));
     }
     
     /*
@@ -133,52 +136,9 @@ class View
     }
     
     /*
-     * 视图魔术方法
-     */
-    public static function __callStatic($method, $params = [])
-    {
-        if (isset(self::$config['methods'][$method])) {
-            $tpl = array_pop($vars = self::$config['methods'][$method]);
-            if ($vars) {
-                foreach (array_keys($vars) as $i => $v) {
-                    if (!isset($params[$i])) {
-                        break;
-                    }
-                    $vars[$v] = $params[$i];
-                }
-            }
-            return Response::view($tpl, $vars);
-        }
-        throw new \BadMethodCallException('Call to undefined method '.__CLASS__."::$method");
-    }
-
-    /*
-     *  模版编译宏
-     */
-    private static function filterMacro($name, $args)
-    {
-        return __CLASS__."::callFilter('$name'".($args ? ', '.implode(', ', $args) : '').")";
-    }
-    
-    private static function ContainerMacro($name)
-    {
-        return Container::class."::make('$name')";
-    }
-    
-    private static function includeMacro($name, $is_var = false)
-    {
-        return 'include '.__CLASS__.'::make('.($is_var ? $name : "'$name'").');';
-    }
-    
-    private static function checkExpiredMacro($names)
-    {
-        return 'if ('.__CLASS__."::checkExpired(__FILE__, '".implode("', '", $names)."')) return include __FILE__;";
-    }
-    
-    /*
      * 读取模版内容
      */
-    private static function readTemplate($tpl)
+    public static function readTemplate($tpl)
     {
         if (is_file($file = self::getTemplate($tpl))) {
             return self::readTemplateFile($file);
@@ -189,7 +149,7 @@ class View
     /*
      * 检查视图文件是否过期
      */
-    private static function checkExpired($phpfile, ...$tpls)
+    public static function checkExpired($phpfile, ...$tpls)
     {
         if (!self::$config['template']['engine']) {
             return;
@@ -209,12 +169,12 @@ class View
     /*
      * 调用过滤器
      */
-    private static function callFilter($name, ...$params)
+    public static function callFilter($name, ...$params)
     {
         if (isset(self::$view['filters'][$name])) {
             return self::$view['filters'][$name](...$params);
         }
-        throw new \BadMethodCallException('Call to undefined filter '.$name);
+        throw new \BadMethodCallException("Call undefined filter: $name");
     }
     
     /*

@@ -141,9 +141,9 @@ class Builder
     public static function limitClause($limit)
     {
         if (is_array($limit)) {
-            return " LIMIT $limit[0],$limit[1]";
+            return sprintf(' LIMIT %d, %d', $limit[0], $limit[1]);
         } else {
-            return " LIMIT $limit";
+            return sprintf(' LIMIT %d', $limit);
         }
     }
     
@@ -218,6 +218,11 @@ class Builder
     
     public static function keywordEscape($kw)
     {
+        /*
+        if (\app\env\STRICT_BUILD_DB_FIELD && !preg_match('/^\w+$/', $kw)) {
+            throw new \Exception("Unsafe Field keyword : $kw");
+        }
+        */
         return static::KEYWORD_ESCAPE_LEFT.$kw.static::KEYWORD_ESCAPE_RIGHT;
     }
     

@@ -6,9 +6,9 @@ class Sqlite extends Builder
     public static function limitClause($limit)
     {
         if (is_array($limit)) {
-            return " LIMIT $limit[1] OFFSET $limit[0]";
+            return sprintf(' LIMIT %d OFFSET %d', $limit[0], $limit[1]);
         } else {
-            return " LIMIT $limit";
+            return sprintf(' LIMIT %d', $limit);
         }
     }
 }

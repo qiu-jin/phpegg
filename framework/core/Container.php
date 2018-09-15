@@ -1,6 +1,20 @@
 <?php
 namespace framework\core;
 
+use framework\driver\db;
+use framework\driver\sms;
+use framework\driver\rpc;
+use framework\driver\data;
+use framework\driver\cache;
+use framework\driver\crypt;
+use framework\driver\queue;
+use framework\driver\email;
+use framework\driver\geoip;
+use framework\driver\search;
+use framework\driver\logger;
+use framework\driver\captcha;
+use framework\driver\storage;
+
 class Container
 {
     protected static $init;
@@ -10,19 +24,19 @@ class Container
     protected static $providers = [
         // 驱动
         'driver'    => [
-            'db'        => 'framework\driver\db',
-            'rpc'       => 'framework\driver\rpc',
-            'cache'     => 'framework\driver\cache',
-            'storage'   => 'framework\driver\storage',
-            'search'    => 'framework\driver\search',
-            'data'      => 'framework\driver\data',
-            'queue'     => 'framework\driver\queue',
-            'email'     => 'framework\driver\email',
-            'sms'       => 'framework\driver\sms',
-            'geoip'     => 'framework\driver\geoip',
-            'crypt'     => 'framework\driver\crypt',
-            'captcha'   => 'framework\driver\captcha',
-            'logger'    => 'framework\driver\logger',
+            'db'        => db::class,
+            'sms'       => sms::class,
+            'rpc'       => rpc::class,
+            'data'      => data::class,
+            'cache'     => cache::class,
+            'crypt'     => crypt::class,
+            'queue'     => queue::class,
+            'email'     => email::class,
+            'geoip'     => geoip::class,
+            'search'    => search::class,
+            'logger'    => logger::class,
+            'captcha'   => captcha::class,
+            'storage'   => storage::class,
         ],
         // 模型
         'model'     => [

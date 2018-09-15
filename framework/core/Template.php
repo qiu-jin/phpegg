@@ -11,7 +11,7 @@ class Template
     // 配置
     protected static $config    = [
         // 空标签
-        'blank_tag'             => 'tag',
+        'void_tag'              => 'void',
         // 原生标签
         'raw_tag'               => 'raw',
         // php标签
@@ -48,8 +48,6 @@ class Template
         'text_escape_sign'      => [':', '!'],
         // 不输出标识符
         'not_echo_text_sign'    => '%',
-        // 原样输出标识符（不解析文本插入边界符以其内内容）
-        'raw_text_sign'         => '*',
         // 注释符号
         'note_text_sign'        => '#',
         // 允许的函数
@@ -58,16 +56,16 @@ class Template
         'allow_static_classes'  => false,
         // 允许的容器
         'allow_container_providers' => false,
+        // filter宏
+        'view_filter_macro'         => __CLASS__.'::filterMacro',
+        // include宏
+        'view_include_macro'        => __CLASS__.'::includeMacro',
+        // container宏
+        'view_container_macro'      => __CLASS__.'::ContainerMacro',
+        // check expired宏
+        'view_check_expired_macro'  => __CLASS__.'::checkExpiredMacro',
         // 模版读取器
         'view_template_reader'      => View::class.'::readTemplate',
-        // filter宏
-        'view_filter_macro'         => View::class.'::filterMacro',
-        // include宏
-        'view_include_macro'        => View::class.'::includeMacro',
-        // container宏
-        'view_container_macro'      => View::class.'::ContainerMacro',
-        // check expired宏
-        'view_check_expired_macro'  => View::class.'::checkExpiredMacro',
     ];
     
     // 内置变量
@@ -226,7 +224,7 @@ class Template
     protected static function removeNote($str)
     {
         $ret = '';
-        if ($res = self::parseTagWithText($str, self::$config['note_tag'])) {
+        if ($res = self::parseTagWithText($str, self::$config['note_tag'], null, false, true)) {
             $pos = 0;
             foreach ($res as $v) {
                 $ret .= substr($str, $pos, $v['pos'][0] - $pos);
@@ -234,10 +232,7 @@ class Template
             }
             $str = substr($str, $pos);
         }
-        if ($str) {
-            $ret .= $str;
-        }
-        return $ret;
+        return $ret.$str;
     }
     
     /*
@@ -313,7 +308,8 @@ class Template
                     list($name, $block) = explode('.', $name, 2);
                 }
                 $ck[] = $name;
-                $content = $contents[$name] ?? $contents[$name] = self::removeNote(self::$config['view_template_reader']($name));
+                $content = $contents[$name] ??
+                           $contents[$name] = self::removeNote(self::$config['view_template_reader']($name));
                 if (isset($block)) {
                     if (!isset($block_contents[$name])) {
                         $result = self::parseTagWithText($content, self::$config['block_tag'], 'name');
@@ -366,7 +362,7 @@ class Template
     {
         $ret = '';
         $end = [];
-        if ($res = self::parseTagWithText($str, self::$config['raw_tag'])) {
+        if ($res = self::parseTagWithText($str, self::$config['raw_tag'], null, false, true)) {
             $pos = 0;
             foreach ($res as $v) {
                 $ret .= self::readPHPCodeAndHeredoc(substr($str, $pos, $v['pos'][0] - $pos), $end);
@@ -450,9 +446,6 @@ class Template
                 // 不输出
                 case self::$config['not_echo_text_sign']:
                     return self::wrapCode("$code;");
-                // 不解析，原样输出
-                case self::$config['raw_text_sign']:
-                    return substr($matches[0], strlen($s));
                 default:
                     // 是否转义
                     $escape = self::$config['auto_escape_text'];
@@ -523,7 +516,7 @@ class Template
             }
             // 补全空白内容
             $ret .= PHP_EOL.$blank;
-            if ($matches[1][$i][0] != self::$config['blank_tag']) {
+            if ($matches[1][$i][0] != self::$config['void_tag']) {
                 $ret .= $attrs['html'];
             }
             // 如果是自闭合标签则自行添加PHP闭合，否则增加未闭合标签语句数据供下步处理。
@@ -578,7 +571,7 @@ class Template
                         $end[$i]['num']--;
                     // 最后结束标签则处理标签闭合
                     } else {
-                        if ($tag !== self::$config['blank_tag']) {
+                        if ($tag !== self::$config['void_tag']) {
                             $ret .= $match[0];
                         }
                         $left = $blank ?? self::readLeftBlank($tmp);
@@ -737,7 +730,7 @@ class Template
     /*
      * 
      */
-    protected static function parseTagWithText($str, $tag, $name = null, $self_end = false)
+    protected static function parseTagWithText($str, $tag, $name = null, $self_end = false, $nesting = false)
     {        
         if (!preg_match_all(self::tagRegex($tag), $str, $matches, PREG_OFFSET_CAPTURE)) {
             return false;
@@ -764,6 +757,15 @@ class Template
                         'attr' => $attr
                     ];
                 }
+            // 允许嵌套
+            } elseif ($nesting) {
+                $p = $pos;
+                $n = count($ret) - 1;
+                if (!$pos = stripos($str, $end_tag, $ret[$n]['pos'][1])) {
+                    throw new TemplateException("parseTagWithText error: 标签 $tag 未闭合");
+                }
+                $ret[$n]['pos'][1] = $pos + strlen($end_tag);
+                $ret[$n]['text'] .=  substr($str, $p, $pos - $p);
             } else {
                 throw new TemplateException("parseTagWithText error: 标签 $tag 不允许嵌套使用");
             }
@@ -910,6 +912,7 @@ class Template
                 case '@':
                     if (!isset($ret) && !isset($tmp)) {
                         $ret = self::readFunctionValue($ret, $tmp, $val, $len, $i, $strs);
+                        break;
                     }
                     throw new TemplateException("readValue error: 非法 $c 语法 $val");
                 case '$':
@@ -1087,12 +1090,17 @@ class Template
                     throw new TemplateException("readFunctionValue error: 不支持的内置函数$tmp");
                 }
                 // 静态方法
-                $m  = array_pop($arr);
-                $class = implode('\\', $arr);
-                if (isset(self::$config['allow_static_classes'][$class])) {
-                    return self::$config['allow_static_classes'][$class]."::$m($args)";
+                $tmp = [];
+                while ($v = array_pop($arr)) {
+                    $tmp[] = $v;
+                    $class = implode('\\', $arr);
+                    if (isset(self::$config['allow_static_classes'][$class])) {
+                        $m = array_shift($tmp);
+                        $n = $tmp ? '\\'.implode('\\', array_reverse($tmp)) : '';
+                        return self::$config['allow_static_classes'][$class]."$n::$m($args)";
+                    }
                 }
-                throw new TemplateException("readFunctionValue error: 未开启静态方法支持");
+                throw new TemplateException("readFunctionValue error: 未定义的静态类");
             } elseif ($c == '-' && substr($val, $i + 1, 1) == '>') {
                 // 容器
                 $provider = implode('.', $arr);
@@ -1242,6 +1250,29 @@ class Template
             return true;
         }
         return false;
+    }
+    
+    /*
+     *  模版编译宏（依赖框架实现）
+     */
+    protected static function filterMacro($name, $args)
+    {
+        return View::class."::callFilter('$name'".($args ? ', '.implode(', ', $args) : '').")";
+    }
+    
+    protected static function ContainerMacro($name)
+    {
+        return Container::class."::make('$name')";
+    }
+    
+    protected static function includeMacro($name, $is_var = false)
+    {
+        return 'include '.View::class.'::make('.($is_var ? $name : "'$name'").');';
+    }
+    
+    protected static function checkExpiredMacro($names)
+    {
+        return 'if ('.View::class."::checkExpired(__FILE__, '".implode("', '", $names)."')) return include __FILE__;";
     }
 }
 Template::__init();
