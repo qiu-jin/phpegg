@@ -61,73 +61,72 @@ class Command
     // 短选项别名
     protected $short_option_alias;
     
-    public function __construct()
+    public function __construct(array $arguments = null, array $templates = null)
     {
-        /*
-        $this->app = App::instance();
-        if (!$this->app instanceof Cli) {
-            throw new \RuntimeException('Not is Cli mode');
-        }
-        */
         if (isset($this->title)) {
             $this->setTitle($this->title);
         }
-        $this->argv = App::getDispatch('arguments');
-        $this->options = $this->argv['long_options'] ?? [];
-        if (isset($this->argv['short_options'])) {
-            if ($this->short_option_alias) {
-                foreach ($this->argv['short_options'] as $k => $v) {
-                    $option = $this->short_option_alias[$k] ?? null;
-                    if ($option && !isset($this->options[$option])) {
-                        $this->options[$option] = $v;
+        if ($arguments) {
+            $this->argv = $arguments;
+            $this->options = $this->argv['long_options'] ?? [];
+            if (isset($this->argv['short_options'])) {
+                if ($this->short_option_alias) {
+                    foreach ($this->argv['short_options'] as $k => $v) {
+                        $option = $this->short_option_alias[$k] ?? null;
+                        if ($option && !isset($this->options[$option])) {
+                            $this->options[$option] = $v;
+                        }
                     }
                 }
+                $this->options += $this->argv['short_options'];
             }
-            $this->options += $this->argv['short_options'];
+        }
+        if ($templates) {
+            $this->templates = $templates + $this->templates;
         }
     }
     
-    protected function pid()
+    public function pid()
     {
         return $this->pid ?? $this->pid = getmypid();
     }
     
-    protected function params()
+    public function params()
     {
         return $this->argv['params'] ?? null;
     }
     
-    protected function param(int $index, $default = null)
+    public function param(int $index, $default = null)
     {
         return $this->argv['params'][$index - 1] ?? $default;
     }
     
-    protected function options()
+    public function options()
     {
         return $this->options ?? null;
     }
     
-    protected function option($name, $default = null)
+    public function option($name, $default = null)
     {
         return $this->options[$name] ?? $default;
     }
     
-    protected function longOptions()
+    public function longOptions()
     {
         return $this->argv['long_options'] ?? null;
     }
     
-    protected function longOption($name, $default = null)
+    public function longOption($name, $default = null)
     {
         return $this->argv['long_options'][$name] ?? $default;
     }
     
-    protected function shortOptions()
+    public function shortOptions()
     {
         return $this->argv['short_options'] ?? null;
     }
     
-    protected function shortOption($name, $default = null)
+    public function shortOption($name, $default = null)
     {
         return $this->argv['short_options'][$name] ?? $default;
     }
@@ -150,48 +149,48 @@ class Command
         fwrite(STDOUT, $text);
     }
     
-    protected function line($text, $style = null)
+    public function line($text, $style = null)
     {
         $this->write($text, $style);
         $this->newline();
     }
     
-    protected function error($text)
+    public function error($text)
     {
         $this->line("<error>$text</error>", true);
     }
     
-    protected function info($text)
+    public function info($text)
     {
         $this->line("<info>$text</info>", true);
     }
     
-    protected function comment($text)
+    public function comment($text)
     {
         $this->line("<comment>$text</comment>", true);
     }
     
-    protected function question($text)
+    public function question($text)
     {
         $this->line("<question>$text</question>", true);
     }
     
-    protected function highlight($text)
+    public function highlight($text)
     {
         $this->line("<highlight>$text</highlight>", true);
     }
     
-    protected function warning($text)
+    public function warning($text)
     {
         $this->line("<warning>$text</warning>", true);
     }
     
-    protected function json($data)
+    public function json($data)
     {
         $this->line(json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), true);
     }
     
-    protected function table(array $data, array $head = null)
+    public function table(array $data, array $head = null)
     {
         $data = array_values($data);
 		if ($head) {
@@ -222,27 +221,27 @@ class Command
         $this->line(implode(PHP_EOL, $table));
     }
     
-    protected function newline($num = 1)
+    public function newline($num = 1)
     {
         $this->write(str_repeat(PHP_EOL, $num));
     }
     
-    protected function ask($prompt, array $auto_complete = null)
+    public function ask($prompt, array $auto_complete = null)
     {
         return $this->read($prompt, $auto_complete);
     }
     
-    protected function confirm($prompt)
+    public function confirm($prompt)
     {
         return in_array(strtolower($this->read($prompt)), ['y', 'yes'], true);
     }
 
-    protected function choice($prompt, array $options, $is_multi_select = false)
+    public function choice($prompt, array $options, $is_multi_select = false)
     {
         
     }
     
-    protected function progress($total = 100, $plus = '+', $reduce = '-', $format = '[%s%s] %3d%% Complete')
+    public function progress($total = 100, $plus = '+', $reduce = '-', $format = '[%s%s] %3d%% Complete')
     {
         return new class ($this->app, compact('total', 'plus', 'reduce', 'format')) {
             private $app;
@@ -272,7 +271,7 @@ class Command
         };
     }
     
-    protected function hidden($prompt)
+    public function hidden($prompt)
     {
         if ($this->hasStty()) {
             $this->write($prompt);
@@ -289,7 +288,7 @@ class Command
         throw new \RuntimeException('Unable to hide the response.');
     }
     
-    protected function anticipate($prompt, array $values)
+    public function anticipate($prompt, array $values)
     {
         if ($this->hasReadline()) {
             readline_completion_function(function ($input, $index) use ($values) {
@@ -307,7 +306,7 @@ class Command
         throw new \RuntimeException('Anticipate method must enable readline.');
     }
     
-    protected function formatStyle($text, array $style)
+    public function formatStyle($text, array $style)
     {
         foreach ($style as $k => $v) {
             if ($k === 'foreground' || $k === 'background') {
@@ -362,12 +361,12 @@ class Command
         return str_replace('\\<', '<', $output.substr($text, $offset));
     }
     
-    protected function isWin()
+    public function isWin()
     {
         return $this->is_win ?? $this->is_win = stripos(PHP_OS, 'win') === 0;
     }
     
-    protected function hasStty()
+    public function hasStty()
     {
         if (isset($this->has_stty)) {
             return $this->has_stty;
@@ -376,12 +375,12 @@ class Command
         return $this->has_stty = $code === 0;
     }
     
-    protected function hasReadline()
+    public function hasReadline()
     {
         return $this->has_readline ?? $this->has_readline = extension_loaded('readline');
     }
     
-    protected function setTitle($title)
+    public function setTitle($title)
     {
         cli_set_process_title($title);
     }

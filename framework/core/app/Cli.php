@@ -51,9 +51,6 @@ class Cli extends App
         if (!App::IS_CLI) {
             throw new \RuntimeException('NOT CLI SAPI');
         }
-        if (is_array($templates = Arr::poll($this->config, 'templates'))) {
-            $this->templates = $templates + $this->templates;
-        }
         return ['commands' => Arr::poll($this->config, 'commands')];
     }
     
@@ -67,20 +64,24 @@ class Cli extends App
         } else {
             self::abort(404);
         }
+        $arguments = $this->dispatch['arguments'] ?? null;
+        $templates = Arr::poll($this->config, 'templates');
         if ($dispatch instanceof \Closure) {
             if (empty($this->config['enable_closure_getter'])) {
-                $command = new class ($this) extends Command {};
+                $command = new class ($arguments, $templates) extends Command {};
             } else {
-                $command = new class ($this, $this->config['closure_getter_providers']) extends Command {
+                $providers = $this->config['closure_getter_providers'];
+                $command = new class ($providers, $arguments, $templates) extends Command {
                     use Getter;
-                    public function __construct($app, $providers) {
+                    public function __construct($providers, $arguments, $templates) {
                         if ($providers) {
                             $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
                         }
-                        parent::__construct($app);
+                        parent::__construct($arguments, $templates);
                     }
                 };
             }
+            $this->dispatch['instance'] = $command;
             $ref  = new \ReflectionFunction($dispatch);
             $call = \Closure::bind($dispatch, $command, Command::class);
         } else {
@@ -89,13 +90,14 @@ class Cli extends App
                 throw new \RuntimeException('Not is command subclass');
             }
             $method = $this->config['default_call_method'];
-            $ref    = new \ReflectionMethod($dispatch, $method);
-            $call   = [new $dispatch($this), $method];
+            $this->dispatch['instance'] = $instance = new $dispatch($arguments, $templates);
+            $ref    = new \ReflectionMethod($instance, $method);
+            $call   = [$instance, $method];
         }
-        if (empty($this->dispatch['arguments']['params'])) {
+        if (empty($arguments['params'])) {
             return $call();
         }
-        if (($params = MethodParameter::bindListParams($ref, $this->dispatch['arguments']['params'])) === false) {
+        if (($params = MethodParameter::bindListParams($ref, $arguments['params'])) === false) {
             self::abort(400);
         }
         return $call(...$params);
@@ -103,7 +105,8 @@ class Cli extends App
     
     protected function error($code = null, $message = null)
     {
-        
+        $text = "[$code] ".is_array($message) ? var_export($message, true) : $message;
+        ($this->dispatch['instance'] ?? new Command())->error($text);
     }
     
     protected function response($return = null)
