@@ -23,11 +23,11 @@ class Micro extends App
         // 是否启用closure getter魔术方法
         'enable_closure_getter' => true,
         // Getter providers
-        'getter_providers' => null,
+        'closure_getter_providers'=> null,
         // 是否路由动态调用
         'route_dispatch_dynamic' => false,
         // 路由模式下允许的HTTP方法
-        'route_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
+        'route_dispatch_http_methods'   => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
     ];
     
     public function default($controller, $action, array $params = [])
@@ -111,7 +111,7 @@ class Micro extends App
                 return [
                     $this->config['enable_closure_getter'] ? closure_bind_getter(
                         $route['dispatch'],
-                        $this->config['getter_providers'] ?? null
+                        $this->config['closure_getter_providers'] ?? null
                     ) : $route['dispatch'],
                     $route['matches']
                 ];

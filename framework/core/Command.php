@@ -1,29 +1,78 @@
 <?php
-namespace framework\extend;
+namespace framework\core;
     
 use framework\App;
-use framework\core\app\Cli;
 
-abstract class Command
+class Command
 {
+    // 应用实例
     private $app;
+    // 进程ID
     private $pid;
+    // 参数
     private $argv;
-    
+    // 是否为windows系统
+    private $is_win;
+    // 是否有stty命令工具
+    private $has_stty;
+    // 是否启用readline扩展
+    private $has_readline;
+    // 选项值
+    private $options;
+    // 终端输出样式
+    private $styles = [
+        'bold'        => ['1', '22'],
+        'underscore'  => ['4', '24'],
+        'blink'       => ['5', '25'],
+        'reverse'     => ['7', '27'],
+        'conceal'     => ['8', '28'],
+        'foreground'  => [
+            'black'   => ['30', '39'],
+            'red'     => ['31', '39'],
+            'green'   => ['32', '39'],
+            'yellow'  => ['33', '39'],
+            'blue'    => ['34', '39'],
+            'magenta' => ['35', '39'],
+            'cyan'    => ['36', '39'],
+            'white'   => ['37', '39'],
+        ],
+        'background'  => [
+            'black'   => ['40', '49'],
+            'red'     => ['41', '49'],
+            'green'   => ['42', '49'],
+            'yellow'  => ['43', '49'],
+            'blue'    => ['44', '49'],
+            'magenta' => ['45', '49'],
+            'cyan'    => ['46', '49'],
+            'white'   => ['47', '49'],
+        ],
+    ];
+    // 输出样式模版
+    private $templates = [
+        'error'     => ['foreground' => 'white', 'background' => 'red'],
+        'info'      => ['foreground' => 'green'],
+        'comment'   => ['foreground' => 'yellow'],
+        'question'  => ['foreground' => 'black', 'background' => 'cyan'],
+        'highlight' => ['foreground' => 'red'],
+        'warning'   => ['foreground' => 'black', 'background' => 'yellow'],
+    ];
+    // 进程标题
     protected $title;
-    protected $options;
+    // 短选项别名
     protected $short_option_alias;
     
-    public function __construct($app = null)
+    public function __construct()
     {
-        $this->app = $app ?? App::instance();
+        /*
+        $this->app = App::instance();
         if (!$this->app instanceof Cli) {
             throw new \RuntimeException('Not is Cli mode');
         }
+        */
         if (isset($this->title)) {
-            $this->title($this->title);
+            $this->setTitle($this->title);
         }
-        $this->argv = $this->app->getParsedArgv();
+        $this->argv = App::getDispatch('arguments');
         $this->options = $this->argv['long_options'] ?? [];
         if (isset($this->argv['short_options'])) {
             if ($this->short_option_alias) {
@@ -38,19 +87,9 @@ abstract class Command
         }
     }
     
-    protected function app()
-    {
-        return $this->app;
-    }
-    
     protected function pid()
     {
         return $this->pid ?? $this->pid = getmypid();
-    }
-    
-    protected function title($title)
-    {
-        cli_set_process_title($title);
     }
     
     protected function params()
@@ -93,14 +132,27 @@ abstract class Command
         return $this->argv['short_options'][$name] ?? $default;
     }
     
-    protected function write($text, $style = null)
+    public function read($prompt = null)
     {
-        $this->app->write($text, $style);
+        if ($prompt !== null) {
+            $this->write($prompt);
+        }
+        return fgets(STDIN);
+    }
+    
+    public function write($text, $style = null)
+    {
+        if ($style === true) {
+            $text = $this->formatTemplate($text);
+        } elseif (is_array($style)) {
+            $text = $this->formatStyle($text, $style);
+        }
+        fwrite(STDOUT, $text);
     }
     
     protected function line($text, $style = null)
     {
-        $this->app->write($text, $style);
+        $this->write($text, $style);
         $this->newline();
     }
     
@@ -172,17 +224,17 @@ abstract class Command
     
     protected function newline($num = 1)
     {
-        $this->app->write(str_repeat(PHP_EOL, $num));
+        $this->write(str_repeat(PHP_EOL, $num));
     }
     
     protected function ask($prompt, array $auto_complete = null)
     {
-        return $this->app->read($prompt, $auto_complete);
+        return $this->read($prompt, $auto_complete);
     }
     
     protected function confirm($prompt)
     {
-        return in_array(strtolower($this->app->read($prompt)), ['y', 'yes'], true);
+        return in_array(strtolower($this->read($prompt)), ['y', 'yes'], true);
     }
 
     protected function choice($prompt, array $options, $is_multi_select = false)
@@ -205,11 +257,11 @@ abstract class Command
             }
             public function step(int $step) {
                 if (isset($this->step)) {
-                    $this->app->write("\033[1A");
+                    $this->write("\033[1A");
                 }
                 $this->step = $step > $this->options['total'] ? $this->options['total'] : $step;
     			$percent = intval(($this->step / $this->options['total']) * 100);
-                $this->app->write(sprintf(
+                $this->write(sprintf(
                     $this->options['format'],
                     str_repeat($this->options['plus'], $this->step),
                     str_repeat($this->options['reduce'], $this->options['total'] - $this->step),
@@ -222,11 +274,11 @@ abstract class Command
     
     protected function hidden($prompt)
     {
-        if ($this->app->hasStty()) {
-            $this->app->write($prompt);
+        if ($this->hasStty()) {
+            $this->write($prompt);
             $sttyMode = shell_exec('stty -g');
             shell_exec('stty -echo');
-            $value = $this->app->read();
+            $value = $this->read();
             shell_exec(sprintf('stty %s', $sttyMode));
             if (false !== $value) {
                 $this->newline();
@@ -237,7 +289,7 @@ abstract class Command
         throw new \RuntimeException('Unable to hide the response.');
     }
     
-    public function anticipate($prompt, array $values)
+    protected function anticipate($prompt, array $values)
     {
         if ($this->hasReadline()) {
             readline_completion_function(function ($input, $index) use ($values) {
@@ -255,8 +307,84 @@ abstract class Command
         throw new \RuntimeException('Anticipate method must enable readline.');
     }
     
-    public function __tostring()
+    protected function formatStyle($text, array $style)
     {
-        
+        foreach ($style as $k => $v) {
+            if ($k === 'foreground' || $k === 'background') {
+                if (isset($this->styles[$k][$v])) {
+                    list($start[], $end[]) = $this->styles[$k][$v];
+                }
+            } elseif (isset($this->styles[$k])) {
+                if ($this->styles[$k]) {
+                    list($start[], $end[]) = $this->styles[$k];
+                }
+            }
+        }
+        if (isset($start)) {
+            return "\033[".implode(';', $start)."m$text\033[".implode(';', $end)."m";
+        }
+        return $text;
     }
+    
+    protected function formatTemplate($text)
+    {
+        $regex = '[a-z][a-z0-9_=;-]*';
+        if (!preg_match_all("#<(($regex) | /($regex)?)>#isx", $text, $matches, PREG_OFFSET_CAPTURE)) {
+            return $text;
+        }
+        $offset = 0;
+        $stack  = [];
+        $output = '';
+        foreach ($matches[0] as $i => $match) {
+            list($tag, $pos) = $match;
+            $part = substr($text, $offset, $pos - $offset);
+            if ($tag[1] !== '/') {
+                $count   = count($stack);
+                $stack[] = ['tag' => substr($tag, 1, -1), 'text' => ''];
+            } else {
+                if (($last = array_pop($stack)) && $last['tag'] === substr($tag, 2, -1)) {
+                    $count = count($stack);
+                    $part  = $this->formatStyle($last['text'].$part, $this->templates[$last['tag']]);
+                } else {
+                    throw new \Exception('Template output error');
+                }
+            }
+            if ($count === 0) {
+                $output .= $part;
+            } else {
+                $stack[$count - 1]['text'] .= $part;
+            }
+            $offset = $pos + strlen($tag);
+        }
+        if ($stack) {
+            throw new \Exception('Template output error');
+        }
+        return str_replace('\\<', '<', $output.substr($text, $offset));
+    }
+    
+    protected function isWin()
+    {
+        return $this->is_win ?? $this->is_win = stripos(PHP_OS, 'win') === 0;
+    }
+    
+    protected function hasStty()
+    {
+        if (isset($this->has_stty)) {
+            return $this->has_stty;
+        }
+        exec('stty 2>&1', $tmp, $code);
+        return $this->has_stty = $code === 0;
+    }
+    
+    protected function hasReadline()
+    {
+        return $this->has_readline ?? $this->has_readline = extension_loaded('readline');
+    }
+    
+    protected function setTitle($title)
+    {
+        cli_set_process_title($title);
+    }
+    
+    public function __tostring() {}
 }

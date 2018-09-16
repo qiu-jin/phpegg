@@ -5,65 +5,21 @@ use framework\App;
 use framework\util\Arr;
 use framework\core\Loader;
 use framework\core\Getter;
-use framework\extend\Command;
+use framework\core\Command;
 use framework\extend\MethodParameter;
 
 class Cli extends App
 {
+    const INPUT = STDIN;
+    const OUTPUT = STDOUT;
+    
     protected $config = [
-        // 默认命令
-        //'default_commands' => null,
         // 默认调用的方法，为空则使用__invoke
-        'default_call_method'   => null,
+        'default_call_method'   => '__invoke',
         // 匿名函数是否启用Getter魔术方法
         'enable_closure_getter' => true,
         // Getter providers
-        'getter_providers'      => null,
-    ];
-    // 是否为windows系统
-    protected $is_win;
-    // 是否有stty命令工具
-    protected $has_stty;
-    // 是否启用readline扩展
-    protected $has_readline;
-    // 已解析的输入参数
-    protected $parsed_argv;
-    // 终端输出样式
-    protected $styles = [
-        'bold'        => ['1', '22'],
-        'underscore'  => ['4', '24'],
-        'blink'       => ['5', '25'],
-        'reverse'     => ['7', '27'],
-        'conceal'     => ['8', '28'],
-        'foreground'  => [
-            'black'   => ['30', '39'],
-            'red'     => ['31', '39'],
-            'green'   => ['32', '39'],
-            'yellow'  => ['33', '39'],
-            'blue'    => ['34', '39'],
-            'magenta' => ['35', '39'],
-            'cyan'    => ['36', '39'],
-            'white'   => ['37', '39'],
-        ],
-        'background'  => [
-            'black'   => ['40', '49'],
-            'red'     => ['41', '49'],
-            'green'   => ['42', '49'],
-            'yellow'  => ['43', '49'],
-            'blue'    => ['44', '49'],
-            'magenta' => ['45', '49'],
-            'cyan'    => ['46', '49'],
-            'white'   => ['47', '49'],
-        ],
-    ];
-    // 输出样式模版
-    protected $templates = [
-        'error'     => ['foreground' => 'white', 'background' => 'red'],
-        'info'      => ['foreground' => 'green'],
-        'comment'   => ['foreground' => 'yellow'],
-        'question'  => ['foreground' => 'black', 'background' => 'cyan'],
-        'highlight' => ['foreground' => 'red'],
-        'warning'   => ['foreground' => 'black', 'background' => 'yellow'],
+        'closure_getter_providers'  => null,
     ];
     // 核心错误
     protected $core_errors = [
@@ -77,116 +33,17 @@ class Cli extends App
         $count = count($params);
         if ($count === 1) {
             if (is_array($params[0])) {
-                $this->dispatch = $params[0] + $this->dispatch;
+                $this->dispatch['commands'] = $params[0] + $this->dispatch['commands'];
             } else {
-                $this->dispatch = $params[0];
-                $this->parsed_argv['name'] = null;
+                $this->dispatch['commands'] = $params[0];
+                $this->dispatch['arguments']['name'] = null;
             }
             return $this;
         } elseif ($count === 2) {
-            $this->dispatch[$params[0]] = $params[1];
+            $this->dispatch['commands'][$params[0]] = $params[1];
             return $this;
         }
         throw new \RuntimeException('Command params error');
-    }
-    
-    public function read($prompt = null)
-    {
-        if ($prompt !== null) {
-            $this->write($this->formatTemplate($prompt));
-        }
-        return fgets(STDIN);
-    }
-    
-    public function write($text, $style = null)
-    {
-        if ($style === true) {
-            $text = $this->formatTemplate($text);
-        } elseif (is_array($style)) {
-            $text = $this->formatStyle($text, $style);
-        }
-        fwrite(STDOUT, $text);
-    }
-    
-    public function isWin()
-    {
-        return $this->is_win ?? $this->is_win = stripos(PHP_OS, 'win') === 0;
-    }
-    
-    public function hasStty()
-    {
-        if (isset($this->has_stty)) {
-            return $this->has_stty;
-        }
-        exec('stty 2>&1', $tmp, $code);
-        return $this->has_stty = $code === 0;
-    }
-    
-    public function hasReadline()
-    {
-        return $this->has_readline ?? $this->has_readline = extension_loaded('readline');
-    }
-    
-    public function getParsedArgv()
-    {
-        return $this->parsed_argv;
-    }
-    
-    public function formatStyle($text, $style)
-    {
-        if ($style) {
-            foreach ($style as $k => $v) {
-                if ($k === 'foreground' || $k === 'background') {
-                    if (isset($this->styles[$k][$v])) {
-                        list($start[], $end[]) = $this->styles[$k][$v];
-                    }
-                } elseif (isset($this->styles[$k])) {
-                    if ($this->styles[$k]) {
-                        list($start[], $end[]) = $this->styles[$k];
-                    }
-                }
-            }
-            if (isset($start)) {
-                return "\033[".implode(';', $start)."m$text\033[".implode(';', $end)."m";
-            }
-        }
-        return $text;
-    }
-    
-    public function formatTemplate($text)
-    {
-        $regex = '[a-z][a-z0-9_=;-]*';
-        if (!preg_match_all("#<(($regex) | /($regex)?)>#isx", $text, $matches, PREG_OFFSET_CAPTURE)) {
-            return $text;
-        }
-        $offset = 0;
-        $stack  = [];
-        $output = '';
-        foreach ($matches[0] as $i => $match) {
-            list($tag, $pos) = $match;
-            $part = substr($text, $offset, $pos - $offset);
-            if ($tag[1] !== '/') {
-                $count   = count($stack);
-                $stack[] = ['tag' => substr($tag, 1, -1), 'text' => ''];
-            } else {
-                if (($last = array_pop($stack)) && $last['tag'] === substr($tag, 2, -1)) {
-                    $count = count($stack);
-                    $part  = $this->formatStyle($last['text'].$part, $this->templates[$last['tag']]);
-                } else {
-                    throw new \RuntimeException('Template output error');
-                }
-            }
-            if ($count === 0) {
-                $output .= $part;
-            } else {
-                $stack[$count - 1]['text'] .= $part;
-            }
-            $offset = $pos + strlen($tag);
-        }
-        if ($stack) {
-            throw new \RuntimeException('Template output error');
-        }
-        return str_replace('\\<', '<', $output.substr($text, $offset));
     }
     
     protected function dispatch()
@@ -195,18 +52,18 @@ class Cli extends App
             throw new \RuntimeException('NOT CLI SAPI');
         }
         if (is_array($templates = Arr::poll($this->config, 'templates'))) {
-            $this->templates += $templates;
+            $this->templates = $templates + $this->templates;
         }
-        return Arr::poll($this->config, 'default_commands', []);
+        return ['commands' => Arr::poll($this->config, 'commands')];
     }
     
     protected function call()
     {
-        $this->parseArgv();
-        if (($name = $this->parsed_argv['name']) === null) {
-            $dispatch = $this->dispatch;
-        } elseif (isset($this->dispatch[$name])) {
-            $dispatch = $this->dispatch[$name];
+        $this->parseArguments();
+        if (($name = $this->dispatch['arguments']['name']) === null) {
+            $dispatch = $this->dispatch['commands'];
+        } elseif (isset($this->dispatch['commands'][$name])) {
+            $dispatch = $this->dispatch['commands'][$name];
         } else {
             self::abort(404);
         }
@@ -214,7 +71,7 @@ class Cli extends App
             if (empty($this->config['enable_closure_getter'])) {
                 $command = new class ($this) extends Command {};
             } else {
-                $command = new class ($this, $this->config['getter_providers']) extends Command {
+                $command = new class ($this, $this->config['closure_getter_providers']) extends Command {
                     use Getter;
                     public function __construct($app, $providers) {
                         if ($providers) {
@@ -231,14 +88,14 @@ class Cli extends App
             if (!is_subclass_of($dispatch, Command::class)) {
                 throw new \RuntimeException('Not is command subclass');
             }
-            $method = $this->config['default_call_method'] ?? '__invoke';
+            $method = $this->config['default_call_method'];
             $ref    = new \ReflectionMethod($dispatch, $method);
             $call   = [new $dispatch($this), $method];
         }
-        if (empty($this->parsed_argv['params'])) {
+        if (empty($this->dispatch['arguments']['params'])) {
             return $call();
         }
-        if (($params = MethodParameter::bindListParams($ref, $this->parsed_argv['params'])) === false) {
+        if (($params = MethodParameter::bindListParams($ref, $this->dispatch['arguments']['params'])) === false) {
             self::abort(400);
         }
         return $call(...$params);
@@ -246,8 +103,7 @@ class Cli extends App
     
     protected function error($code = null, $message = null)
     {
-        $status = $this->formatStyle(($this->core_errors[$code] ?? $code).':', ['bold' => true]);
-        fwrite(STDERR, $this->formatTemplate("<error>$status</error>").print_r($message, true).PHP_EOL);
+        
     }
     
     protected function response($return = null)
@@ -256,11 +112,11 @@ class Cli extends App
         exit((int) $return);
     }
     
-    protected function parseArgv()
+    protected function parseArguments()
     {
         $argv = $_SERVER['argv'];
         array_shift($argv);
-        if (empty($this->parsed_argv) && !($this->parsed_argv['name'] = array_shift($argv))) {
+        if (empty($this->dispatch['arguments']) && !($this->dispatch['arguments']['name'] = array_shift($argv))) {
             self::abort(404);
         }
         if (($count = count($argv)) === 0) {
@@ -270,10 +126,10 @@ class Cli extends App
         for ($i = 0; $i < $count; $i++) {
             if (strpos($argv[$i], '-') !== 0) {
                 if ($last_option) {
-                    $this->parsed_argv["$last_option[0]_options"][$last_option[1]] = $argv[$i];
+                    $this->dispatch['arguments']["$last_option[0]_options"][$last_option[1]] = $argv[$i];
                     $last_option = null;
                 } else {
-                    $this->parsed_argv['params'][] = $argv[$i];
+                    $this->dispatch['arguments']['params'][] = $argv[$i];
                 }
             } else {
                 $last_option = null;
@@ -281,18 +137,18 @@ class Cli extends App
                     if ($option_name = substr($argv[$i], 2)) {
                         if (strpos($option_name, '=') > 0) {
                             list($k, $v) = explode('=', $option_name, 2);
-                            $this->parsed_argv['long_options'][$k] = $v;
+                            $this->dispatch['arguments']['long_options'][$k] = $v;
                         } else {
-                            $this->parsed_argv['long_options'][$option_name] = true;
+                            $this->dispatch['arguments']['long_options'][$option_name] = true;
                             $last_option = ['long', $option_name];
                         }
                     }
                 } else {
                     if ($option_name = substr($argv[$i], 1)) {
                         if (isset($option_name[1])) {
-                            $this->parsed_argv['short_options'][$option_name[0]] = substr($option_name, 1);
+                            $this->dispatch['arguments']['short_options'][$option_name[0]] = substr($option_name, 1);
                         } elseif (isset($option_name[0])) {
-                            $this->parsed_argv['short_options'][$option_name] = true;
+                            $this->dispatch['arguments']['short_options'][$option_name] = true;
                             $last_option = ['short', $option_name];
                         }
                     }

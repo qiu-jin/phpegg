@@ -1,20 +1,6 @@
 <?php
 namespace framework\core;
 
-use framework\driver\db;
-use framework\driver\sms;
-use framework\driver\rpc;
-use framework\driver\data;
-use framework\driver\cache;
-use framework\driver\crypt;
-use framework\driver\queue;
-use framework\driver\email;
-use framework\driver\geoip;
-use framework\driver\search;
-use framework\driver\logger;
-use framework\driver\captcha;
-use framework\driver\storage;
-
 class Container
 {
     protected static $init;
@@ -24,19 +10,19 @@ class Container
     protected static $providers = [
         // 驱动
         'driver'    => [
-            'db'        => db::class,
-            'sms'       => sms::class,
-            'rpc'       => rpc::class,
-            'data'      => data::class,
-            'cache'     => cache::class,
-            'crypt'     => crypt::class,
-            'queue'     => queue::class,
-            'email'     => email::class,
-            'geoip'     => geoip::class,
-            'search'    => search::class,
-            'logger'    => logger::class,
-            'captcha'   => captcha::class,
-            'storage'   => storage::class,
+            'db'        => 'framework\driver\db',
+            'sms'       => 'framework\driver\sms',
+            'rpc'       => 'framework\driver\rpc',
+            'data'      => 'framework\driver\data',
+            'cache'     => 'framework\driver\cache',
+            'crypt'     => 'framework\driver\crypt',
+            'queue'     => 'framework\driver\queue',
+            'email'     => 'framework\driver\email',
+            'geoip'     => 'framework\driver\geoip',
+            'search'    => 'framework\driver\search',
+            'logger'    => 'framework\driver\logger',
+            'captcha'   => 'framework\driver\captcha',
+            'storage'   => 'framework\driver\storage',
         ],
         // 模型
         'model'     => [
@@ -162,11 +148,7 @@ class Container
     
     public static function makeDriverInstance($type, $config)
     {
-        if ($config['driver'] === 'custom') {
-            $class = $config['class'];
-        } else {
-            $class = self::$providers['driver'][$type].'\\'.ucfirst($config['driver']);
-        }
+        $class = $config['class'] ?? self::$providers['driver'][$type].'\\'.ucfirst($config['driver']);
         return new $class($config);
     }
     
