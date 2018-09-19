@@ -33,7 +33,7 @@ class View extends App
         // 默认调度的视图，为空不限制
         'default_dispatch_views' => null,
         // 默认调度时是否将URL PATH中划线转成下划线
-        'default_dispatch_path_hyphen_to_underscore' => false,
+        'default_dispatch_hyphen_to_underscore' => false,
         // 路由调度的路由表
         'route_dispatch_routes'  => null,
         // 是否路由动态调用
@@ -86,7 +86,7 @@ class View extends App
         Response::html(CoreView::error($code, $message), false);
     }
     
-    protected function response($return)
+    protected function respond($return)
     {
         Response::html($return, false);
     }

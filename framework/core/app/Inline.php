@@ -4,7 +4,6 @@ namespace framework\core\app;
 use framework\App;
 use framework\core\View;
 use framework\core\Config;
-use framework\core\Getter;
 use framework\core\Router;
 use framework\core\Dispatcher;
 use framework\core\http\Status;
@@ -31,7 +30,7 @@ class Inline extends App
         // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
         // 默认调度时URL PATH中划线转成下划线
-        'default_dispatch_path_hyphen_to_underscore' => false,
+        'default_dispatch_hyphen_to_underscore' => false,
         // 路由调度的路由表
         'route_dispatch_routes' => null,
         // 是否路由动态调用
@@ -76,7 +75,7 @@ class Inline extends App
         }
     }
     
-    protected function response($return = null)
+    protected function respond($return = null)
     {
         if (empty($this->config['enable_view'])) {
             Response::json(['result' => $return]);
@@ -87,9 +86,10 @@ class Inline extends App
     
     protected function defaultDispatch($path) 
     {
-        if ($controller = $path) {
-            if ($this->config['default_dispatch_path_hyphen_to_underscore']) {
-                $controller = strtr($path, '-', '_');
+        if ($path) {
+            $controller = $path;
+            if ($this->config['default_dispatch_hyphen_to_underscore']) {
+                $controller = strtr($controller, '-', '_');
             }
             if (!isset($this->config['default_dispatch_controllers'])) {
                 if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)

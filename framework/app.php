@@ -57,7 +57,7 @@ abstract class App
     /*
      * 响应处理
      */
-    abstract protected function response($return);
+    abstract protected function respond($return);
     
     /*
      * 构造函数，合并配置项
@@ -81,7 +81,7 @@ abstract class App
         $return = $this->call();
         self::$exit = 2;
         if ($return_handler === null || $return_handler($return) === true) {
-            $this->response($return);
+            $this->respond($return);
         }
     }
     
@@ -104,13 +104,8 @@ abstract class App
                 define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
             }
         }
-        define('EGGCORE_LOADED', extension_loaded('eggcore'));
-        if (EGGCORE_LOADED) {
-            if (EGGCORE_VERSION >= self::CORE_VERSION && EGG_VERSION >= self::VERSION) {
-                eggcore_bootstrap();
-            } else {
-                throw new \RuntimeException("Invalid eggcore extension version: ".EGGCORE_VERSION);
-            }
+        if (extension_loaded('eggcore')) {
+            eggcore_boot(self::VERSION, self::CORE_VERSION);
         } else {
             require FW_DIR.'common.php';
             require FW_DIR.'core/Config.php';

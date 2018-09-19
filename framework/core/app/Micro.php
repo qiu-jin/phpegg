@@ -2,77 +2,124 @@
 namespace framework\core\app;
 
 use framework\App;
-use framework\core\Getter;
+use framework\util\Arr;
 use framework\core\Router;
 use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\response;
+use framework\extend\MethodParameter;
 
 class Micro extends App
 {
     protected $config = [
-        // 调度模式，支持default route组合
-        'dispatch_mode' => ['default', 'route'],
         // 控制器namespace
         'controller_ns' => 'controller',
         // 控制器类名后缀
         'controller_suffix' => null,
-        // 默认调度的控制器，为空不限制
-        'default_dispatch_controllers' => null,
         // 是否启用closure getter魔术方法
         'enable_closure_getter' => true,
         // Getter providers
-        'closure_getter_providers'=> null,
+        'closure_getter_providers' => null,
+        // 路由调度的路由表，如果值为字符串则作为PHP文件include
+        'route_dispatch_routes' => null,
         // 是否路由动态调用
         'route_dispatch_dynamic' => false,
-        // 路由模式下允许的HTTP方法
-        'route_dispatch_http_methods'   => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
+        // 设置动作路由属性名，为null则不启用动作路由
+        'route_dispatch_action_routes' => null,
     ];
-    
-    public function default($controller, $action, array $params = [])
+
+    public function any($role, $call)
     {
-        $this->dispatch['default'] = [$controller, $action, $params];
+        $this->dispatch[$role] = $call;
         return $this;
     }
     
-    public function any($role, $call)
+    public function get($role, $call)
     {
-        $this->dispatch['route'][$role] = $call;
+        return $this->bindRole('GET', $role, $call);
+    }
+    
+    public function put($role, $call)
+    {
+        return $this->bindRole('PUT', $role, $call);
+    }
+    
+    public function post($role, $call)
+    {
+        return $this->bindRole('POST', $role, $call);
+    }
+    
+    public function patch($role, $call)
+    {
+        return $this->bindRole('PATCH', $role, $call);
+    }
+    
+    public function delete($role, $call)
+    {
+        return $this->bindRole('DELETE', $role, $call);
+    }
+    
+    public function options($role, $call)
+    {
+        return $this->bindRole('OPTIONS', $role, $call);
+    }
+    
+    public function map(array $methods, $role, $call)
+    {
+        foreach ($methods as $method) {
+            $this->dispatch[$role][":$method"] = $call;
+        }
         return $this;
     }
     
     public function route(array $roles)
     {
-        $this->mergeRouteRoles($this->dispatch['route'], $roles);
+        $this->mergeRoles($this->dispatch, $roles);
         return $this;
-    }
-    
-    public function __call($method, $params)
-    {
-        if (in_array($m = strtoupper($method), $this->config['route_dispatch_http_methods'])) {
-            if (isset($params[1])) {
-                $this->dispatch['route'][$params[0]][":$m"] = $params[1];
-                return $this;
-            }
-            throw new \Exception('Missing argument');
-        }
-        throw new \Exception('Call to undefined method '.__CLASS__."::$method");
     }
     
     protected function dispatch()
     {
-        return ['default' => null, 'route' => null];
+        $routes = Arr::poll($this->config, 'route_dispatch_routes');
+        return is_string($routes) ? Config::flash($routes) : $routes;
     }
     
     protected function call()
     {
-        foreach ($this->config['dispatch_mode'] as $mode) {
-            if (isset($this->dispatch[$mode]) && ($dispatch = $this->{$mode.'Dispatch'}())) {
-                return $dispatch[0](...$dispatch[1]);
-            }
+        $router = new Router(Request::pathArr(), Request::method());
+        if (!$route = $router->route($this->dispatch)) {
+            self::abort(404);
         }
-        self::abort(404);
+        if ($route['dispatch'] instanceof \Closure) {
+            $call = $route['dispatch'];
+            if ($this->config['enable_closure_getter']) {
+                $call = closure_bind_getter($call, $this->config['closure_getter_providers']);
+            }
+           return $call(...$route['matches']);
+        } elseif (is_string($route['dispatch'])) {
+            $dispatch = Dispatcher::dispatch($route, 1, $this->config['route_dispatch_dynamic']);
+            $array = explode('::', $dispatch[0]);
+            $class = $this->getControllerClass($array[0]);
+            if (isset($array[1])) {
+                return (new $class())->{$array[1]}(...$dispatch[1]);
+            }
+            /*
+            if (isset($this->config['route_dispatch_action_routes'])) {
+                $routes = get_class_vars($class)[$this->config['route_dispatch_action_routes']] ?? null;
+                if ($routes) {
+                    if ($action_dispatch = Dispatcher::route(
+                        $dispatch[1], $routes, 1,
+                        $this->config['route_dispatch_dynamic']
+                    )) {
+                        return (new $class())->{$action_dispatch[0]}(...$action_dispatch[1]);
+                    }
+                }
+            }
+            self::abort(404);
+            */
+        }
+        throw new \RuntimeException('Invalid route role type');
     }
     
     protected function error($code = null, $message = null)
@@ -81,54 +128,23 @@ class Micro extends App
         Response::json(['error' => compact('code', 'message')]);
     }
     
-    protected function response($return = null)
+    protected function respond($return = null)
     {
         Response::json($return);
     }
     
-    protected function defaultDispatch()
+    protected function bindRole($method, $role, $call)
     {
-        list($controller, $action, $params) = $this->dispatch['default'];
-        if (!isset($this->config['default_dispatch_controllers'])) {
-            $check = true;
-        } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
-            return;
-        }
-        if ($action[0] !== '_'
-            && ($class = $this->getControllerClass($controller, isset($check)))
-            && is_callable($call = [new $class, $action])
-        ) {
-            return [$call, $params];
-        }
+        $this->dispatch[$role][":$method"] = $call;
+        return $this;
     }
     
-    protected function routeDispatch()
-    {
-        if (in_array($m = Request::method(), $this->config['route_dispatch_http_methods'])
-            && ($route = (new Router(Request::pathArr(), $m))->route($this->dispatch['route']))
-        ) {
-            if ($route['dispatch'] instanceof \Closure) {
-                return [
-                    $this->config['enable_closure_getter'] ? closure_bind_getter(
-                        $route['dispatch'],
-                        $this->config['closure_getter_providers'] ?? null
-                    ) : $route['dispatch'],
-                    $route['matches']
-                ];
-            } elseif (is_string($route['dispatch'])) {
-                $dispatch = Dispatcher::dispatch($route, 1, $this->config['route_dispatch_dynamic']);
-                list($controller, $action) = explode('::', $dispatch[0]);
-                return [[instance($this->getControllerClass($controller)), $action], $dispatch[1]];
-            }
-        }
-    }
-    
-    protected function mergeRouteRoles(&$route, $roles)
+    protected function mergeRoles(&$route, $roles)
     {
         if (is_array($roles)) {
             foreach ($roles as $k => $v) {
                 if (isset($route[$k])) {
-                    $this->mergeRouteRoles($route[$k], $v);
+                    $this->mergeRoles($route[$k], $v);
                 } else {
                     $route[$k] = $v;
                 }

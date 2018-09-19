@@ -10,7 +10,7 @@ class Command
     // 进程ID
     private $pid;
     // 参数
-    private $argv;
+    private $arguments;
     // 是否为windows系统
     private $is_win;
     // 是否有stty命令工具
@@ -67,18 +67,18 @@ class Command
             $this->setTitle($this->title);
         }
         if ($arguments) {
-            $this->argv = $arguments;
-            $this->options = $this->argv['long_options'] ?? [];
-            if (isset($this->argv['short_options'])) {
+            $this->arguments = $arguments;
+            $this->options = $this->arguments['long_options'] ?? [];
+            if (isset($this->arguments['short_options'])) {
                 if ($this->short_option_alias) {
-                    foreach ($this->argv['short_options'] as $k => $v) {
+                    foreach ($this->arguments['short_options'] as $k => $v) {
                         $option = $this->short_option_alias[$k] ?? null;
                         if ($option && !isset($this->options[$option])) {
                             $this->options[$option] = $v;
                         }
                     }
                 }
-                $this->options += $this->argv['short_options'];
+                $this->options += $this->arguments['short_options'];
             }
         }
         if ($templates) {
@@ -93,12 +93,12 @@ class Command
     
     public function params()
     {
-        return $this->argv['params'] ?? null;
+        return $this->arguments['params'] ?? null;
     }
     
     public function param(int $index, $default = null)
     {
-        return $this->argv['params'][$index - 1] ?? $default;
+        return $this->arguments['params'][$index - 1] ?? $default;
     }
     
     public function options()
@@ -113,22 +113,22 @@ class Command
     
     public function longOptions()
     {
-        return $this->argv['long_options'] ?? null;
+        return $this->arguments['long_options'] ?? null;
     }
     
     public function longOption($name, $default = null)
     {
-        return $this->argv['long_options'][$name] ?? $default;
+        return $this->arguments['long_options'][$name] ?? $default;
     }
     
     public function shortOptions()
     {
-        return $this->argv['short_options'] ?? null;
+        return $this->arguments['short_options'] ?? null;
     }
     
     public function shortOption($name, $default = null)
     {
-        return $this->argv['short_options'][$name] ?? $default;
+        return $this->arguments['short_options'][$name] ?? $default;
     }
     
     public function read($prompt = null)

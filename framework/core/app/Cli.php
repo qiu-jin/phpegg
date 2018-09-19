@@ -105,11 +105,11 @@ class Cli extends App
     
     protected function error($code = null, $message = null)
     {
-        $text = "[$code] ".is_array($message) ? var_export($message, true) : $message;
+        $text = "[$code] ".(is_array($message) ? var_export($message, true) : $message);
         ($this->dispatch['instance'] ?? new Command())->error($text);
     }
     
-    protected function response($return = null)
+    protected function respond($return = null)
     {
         self::exit(2);
         exit((int) $return);

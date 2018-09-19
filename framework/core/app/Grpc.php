@@ -98,7 +98,7 @@ class Grpc extends App
         Response::headers(['grpc-status' => $code, 'grpc-message' => $message ?? Status::CODE[$code] ?? '']);
     }
     
-    protected function response($return)
+    protected function respond($return)
     {
         $data = $return->serializeToString();
         $encode = 0;

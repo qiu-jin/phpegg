@@ -2,7 +2,6 @@
 namespace framework\core;
 
 use framework\util\Arr;
-use framework\core\http\Request;
 use framework\core\exception\TemplateException;
 
 class Template

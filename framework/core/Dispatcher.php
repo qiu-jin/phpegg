@@ -8,8 +8,9 @@ class Dispatcher
      */
     public static function route($path, $rules, $param_mode, $dynamic = false, $method = null)
     {
-        $route = (new Router($path, $method))->route($rules);
-        return $route && self::dispatch($route, $param_mode, $dynamic);
+        if ($route = (new Router($path, $method))->route($rules)) {
+            return self::dispatch($route, $param_mode, $dynamic);
+        }
     }
     
     /*
@@ -35,7 +36,7 @@ class Dispatcher
     public static function parseDispatch($dispatch, &$param_names = null)
     {
         if (($lpos = strpos($dispatch, '(')) && ($rpos = strpos($dispatch, ')'))) {
-            $param_names = substr($dispatch, $lpos + 1, $rpos - $lpos);
+            $param_names = substr($dispatch, $lpos + 1, $rpos - $lpos - 1);
             return substr($dispatch, 0, $lpos);
         }
         return $dispatch;
@@ -65,8 +66,8 @@ class Dispatcher
             $v = trim($v);
             if ($v[0] === '$') {
                 $index = substr($v, 1) - 1;
-                if (isset($matches[$index])) {
-                    $ret[$k] = $matches[$index];
+                if (isset($params[$index])) {
+                    $ret[$k] = $params[$index];
                 } else {
                     $ret[$k] = null;
                 }
@@ -86,8 +87,8 @@ class Dispatcher
             $rule = trim($rule);
             if ($rule[0] === '$') {
                 $index = substr($rule, 1) - 1;
-                if (isset($matches[$index])) {
-                    $ret[] = $matches[$index];
+                if (isset($params[$index])) {
+                    $ret[] = $params[$index];
                 } else {
                     $ret[] = null;
                 }

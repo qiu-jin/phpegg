@@ -37,7 +37,7 @@ class Graphql extends App
         
     }
     
-    protected function response($return)
+    protected function respond($return)
     {
         
     }

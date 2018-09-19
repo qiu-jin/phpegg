@@ -186,7 +186,7 @@ class Jsonrpc extends App
         }
     }
     
-    protected function response($return = null)
+    protected function respond($return = null)
     {
         Response::send(($this->config['response_serialize'])($return), $this->config['response_content_type']);
     }

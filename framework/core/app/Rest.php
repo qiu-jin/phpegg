@@ -27,7 +27,7 @@ class Rest extends App
         // 解析request body并注入到post
         'parse_request_to_post' => false,
         // 默认调度的路径转为驼峰风格
-        'default_dispatch_path_to_camel' => null,
+        'default_dispatch_to_camel' => null,
         /* 默认调度的参数模式
          * 0 无参数
          * 1 顺序参数
@@ -48,7 +48,7 @@ class Rest extends App
             '*/edit'=> [':GET' => 'edit']
         ],
         // 资源调度的控制器路径转为驼峰风格
-        'resource_dispatch_controller_path_to_camel' => null,
+        'resource_dispatch_controller_to_camel' => null,
         /* 路由调度的参数模式
          * 0 无参数
          * 1 循序参数
@@ -109,7 +109,7 @@ class Rest extends App
         Response::json(['error' => compact('code', 'message')]);
     }
     
-    protected function response($return = null)
+    protected function respond($return = null)
     {
         Response::json($return);
     }
@@ -144,10 +144,10 @@ class Rest extends App
             } elseif ($param_mode === 0) {
                 $controller_array = $path;
             }
-            if (isset($this->config['default_dispatch_path_to_camel'])) {
+            if (isset($this->config['default_dispatch_to_camel'])) {
                 $controller_array[] = Str::toCamel(
                     array_pop($controller_array),
-                    $this->config['default_dispatch_path_to_camel']
+                    $this->config['default_dispatch_to_camel']
                 );
             }
             $controller = implode('\\', $controller_array);
@@ -194,10 +194,10 @@ class Rest extends App
         if (isset($this->dispatch['continue'])) {
             list($controller, $action_path) = $this->dispatch['continue'];
         } elseif (count($path) >= $depth) {
-            if (isset($this->config['resource_dispatch_controller_path_to_camel'])) {
+            if (isset($this->config['resource_dispatch_controller_to_camel'])) {
                 $path[$depth] = Str::toCamel(
                     $path[$depth],
-                    $this->config['resource_dispatch_controller_path_to_camel']
+                    $this->config['resource_dispatch_controller_to_camel']
                 );
             }
             $controller = implode('\\', array_slice($path, 0, $depth));
@@ -276,9 +276,7 @@ class Rest extends App
         if ($class === null) {
             $class = $this->getControllerClass($controller);
         }
-        if ($vars = get_class_vars($class)) {
-            $routes = $vars[$this->config['route_dispatch_action_routes']] ?? null;
-        }
+        $routes = get_class_vars($class)[$this->config['route_dispatch_action_routes']] ?? null;
         if (empty($routes)) {
             return;
         }

@@ -43,7 +43,7 @@ class Standard extends App
         // 默认调度的控制器缺省方法
         'default_dispatch_default_action' => 'index',
         // 默认调度的路径转为驼峰风格
-        'default_dispatch_path_to_camel' => null,
+        'default_dispatch_to_camel' => null,
         /* 路由调度的参数模式
          * 0 无参数
          * 1 循序参数
@@ -109,7 +109,7 @@ class Standard extends App
         }
     }
     
-    protected function response($return = [])
+    protected function respond($return = [])
     {
         if ($this->config['enable_view']) {
             Response::view($this->getViewPath(), $return);
@@ -166,10 +166,10 @@ class Standard extends App
                 if (!isset($controller_array)) {
                     return;
                 }
-                if (isset($this->config['default_dispatch_path_to_camel'])) {
+                if (isset($this->config['default_dispatch_to_camel'])) {
                     $controller_array[] = Str::toCamel(
                         array_pop($controller_array),
-                        $this->config['default_dispatch_path_to_camel']
+                        $this->config['default_dispatch_to_camel']
                     );
                 }
                 $controller = implode('\\', $controller_array);
@@ -243,9 +243,7 @@ class Standard extends App
         if ($class === null) {
             $class = $this->getControllerClass($controller);
         }
-        if ($vars = get_class_vars($class)) {
-            $routes = $vars[$this->config['route_dispatch_action_routes']] ?? null;
-        }
+        $routes = get_class_vars($class)[$this->config['route_dispatch_action_routes']] ?? null;
         if (empty($routes)) {
             return;
         }

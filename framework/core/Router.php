@@ -50,6 +50,9 @@ class Router
         }
         // 数组树尾梢为dispatch数据
         if (!is_array($rules)) {
+            if ($this->count != $step) {
+                return false;
+            }
             return ['dispatch' => $rules];
         }
         foreach ($rules as $k => $v) {
