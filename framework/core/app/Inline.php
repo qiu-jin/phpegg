@@ -31,10 +31,12 @@ class Inline extends App
         'default_dispatch_controllers' => null,
         // 默认调度时URL PATH中划线转成下划线
         'default_dispatch_hyphen_to_underscore' => false,
-        // 路由调度的路由表
+        // 路由调度的路由表，如果值为字符串则作为配置名引入
         'route_dispatch_routes' => null,
         // 是否路由动态调用
         'route_dispatch_dynamic' => false,
+        // 提取路由调度参数到变量
+        'route_dispatch_extract_params' => false,
     ];
     
     protected function dispatch()
@@ -51,15 +53,25 @@ class Inline extends App
     protected function call()
     {
         if (empty($this->config['enable_getter'])) {
-            $call = static function($__file, $_PARAMS) {
+            $call = static function($__file, $_PARAMS, $__extract) {
+                if ($__extract && $_PARAMS) {
+                    extract($_PARAMS, EXTR_SKIP);
+                }
                 return require $__file;
             };
         } else {
-            $call = closure_bind_getter(function($__file, $_PARAMS) {
+            $call = closure_bind_getter(function($__file, $_PARAMS, $__extract) {
+                if ($__extract && $_PARAMS) {
+                    extract($_PARAMS, EXTR_SKIP);
+                }
                 return require $__file;
             }, $this->config['getter_providers']);
         }
-        $return = $call($this->dispatch['controller_file'], $this->dispatch['params'] ?? []);
+        $return = $call(
+            $this->dispatch['controller_file'],
+            $this->dispatch['params'] ?? null,
+            $this->config['route_dispatch_extract_params']
+        );
         return $return === 1 && $this->config['return_1_to_null'] ? null : $return;
     }
 
@@ -97,36 +109,34 @@ class Inline extends App
                 ) {
                     return compact('controller', 'controller_file');
                 }
-                return;
-            } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
-                return;
+            } elseif (in_array($controller, $this->config['default_dispatch_controllers'])) {
+                return [
+                    'controller'        => $controller,
+                    'controller_file'   => $this->getControllerFile($controller)
+                ];
             }
-        } elseif (isset($this->config['default_dispatch_index'])) {
-            $controller = $this->config['default_dispatch_index'];
-        } else {
-            return;
+        } elseif ($this->config['default_dispatch_index']) {
+            return [
+                'controller'        => $this->config['default_dispatch_index'],
+                'controller_file'   => $this->getControllerFile($this->config['default_dispatch_index'])
+            ];
         }
-        return [
-            'controller'        => $controller,
-            'controller_file'   => $this->getControllerFile($controller)
-        ];
     }
     
     protected function routeDispatch($path)
     {
-        if (!empty($this->config['route_dispatch_routes'])) {
-            if (is_string($routes = $this->config['route_dispatch_routes'])) {
-                $routes = Config::flash($routes);
-            }
-            $path = empty($path) ? null : explode('/', $path);
-            if ($route = (new Router($path))->route($routes)) {
-                if ($this->config['route_dispatch_dynamic'] && strpos('$', $route['dispatch']) !== false) {
-                    $route['dispatch'] = Dispatcher::dynamicDispatch($route['dispatch'], $route['matches']);
-                }
+        if (!empty($routes = $this->config['route_dispatch_routes'])) {
+            $dispatch = Dispatcher::route(
+                empty($path) ? null : explode('/', $path),
+                is_string($routes) ? Config::flash($routes) : $routes,
+                2,
+                $this->config['route_dispatch_dynamic']
+            );
+            if ($dispatch) {
                 return [
-                    'controller'        => $route['dispatch'],
-                    'controller_file'   => $this->getControllerFile($route['dispatch']),
-                    'params'            => $route['matches']
+                    'controller'        => $dispatch[0],
+                    'controller_file'   => $this->getControllerFile($dispatch[0]),
+                    'params'            => $dispatch[1]
                 ];
             }
         }

@@ -55,7 +55,7 @@ class Rest extends App
          * 2 键值参数
          */
         'route_dispatch_param_mode' => 1,
-        // 路由调度的路由表
+        // 路由调度的路由表，如果值为字符串则作为配置名引入
         'route_dispatch_routes' => null,
         // 是否路由动态调用
         'route_dispatch_dynamic' => false,

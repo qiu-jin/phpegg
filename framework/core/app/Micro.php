@@ -21,12 +21,10 @@ class Micro extends App
         'enable_closure_getter' => true,
         // Getter providers
         'closure_getter_providers' => null,
-        // 路由调度的路由表，如果值为字符串则作为PHP文件include
+        // 路由调度的路由表，如果值为字符串则作为配置名引入
         'route_dispatch_routes' => null,
         // 是否路由动态调用
         'route_dispatch_dynamic' => false,
-        // 设置动作路由属性名，为null则不启用动作路由
-        'route_dispatch_action_routes' => null,
     ];
 
     public function any($role, $call)
@@ -102,22 +100,8 @@ class Micro extends App
             $array = explode('::', $dispatch[0]);
             $class = $this->getControllerClass($array[0]);
             if (isset($array[1])) {
-                return (new $class())->{$array[1]}(...$dispatch[1]);
+                return (new $class)->{$array[1]}(...$dispatch[1]);
             }
-            /*
-            if (isset($this->config['route_dispatch_action_routes'])) {
-                $routes = get_class_vars($class)[$this->config['route_dispatch_action_routes']] ?? null;
-                if ($routes) {
-                    if ($action_dispatch = Dispatcher::route(
-                        $dispatch[1], $routes, 1,
-                        $this->config['route_dispatch_dynamic']
-                    )) {
-                        return (new $class())->{$action_dispatch[0]}(...$action_dispatch[1]);
-                    }
-                }
-            }
-            self::abort(404);
-            */
         }
         throw new \RuntimeException('Invalid route role type');
     }
