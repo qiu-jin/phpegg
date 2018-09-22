@@ -104,9 +104,7 @@ class Inline extends App
                 $controller = strtr($controller, '-', '_');
             }
             if (!isset($this->config['default_dispatch_controllers'])) {
-                if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)
-                    && is_php_file($controller_file = $this->getControllerFile($controller))
-                ) {
+                if ($controller_file = $this->getAndCheckControllerFile($controller)) {
                     return compact('controller', 'controller_file');
                 }
             } elseif (in_array($controller, $this->config['default_dispatch_controllers'])) {
@@ -133,9 +131,12 @@ class Inline extends App
                 $this->config['route_dispatch_dynamic']
             );
             if ($dispatch) {
+                if ($dispatch[2] && !($controller_file = $this->getAndCheckControllerFile($dispatch[0]))) {
+                    return;
+                }
                 return [
                     'controller'        => $dispatch[0],
-                    'controller_file'   => $this->getControllerFile($dispatch[0]),
+                    'controller_file'   => $controller_file ?? $this->getControllerFile($dispatch[0]),
                     'params'            => $dispatch[1]
                 ];
             }
@@ -145,5 +146,14 @@ class Inline extends App
     protected function getControllerFile($controller)
     {
         return APP_DIR.$this->config['controller_path']."/$controller.php";
+    }
+    
+    protected function getAndCheckControllerFile($controller)
+    {
+        if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)
+            && is_php_file($file = $this->getControllerFile($controller))
+        ) {
+            return $file;
+        }
     }
 }

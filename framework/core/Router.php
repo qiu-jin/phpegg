@@ -134,7 +134,7 @@ class Router
                 case '{':
                     if (substr($v, -1) === '}'
                         && ($n = substr($v, 1, -1))
-                        && \Validator::{$n}($s)
+                        && Validator::{$n}($s)
                     ) {
                         $ret[] = $s;
                         break;

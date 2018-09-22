@@ -6,33 +6,39 @@ class Dispatcher
     /*
      * 路由调度
      */
-    public static function route($path, $rules, $param_mode, $dynamic = false, $method = null)
+    public static function route($path, $rules, $param_mode, $dynamic_dynamic = false, $method = null)
     {
         if ($route = (new Router($path, $method))->route($rules)) {
-            return self::dispatch($route, $param_mode, $dynamic);
+            return self::dispatch($route, $param_mode, $dynamic_dynamic);
         }
     }
     
     /*
-     * 解析调度
+     * 调度信息
      */
-    public static function dispatch($route, $param_mode = 0, $dynamic = false)
+    public static function dispatch($route, $param_mode = 0, $dynamic_dynamic = false)
     {
         $params = $route['matches'];
         $dispatch = self::parseDispatch($route['dispatch'], $param_names);
-        if ($dynamic && strpos('$', $dispatch) !== false) {
+        if ($is_dynamic = $dynamic_dynamic && strpos($dispatch, '$') !== false) {
             $dispatch = self::dynamicDispatch($dispatch, $params);
+            if ($params) {
+                $params = array_values($params);
+            }
         }
-        if ($param_mode && $params && isset($param_names)) {
+        if ($param_mode && $params && $param_names) {
             if ($param_mode === 2) {
                 $params = self::bindKvParams($param_names, $params);
             } else {
                 $params = self::bindListParams($param_names, $params);
             }
         } 
-        return [$dispatch, $params];
+        return [$dispatch, $params, $is_dynamic];
     }
     
+    /*
+     * 解析
+     */
     public static function parseDispatch($dispatch, &$param_names = null)
     {
         if (($lpos = strpos($dispatch, '(')) && ($rpos = strpos($dispatch, ')'))) {
@@ -45,14 +51,17 @@ class Dispatcher
     /*
      * 获取动态调用
      */
-    public static function dynamicDispatch($dispatch, $params)
+    public static function dynamicDispatch($dispatch, &$params)
     {
-        return preg_replace_callback('/\$(\d)/', $dispatch, function ($match) use ($params) {
-            if (isset($params[$match[1]])) {
-                return $params[$match[1]];
+        return preg_replace_callback('/\$(\d)/', function ($match) use (&$params, $dispatch) {
+            $i = $match[1] - 1;
+            if (isset($params[$i])) {
+                $v = $params[$i];
+                unset($params[$i]);
+                return $v;
             }
             throw new \Exception("Illegal dynamic Dispatch: $dispatch");
-        });
+        }, $dispatch);
     }
     
     /*

@@ -133,6 +133,7 @@ class Standard extends App
             list($controller, $action) = explode('::', $this->config['default_dispatch_index']);
         } else {
             if (isset($this->dispatch['continue'])) {
+                $class = $this->dispatch['class'];
                 list($controller, $params) = $this->dispatch['continue'];
                 if ($params) {
                     $action = array_shift($params);
@@ -183,7 +184,7 @@ class Standard extends App
                 $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
             }
         }
-        if ($class = $this->getControllerClass($controller, isset($check))) {
+        if (isset($class) || ($class = $this->getControllerClass($controller, isset($check)))) {
             if (isset($action) && $action[0] !== '_' && is_callable([$controller_instance = new $class(), $action])) {
                 if (isset($params)) {
                     if ($param_mode === 2) {
@@ -194,7 +195,7 @@ class Standard extends App
                 }
                 return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
             } elseif (isset($this->config['route_dispatch_action_routes']) && isset($allow_action_route)) {
-                return $this->actionRouteDispatchHandler($param_mode, $controller, array_slice($path, $depth), $class);
+                return $this->actionRouteDispatchHandler($param_mode, $class, $controller, array_slice($path, $depth));
             }
         }
     }
@@ -211,26 +212,29 @@ class Standard extends App
             }
             $param_mode   = $this->config['route_dispatch_param_mode'];
             if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $this->config['route_dispatch_dynamic'])) {
-                if (strpos($dispatch[0], '::')) {
-                    list($controller, $action) = explode('::', $dispatch[0]);
-                    $class = $this->getControllerClass($controller);
-                    if ($this->config['route_dispatch_access_protected']) {
-                        $this->checkMethodAccessible($class, $action);
+                $call = explode('::', $dispatch[0]);
+                $class = $this->getControllerClass($call[0], $dispatch[2]);
+                if (isset($call[1])) {
+                    if ($dispatch[2]) {
+                        if ($call[1][0] === '_' || !is_callable([$controller_instance = new $class(), $call[1]])) {
+                            return;
+                        }
+                    } elseif ($this->config['route_dispatch_access_protected']) {
+                        $this->checkMethodAccessible($class, $call[1]);
                     }
                     return [
-                        'controller'            => $controller,
-                        'controller_instance'   => new $class,
-                        'action'                => $action,
+                        'controller'            => $call[0],
+                        'controller_instance'   => $controller_instance ?? new $class,
+                        'action'                => $call[1],
                         'params'                => $dispatch[1],
                         'param_mode'            => $param_mode
                     ];
+                } elseif (isset($this->config['route_dispatch_action_routes'])) {
+                    if ($action_route_dispatch = $this->actionRouteDispatchHandler($param_mode, $class, ...$dispatch)) {
+                        return $action_route_dispatch;
+                    }
                 }
-                if (isset($this->config['route_dispatch_action_routes'])
-                    && ($action_route_dispatch = $this->actionRouteDispatchHandler($param_mode, ...$dispatch))
-                ) {
-                    return $action_route_dispatch;
-                }
-                $this->dispatch = ['continue' => $dispatch];
+                $this->dispatch = ['continue' => $dispatch, 'class' => $class];
             }
         }
     }
@@ -238,22 +242,23 @@ class Standard extends App
     /*
      * Action 路由调度
      */
-    protected function actionRouteDispatchHandler($param_mode, $controller, $path, $class = null)
+    protected function actionRouteDispatchHandler($param_mode, $class, $controller, $path)
     {
-        if ($class === null) {
-            $class = $this->getControllerClass($controller);
-        }
         $routes = get_class_vars($class)[$this->config['route_dispatch_action_routes']] ?? null;
         if (empty($routes)) {
             return;
         }
         if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $this->config['route_dispatch_dynamic'])) {
-            if ($this->config['route_dispatch_access_protected']) {
+            if ($dispatch[2]) {
+                if ($dispatch[0][0] === '_' || !is_callable([$controller_instance = new $class(), $dispatch[0]])) {
+                    return;
+                }
+            } elseif ($this->config['route_dispatch_access_protected']) {
                 $this->checkMethodAccessible($class, $dispatch[0]);
             }
             return [
                 'controller'            => $controller,
-                'controller_instance'   => new $class,
+                'controller_instance'   => $controller_instance ?? new $class,
                 'action'                => $dispatch[0],
                 'params'                => $dispatch[1],
                 'param_mode'            => $param_mode
