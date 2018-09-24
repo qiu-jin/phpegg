@@ -6,21 +6,21 @@ class Dispatcher
     /*
      * 路由调度
      */
-    public static function route($path, $rules, $param_mode, $dynamic_dynamic = false, $method = null)
+    public static function route($path, $rules, $param_mode, $dynamic_dispatch = false, $method = null)
     {
         if ($route = (new Router($path, $method))->route($rules)) {
-            return self::dispatch($route, $param_mode, $dynamic_dynamic);
+            return self::dispatch($route, $param_mode, $dynamic_dispatch);
         }
     }
     
     /*
      * 调度信息
      */
-    public static function dispatch($route, $param_mode = 0, $dynamic_dynamic = false)
+    public static function dispatch($route, $param_mode = 0, $dynamic_dispatch = false)
     {
         $params = $route['matches'];
         $dispatch = self::parseDispatch($route['dispatch'], $param_names);
-        if ($is_dynamic = $dynamic_dynamic && strpos($dispatch, '$') !== false) {
+        if ($is_dynamic = $dynamic_dispatch && strpos($dispatch, '$') !== false) {
             $dispatch = self::dynamicDispatch($dispatch, $params);
             if ($params) {
                 $params = array_values($params);

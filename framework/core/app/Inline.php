@@ -4,7 +4,6 @@ namespace framework\core\app;
 use framework\App;
 use framework\core\View;
 use framework\core\Config;
-use framework\core\Router;
 use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
@@ -99,25 +98,16 @@ class Inline extends App
     protected function defaultDispatch($path) 
     {
         if ($path) {
-            $controller = $path;
-            if ($this->config['default_dispatch_hyphen_to_underscore']) {
-                $controller = strtr($controller, '-', '_');
-            }
+            $controller = $this->config['default_dispatch_hyphen_to_underscore'] ? strtr($path, '-', '_') : $path;
             if (!isset($this->config['default_dispatch_controllers'])) {
                 if ($controller_file = $this->getAndCheckControllerFile($controller)) {
                     return compact('controller', 'controller_file');
                 }
             } elseif (in_array($controller, $this->config['default_dispatch_controllers'])) {
-                return [
-                    'controller'        => $controller,
-                    'controller_file'   => $this->getControllerFile($controller)
-                ];
+                return $this->defaultDispatchResult($controller);
             }
         } elseif ($this->config['default_dispatch_index']) {
-            return [
-                'controller'        => $this->config['default_dispatch_index'],
-                'controller_file'   => $this->getControllerFile($this->config['default_dispatch_index'])
-            ];
+            return $this->defaultDispatchResult($this->config['default_dispatch_index']);
         }
     }
     
@@ -131,14 +121,13 @@ class Inline extends App
                 $this->config['route_dispatch_dynamic']
             );
             if ($dispatch) {
-                if ($dispatch[2] && !($controller_file = $this->getAndCheckControllerFile($dispatch[0]))) {
-                    return;
+                if (!$dispatch[2] || ($controller_file = $this->getAndCheckControllerFile($dispatch[0]))) {
+                    return [
+                        'controller'        => $dispatch[0],
+                        'controller_file'   => $controller_file ?? $this->getControllerFile($dispatch[0]),
+                        'params'            => $dispatch[1]
+                    ];
                 }
-                return [
-                    'controller'        => $dispatch[0],
-                    'controller_file'   => $controller_file ?? $this->getControllerFile($dispatch[0]),
-                    'params'            => $dispatch[1]
-                ];
             }
         }
     }
@@ -146,6 +135,11 @@ class Inline extends App
     protected function getControllerFile($controller)
     {
         return APP_DIR.$this->config['controller_path']."/$controller.php";
+    }
+    
+    protected function defaultDispatchResult($controller)
+    {
+        return ['controller' => $controller, 'controller_file' => $this->getControllerFile($controller)];
     }
     
     protected function getAndCheckControllerFile($controller)

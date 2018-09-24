@@ -2,7 +2,6 @@
 namespace framework\core\app;
 
 use framework\App;
-use framework\util\Arr;
 use framework\core\Router;
 use framework\core\Dispatcher;
 use framework\core\http\Status;
