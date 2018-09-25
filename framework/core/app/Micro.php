@@ -32,32 +32,32 @@ class Micro extends App
     
     public function get($role, $call)
     {
-        return $this->bindRole('GET', $role, $call);
+        return $this->methodRoute('GET', $role, $call);
     }
     
     public function put($role, $call)
     {
-        return $this->bindRole('PUT', $role, $call);
+        return $this->methodRoute('PUT', $role, $call);
     }
     
     public function post($role, $call)
     {
-        return $this->bindRole('POST', $role, $call);
+        return $this->methodRoute('POST', $role, $call);
     }
     
     public function patch($role, $call)
     {
-        return $this->bindRole('PATCH', $role, $call);
+        return $this->methodRoute('PATCH', $role, $call);
     }
     
     public function delete($role, $call)
     {
-        return $this->bindRole('DELETE', $role, $call);
+        return $this->methodRoute('DELETE', $role, $call);
     }
     
     public function options($role, $call)
     {
-        return $this->bindRole('OPTIONS', $role, $call);
+        return $this->methodRoute('OPTIONS', $role, $call);
     }
     
     public function map(array $methods, $role, $call)
@@ -104,16 +104,16 @@ class Micro extends App
         } elseif (is_string($route['dispatch'])) {
             $dispatch = Dispatcher::dispatch($route, 1, $this->config['route_dispatch_dynamic']);
             $arr = explode('::', $dispatch[0]);
-            if (isset($call[1])) {
+            if (isset($arr[1])) {
                 if (isset($this->dispatch['classes'][$arr[0]])) {
-                    $call = [$this->getClassInstance($arr[0]), $arr[1]];
+                    $call = [$this->getClassInstance($this->dispatch['classes'][$arr[0]]), $arr[1]];
                 } else {
-                    $call = [instance($this->getControllerClass($arr[0], $dispatch[2]), $arr[1]];
+                    $call = [instance($this->getControllerClass($arr[0], $dispatch[2])), $arr[1]];
                 }
-            } else {
-                $call = isset($this->dispatch['class']) ? [$this->getClassInstance(), $arr[0]] : $arr[0];
+            } elseif (isset($this->dispatch['class'])) {
+                $call = [$this->getClassInstance($this->dispatch['class']), $arr[0]];
             }
-            if (!$dispatch[2] || (is_callable($call) && (is_string($call) || $call[1][0] !== '_'))) {
+            if (isset($call) && (!$dispatch[2] || (is_callable($call) && $call[1][0] !== '_'))) {
                 return $call(...$dispatch[1]);
             }
             self::abort(404);
@@ -132,7 +132,7 @@ class Micro extends App
         Response::json($return);
     }
     
-    protected function bindRole($method, $role, $call)
+    protected function methodRoute($method, $role, $call)
     {
         $this->dispatch['routes'][$role][":$method"] = $call;
         return $this;
@@ -153,9 +153,8 @@ class Micro extends App
         }
     }
     
-    protected function getClassInstance($name = null)
+    protected function getClassInstance($class)
     {
-        $class = $name === null ? $this->dispatch['class'] : $this->dispatch['classes'][$name];
         return is_object($class) ? $class : new $class;
     }
 }
