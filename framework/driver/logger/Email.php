@@ -14,7 +14,7 @@ class Email extends Logger
     // 缓存驱动配置
     protected $cache;
     // 邮件发送间隔时间（秒数）
-    protected $interval;
+    protected $send_interval;
     
     public function __construct($config)
     {
@@ -24,7 +24,7 @@ class Email extends Logger
             'driver'    => 'opcache',
             'dir'       => APP_DIR.'storage/cache/',
         ];
-        $this->interval = $config['interval'] ?? 3600;
+        $this->send_interval = $config['send_interval'] ?? 600;
         Event::on('close', [$this, 'flush']);
     }
     
@@ -32,7 +32,8 @@ class Email extends Logger
     {
         if ($this->logs) {
             if ($cache = Container::driver('cache', $this->cache)) {
-                $key = md5(json_encode(end($this->logs)));
+                $end = end($this->logs);
+                $key = md5(($end['file'] ?? '').($end['line'] ?? ''));
                 if (!$cache->has($key)) {
                     $cache->set($key, 1, $this->interval);
                     if ($email = Container::driver('email', $this->email)) 

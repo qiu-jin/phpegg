@@ -6,7 +6,7 @@ use framework\core\Loader;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\extend\MethodParameter;
+use framework\core\misc\MethodParameter;
 
 /*
  * https://github.com/google/protobuf
@@ -138,7 +138,7 @@ class Grpc extends App
     
     protected function callWithParams($reflection_method)
     {
-        list($request_class, $response_class) = $this->getDefaultRequestResponseClass();
+        list($request_class, $response_class) = $this->getDefaultReqResClass();
         if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
             $request_message = new $request_class;
             $request_message->mergeFromString($this->readParams());
@@ -163,7 +163,7 @@ class Grpc extends App
             $request_class = (string) $request_param->getType();
             $response_class = (string) $response_param->getType();
         } else {
-            list($request_class, $response_class) = $this->getDefaultRequestResponseClass();
+            list($request_class, $response_class) = $this->getDefaultReqResClass();
         }
         if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
             $request_message = new $request_class;
@@ -195,7 +195,7 @@ class Grpc extends App
         }
     }
     
-    protected function getDefaultRequestResponseClass()
+    protected function getDefaultReqResClass()
     {
         $replace = [
             '{service}' => $this->dispatch['controller'],

@@ -1,5 +1,5 @@
 <?php
-namespace framework\extend;
+namespace framework\core\misc;
 
 use framework\core\Validator;
 

@@ -8,7 +8,7 @@ use framework\core\Logger;
 use framework\core\Container;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\extend\MethodParameter;
+use framework\core\misc\MethodParameter;
 
 class Jsonrpc extends App
 {

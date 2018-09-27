@@ -71,6 +71,10 @@ class Error
                 throw new \ErrorException("[$prefix] $message", 0, $code, $file, $line);
             }
             self::record('error.error', $level, $code, "Error: [$prefix] $message", $file, $line, debug_backtrace(0));
+            if ($code & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR | E_RECOVERABLE_ERROR)) {
+                App::exit(3);
+                self::respond();
+            }
         }
     }
     
@@ -89,7 +93,7 @@ class Error
             $e->getLine(),
             APP_DEBUG ? ($e instanceof ErrorException ? $e->getUserTrace() : $e->getTrace()) : null
         );
-        self::response();
+        self::respond();
     }
     
     /*
@@ -104,7 +108,7 @@ class Error
             list($level, $prefix) = self::getErrorInfo($error['type']);
             $message = "Fatal Error: [$prefix] $error[message]";
             self::record('error.fatal', $level, $error['type'], $message, $error['file'], $error['line']);
-            self::response();
+            self::respond();
         } else {
             App::exit(0);
             self::record('error.fatal', Logger::NOTICE, 0, 'Unknown exit', null, null);
@@ -125,7 +129,7 @@ class Error
     /*
      * 响应错误给客户端
      */
-    private static function response()
+    private static function respond()
     {
         App::abort(500, APP_DEBUG ? self::$errors : null);
     }

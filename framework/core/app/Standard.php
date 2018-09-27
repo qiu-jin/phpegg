@@ -9,7 +9,7 @@ use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\extend\MethodParameter;
+use framework\core\misc\MethodParameter;
 
 class Standard extends App
 {

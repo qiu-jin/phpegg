@@ -7,7 +7,6 @@ use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\response;
-use framework\extend\MethodParameter;
 
 class Micro extends App
 {
@@ -17,7 +16,7 @@ class Micro extends App
         // 控制器类名后缀
         'controller_suffix' => null,
         // 是否启用closure getter魔术方法
-        'enable_closure_getter' => true,
+        'closure_enable_getter' => true,
         // Getter providers
         'closure_getter_providers' => null,
         // 是否路由动态调用
@@ -84,10 +83,7 @@ class Micro extends App
         return $this;
     }
     
-    protected function dispatch()
-    {
-        return;
-    }
+    protected function dispatch() {}
     
     protected function call()
     {
@@ -97,7 +93,7 @@ class Micro extends App
         }
         if ($route['dispatch'] instanceof \Closure) {
             $call = $route['dispatch'];
-            if ($this->config['enable_closure_getter']) {
+            if ($this->config['closure_enable_getter']) {
                 $call = closure_bind_getter($call, $this->config['closure_getter_providers']);
             }
            return $call(...$route['matches']);
@@ -118,7 +114,7 @@ class Micro extends App
             }
             self::abort(404);
         }
-        throw new \RuntimeException('Invalid route role type');
+        throw new \RuntimeException('Invalid route call type');
     }
     
     protected function error($code = null, $message = null)

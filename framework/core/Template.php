@@ -452,7 +452,7 @@ class Template
                         $escape = !array_search($val[0], self::$config['text_escape_sign']);
                         $val = substr($val, 1);
                     }
-                    return self::wrapCode($escape ? "echo htmlentities($code);" : "echo $code;");
+                    return self::wrapCode($escape ? "echo htmlspecialchars($code);" : "echo $code;");
             }
         }, self::readInclude(self::readStructTag($str, $end)));
     }
@@ -550,7 +550,7 @@ class Template
             $i = count($end) - 1;
             $tag = $end[$i]['tag'];
             if (!preg_match_all("/(<$tag|<\/$tag>)/", $str, $matches, PREG_OFFSET_CAPTURE)) {
-                // 无匹配则直接拼接剩余部分返回
+                // 无匹配则直接返回
                 return $ret.$str;
             }
             $pos = 0;
@@ -575,7 +575,7 @@ class Template
                         }
                         $left = $blank ?? self::readLeftBlank($tmp);
                         $ret .= str_repeat(PHP_EOL.$left.self::wrapCode('}'), $end[$i]['count']);
-                        // 处理完成，踢出当前任务，继续下一个任务。
+                        // 处理完成，退出当前，继续下一环。
                         array_pop($end);
                         break;
                     }
@@ -616,7 +616,7 @@ class Template
                 if ($pref == self::$config['double_attr_prefix']) {
                     $q = $matches[3][$i][0][0];
                     $e = self::$config['auto_escape_text'];
-                    $html .= " $name =$q".self::wrapCode($e ? "echo htmlentities(\"$val\");" : "echo \"$val\";").$q;
+                    $html .= " $name =$q".self::wrapCode($e ? "echo htmlspecialchars(\"$val\");" : "echo \"$val\";").$q;
                 // 赋值语句
                 } elseif ($pref == self::$config['assign_attr_prefix']) {
                     $code[] = self::wrapCode("$$name = ".self::readValue($val).';');
