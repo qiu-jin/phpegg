@@ -23,62 +23,64 @@ class Micro extends App
         'route_dispatch_dynamic' => false,
     ];
 
+    /*
+     * 单个路由
+     */
     public function any($role, $call)
     {
         $this->dispatch['routes'][$role] = $call;
         return $this;
     }
     
+    /*
+     * GET Method路由
+     */
     public function get($role, $call)
     {
-        return $this->methodRoute('GET', $role, $call);
+        return $this->method('GET', $role, $call);
     }
     
-    public function put($role, $call)
-    {
-        return $this->methodRoute('PUT', $role, $call);
-    }
-    
+    /*
+     * POST Method路由
+     */
     public function post($role, $call)
     {
-        return $this->methodRoute('POST', $role, $call);
+        return $this->method('POST', $role, $call);
     }
     
-    public function patch($role, $call)
+    /*
+     * HTTP Method路由
+     */
+    public function method($method, $role, $call)
     {
-        return $this->methodRoute('PATCH', $role, $call);
-    }
-    
-    public function delete($role, $call)
-    {
-        return $this->methodRoute('DELETE', $role, $call);
-    }
-    
-    public function options($role, $call)
-    {
-        return $this->methodRoute('OPTIONS', $role, $call);
-    }
-    
-    public function map(array $methods, $role, $call)
-    {
-        foreach ($methods as $method) {
+        if (is_array($method)) {
+            foreach ($method as $m) {
+                $this->dispatch['routes'][$role][":$m"] = $call;
+            }
+        } else {
             $this->dispatch['routes'][$role][":$method"] = $call;
         }
         return $this;
     }
-    
+
+    /*
+     * 路由规则集合
+     */
     public function route(array $roles)
     {
         $this->mergeRoles($this->dispatch['routes'], $roles);
         return $this;
     }
     
-    public function class($name, $class = null)
+    /*
+     * 指定类或实例
+     */
+    public function class($class)
     {
-        if ($class === null) {
-            $this->dispatch['class'] = $name;
+        if (is_array($class)) {
+            $this->dispatch['classes'] = $class + ($this->dispatch['classes'] ?? []);
         } else {
-            $this->dispatch['classes'][$name] = $class;
+            $this->dispatch['class'] = $class;
         }
         return $this;
     }
@@ -101,15 +103,13 @@ class Micro extends App
             $dispatch = Dispatcher::dispatch($route, 1, $this->config['route_dispatch_dynamic']);
             $arr = explode('::', $dispatch[0]);
             if (isset($arr[1])) {
-                if (isset($this->dispatch['classes'][$arr[0]])) {
-                    $call = [$this->getClassInstance($this->dispatch['classes'][$arr[0]]), $arr[1]];
-                } else {
-                    $call = [instance($this->getControllerClass($arr[0], $dispatch[2])), $arr[1]];
-                }
+                $call = [$this->getControllerInstance($arr[0], $dispatch[2]), $arr[1]];
             } elseif (isset($this->dispatch['class'])) {
                 $call = [$this->getClassInstance($this->dispatch['class']), $arr[0]];
+            } else {
+                $call = $this->getControllerInstance($arr[0], $dispatch[2]);
             }
-            if (isset($call) && (!$dispatch[2] || (is_callable($call) && $call[1][0] !== '_'))) {
+            if (!$dispatch[2] || (is_callable($call) && (is_object($call) || $call[1][0] !== '_'))) {
                 return $call(...$dispatch[1]);
             }
             self::abort(404);
@@ -127,13 +127,7 @@ class Micro extends App
     {
         Response::json($return);
     }
-    
-    protected function methodRoute($method, $role, $call)
-    {
-        $this->dispatch['routes'][$role][":$method"] = $call;
-        return $this;
-    }
-    
+
     protected function mergeRoles(&$route, $roles)
     {
         if (is_array($roles)) {
@@ -152,5 +146,16 @@ class Micro extends App
     protected function getClassInstance($class)
     {
         return is_object($class) ? $class : new $class;
+    }
+    
+    protected function getControllerInstance($name, $is_dynamic)
+    {
+        if (empty($this->dispatch['classes'])) {
+            if ($class = $this->getControllerClass($name, $is_dynamic)) {
+                return instance($class);
+            }
+        } elseif ($is_dynamic && isset($this->dispatch['classes'][$name])) {
+            return $this->makeClassInstance($this->dispatch['classes'][$name]);
+        }
     }
 }

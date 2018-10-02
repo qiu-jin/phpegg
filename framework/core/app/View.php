@@ -38,6 +38,8 @@ class View extends App
         'route_dispatch_routes'  => null,
         // 是否路由动态调用
         'route_dispatch_dynamic' => false,
+        // 提取路由调度参数到变量
+        'route_dispatch_extract_params' => false,
     ];
     
     protected function dispatch()
@@ -53,28 +55,17 @@ class View extends App
     
     protected function call()
     {
-        extract($this->dispatch);
-        $vars = [
-            '_VIEW'     => $view,
-            '_PARAMS'   => $params ?? []
-        ];
-        if (isset($this->config['boot_view_model'])) {
-            $vars = (array) self::requireModelFile($this->config['boot_view_model'], $vars) + $vars;
-        }
-        if (isset($this->config['view_model_path'])) {
-            if (isset($this->config['view_models'])) {
-                if (in_array($view, $this->config['view_models'])) {
-                    $vars = (array) self::requireModelFile($this->getViewModelFile($view), $vars) + $vars;
-                }
-            } elseif (is_php_file($view_model_file = $this->getViewModelFile($view))) {
-                $vars = (array) self::requireModelFile($view_model_file, $vars) + $vars;
-            }
-        }
         ob_start();
-        (static function($__file, $__vars) {
-            extract($__vars, EXTR_SKIP);
-            require $__file;
-        })($view_file, $vars);
+        (static function($__file, $_PARAMS, $__extract) {
+            if ($__extract && $_PARAMS) {
+                extract($_PARAMS, EXTR_SKIP);
+            }
+            return require $__file;
+        })(
+            CoreView::make($this->dispatch['view']),
+            $this->dispatch['params'] ?? null,
+            $this->config['route_dispatch_extract_params']
+        );
         return ob_get_clean();
     }
     
@@ -93,70 +84,39 @@ class View extends App
     
     protected function defaultDispatch($path) 
     {
-        if ($view = $path) {
-            if ($this->config['default_dispatch_hyphen_to_underscore']) {
-                $view = strtr($path, '-', '_');
-            }
-            if (isset($this->config['default_dispatch_views'])) {
-                if (in_array($view, $this->config['default_dispatch_views'])) {
+        if ($path) {
+            $view = $this->config['default_dispatch_hyphen_to_underscore'] ? strtr($path, '-', '_') : $path;
+            if (!isset($this->config['default_dispatch_views'])) {
+                if ($this->checkViewFile($view)) {
                     return compact('view');
                 }
-            } elseif (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $view) && CoreView::exists($view)) {
+            } elseif (in_array($view, $this->config['default_dispatch_views'])) {
                 return compact('view');
             }
-        } elseif (isset($this->config['default_dispatch_index'])) {
+        } elseif ($this->config['default_dispatch_index']) {
             return ['view' => $this->config['default_dispatch_index']];
         }
     }
     
     protected function routeDispatch($path)
     {
-        if (!empty($this->config['route_dispatch_routes'])) {
-            if (is_string($routes = $this->config['route_dispatch_routes'])) {
-                $routes = Config::flash($routes);
-            }
-            $path = empty($path) ? null : explode('/', $path);
-            if ($route = (new Router($path))->route($routes)) {
-                if ($this->config['route_dispatch_dynamic']) {
-                    $route['dispatch'] = Dispatcher::dynamicCall($route['dispatch'], $route['matches']);
+        if (!empty($routes = $this->config['route_dispatch_routes'])) {
+            $dispatch = Dispatcher::route(
+                empty($path) ? null : explode('/', $path),
+                is_string($routes) ? Config::flash($routes) : $routes,
+                2,
+                $this->config['route_dispatch_dynamic']
+            );
+            if ($dispatch) {
+                if (!$dispatch[2] || $this->checkViewFile($dispatch[0])) {
+                    return ['view' => $dispatch[0], 'params' => $dispatch[1]];
                 }
-                return [
-                    'view'      => $route['dispatch'],
-                    'params'    => $route['matches']
-                ];
             }
         }
     }
     
-    protected function getViewFile($view)
+    protected function checkViewFile($view)
     {
-        if ($this->config['enable_pjax'] && Request::isPjax()) {
-            return CoreView::block($view);
-        }
-        return CoreView::file($view);
-    }
-    
-    protected function getViewModelFile($view)
-    {
-        return APP_DIR.$this->config['viewmodel_path']."/$view.php";
-    }
-    
-    protected function requireModelFile($file, $vars)
-    {
-        if (empty($this->config['enable_getter'])) {
-            $call = static function($__file, $_VARS) {
-                return require $__file;
-            };
-        } else {
-            $call = \Closure::bind(function($__file, $_VARS) {
-                return require $__file;
-            }, new class($this->config['getter_providers']) {
-                use Getter;
-                public function __construct($providers) {
-                    $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
-                }
-            });
-        }
-        return $call($file, $vars);
+        return preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $view) && CoreView::exists($view);
     }
 }
