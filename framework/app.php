@@ -13,8 +13,6 @@ abstract class App
     const CORE_VERSION = '1.0.0';
     // 是否命令行环境
     const IS_CLI  = PHP_SAPI == 'cli';
-    // 内置支持的应用模式
-    const MODES   = ['Standard', 'Rest', 'Inline', 'View', 'Micro', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'];
     
     // 应用实例容器
     private static $app;
@@ -29,10 +27,12 @@ abstract class App
      * 5 致命错误退出
      */
     private static $exit;
-    // 标示run方法知否在执行，防止重复执行
+    // 标示run方法是否在执行，防止重复执行
     private static $runing;
     // 设置错误处理器
     private static $error_handler;
+    // 设置返回值处理器
+    private static $return_handler;
     
     // 应用配置项
     protected $config;
@@ -80,7 +80,8 @@ abstract class App
         self::$runing = true;
         $return = $this->call();
         self::$exit = 2;
-        if ($return_handler === null || $return_handler($return) === true) {
+        $handler = $return_handler ?? self::$return_handler;
+        if ($handler === null || $handler($return) === true) {
             $this->respond($return);
         }
     }
@@ -95,8 +96,8 @@ abstract class App
         }
         self::$boot = true;
         define('FW_DIR', __DIR__.'/');
-        defined('APP_DEBUG')|| define('APP_DEBUG', false);
-        defined('ROOT_DIR') || define('ROOT_DIR', dirname(__DIR__).'/');
+        defined('APP_DEBUG') || define('APP_DEBUG', false);
+        defined('ROOT_DIR')  || define('ROOT_DIR', dirname(__DIR__).'/');
         if (!defined('APP_DIR')) {
             if (self::IS_CLI) {
                 define('APP_DIR', dirname(realpath($_SERVER['argv'][0]), 2).'/');
@@ -145,8 +146,8 @@ abstract class App
             return;
         }
         define('APP_MODE', $app);
-        if (in_array($app, self::MODES, true)) {
-            $class = 'framework\core\app\\'.$app;
+        if (in_array($app, ['Standard', 'Rest', 'Micro', 'Inline', 'View', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'])) {
+            $class = "framework\core\app\\$app";
         } elseif (is_subclass_of($app, __CLASS__)) {
             $class = $app;
         } else{
@@ -221,6 +222,14 @@ abstract class App
     public static function setErrorHandler(callable $handler)
     {
         self::$error_handler = $handler;
+    }
+    
+    /*
+     * 设置返回值处理器，由run方法调用
+     */
+    public static function setReturnHandler(callable $handler)
+    {
+        self::$return_handler = $handler;
     }
     
     /*

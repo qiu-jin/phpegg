@@ -12,15 +12,15 @@ class Micro extends App
 {
     protected $config = [
         // 控制器namespace
-        'controller_ns' => 'controller',
+        'controller_ns'     => 'controller',
         // 控制器类名后缀
         'controller_suffix' => null,
         // 是否启用closure getter魔术方法
-        'closure_enable_getter' => true,
+        'closure_enable_getter'     => true,
         // Getter providers
-        'closure_getter_providers' => null,
+        'closure_getter_providers'  => null,
         // 是否路由动态调用
-        'route_dispatch_dynamic' => false,
+        'route_dispatch_dynamic'    => false,
     ];
 
     /*
@@ -61,6 +61,17 @@ class Micro extends App
             $this->dispatch['routes'][$role][":$method"] = $call;
         }
         return $this;
+    }
+    
+    /*
+     * HTTP Method路由魔术方法
+     */
+    public function __call($method, $params)
+    {
+        if(in_array($m = strtoupper($method), ['PUT', 'DELETE', 'PATCH', 'OPTIONS'])) {
+            return $this->method($m, ...$params);
+        }
+        throw new \RuntimeException("Invalid method: $method");
     }
 
     /*

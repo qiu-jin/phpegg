@@ -20,6 +20,8 @@ class View
         'dir'       => APP_DIR.'view/',
         // 错误页面
         'error'     => null,
+        // 是否清理数据
+        'clean'     => true,
         // 模版配置
         'template'  => [
             // 模版文件扩展名
@@ -48,7 +50,9 @@ class View
             }
             self::$config = $config + self::$config;
         }
-        Event::on('exit', [__CLASS__, 'clean']);
+        if (self::$config['clean']) {
+            Event::on('exit', [__CLASS__, 'clean']);
+        }
     }
     
     /*
@@ -198,8 +202,8 @@ class View
      */
     private static function readTemplateFile($file)
     {
-        if ($res = file_get_contents($file)) {
-            return $res;
+        if ($result = file_get_contents($file)) {
+            return $result;
         }
         throw new ViewException("Template file read fail: $file");
     }
@@ -210,8 +214,8 @@ class View
     private static function complieTo($content, $file)
     {
         if (is_dir($dir = dirname($file)) || mkdir($dir, 0777, true)) {
-            $res = self::$config['template']['engine']::complie($content);
-            if (file_put_contents($file, $res, LOCK_EX)) {
+            $result = self::$config['template']['engine']::complie($content);
+            if (file_put_contents($file, $result, LOCK_EX)) {
                 if (OPCACHE_LOADED) {
                     opcache_compile_file($file);
                 }

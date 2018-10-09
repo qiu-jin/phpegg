@@ -74,6 +74,7 @@ class Grpc extends App
         ) {
             return compact('action', 'controller', 'controller_instance');
         }
+        return false;
     }
     
     protected function call()
@@ -102,8 +103,8 @@ class Grpc extends App
     {
         $data = $return->serializeToString();
         $encode = 0;
-        if ($grpc_accept_encoding = strtolower(Request::header('grpc-accept-encoding'))) {
-            foreach (explode(',', $grpc_accept_encoding) as $encoding) {
+        if ($grpc_accept_encoding = Request::header('grpc-accept-encoding')) {
+            foreach (explode(',', strtolower($grpc_accept_encoding)) as $encoding) {
                 if (isset($this->config['response_encode'][$encoding])) {
                     $encode = 1;
                     Response::header('grpc-encoding', $encoding);
