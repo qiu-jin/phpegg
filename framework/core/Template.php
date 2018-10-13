@@ -74,12 +74,10 @@ class Template
     
     // 内置函数
     protected static $filters = [
-        // 是否不为空
-        'has'           => '!empty($0)',
+        // 是否存在
+        'has'           => 'isset($0)',
         // 是否为空
         'empty'         => 'empty($0)',
-        // 是否存在
-        'isset'         => 'isset($0)',
         // 默认值
         'default'       => '($0 ?? $1)',
         // 转为字符串

@@ -1,9 +1,6 @@
 <?php
 namespace framework\core;
 
-use framework\util\Arr;
-use framework\core\Container;
-use framework\core\http\Response;
 use framework\core\exception\ViewException;
 use framework\extend\view\Error as ViewError;
 
@@ -45,10 +42,7 @@ class View
         }
         self::$init = true;
         if ($config = Config::get('view')) {
-            if ($template = Arr::poll($config, 'template')) {
-                self::$config['template'] = $template + self::$config['template'];
-            }
-            self::$config = $config + self::$config;
+            self::$config = array_replace_recursive(self::$config, $config);
         }
         if (self::$config['clean']) {
             Event::on('exit', [__CLASS__, 'clean']);
@@ -86,14 +80,12 @@ class View
      */
     public static function render($tpl, array $vars = [])
     {
-        if (isset(self::$view['vars'])) {
-            extract(self::$view['vars']);
-        }
-        if ($vars) {
-            extract($vars);
-        }
         ob_start();
-        include self::make($tpl);
+        (static function($__file, $__vars) {
+            extract($__vars, EXTR_SKIP);
+            unset($__vars);
+            return require $__file;
+        })(self::make($tpl), isset(self::$view['vars']) ? $vars + self::$view['vars'] : $vars);
         return ob_get_clean();
     }
     
@@ -103,7 +95,7 @@ class View
     public static function make($tpl, $force = false)
     {
         $phpfile = self::getView($tpl);
-        if (self::$config['template']['engine']) {
+        if (!empty(self::$config['template']['engine'])) {
             if (!is_file($tplfile = self::getTemplate($tpl))) {
                 throw new ViewException("Template file not found: $tplfile");
             }
@@ -121,8 +113,7 @@ class View
      */
     public static function exists($tpl)
     {
-        return isset(self::$config['template']['engine']) ? is_file(self::getTemplate($tpl)) 
-                                                          : is_php_file(self::getView($tpl));
+        return empty(self::$config['template']['engine']) ? is_php_file(self::getView($tpl)) : is_file(self::getTemplate($tpl));
     }
     
     /*
@@ -132,11 +123,8 @@ class View
     {   
         if (isset(self::$config['error'][$code])) {
             return self::render(self::$config['error'][$code], compact('code', 'message'));
-        } elseif ($code == 404) {
-            return ViewError::render404($message);
-        } else {
-            return ViewError::renderError($message);
         }
+        return $code == 404 ? ViewError::render404($message) : ViewError::renderError($message);
     }
     
     /*
@@ -155,7 +143,7 @@ class View
      */
     public static function checkExpired($phpfile, ...$tpls)
     {
-        if (!self::$config['template']['engine']) {
+        if (empty(self::$config['template']['engine'])) {
             return;
         }
         foreach ($tpls as $tpl) {
@@ -163,9 +151,8 @@ class View
                 throw new ViewException("Template file not found: $tplfile");
             }
             if (filemtime($phpfile) < filemtime($tplfile)) {
-                $s = strlen(realpath(self::$config['dir'])) + 1;
-                $l = - strlen(self::$config['ext']);
-                return self::complieTo(self::readTemplate(substr($phpfile, $s, $l)), $phpfile);
+                $tpl = substr($phpfile, strlen(realpath(self::$config['dir'])) + 1, - strlen(self::$config['ext']));
+                return self::complieTo(self::readTemplate($tpl), $phpfile);
             }
         }
     }

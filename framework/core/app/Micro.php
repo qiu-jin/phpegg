@@ -79,7 +79,7 @@ class Micro extends App
      */
     public function route(array $roles)
     {
-        $this->mergeRoles($this->dispatch['routes'], $roles);
+        $this->dispatch['routes'] = array_replace_recursive($this->dispatch['routes'], $roles);
         return $this;
     }
     
@@ -96,7 +96,10 @@ class Micro extends App
         return $this;
     }
     
-    protected function dispatch() {}
+    protected function dispatch()
+    {
+        return ['routes' => []];
+    }
     
     protected function call()
     {
@@ -138,21 +141,6 @@ class Micro extends App
     {
         Response::json($return);
     }
-
-    protected function mergeRoles(&$route, $roles)
-    {
-        if (is_array($roles)) {
-            foreach ($roles as $k => $v) {
-                if (isset($route[$k])) {
-                    $this->mergeRoles($route[$k], $v);
-                } else {
-                    $route[$k] = $v;
-                }
-            }
-        } else {
-            $route = $roles;
-        }
-    }
     
     protected function getClassInstance($class)
     {
@@ -161,12 +149,12 @@ class Micro extends App
     
     protected function getControllerInstance($name, $is_dynamic)
     {
-        if (empty($this->dispatch['classes'])) {
-            if ($class = $this->getControllerClass($name, $is_dynamic)) {
-                return instance($class);
+        if ($classes = $this->dispatch['classes'] ?? null) {
+            if (isset($classes[$name])) {
+                return $this->makeClassInstance($classes[$name]);
             }
-        } elseif ($is_dynamic && isset($this->dispatch['classes'][$name])) {
-            return $this->makeClassInstance($this->dispatch['classes'][$name]);
+        } elseif ($class = $this->getControllerClass($name, $is_dynamic)) {
+            return new $class;
         }
     }
 }
