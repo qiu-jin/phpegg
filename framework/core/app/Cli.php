@@ -96,8 +96,9 @@ class Cli extends App
     
     protected function error($code = null, $message = null)
     {
-        $text = "[$code] ".(is_array($message) ? var_export($message, true) : $message);
-        ($this->dispatch['instance'] ?? new Command)->error($text);
+        $command = $this->dispatch['instance'] ?? new Command;
+        $command->error("[$code]");
+        $command->highlight(is_array($message) ? var_export($message, true) : $message);
     }
     
     protected function respond($return = null)

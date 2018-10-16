@@ -2,6 +2,7 @@
 namespace framework\core;
 
 use framework\util\Arr;
+use framework\core\http\Request;
 use framework\core\exception\TemplateException;
 
 class Template
@@ -69,7 +70,12 @@ class Template
     
     // 内置变量
     protected static $vars    = [
-        
+        'query'     => Request::class.'::query',
+        'param'     => Request::class.'::param',
+        'cookie'    => Request::class.'::cookie',
+        'session'   => Request::class.'::session',
+        'header'    => Request::class.'::header',
+        'server'    => Request::class.'::server',
     ];
     
     // 内置函数
@@ -181,6 +187,9 @@ class Template
         }
         self::$init = true;
         if ($config = Config::get('template')) {
+            if ($vars = Arr::poll($config, 'vars')) {
+                self::$vars = $vars + self::$vars;
+            }
             if ($filters = Arr::poll($config, 'filters')) {
                 self::$filters = $filters + self::$filters;
             }
@@ -886,17 +895,23 @@ class Template
                     throw new TemplateException("readValue error: 非法 $c 语法 $val");
                 // 数组
                 case '[':
-                    if (!isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '[', ']'))) {
-                        if (isset($ret)) {
-                            $key = self::readValue(substr($val, $i + 1, $pos - $i - 1), $strs);
-                            $ret = $ret."[$key]";
-                        } else {
+                    if ($pos = self::findEndPos($val, $len, $i, '[', ']')) {
+                        if (!isset($ret) && !isset($tmp)) {
                             $ret = self::readArrayValue(substr($val, $i, $pos + 1), $strs);
+                        } else {
+                            $key = self::readValue(substr($val, $i + 1, $pos - $i - 1), $strs);
+                            if (isset($ret) && !isset($tmp)) {
+                                $ret = $ret."[$key]";
+                            } elseif (!isset($ret) && isset($tmp)) {
+                                $ret = self::readInitValue($ret, $tmp)."[$key]";
+                            } else {
+                                throw new TemplateException("readValue error: 非法 $c 语法 $val");
+                            }
                         }
                         $i = $pos;
                         break;
                     }
-                    throw new TemplateException("readValue error: 非法 $c 语法 $val");
+                    throw new TemplateException("readValue error: 数组结束符号缺失 $val");
                 // 数组
                 case '{':
                     if (!isset($ret) && !isset($tmp) && ($pos = self::findEndPos($val, $len, $i, '{', '}'))) {
@@ -912,11 +927,10 @@ class Template
                         break;
                     }
                     throw new TemplateException("readValue error: 非法 $c 语法 $val");
+                // 内部变量 模版变量
                 case '$':
                     if (!isset($ret) && !isset($tmp)) {
-                        if (preg_match("/^\d+/", substr($val, $i + 1), $matchs)) {
-                            $ret .= self::injectString('$'.$matchs[0], $strs);
-                            $i += strlen($matchs[0]);
+                        if ($ret = self::readTemplateVarValue($val, $len, $i, $strs)) {
                             break;
                         }
                     }
@@ -958,10 +972,7 @@ class Template
      */
     protected static function readVarValue($var)
     {
-        if (is_numeric($var) || in_array($var, ['true', 'false', 'null'], true)) {
-            return $var;
-        }
-        return self::$vars[$var] ?? '$'.$var;
+        return is_numeric($var) || in_array($var, ['true', 'false', 'null']) ? $var : '$'.$var;
     }
     
     /*
@@ -981,6 +992,39 @@ class Template
     protected static function readArrayValue($val, $strs)
     {
         return "jsondecode('".self::injectString($val, $strs)."', true)";
+    }
+    
+    /*
+     * 内部变量
+     */
+    protected static function readTemplateVarValue($val, $len, &$pos, $strs)
+    {
+        $str = substr($val, $pos + 1);
+        if (preg_match("/^\d\d*/", $str, $matchs)) {
+            $pos += strlen($matchs[0]);
+            return self::injectString('$'.$matchs[0], $strs);
+        } elseif (preg_match('/^(?:'.implode('|', array_keys(self::$vars)).')/', $str, $matchs)) {
+            $i = $pos + strlen($matchs[0]) + 1;
+            $ret = self::$vars[$matchs[0]];
+            switch ($c = substr($val, $i, 1)) {
+                case '.':
+                    $res = self::parseLastNameAndPos($val, $i + 1, $len);
+                    $pos = $res['pos'];
+                    if (empty($res['func'])) {
+                        return "$ret('$res[name]')";
+                    }
+                    return self::readFilterValue($res['name'], self::readArguments($val, $len, $pos, $strs, ["$ret()"]));
+                case '[':
+                    $epos = self::findEndPos($val, $len, $i, '[', ']');
+                    $pos = $epos;
+                    return "$ret(".self::readValue(substr($val, $i + 1, $epos - $i - 1), $strs).")";
+                default:
+                    if (!self::isVarChar($c)) {
+                        $pos = $i;
+                        return "$ret()";
+                    }
+            }
+        }
     }
     
     /*
