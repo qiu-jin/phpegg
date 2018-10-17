@@ -68,7 +68,7 @@ class Template
         'view_template_reader'      => View::class.'::readTemplate',
     ];
     
-    // 内置变量
+    // 魔术变量
     protected static $vars    = [
         'query'     => Request::class.'::query',
         'param'     => Request::class.'::param',
@@ -444,14 +444,13 @@ class Template
         $r = preg_quote(self::$config['text_delimiter_sign'][1]);
         return preg_replace_callback("/$l(.*?)$r/", function ($matches) use ($str) {
             $val = $matches[1];
-            $code = self::readValue($val);
             switch ($val[0]) {
                 // 忽略注释
                 case self::$config['note_text_sign']:
                     return '';
                 // 不输出
                 case self::$config['not_echo_text_sign']:
-                    return self::wrapCode("$code;");
+                    return self::wrapCode(self::readValue(substr($val, 1)).';');
                 default:
                     // 是否转义
                     $escape = self::$config['auto_escape_text'];
@@ -459,6 +458,7 @@ class Template
                         $escape = !array_search($val[0], self::$config['text_escape_sign']);
                         $val = substr($val, 1);
                     }
+                    $code = self::readValue($val);
                     return self::wrapCode($escape ? "echo htmlspecialchars($code);" : "echo $code;");
             }
         }, self::readInclude(self::readStructTag($str, $end)));
@@ -734,7 +734,7 @@ class Template
     }
     
     /*
-     * 
+     *  解析标签文本
      */
     protected static function parseTagWithText($str, $tag, $name = null, $self_end = false, $nesting = false)
     {        
@@ -927,10 +927,10 @@ class Template
                         break;
                     }
                     throw new TemplateException("readValue error: 非法 $c 语法 $val");
-                // 内部变量 模版变量
+                // 特殊变量
                 case '$':
                     if (!isset($ret) && !isset($tmp)) {
-                        if ($ret = self::readTemplateVarValue($val, $len, $i, $strs)) {
+                        if ($ret = self::readSpecialVarValue($val, $len, $i, $strs)) {
                             break;
                         }
                     }
@@ -991,18 +991,20 @@ class Template
      */
     protected static function readArrayValue($val, $strs)
     {
-        return "jsondecode('".self::injectString($val, $strs)."', true)";
+        return "json_decode('".self::injectString($val, $strs)."', true)";
     }
     
     /*
-     * 内部变量
+     * 特殊变量
      */
-    protected static function readTemplateVarValue($val, $len, &$pos, $strs)
+    protected static function readSpecialVarValue($val, $len, &$pos, $strs)
     {
         $str = substr($val, $pos + 1);
-        if (preg_match("/^\d\d*/", $str, $matchs)) {
-            $pos += strlen($matchs[0]);
+        // 临时变量
+        if (preg_match("/^\d/", $str, $matchs)) {
+            $pos += 1;
             return self::injectString('$'.$matchs[0], $strs);
+        // 魔术变量
         } elseif (preg_match('/^(?:'.implode('|', array_keys(self::$vars)).')/', $str, $matchs)) {
             $i = $pos + strlen($matchs[0]) + 1;
             $ret = self::$vars[$matchs[0]];
@@ -1201,7 +1203,7 @@ class Template
      */
     protected static function injectString($val, $strs)
     {
-        return preg_replace_callback('/\\$(\d+)/', function ($matches) use ($strs) {
+        return preg_replace_callback('/\\$(\d)/', function ($matches) use ($strs) {
             return $strs[$matches[1]] ?? '';
         }, $val);
     }
