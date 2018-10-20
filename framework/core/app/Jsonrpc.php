@@ -25,11 +25,14 @@ class Jsonrpc extends App
         'dispatch_controllers'  => null,
         /* 参数模式
          * 0 单参数
-         * 1 顺序参数（不检查）
-         * 2 顺序参数（检查绑定）
+         * 1 顺序参数
          * 3 键值参数
          */
         'param_mode'            => 1,
+        // 是否启用closure getter魔术方法
+        'closure_enable_getter' => true,
+        // Getter providers
+        'closure_getter_providers'  => null,
         // 最大批调用数，1不启用批调用，0无限批调用数
         'batch_limit'           => 1,
         // 批调用异常中断
@@ -64,10 +67,44 @@ class Jsonrpc extends App
     protected $return;
     // 当前请求是否为批请求
     protected $is_batch_call = false;
+    // 自定义方法集合
+    protected $custom_methods;
     // 批请求控制器实例缓存
     protected $controller_instances;
     // 批请求控制器方法反射实例缓存
-    protected $controller_reflection_methods;
+    protected $method_reflections;
+
+    /*
+     * 自定义方法
+     */
+    public function method($method, $call = null)
+    {
+        if (is_array($method)) {
+            if (empty($this->custom_methods['methods'])) {
+                $this->custom_methods['methods'] = $method;
+            } else {
+                $this->custom_methods['methods'] = $method + $this->custom_methods['methods'];
+            }
+        } elseif (is_string($method) && is_callable($call)) {
+            $this->custom_methods['method'][$method] = $call;
+        } else {
+            throw new \RuntimeException("Invalid method");
+        }
+        return $this;
+    }
+    
+    /*
+     * 自定义方法类
+     */
+    public function class($class)
+    {
+        if (is_array($class)) {
+            $this->custom_methods['classes'] = $class + ($this->custom_methods['classes'] ?? []);
+        } else {
+            $this->custom_methods['class'] = $class;
+        }
+        return $this;
+    }
 
     protected function dispatch()
     {
@@ -76,14 +113,14 @@ class Jsonrpc extends App
             $limit = $this->config['batch_limit'];
             if ($limit !== 1 && !Arr::isAssoc($data)) {
                 if ($limit !== 0 && count($data) > $limit) {
-                    $this->abort(-32001, "Than batch limit $limit");
+                    self::abort(-32001, "Than batch limit $limit");
                 }
                 $this->is_batch_call = true;
                 foreach ($data as $item) {
-                    $dispatch[] = $this->defaultDispatch($item);
+                    $dispatch[] = $this->parseRequestMethod($item);
                 }
             } else {
-                $dispatch[] = $this->defaultDispatch($data);
+                $dispatch[] = $this->parseRequestMethod($data);
             }
             return $dispatch;
         }
@@ -99,6 +136,10 @@ class Jsonrpc extends App
             ];
             if (isset($dispatch['error'])) {
                 $return['error'] = $dispatch['error'];
+                if ($this->config['batch_exception_abort']) {
+                    $this->batchAbortError(count($this->return), count($this->dispatch));
+                    $this->respond($this->return);
+                }
             } else {
                 if (isset($dispatch['id']) || empty($this->config['notification_type'])) {
                     if ($this->config['batch_exception_abort']) {
@@ -129,21 +170,19 @@ class Jsonrpc extends App
     protected function handle($dispatch)
     {
         extract($dispatch);
-        if ($this->config['param_mode'] == 0) {
-            return ['result' => $controller_instance->$action($params)];
-        }
-        if ($this->config['param_mode'] != 1) {
-            $rm = $this->getReflectionMethod($controller_instance, $controller, $action);
-            if ($this->config['param_mode'] == 2) {
-                $params = MethodParameter::bindListParams($rm, $params);
-            } elseif ($this->config['param_mode'] == 3) {
-                $params = MethodParameter::bindKvParams($rm, $params);
-            }
-            if ($params === false) {
+        if ($call = $this->custom_methods ? $this->customCall($method) : $this->defaultCall($method)) {
+            if ($this->config['param_mode'] == 1) {
+                return ['result' => $call(...$params)];
+            } elseif ($this->config['param_mode'] == 2) {
+                $params = MethodParameter::bindKvParams($this->getMethodReflection($method, $call), $params);
+                if ($params !== false) {
+                    return ['result' => $call(...$params)];
+                }
                 return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
             }
+            return ['result' => $call($params)];
         }
-        return ['result' => $controller_instance->$action(...$params)];
+        self::abort(-32601, 'Method not found');
     }
     
     protected function error($code = null, $message = null)
@@ -160,17 +199,9 @@ class Jsonrpc extends App
                         'message'   => $message ?? 'Server error'
                     ]
                 ];
-                if ($dispatch_count > $return_count + 1) {
-                    for ($i = $return_count + 1; $i < $dispatch_count; $i++) {
-                        $this->return[] = [
-                            'id'        => $this->dispatch[$return_count+$i]['id'],
-                            'jsonrpc'   => self::JSONRPC,
-                            'error'     => ['code'=> -32002, 'message' => 'Batch request abort']
-                        ];
-                    }
-                }
+                $this->batchAbortError($return_count + 1, $dispatch_count);
             }
-            $this->response($this->return);
+            $this->respond($this->return);
         } else {
             if (isset($this->core_errors[$code])) {
                 $code = $this->core_errors[$code][0];
@@ -178,7 +209,7 @@ class Jsonrpc extends App
                     $message = $this->core_errors[$code][1];
                 }
             }
-            $this->response([
+            $this->respond([
                 'id'        => $this->dispatch['id'] ?? null,
                 'jsonrpc'   => self::JSONRPC,
                 'error'     => compact('code', 'message')
@@ -191,27 +222,56 @@ class Jsonrpc extends App
         Response::send(($this->config['response_serialize'])($return), $this->config['response_content_type']);
     }
     
-    protected function defaultDispatch($item)
+    protected function parseRequestMethod($item)
     {
         $id = $item['id'] ?? null;
         if (isset($item['method'])) {
-            if (count($method_array = explode('.', $item['method'])) > 1) {
-                $action = array_pop($method_array);
-                $controller = implode('\\', $method_array);
-                if ($action[0] !== '_'
-                    && ($controller_instance = $this->makeControllerInstance($controller))
-                    && is_callable([$controller_instance, $action])
-                ) {
-                    $params = $item['params'] ?? [];
-                    $callback = $item['callback'] ?? null;
-                    return compact('id', 'action', 'controller', 'controller_instance', 'params', 'callback');
-                }
-            }
-            $error = ['code' => -32601, 'message' => "Method not found $item[method]"];
-        } else {
-            $error = ['code' => -32600, 'message' => 'Invalid Request'];
+            $method = $item['method'];
+            $params = $item['params'] ?? [];
+            $callback = $item['callback'] ?? null;
+            return compact('id', 'method', 'params', 'callback');
         }
-        return compact('id', 'error');
+        return ['id' => $id, 'error' => ['code' => -32600, 'message' => 'Invalid Request']];
+    }
+    
+    protected function defaultCall($method)
+    {
+        if (count($method_array = explode('.', $method)) > 1) {
+            $action = array_pop($method_array);
+            $controller = implode('\\', $method_array);
+            if ($action[0] !== '_'
+                && ($controller_instance = $this->makeControllerInstance($controller))
+                && is_callable([$controller_instance, $action])
+            ) {
+                return [$controller_instance, $action];
+            }
+        }
+    }
+    
+    protected function customCall($method)
+    {
+        if (isset($this->custom_methods['method'][$method])) {
+            $call = $this->custom_methods['method'][$method];
+            if ($call instanceof \Closure && $this->config['closure_enable_getter']) {
+                $call = closure_bind_getter($call, $this->config['closure_getter_providers']);
+            }
+            return $call;
+        } else {
+            $pos = strrpos($method, '.');
+            if ($pos !== false) {
+                $class = substr($method, 0 , $pos);
+                $method = substr($method, $pos);
+                if (isset($this->custom_methods['classes'][$class])
+                    && is_callable([$instance = $this->makeCustomClassInstance($class), $method])
+                ) {
+                    return [$instance, $method];
+                }
+            } elseif (isset($this->custom_methods['class'])
+                && is_callable([$instance = $this->makeCustomClassInstance(), $method])
+            ) {
+                return [$instance, $method];
+            }
+        }
     }
     
     protected function makeControllerInstance($controller)
@@ -231,15 +291,39 @@ class Jsonrpc extends App
         }
     }
     
-    protected function getReflectionMethod($instance, $controller, $action)
+    protected function makeCustomClassInstance($name = null)
     {
-        if (!$this->is_batch_call) {
-            return new \ReflectionMethod($instance, $action);
+        if ($name === null) {
+            if (is_object($this->custom_methods['class'])) {
+                return $this->custom_methods['class'];
+            }
+            return $this->custom_methods['class'] = instance($this->custom_methods['class']);
         }
-        if (isset($this->controller_reflection_methods[$controller][$action])) {
-            return $this->controller_reflection_methods[$controller][$action];
+        if (is_object($this->custom_methods['classes'][$name])) {
+            return $this->custom_methods['classes'][$name];
         }
-        return $this->controller_reflection_methods[$controller][$action] = new \ReflectionMethod($instance, $action);
+        return $this->custom_methods['classes'][$name] = instance($this->custom_methods['classes'][$name]);
+    }
+    
+    protected function getMethodReflection($name, $method)
+    {
+        if (isset($this->method_reflections[$name])) {
+            return $this->method_reflections[$name];
+        }
+        return $this->method_reflections[$name] = new \ReflectionMethod($method[0], $method[1]);
+    }
+    
+    protected function batchAbortError($return_count, $dispatch_count)
+    {
+        if ($dispatch_count > $return_count) {
+            for ($i = $return_count; $i < $dispatch_count; $i++) {
+                $this->return[] = [
+                    'id'        => $this->dispatch[$return_count+$i]['id'],
+                    'jsonrpc'   => self::JSONRPC,
+                    'error'     => ['code'=> -32002, 'message' => 'Batch request abort']
+                ];
+            }
+        }
     }
     
     protected function addQueueJob($dispatch)

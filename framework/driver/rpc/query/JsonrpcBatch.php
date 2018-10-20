@@ -32,7 +32,7 @@ class JsonrpcBatch
     {
         if ($method === ($this->config['call_method_alias'] ?? 'call')) {
             return $this->call(...$params);
-        } elseif ($method === $this->config['id_method_alias'] ?? 'id') {
+        } elseif ($method === ($this->config['id_method_alias'] ?? 'id')) {
             $this->id = $params[0];
         } else {
             $this->ns[] = $method;

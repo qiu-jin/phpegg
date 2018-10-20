@@ -149,7 +149,7 @@ class Micro extends App
     
     protected function getControllerInstance($name, $is_dynamic)
     {
-        if ($classes = $this->dispatch['classes'] ?? null) {
+        if ($classes = ($this->dispatch['classes'] ?? null)) {
             if (isset($classes[$name])) {
                 return $this->makeClassInstance($classes[$name]);
             }

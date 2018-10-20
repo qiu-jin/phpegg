@@ -343,7 +343,11 @@ class Command
             } else {
                 if (($last = array_pop($stack)) && $last['tag'] === substr($tag, 2, -1)) {
                     $count = count($stack);
-                    $part  = $this->formatStyle($last['text'].$part, $this->templates[$last['tag']]);
+                    if (isset($this->templates[$last['tag']])) {
+                        $part = $this->formatStyle($last['text'].$part, $this->templates[$last['tag']]);
+                    } else {
+                        $part = $last['text'].$part;
+                    }
                 } else {
                     throw new \Exception('Template output error');
                 }
