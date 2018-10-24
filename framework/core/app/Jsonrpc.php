@@ -96,12 +96,14 @@ class Jsonrpc extends App
     /*
      * 自定义方法类
      */
-    public function class($class)
+    public function class($name, $class = null)
     {
-        if (is_array($class)) {
-            $this->custom_methods['classes'] = $class + ($this->custom_methods['classes'] ?? []);
+        if ($class !== null) {
+            $this->custom_methods['classes'][$name] = $class;
+        } elseif (is_array($name)) {
+            $this->custom_methods['classes'] = $name + ($this->custom_methods['classes'] ?? []);
         } else {
-            $this->custom_methods['class'] = $class;
+            $this->custom_methods['class'] = $name;
         }
         return $this;
     }
@@ -117,10 +119,10 @@ class Jsonrpc extends App
                 }
                 $this->is_batch_call = true;
                 foreach ($data as $item) {
-                    $dispatch[] = $this->parseRequestMethod($item);
+                    $dispatch[] = $this->parseRequestItem($item);
                 }
             } else {
-                $dispatch[] = $this->parseRequestMethod($data);
+                $dispatch[] = $this->parseRequestItem($data);
             }
             return $dispatch;
         }
@@ -210,7 +212,7 @@ class Jsonrpc extends App
                 }
             }
             $this->respond([
-                'id'        => $this->dispatch['id'] ?? null,
+                'id'        => $this->dispatch[0]['id'] ?? null,
                 'jsonrpc'   => self::JSONRPC,
                 'error'     => compact('code', 'message')
             ]);
@@ -222,7 +224,7 @@ class Jsonrpc extends App
         Response::send(($this->config['response_serialize'])($return), $this->config['response_content_type']);
     }
     
-    protected function parseRequestMethod($item)
+    protected function parseRequestItem($item)
     {
         $id = $item['id'] ?? null;
         if (isset($item['method'])) {
@@ -252,14 +254,14 @@ class Jsonrpc extends App
     {
         if (isset($this->custom_methods['method'][$method])) {
             $call = $this->custom_methods['method'][$method];
-            if ($call instanceof \Closure && $this->config['closure_enable_getter']) {
+            if (($call instanceof \Closure) && $this->config['closure_enable_getter']) {
                 $call = closure_bind_getter($call, $this->config['closure_getter_providers']);
             }
             return $call;
         } else {
             $pos = strrpos($method, '.');
             if ($pos !== false) {
-                $class = substr($method, 0 , $pos);
+                $class = substr($method, 0, $pos);
                 $method = substr($method, $pos);
                 if (isset($this->custom_methods['classes'][$class])
                     && is_callable([$instance = $this->makeCustomClassInstance($class), $method])

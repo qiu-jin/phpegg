@@ -86,12 +86,14 @@ class Micro extends App
     /*
      * 指定类或实例
      */
-    public function class($class)
+    public function class($name, $class = null)
     {
-        if (is_array($class)) {
-            $this->dispatch['classes'] = $class + ($this->dispatch['classes'] ?? []);
+        if ($class !== null) {
+            $this->dispatch['classes'][$name] = $class;
+        } elseif (is_array($name)) {
+            $this->dispatch['classes'] = $name + ($this->dispatch['classes'] ?? []);
         } else {
-            $this->dispatch['class'] = $class;
+            $this->dispatch['class'] = $name;
         }
         return $this;
     }
