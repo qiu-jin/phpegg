@@ -26,7 +26,7 @@ class Http
         //
         'then_method_alias'     => 'then',
         //
-        'call_method_alias'     => 'call',
+        'batch_call_method_alias'   => 'call',
         //
         'batch_select_timeout'  => 0.1,
         // 请求内容编码

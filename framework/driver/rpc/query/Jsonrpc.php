@@ -46,7 +46,13 @@ class Jsonrpc
         $result = $this->client->send($data);
         if (isset($result['result'])) {
             return $result['result'];
+        } elseif (isset($result['error'])) {
+            if (is_array($result['error'])) {
+                error($result['error']['code'].': '.$result['error']['message']);
+            } else {
+                error('-32000: '.$result['error']);
+            }
         }
-        error($result['error']['code'].': '.$result['error']['message']);
+        error('-32000: Invalid response');
     }
 }

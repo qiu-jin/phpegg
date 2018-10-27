@@ -32,7 +32,7 @@ class Jsonrpc extends App
         // 是否启用closure getter魔术方法
         'closure_enable_getter' => true,
         // Getter providers
-        'closure_getter_providers'  => null,
+        'closure_getter_providers' => null,
         // 最大批调用数，1不启用批调用，0无限批调用数
         'batch_limit'           => 1,
         // 批调用异常中断

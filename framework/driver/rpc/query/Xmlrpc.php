@@ -45,10 +45,11 @@ class Xmlrpc
             if ($result = xmlrpc_decode($result)) {
                 if (!xmlrpc_is_fault($result)) {
                     return $result;
+                } elseif (isset($result['faultCode'])) {
+                    error($result['faultCode'].': '.$result['faultString']);
                 }
-                error($result['faultCode'].': '.$result['faultString']);
             }
         }
-        error('Xmlrpc error: Invalid response');
+        error('-32000: Invalid response');
     }
 }

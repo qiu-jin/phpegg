@@ -25,9 +25,9 @@ class Jsonrpc
         // TCP连接超时
         'tcp_timeout'       => 3,
         // 
-        //'id_method_alias' => 'id',
+        'id_method_alias' => 'id',
         // 
-        //'call_method_alias'   => 'call',
+        'batch_call_method_alias' => 'call',
         */
         // 请求内容序列化
         'requset_serialize'     => 'jsonencode',

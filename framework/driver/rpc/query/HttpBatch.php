@@ -33,15 +33,15 @@ class HttpBatch
     public function __call($method, $params)
     {
         switch ($method) {
-            case $this->config['call_method_alias']     ?? 'call':
+            case $this->config['batch_call_method_alias'] ?? 'call':
                 return $this->call(...$params);
-            case $this->config['filter_method_alias']   ?? 'filter':
+            case $this->config['filter_method_alias'] ?? 'filter':
                 $this->filters[] = $params;
                 return $this;
-            case $this->config['ns_method_alias']       ?? 'ns':
+            case $this->config['ns_method_alias'] ?? 'ns':
                 $this->ns[] = $params[0];
                 return $this;
-            case $this->config['build_method_alias']    ?? 'build':
+            case $this->config['build_method_alias'] ?? 'build':
                 $this->build_handler = $params[0];
                 return $this;
             default:

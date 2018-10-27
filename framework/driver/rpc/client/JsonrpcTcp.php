@@ -9,11 +9,11 @@ class JsonrpcTcp
     public function __construct($config)
     {
         $this->config = $config;
-        $this->socket = (empty($config['tcp_persistent']) ? 'pfsockopen' : 'fsockopen')(
+        $this->socket = (empty($config['tcp_persistent']) ? 'fsockopen' : 'pfsockopen')(
             $config['host'],
             $config['port'],
             $errno, $errstr,
-            $config['tcp_timeout'] ?? 3
+            $config['tcp_timeout'] ?? ini_get("default_socket_timeout")
         );
         if (!$this->socket) {
             error("-32000: Internet error $errstr[$errno] connecting to $host:$port");
@@ -22,15 +22,13 @@ class JsonrpcTcp
     
     public function send($data)
     {
-        $result = '';
-        fwrite($this->socket, $this->config['requset_serialize']($data));
-        while (!feof($this->socket)) {
-            $result .= fread($this->socket, 1024);
+        $data = $this->config['requset_serialize']($data);
+        if (fwrite($this->socket, $data) === strlen($data)) {
+            if (!empty($result = fgets($this->socket))) {
+                return $this->config['response_unserialize']($result);
+            }
         }
-        if (!empty($result)) {
-            return $this->config['response_unserialize']($result);
-        }
-        error('-32603: nvalid JSON-RPC response');
+        error('-32000: Invalid response');
     }
     
     public function __destruct()
