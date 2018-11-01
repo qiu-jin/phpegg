@@ -79,16 +79,12 @@ class Jsonrpc extends App
      */
     public function method($method, $call = null)
     {
-        if (is_array($method)) {
-            if (empty($this->custom_methods['methods'])) {
-                $this->custom_methods['methods'] = $method;
-            } else {
-                $this->custom_methods['methods'] = $method + $this->custom_methods['methods'];
-            }
-        } elseif (is_string($method) && is_callable($call)) {
+        if ($call !== null) {
             $this->custom_methods['method'][$method] = $call;
+        } elseif (empty($this->custom_methods['methods'])) {
+            $this->custom_methods['methods'] = $method;
         } else {
-            throw new \RuntimeException("Invalid method");
+            $this->custom_methods['methods'] = $method + $this->custom_methods['methods'];
         }
         return $this;
     }
@@ -322,7 +318,7 @@ class Jsonrpc extends App
                 $this->return[] = [
                     'id'        => $this->dispatch[$return_count+$i]['id'],
                     'jsonrpc'   => self::JSONRPC,
-                    'error'     => ['code'=> -32002, 'message' => 'Batch request abort']
+                    'error'     => ['code' => -32002, 'message' => 'Batch request abort']
                 ];
             }
         }

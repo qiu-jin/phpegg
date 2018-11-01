@@ -1,8 +1,13 @@
 <?php
 namespace framework\driver\rpc\client;
 
+/*
+ * 协议格式 json字符串+EOL
+ */
 class JsonrpcTcp
 {
+    const EOL = "\n";
+    
     protected $config;
     protected $socket;
     
@@ -22,10 +27,15 @@ class JsonrpcTcp
     
     public function send($data)
     {
-        $data = $this->config['requset_serialize']($data);
+        $data = $this->config['requset_serialize']($data).self::EOL;
         if (fwrite($this->socket, $data) === strlen($data)) {
-            if (!empty($result = fgets($this->socket))) {
-                return $this->config['response_unserialize']($result);
+            $str = '';
+            $len = strlen(self::EOL);
+            while (!empty($res = fgets($this->socket))) {
+                $str .= $res;
+                if (substr($res, - $len) === self::EOL) {
+                    return $this->config['response_unserialize'](substr($str, 0, - $len));
+                }
             }
         }
         error('-32000: Invalid response');

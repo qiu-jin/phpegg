@@ -29,7 +29,7 @@ class Redis extends Cache
     
     public function get($key, $default = null)
     {
-        return ($value = $this->connection->get($key)) ? $value : $default;
+        return $this->connection->get($key) ?? $default;
     }
     
     public function has($key)

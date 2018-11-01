@@ -23,7 +23,7 @@ class Ipip extends Geoip
         $this->index  = fread($this->db, $this->offset[1] - 4);
     }
     
-    protected function handle($ip,  $raw)
+    protected function handle($ip)
     {
         if (!$long = pack('N', ip2long($ip))) {
             return;
@@ -51,8 +51,12 @@ class Ipip extends Geoip
             return;
         }
         fseek($this->db, $this->offset[1] + $offset[1] - 262144);
-        $result = explode("\t", fread($this->db, $length[1]));
-        return $raw ? $result : [
+        return explode("\t", fread($this->db, $length[1]));
+    }
+    
+    protected function fitler($result)
+    {
+        return [
             'country'   => $result[0],
             'state'     => $result[1],
             'city'      => $result[2]

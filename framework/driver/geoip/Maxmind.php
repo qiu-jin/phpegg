@@ -35,29 +35,27 @@ class Maxmind extends Geoip
         $this->type = $config['type'] ?? 'country';
     }
     
-    protected function handle($ip,  $raw)
+    protected function handle($ip)
     {
-        return $this->{$this->handle}($ip, $raw);
+        return $this->{$this->handle}($ip);
     }
     
-    protected function dbHandle($ip, $raw)
+    protected function dbHandle($ip)
     {
-        if ($result = $this->db->get($ip)) {
-            return $raw ? $result : $this->result($result);
-        }
+        return $this->db->get($ip);
     }
     
-    protected function apiHandle($ip, $raw)
+    protected function apiHandle($ip)
     {
         $client = Client::get(self::$endpoint."/$this->type/$ip");
         $client->header('Authorization', 'Basic '.base64_encode("$this->api[acckey]:$this->api[seckey]"));
         if ($result = $client->response->json()) {
-            return $raw ? $result : $this->result($result);
+            return $result;
         }
         return warn($result['error'] ?? $client->error);
     }
     
-    protected function result($result)
+    protected function fitler($result)
     {
         $return = [
             'code'      => $result['country']['iso_code'],

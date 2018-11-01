@@ -11,7 +11,9 @@ class Grpc
     protected $config = [
         /*
         'host'                      => null,
+        
         'port'                      => null,
+
         'endpoint'                  => null,
         // service类名前缀
         'service_prefix'            => null,
@@ -42,7 +44,7 @@ class Grpc
         if (isset($this->config['endpoint'])) {
             $this->client = new client\GrpcHttp($this->config);
         } else {
-            $this->client = new client\GrpcGoogle($this->config);
+            $this->client = new client\Grpc($this->config);
         }
         if (isset($this->config['service_load_rules'])) {
             foreach ($this->config['service_load_rules'] as $type => $rules) {

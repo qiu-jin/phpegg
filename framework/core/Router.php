@@ -25,18 +25,8 @@ class Router
         self::$init = true;
         self::$patterns = Config::get('router.patterns');
     }
-    
-    public static function setPattern($name, $value)
-    {
-        self::$patterns[$name] = $value;
-    }
-    
-    public static function setPatterns($values)
-    {
-        self::$patterns = self::$patterns ? $value + self::$patterns : $value;
-    }
 
-    public function __construct($path, $method = null)
+    public function __construct(array $path, $method = null)
     {
         $this->path   = $path;
         $this->count  = count($path);
@@ -107,7 +97,7 @@ class Router
                         && ($n = substr($v, 1, -1))
                         && preg_match("/^$n$/", $s, $m)
                     ) {
-                        if (count($m) > 1) {
+                        if (isset($m[1])) {
                             $ret = array_merge($ret, array_slice($m, 1));
                         } else {
                             $ret[] = $s;
@@ -122,7 +112,7 @@ class Router
                         && isset(self::$patterns[$n])
                         && preg_match('/^'.self::$patterns[$n].'$/', $s, $m)
                     ) {
-                        if (count($m) > 1) {
+                        if (isset($m[1])) {
                             $ret = array_merge($ret, array_slice($m, 1));
                         } else {
                             $ret[] = $s;

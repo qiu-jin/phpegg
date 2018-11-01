@@ -23,12 +23,12 @@ class Memcached extends Cache
             $connection->setOption(\Memcached::OPT_BINARY_PROTOCOL, true);
             $connection->setSaslAuthData($config['username'], $config['password']);
         }
-        $this->$connection = $connection;
+        $this->connection = $connection;
     }
     
     public function get($key, $default = null)
     {
-        return ($value = $this->connection->get($key)) ? $value : $default;
+        return $this->connection->get($key) ?? $default;
     }
     
     public function has($key)

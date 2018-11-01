@@ -6,7 +6,7 @@ namespace framework\driver\rpc\client;
  */
 use Grpc\ChannelCredentials;
 
-class GrpcGoogle
+class Grpc
 {
     protected $config;
     protected $clients;

@@ -7,7 +7,7 @@ use framework\core\http\Client;
 abstract class Storage
 {
     protected $domain;
-    protected $timeout = 0;
+    protected $timeout;
     
     /* 
      * 读取文件（文件不存在会触发错误或异常）
@@ -93,7 +93,7 @@ abstract class Storage
         return $data ? $this->put($data, $to, true) : false;
     }
     
-    public function setTimeout($timeout)
+    public function timeout($timeout)
     {
         return $this->timeout = $timeout;
     }
