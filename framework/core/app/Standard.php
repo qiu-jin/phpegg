@@ -26,8 +26,12 @@ class Standard extends App
         'enable_view' => false,
         // 视图模版路径是否转为下划线风格
         'template_path_to_snake' => false,
-        // request参数是否转为控制器方法参数
-        'bind_request_params' => null,
+        /* request参数合并到控制器方法参数
+         * 1 query参数
+         * 2 param参数
+         * 3 input参数
+         */
+        'bind_request_param_type' => 0,
         // 缺少的参数设为null值
         'missing_params_to_null' => false,
         /* 默认调度的参数模式
@@ -81,12 +85,9 @@ class Standard extends App
             if ($param_mode === 1) {
                 $params = MethodParameter::bindListParams($rm, $params, $to_null);
             } elseif ($param_mode === 2) {
-                if (isset($this->config['bind_request_params'])) {
-                    foreach ($this->config['bind_request_params'] as $param) {
-                        if ($request_param = Request::{$param}()) {
-                            $params = $request_param + $params;
-                        }
-                    }
+                $request_param_type = [1 => 'query', 2 => 'param', 3 => 'input'];
+                if (isset($request_param_type[$this->config['bind_request_param']])) {
+                    $params = Request::{$request_param_type[$this->config['bind_request_param']]}() + $params;
                 }
                 $params = MethodParameter::bindKvParams($rm, $params, $to_null);
             }

@@ -20,7 +20,7 @@ class Cookie
     // cookie序列化处理器
     private static $serializer;
     // 排除部分系统自处理的cookie，如PHPSESSID
-    private static $except_cookie_names;
+    private static $serialize_except;
     
     public static function __init()
     {
@@ -39,7 +39,7 @@ class Cookie
                 self::$serializer = $config['serializer'];
             }
         }
-        self::$except_cookie_names = $config['except_cookie_names'] ?? [ini_get('session.name')];
+        self::$serialize_except = $config['serialize_except'] ?? [ini_get('session.name')];
     }
     
     public static function all()
@@ -47,7 +47,7 @@ class Cookie
         if (self::$raw_cookie) {
             foreach (self::$raw_cookie as $k => $v) {
                 if (!isset(self::$cookie[$k])) {
-                    self::$cookie[$k] = self::unserializeValue($k, $v);
+                    self::$cookie[$k] = self::unserialize($k, $v);
                 }
             }
         }
@@ -59,7 +59,7 @@ class Cookie
         if (isset(self::$cookie[$name])) {
             return self::$cookie[$name];
         } elseif (isset($raw_cookie[$name])) {
-            return self::$cookie[$name] = self::unserializeValue($name, $raw_cookie[$name]);
+            return self::$cookie[$name] = self::unserialize($name, $raw_cookie[$name]);
         }
         return $default;
     }
@@ -88,18 +88,6 @@ class Cookie
         self::setCookie($name, null);
     }
     
-    public static function clean($except = true)
-    {
-        if (self::$raw_cookie) {
-            foreach (array_keys(self::$raw_cookie) as $name) {
-                if (!in_array($name, self::$except_cookie_names, true)) {
-                    self::setCookie($name, null);
-                }
-            }
-        }
-        self::$cookie = self::$raw_cookie = null;
-    }
-    
     public static function setCookie(
         $name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null
     ) {
@@ -111,7 +99,7 @@ class Cookie
         if ($value === null) { 
             $expire = time() - 3600;
         } else {
-            if (self::$serializer && !in_array($name, self::$except_cookie_names)) {
+            if (self::$serializer && !in_array($name, self::$serialize_except)) {
                 $value = (self::$serializer[0])($value);
             }
             $expire = $lifetime === 0 ? 0 : time() + $lifetime;
@@ -119,9 +107,9 @@ class Cookie
         return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
     }
     
-    protected static function unserializeValue($name, $value)
+    protected static function unserialize($name, $value)
     {
-        return in_array($name, self::$except_cookie_names) ? $value : (self::$serializer[1])($value);
+        return in_array($name, self::$serialize_except) ? $value : (self::$serializer[1])($value);
     }
 }
 Cookie::__init();

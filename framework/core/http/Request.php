@@ -26,22 +26,6 @@ class Request
         Event::on('exit',[__CLASS__, 'clean']);
         Event::trigger('request', self::$request);
     }
-
-    /*
-     * 获取GET值
-     */
-    public static function get($name = null, $default = null)
-    {
-        return self::query($name, $default);
-    }
-    
-    /*
-     * 获取POST值
-     */
-    public static function post($name = null, $default = null)
-    {
-        return self::param($name, $default);
-    }
     
     /*
      * 获取GET值

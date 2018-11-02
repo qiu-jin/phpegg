@@ -22,12 +22,15 @@ class Rest extends App
         'controller_depth'  => 1,
         // 控制器类名后缀
         'controller_suffix' => null,
-        // request参数是否转为控制器方法参数
-        'bind_request_params'   => null,
-        // 解析request body并注入到post
-        'parse_request_to_post' => false,
+        // 设置request参数
+        'set_request_param' => false,
+        /* request参数合并到控制器方法参数
+         * 1 query参数
+         * 2 param参数
+         * 3 input参数
+         */
         // 默认调度的路径转为驼峰风格
-        'default_dispatch_to_camel' => null,
+        'default_dispatch_to_camel' => 0,
         /* 默认调度的参数模式
          * 0 无参数
          * 1 顺序参数
@@ -78,21 +81,18 @@ class Rest extends App
 
     protected function call()
     {
-        if ($this->config['parse_request_to_post']) {
-            $this->setPostParams();
-        }
         extract($this->dispatch);
+        if ($this->config['set_request_param']) {
+            $this->setRequestParam();
+        }
         if ($param_mode) {
             $rm = new \ReflectionMethod($controller_instance, $action);
             if ($param_mode === 1) {
                 $params = MethodParameter::bindListParams($rm, $params);
             } elseif ($param_mode === 2) {
-                if (isset($this->config['bind_request_params'])) {
-                    foreach ($this->config['bind_request_params'] as $param) {
-                        if ($request_param = Request::{$param}()) {
-                            $params = $request_param + $params;
-                        }
-                    }
+                $request_param_type = [1 => 'query', 2 => 'param', 3 => 'input'];
+                if (isset($request_param_type[$this->config['bind_request_param']])) {
+                    $params = Request::{$request_param_type[$this->config['bind_request_param']]}() + $params;
                 }
                 $params = MethodParameter::bindKvParams($rm, $params);
             }
@@ -308,21 +308,24 @@ class Rest extends App
     /*
      * 设置POST参数
      */
-    protected function setPostParams()
+    protected function setRequestParam()
     {
         if ($type = Request::header('Content-Type')) {
             switch (strtolower(trim(strtok($type, ';')))) {
                 case 'application/json':
-                    Request::set('post', jsondecode(Request::body()));
+                    $value = jsondecode(Request::body());
                     break;
                 case 'application/xml';
-                    Request::set('post', Xml::decode(Request::body()));
+                    $value = Xml::decode(Request::body());
                     break;
                 case 'multipart/form-data'; 
-                    break;
                 case 'application/x-www-form-urlencoded'; 
-                    break;
+                default:
+                    return;
             }
+            Request::apply(function (&$request) use ($value) {
+                $request['param'] = $value;
+            });
         }
     }
 }
