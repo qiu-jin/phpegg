@@ -116,10 +116,10 @@ class Image
         if (empty($style['background_images'])) {
             $color = empty($style['background_colors']) 
                    ? [rand(0, 255), rand(0, 255), rand(0, 255), 0]
-                   : Arr::rand($style['background_colors']);
+                   : Arr::random($style['background_colors']);
             $image = Img::blank($style['width'], $style['height'], $color);
         } else {
-            $image = Img::open(Arr::rand($style['background_images']))->resize($style['width'], $style['height']);
+            $image = Img::open(Arr::random($style['background_images']))->resize($style['width'], $style['height']);
         }
         // 文字
         $l = mb_strlen($style['characters']) - 1;
@@ -131,7 +131,7 @@ class Image
             $size = $style['height'] + rand(...$style['font_size_rand']);
             $angle = rand(-1 * $style['font_angle'], $style['font_angle']);
             $margin = $padding + ($i * ($style['width'] - $padding) / $style['length']);
-            $image->text($char, Arr::rand($style['font_files']), $size, $this->fontColor($style), $angle, 1, 0, $margin);
+            $image->text($char, Arr::random($style['font_files']), $size, $this->fontColor($style), $angle, 1, 0, $margin);
         }
         // 画线
         $image->apply(function ($im) use ($style) {
@@ -162,7 +162,7 @@ class Image
         if (empty($style['font_colors'])) {
             return [rand(0, 255), rand(0, 255), rand(0, 255), 0];
         } else {
-            return Arr::rand($style['font_colors']);
+            return Arr::random($style['font_colors']);
         }
     }
 }

@@ -3,12 +3,59 @@ namespace framework\util;
 
 class Arr
 {
-    public static function rand(array $array)
+    public static function get(array $array, string $name, $default = null)
     {
-        return $array[array_rand($array)];
+        foreach (explode('.', $name) as $n) {
+            if (isset($array[$n])) {
+                $array = $array[$n];
+            } else {
+                return $default;
+            }
+        }
+        return $array;
     }
     
-    public static function poll(array &$array, $key, $default = null)
+    public static function set(array &$array, string $name, $value)
+    {
+        foreach (explode('.', $name) as $n) {
+            if (!isset($array[$n]) || !is_array($array[$n])) {
+                $array[$n] = [];
+            }
+            $array =& $array[$n];
+        }
+        $array = $value;
+    }
+    
+    public static function has(array $array, string $name)
+    {
+        foreach (explode('.', $name) as $n) {
+            if (isset($array[$n])) {
+                $array = $array[$n];
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    public static function delete(array &$array, string $name)
+    {
+        $ns = explode('.', $name);
+        if (isset($ns[1])) {
+            $ln = array_pop($ns);
+            foreach ($ns as $n) {
+                if (!isset($array[$n])) {
+                    return;
+                }
+                $array =& $array[$n];
+            }
+            unset($array[$ln]);
+        } else {
+            unset($array[$name]);
+        }
+    }
+    
+    public static function pull(array &$array, string $key, $default = null)
     {
         if (isset($array[$key])) {
             $value = $array[$key];
@@ -18,39 +65,32 @@ class Arr
         return $default;
     }
     
-    public static function isAssoc(array $array)
+    public static function random(array $array)
     {
-        return array_keys($keys = array_keys($array)) !== $keys;
-    }
-    
-    public static function field(array $array, $field, $default = null)
-    {
-        foreach (explode('.', $field) as $tok) {
-            if (isset($array[$tok])) {
-                $array = $array[$tok];
-            } else {
-                return $default;
-            }
-        }
-        return $array;
+        return $array[array_rand($array)];
     }
 
-    public static function fitlerKeys(array $array , array $keys)
+    public static function fitler(array $array , array $keys)
     {
         foreach ($keys as $key) {
             if (isset($array[$key])) {
-                $arr[$key] = $array[$key];
+                $return[$key] = $array[$key];
             }
         }
-        return $arr ?? [];
+        return $return ?? [];
     }
     
-    public static function indexKvPair(array $array, int $index)
+    public static function index(array $array, int $index, $default = null)
     {
-        $keys = key($array);
+        $keys = array_keys($array);
         if ($index < 0) {
             $index = count($keys) + $index;
         }
-        return isset($keys[$index]) ? [$keys[$index], $array[$keys[$index]]] : null;
+        return $array[$keys[$index]] ?? $default;
+    }
+    
+    public static function isAssoc(array $array)
+    {
+        return array_keys($keys = array_keys($array)) !== $keys;
     }
 }

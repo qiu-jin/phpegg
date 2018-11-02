@@ -18,10 +18,10 @@ class Request
         }
         self::$init = true;
         self::$request = [
-            'query'     => &$_GET,
-            'content'   => &$_POST,
-            'server'    => &$_SERVER,
-            'params'    => &$_REQUEST
+            'query'     => $_GET,
+            'param'     => $_POST,
+            'input'     => $_REQUEST,
+            'server'    => $_SERVER,
         ];
         Event::on('exit',[__CLASS__, 'clean']);
         Event::trigger('request', self::$request);
@@ -40,7 +40,7 @@ class Request
      */
     public static function post($name = null, $default = null)
     {
-        return self::content($name, $default);
+        return self::param($name, $default);
     }
     
     /*
@@ -54,9 +54,17 @@ class Request
     /*
      * 获取POST值
      */
-    public static function content($name = null, $default = null)
+    public static function param($name = null, $default = null)
     {
-        return $name === null ? self::$request['content'] : (self::$request['content'][$name] ?? $default);
+        return $name === null ? self::$request['param'] : (self::$request['param'][$name] ?? $default);
+    }
+    
+    /*
+     * 获取REQUEST值
+     */
+    public static function input($name = null, $default = null)
+    {
+       return $name === null ? self::$request['input'] : (self::$request['input'][$name] ?? $default);
     }
     
     /*
@@ -64,15 +72,7 @@ class Request
      */
     public static function cookie($name = null, $default = null)
     {
-        return Cookie::get($name, $default);
-    }
-    
-    /*
-     * 获取param
-     */
-    public static function param($name = null, $default = null)
-    {
-       return $name === null ? self::$request['params'] : (self::$request['params'][$name] ?? $default);
+        return $name === null ? Cookie::all() : Cookie::get($name, $default);
     }
     
     /*
@@ -80,7 +80,7 @@ class Request
      */
     public static function session($name = null, $default = null)
     {
-        return Session::get($name, $default);
+        return $name === null ? Session::all() : Session::get($name, $default);
     }
     
     /*

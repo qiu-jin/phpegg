@@ -8,6 +8,8 @@ use framework\core\Container;
 use framework\core\Validator;
 use framework\core\http\Request;
 use framework\core\http\Response;
+use framework\core\http\Cookie;
+use framework\core\http\Session;
 use framework\extend\debug\Debug;
 
 function env($name, $default = null)
@@ -115,14 +117,28 @@ function instance($class, ...$params)
     return new $class(...$params);
 }
 
-function input($name, ...$params)
+function input($name, $default = null)
 {
-    return Request::$name(...$params);
+    return Request::input($name, $default);
 }
 
-function output($name, ...$params)
+function output($name, $type = null)
 {
-    return $params ? Response::$name(...$params) : Response::send($name); 
+    return Response::send($name, $type); 
+}
+
+function cookie($name, ...$params)
+{
+    return $params ? Cookie::set($name, ...$params) : Cookie::get($name); 
+}
+
+function session($name, $value = null)
+{
+    if (is_array($name) || $value !== null) {
+        Session::set($name, $value); 
+    } else {
+        return Session::get($name); 
+    }
 }
 
 function jsonencode($data)

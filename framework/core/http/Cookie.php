@@ -8,6 +8,8 @@ class Cookie
 {
     private static $init;
     private static $cookie;
+    private static $raw_cookie;
+    // cookie设置项
     private static $options = [
         'lifetime'  => 0,
         'path'      => '',
@@ -15,10 +17,10 @@ class Cookie
         'secure'    => false,
         'httponly'  => false
     ];
+    // cookie序列化处理器
     private static $serializer;
-    private static $crypt_config;
-    private static $crypt_except = ['PHPSESSID'];
-    private static $crypt_handler;
+    // 排除部分系统自处理的cookie，如PHPSESSID
+    private static $except_cookie_names;
     
     public static function __init()
     {
@@ -30,35 +32,41 @@ class Cookie
             if (isset($config['options'])) {
                 self::$options = $config['options'] + self::$options;
             }
-            if (isset($config['crypt'])) {
-                self::$crypt_config = $config['crypt'];
-                if (isset($config['crypt_except'])) {
-                    self::$crypt_except = $config['crypt_except'];
-                }
-            }
-            if (isset($config['serializer'])) {
+            if (empty($config['serializer'])) {
+                self::$cookie = $_COOKIE;
+            } else {
+                self::$raw_cookie = $_COOKIE;
                 self::$serializer = $config['serializer'];
             }
         }
+        self::$except_cookie_names = $config['except_cookie_names'] ?? [ini_get('session.name')];
     }
     
-    public static function get($name = null, $default = null)
+    public static function all()
     {
-        if ($name === null) {
-            return self::getAll();
+        if (self::$raw_cookie) {
+            foreach (self::$raw_cookie as $k => $v) {
+                if (!isset(self::$cookie[$k])) {
+                    self::$cookie[$k] = self::unserializeValue($k, $v);
+                }
+            }
         }
+        return self::$cookie;
+    }
+    
+    public static function get($name, $default = null)
+    {
         if (isset(self::$cookie[$name])) {
             return self::$cookie[$name];
-        }
-        if (isset($_COOKIE[$name])) {
-            return self::$cookie[$name] = self::getValue($name);
+        } elseif (isset($raw_cookie[$name])) {
+            return self::$cookie[$name] = self::unserializeValue($name, $raw_cookie[$name]);
         }
         return $default;
     }
     
     public static function has($name)
     {
-        return isset(self::$cookie[$name]) || isset($_COOKIE[$name]);
+        return isset(self::$cookie[$name]) || isset($raw_cookie[$name]);
     }
     
     public static function set($name, $value, ...$options)
@@ -75,37 +83,21 @@ class Cookie
     
     public static function delete($name)
     {
-        unset($_COOKIE[$name]);
         unset(self::$cookie[$name]);
+        unset(self::$raw_cookie[$name]);
         self::setCookie($name, null);
     }
     
     public static function clean($except = true)
     {
-        if ($_COOKIE) {
-            if ($except === true) {
-                $except = self::$crypt_except;
-            }
-            foreach (array_keys($_COOKIE) as $name) {
-                if (empty($except) || !in_array($name, $except, true)) {
+        if (self::$raw_cookie) {
+            foreach (array_keys(self::$raw_cookie) as $name) {
+                if (!in_array($name, self::$except_cookie_names, true)) {
                     self::setCookie($name, null);
                 }
             }
-            $_COOKIE = [];
         }
-        self::$cookie = null;
-    }
-    
-    public static function getAll()
-    {
-        if ($_COOKIE) {
-            foreach ($_COOKIE as $name => $value) {
-                if (!isset(self::$cookie[$name])) {
-                    self::$cookie[$name] = self::getValue($name);
-                }
-            }
-        }
-        return self::$cookie;
+        self::$cookie = self::$raw_cookie = null;
     }
     
     public static function setCookie(
@@ -119,32 +111,17 @@ class Cookie
         if ($value === null) { 
             $expire = time() - 3600;
         } else {
-            if (isset(self::$serializer)) {
+            if (self::$serializer && !in_array($name, self::$except_cookie_names)) {
                 $value = (self::$serializer[0])($value);
-            }
-            if (isset(self::$crypt_config) && !in_array($name, self::$crypt_except, true)) {
-                $value = self::getCryptHandler()->encrypt($value);
             }
             $expire = $lifetime === 0 ? 0 : time() + $lifetime;
         }
         return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
     }
     
-    protected static function getValue($name)
+    protected static function unserializeValue($name, $value)
     {
-        $value = $_COOKIE[$name];
-        if (isset(self::$crypt_config) && !in_array($name, self::$crypt_except, true)) {
-            $value = self::getCryptHandler()->decrypt($value);
-        }
-        if (isset(self::$serializer)) {
-            $value = (self::$serializer[1])($value);
-        }
-        return $value;
-    }
-    
-    protected static function getCryptHandler()
-    {
-        return self::$crypt_handler ?? self::$crypt_handler = Container::driver('crypt', self::$crypt_config);
+        return in_array($name, self::$except_cookie_names) ? $value : (self::$serializer[1])($value);
     }
 }
 Cookie::__init();
