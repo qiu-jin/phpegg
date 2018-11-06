@@ -3,7 +3,10 @@ namespace framework\util;
 
 class Str
 {
-    public static function random($length = 16, $type = null)
+    /*
+     * 随机串
+     */
+    public static function random(int $length = 8, $type = null)
     {
         $string = '0123456789qwertyuiopasdfghjklzxcvbnm';
         $str = '';
@@ -13,29 +16,36 @@ class Str
         return $str;
     }
     
-    public static function toCamel($value, $char = '_')
+    /*
+     * 下划线转驼峰
+     */
+    public static function toCamel(string $value, string $symbol = '_')
     {
         $str = '';
-		foreach(explode($char, $value) as $v){
+		foreach(explode($symbol, $value) as $v){
 			$str .= ucfirst($v);
 		}
 		return $str;
     }
     
-    public static function toSnake($value, $char = '_')
+    /*
+     * 驼峰转下划线
+     */
+    public static function toSnake(string $value, string $symbol = '_')
     {
         $str = '';
         $len = strlen($value);
         $value = lcfirst($value);
         for ($i = 0; $i < $len; $i++) {
             $c = $value[$i];
-            $lower = strtolower($c);
-            $str .= $c === $lower ? $c : $char.$lower;
+            $l = strtolower($c);
+            $str .= $c === $l ? $c : $symbol.$l;
         }
         return $str;
     }
     
-    public static function indexPos($value, $find, $index)
+    /*
+    public static function indexPos($value, $find, int $index)
     {
         $len = strlen($find);
         $offset = 0;
@@ -49,5 +59,6 @@ class Str
             $index--;
         }
         return $pos;
-    }
+    }     
+     * */
 }

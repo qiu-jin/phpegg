@@ -3,10 +3,10 @@ namespace framework\util;
 
 class Hash
 {
-    public static function salt(int $length = 8, $raw = false)
+    public static function random(int $length = 8, $raw = false)
     {
-        $salt = random_bytes($length);
-        return $raw ? $salt : bin2hex($salt);
+        $bytes = random_bytes($length);
+        return $raw ? $bytes : bin2hex($bytes);
     }
     
     public static function hmac($data, $salt, $raw = false, $algo = 'md5', int $count = 3)

@@ -48,7 +48,7 @@ class Request
      */
     public static function input($name = null, $default = null)
     {
-       return $name === null ? self::$request['input'] : (self::$request['input'][$name] ?? $default);
+        return $name === null ? self::$request['input'] : (self::$request['input'][$name] ?? $default);
     }
     
     /*

@@ -1,6 +1,8 @@
 <?php
 namespace framework\core;
 
+use framework\util\Arr;
+
 class Config
 {
     private static $init;
@@ -40,18 +42,14 @@ class Config
      */
     public static function get($name, $default = null)
     {
-        if (!self::check($prefix = strtok($name, '.'))) {
+        $ns = explode('.', $name);
+        $fn = $ns[0];
+        if (!self::check($fn)) {
             return $default;
         }
-        $value = self::$configs[$prefix];
-        while ($tok = strtok('.')) {
-            if (isset($value[$tok])) {
-                $value = $value[$tok];
-            } else {
-                return $default;
-            }
-        }
-        return $value;
+        unset($ns[0]);
+        $value = self::$configs[$fn];
+        return $ns ? Arr::get($value, $ns, $default) : $value;
     }
     
     /*
@@ -59,18 +57,13 @@ class Config
      */
     public static function has($name)
     {
-        if (!self::check($prefix = strtok($name, '.'))) {
+        $ns = explode('.', $name, 2);
+        $fn = $ns[0];
+        if (!self::check($fn)) {
             return false;
         }
-        $value = self::$configs[$prefix];
-        while ($tok = strtok('.')) {
-            if (isset($value[$tok])) {
-                $value = $value[$tok];
-            } else {
-                return false;
-            }
-        }
-        return true;
+        unset($ns[0]);
+        return $ns ? Arr::has(self::$configs[$fn], $ns) : true;
     }
     
     /*
@@ -78,19 +71,14 @@ class Config
      */
     public static function set($name, $value)
     {
-        if (strpos($name, '.')) {
-            $prefix = strtok($name, '.');
-            if (!self::check($prefix)) {
-                self::$configs[$prefix] = [];
+        $ns = explode('.', $name, 2);
+        if (isset($ns[1])) {
+            $fn = $ns[0];
+            if (!self::check($fn)) {
+                self::$configs[$fn] = [];
             }
-            $val =& self::$configs[$prefix];
-            while ($tok = strtok('.')) {
-                if (!isset($val[$tok])) {
-                    $val[$tok] = [];
-                }
-                $val =& $val[$tok];
-            }
-            $val = $value;
+            unset($ns[0]);
+            Arr::set(self::$configs[$fn], $ns, $value);
         } else {
             self::$configs[$name] = $value;
         }
@@ -110,9 +98,7 @@ class Config
     public static function firstKv($name)
     {
         if (self::check($name)) {
-            foreach (self::$configs[$name] as $key => $value) {
-                return [$key, $value];
-            }
+            return Arr::firstKv(self::$configs[$name]);
         }
     }
     
@@ -122,8 +108,7 @@ class Config
     public static function randomKv($name)
     {
         if (self::check($name)) {
-            $key = array_rand(self::$configs[$name]);
-            return [$key, self::$configs[$name][$key]];
+            return Arr::randomKv(self::$configs[$name]);
         }
     }
     
