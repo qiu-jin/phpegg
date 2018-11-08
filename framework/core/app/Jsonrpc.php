@@ -251,7 +251,7 @@ class Jsonrpc extends App
         if (isset($this->custom_methods['method'][$method])) {
             $call = $this->custom_methods['method'][$method];
             if (($call instanceof \Closure) && $this->config['closure_enable_getter']) {
-                $call = closure_bind_getter($call, $this->config['closure_getter_providers']);
+                $call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
             }
             return $call;
         } else {

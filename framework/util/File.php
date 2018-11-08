@@ -15,11 +15,6 @@ class File extends \SplFileInfo
         return self::mime($this->getPathname());
     }
     
-    public function isImage($type = null)
-    {
-        return (new Image($this->getPathname(), true))->check($type);
-    }
-    
     public function getImage($type = null)
     {
         return ($image = Image::open($this->getPathname(), true)) && $image->check($type) ? $image : false;

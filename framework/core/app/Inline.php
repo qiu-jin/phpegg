@@ -59,12 +59,12 @@ class Inline extends App
                 return require $__file;
             };
         } else {
-            $call = closure_bind_getter(function($__file, $_PARAMS, $__extract) {
+            $call = \Closure::bind(function($__file, $_PARAMS, $__extract) {
                 if ($__extract && $_PARAMS) {
                     extract($_PARAMS, EXTR_SKIP);
                 }
                 return require $__file;
-            }, $this->config['getter_providers']);
+            }, getter($this->config['getter_providers']));
         }
         $return = $call(
             $this->dispatch['controller_file'],

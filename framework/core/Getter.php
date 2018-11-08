@@ -30,8 +30,8 @@ trait Getter
                     return $this->$name = Container::{"make$type"}($name);
                 }
             }
+            throw new \Exception("Undefined property: $$name");
         }
-        throw new \Exception("Undefined property: $$name");
     }
     
     /*

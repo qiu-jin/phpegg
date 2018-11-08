@@ -1,7 +1,7 @@
 <?php
 namespace framework\util;
 
-class Date extends DateTime
+class Date extends \DateTime
 {
     private static $init;
     private static $config = [

@@ -12,169 +12,262 @@ use framework\core\http\Cookie;
 use framework\core\http\Session;
 use framework\extend\debug\Debug;
 
+define('OPCACHE_LOADED', extension_loaded('opcache'));
+
+/*
+ * 获取环境设置
+ */
 function env($name, $default = null)
 {
     return Config::env($name, $default);
 }
 
+/*
+ * 获取配置设置
+ */
 function config($name, $default = null)
 {
     return Config::get($name, $default);
 }
 
+/*
+ * 获取日志实例
+ */
 function logger($name = null)
 {
     return Logger::channel($name);
 }
 
+/*
+ * 获取容器实例
+ */
 function make($name)
 {
     return Container::make($name);
 }
 
-function db($name = null)
-{
-    return Container::driver('db', $name);
-}
-
-function rpc($name = null)
-{
-    return Container::driver('rpc', $name);
-}
-
-function cache($name = null)
-{
-    return Container::driver('cache', $name);
-}
-
-function storage($name = null)
-{
-    return Container::driver('storage', $name);
-}
-
-function sms($name = null)
-{
-    return Container::driver('sms', $name);
-}
-
-function email($name = null)
-{
-    return Container::driver('email', $name);
-}
-
-function job($name, $message)
-{
-    return Container::driver($name)->producer()->push($message);
-}
-
+/*
+ * 获取驱动实例
+ */
 function driver($type, $name = null)
 {
     return Container::driver($type, $name);
 }
 
+/*
+ * 获取模型实例
+ */
 function model($name)
 {
     return Container::model($name);
 }
 
+/*
+ * 获取数据库实例
+ */
+function db($name = null)
+{
+    return Container::driver('db', $name);
+}
+
+/*
+ * 获取RPC实例
+ */
+function rpc($name = null)
+{
+    return Container::driver('rpc', $name);
+}
+
+/*
+ * 获取缓存实例
+ */
+function cache($name = null)
+{
+    return Container::driver('cache', $name);
+}
+
+/*
+ * 获取存储实例
+ */
+function storage($name = null)
+{
+    return Container::driver('storage', $name);
+}
+
+/*
+ * 获取短信实例
+ */
+function sms($name = null)
+{
+    return Container::driver('sms', $name);
+}
+
+/*
+ * 获取EMAIL实例
+ */
+function email($name = null)
+{
+    return Container::driver('email', $name);
+}
+
+/*
+ * 发送队列任务
+ */
+function job($name, $message)
+{
+    return Container::driver($name)->producer()->push($message);
+}
+
+/*
+ * 输出视图页面
+ */
 function view($path, array $vars = null)
 {
     return Response::view($path, $vars);
 }
 
-function validate($rule, $message = null)
-{
-    return new Validator($rule, $message);
-}
-
-function dd(...$vars)
-{
-    Response::send(Debug::dump(...$vars));
-}
-
-function dump(...$vars)
-{
-    Response::send(Debug::dump(...$vars), false);
-}
-
-function abort($code = null, $message = null)
-{
-    App::abort($code, $message);
-}
-
-function warn($message, $limit = 1)
-{
-    Error::trigger($message, E_USER_WARNING, $limit + 1);
-}
-
-function error($message, $limit = 1)
-{
-    Error::trigger($message, E_USER_ERROR, $limit + 1);
-}
-
-function instance($class, ...$params)
-{
-    return new $class(...$params);
-}
-
+/*
+ * 获取请求参数
+ */
 function input($name, $default = null)
 {
     return Request::input($name, $default);
 }
 
+/*
+ * 设置响应内容
+ */
 function output($name, $type = null)
 {
     return Response::send($name, $type); 
 }
 
+/*
+ * 获取或设置COOKIE
+ */
 function cookie($name, ...$params)
 {
     return $params ? Cookie::set($name, ...$params) : Cookie::get($name); 
 }
 
+/*
+ * 获取或设置SESSION
+ */
 function session($name, $value = null)
 {
     if (is_array($name) || $value !== null) {
-        Session::set($name, $value); 
+        Session::set($name, $value);
     } else {
         return Session::get($name); 
     }
 }
 
+/*
+ * 验证器
+ */
+function validate($rule, $message = null)
+{
+    return new Validator($rule, $message);
+}
+
+/*
+ * 中断应用
+ */
+function abort($code = null, $message = null)
+{
+    App::abort($code, $message);
+}
+
+/*
+ * 设置警告
+ */
+function warn($message, $limit = 1)
+{
+    Error::trigger($message, E_USER_WARNING, $limit + 1);
+}
+
+/*
+ * 设置错误
+ */
+function error($message, $limit = 1)
+{
+    Error::trigger($message, E_USER_ERROR, $limit + 1);
+}
+
+/*
+ * 调试
+ */
+function dd(...$vars)
+{
+    Response::send(Debug::dump(...$vars));
+}
+
+/*
+ * 调试
+ */
+function dump(...$vars)
+{
+    Response::send(Debug::dump(...$vars), false);
+}
+
+/*
+ * 类实例化
+ */
+function instance($class, ...$params)
+{
+    return new $class(...$params);
+}
+
+/*
+ * JSON序列化
+ */
 function jsonencode($data)
 {
     return json_encode($data, JSON_UNESCAPED_UNICODE);
 }
 
+/*
+ * JSON反序列化
+ */
 function jsondecode($data)
 {
     return json_decode($data, true);
 }
 
+/*
+ * 安全引用文件
+ */
 function __include($file)
 {
     return include $file;
 }
 
+/*
+ * 安全引用文件
+ */
 function __require($file)
 {
     return require $file;
 }
 
-function closure_bind_getter(Closure $call, $providers = null)
+/*
+ * 获取Getter
+ */
+function getter($providers = null)
 {
-    return Closure::bind($call, new class ($providers) {
+    return new class ($providers) {
         use Getter;
         public function __construct($providers) {
             if ($providers) {
-                $this->{Config::env('GETTER_PROVIDERS_NAME')} = $providers;
+                $this->{app\env\GETTER_PROVIDERS_NAME} = $providers;
             }
         }
-    });
+    };
 }
 
-define('OPCACHE_LOADED', extension_loaded('opcache'));
-
+/*
+ * 检查文件存在
+ */
 function is_php_file($file)
 {
     return (OPCACHE_LOADED && opcache_is_script_cached($file)) || is_file($file);

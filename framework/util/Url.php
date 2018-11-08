@@ -10,11 +10,7 @@ class Url
     
     public function __construct($url = null)
     {
-        if (is_string($url)) {
-            $this->url = self::parse($url);
-        } elseif (is_array($url)) {
-            $this->url = $url;
-        }
+        $this->url = is_array($url) ? $url : self::parse($url);
     }
     
     public static function current()
@@ -41,18 +37,19 @@ class Url
     
     public function __get($name)
     {
-        if (!in_array($name, self::$types)) {
-            throw new \Exception('Undefined property: $'.$name);
+        if (in_array($name, self::$types)) {
+            return $this->url[$name] ?? null;
         }
-        return $this->url[$name] ?? null;
+        throw new \Exception("Undefined property: $$name");
     }
     
     public function __set($name, $value)
     {
-        if (!in_array($name, self::$types)) {
-            throw new \Exception('Undefined property: $'.$name);
+        if (in_array($name, self::$types)) {
+            $this->url[$name] = $value;
+        } else {
+            throw new \Exception("Undefined property: $$name");
         }
-        $this->url[$name] = $value;
     }
     
     public function make()
@@ -69,6 +66,11 @@ class Url
     public function toArray()
     {
         return $this->url;
+    }
+    
+    public function __toString()
+    {
+        return $this->make();
     }
     
     private function build($type, $value)

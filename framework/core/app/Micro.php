@@ -112,7 +112,7 @@ class Micro extends App
         if ($route['dispatch'] instanceof \Closure) {
             $call = $route['dispatch'];
             if ($this->config['closure_enable_getter']) {
-                $call = closure_bind_getter($call, $this->config['closure_getter_providers']);
+                $call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
             }
            return $call(...$route['matches']);
         } elseif (is_string($route['dispatch'])) {
