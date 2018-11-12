@@ -113,9 +113,9 @@ function email($name = null)
 /*
  * 发送队列任务
  */
-function job($name, $message)
+function job($name, $message, $driver = null)
 {
-    return Container::driver($name)->producer()->push($message);
+    return Container::driver('queue', $driver)->producer($name)->push($message);
 }
 
 /*

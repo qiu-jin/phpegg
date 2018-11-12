@@ -9,17 +9,17 @@ class Xml
     /*
      * 数组转为XML
      */
-    public static function encode(array $arr, $root_element_name = null)
+    public static function encode(array $data, $root_element_name = null)
     {
         $writer = new \XmlWriter();  
         $writer->openMemory();  
         $writer->startDocument('1.0', 'utf-8');
         if ($root_element_name) {
             $writer->startElement($root_element_name);
-            self::arrayToXml($writer, $arr);
+            self::arrayToXml($writer, $data);
             $writer->endElement();  
         } else {
-            self::arrayToXml($writer, $arr);
+            self::arrayToXml($writer, $data);
         }
         return $writer->outputMemory(true);
     }

@@ -169,7 +169,7 @@ class Standard extends App
                     return;
                 }
                 if (isset($this->config['default_dispatch_to_camel'])) {
-                    $controller_array[] = Str::toCamel(
+                    $controller_array[] = Str::camelCase(
                         array_pop($controller_array),
                         $this->config['default_dispatch_to_camel']
                     );
@@ -182,7 +182,7 @@ class Standard extends App
                 }
             }
             if (isset($action) && isset($this->config['default_dispatch_to_camel'])) {
-                $action = Str::toCamel($action, $this->config['default_dispatch_to_camel']);
+                $action = Str::camelCase($action, $this->config['default_dispatch_to_camel']);
             }
         }
         if (isset($class) || ($class = $this->getControllerClass($controller, isset($check)))) {
@@ -277,8 +277,8 @@ class Standard extends App
             return '/'.strtr($path, '\\', '/').'/'.$this->dispatch['action'];
         } else {
             $array = explode('\\', $path);
-            $array[] = Str::toSnake(array_pop($array));
-            $array[] = Str::toSnake($this->dispatch['action']);
+            $array[] = Str::snakeCase(array_pop($array));
+            $array[] = Str::snakeCase($this->dispatch['action']);
             return '/'.implode('/', $array);
         }
     }

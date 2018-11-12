@@ -132,7 +132,8 @@ class Container
     
     public static function makeModel($type, ...$ns)
     {
-        $class = self::$providers['model'][$type][0].'\\'.implode('\\', $ns);
+        $provider = self::$providers['model'][$type];
+        $class = (is_array($provider) ? $provider[0] : $provider).'\\'.implode('\\', $ns);
         return new $class();
     }
 

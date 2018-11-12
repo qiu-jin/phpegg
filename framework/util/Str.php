@@ -19,7 +19,7 @@ class Str
     /*
      * 下划线转驼峰
      */
-    public static function toCamel(string $value, string $symbol = '_')
+    public static function camelCase(string $value, string $symbol = '_')
     {
         $str = '';
 		foreach(explode($symbol, $value) as $v){
@@ -31,7 +31,7 @@ class Str
     /*
      * 驼峰转下划线
      */
-    public static function toSnake(string $value, string $symbol = '_')
+    public static function snakeCase(string $value, string $symbol = '_')
     {
         $str = '';
         $len = strlen($value);
@@ -43,22 +43,4 @@ class Str
         }
         return $str;
     }
-    
-    /*
-    public static function indexPos($value, $find, int $index)
-    {
-        $len = strlen($find);
-        $offset = 0;
-        while ($index) {
-            $pos = stripos($value, $find, $offset);
-            if ($pos === false) {
-                return false;
-            } else {
-                $offset = $pos + $len;
-            }
-            $index--;
-        }
-        return $pos;
-    }     
-     * */
 }

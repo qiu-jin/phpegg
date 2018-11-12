@@ -102,11 +102,11 @@ class Http
             case 'snake_to_spinal':
                 return strtr($path, '_', '-');
             case 'camel_to_spinal':
-                return Str::toSnake($path, '-');
+                return Str::snakeCase($path, '-');
             case 'snake_to_camel':
-                return Str::toCamel($path);
+                return Str::camelCase($path);
             case 'camel_to_snake':
-                return Str::toSnake($path);
+                return Str::snakeCase($path);
         }
         throw new Exception("Illegal url style: $this->config['url_style']");
     }

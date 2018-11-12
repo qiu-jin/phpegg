@@ -143,7 +143,7 @@ class Rest extends App
                 $controller_array = $path;
             }
             if (isset($this->config['default_dispatch_to_camel'])) {
-                $controller_array[] = Str::toCamel(
+                $controller_array[] = Str::camelCase(
                     array_pop($controller_array),
                     $this->config['default_dispatch_to_camel']
                 );
@@ -191,7 +191,7 @@ class Rest extends App
             list($controller, $action_path) = $this->dispatch['continue'];
         } elseif (count($path) >= $depth) {
             if (isset($this->config['resource_dispatch_controller_to_camel'])) {
-                $path[$depth] = Str::toCamel(
+                $path[$depth] = Str::camelCase(
                     $path[$depth],
                     $this->config['resource_dispatch_controller_to_camel']
                 );

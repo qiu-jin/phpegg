@@ -23,16 +23,16 @@ class Url
         return new self(Request::server('HTTP_REFERER'));
     }
     
-    public static function parse($str)
+    public static function parse($url)
     {
-        $url = parse_url($str);
-        if (isset($url['path'])) {
-            $url['path'] = trim($url['path'], '/');
+        $arr = parse_url($url);
+        if (isset($arr['path'])) {
+            $arr['path'] = trim($arr['path'], '/');
         }
-        if (isset($url['query'])) {
-            parse_str($url['query'], $url['query']);
+        if (isset($arr['query'])) {
+            parse_str($arr['query']);
         }
-        return $url;
+        return $arr;
     }
     
     public function __get($name)
@@ -54,13 +54,12 @@ class Url
     
     public function make()
     {
-        $url = null;
         foreach (self::$types as $type) {
             if (isset($this->url[$type])) {
                 $url .= $this->build($type, $this->url[$type]);
             }
         }
-        return $url;
+        return $url ?? false;
     }
     
     public function toArray()
