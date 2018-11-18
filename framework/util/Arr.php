@@ -70,14 +70,26 @@ class Arr
     /*
      * 获取并删除
      */
-    public static function pull(array &$array, string $key, $default = null)
+    public static function pull(array &$array, $name, $default = null)
     {
-        if (isset($array[$key])) {
-            $value = $array[$key];
-            unset($array[$key]);
-            return $value;
+        $ns = is_array($name) ? $name : explode('.', $name);
+        if (isset($ns[1])) {
+            $ln = array_pop($ns);
+            foreach ($ns as $n) {
+                if (!isset($array[$n])) {
+                    return $default;
+                }
+                $array =& $array[$n];
+            }
+            if (isset($array[$ln])) {
+                $value = $array[$ln];
+                unset($array[$ln]);
+            }
+        } elseif (isset($array[$name])) {
+            $value = $array[$name];
+            unset($array[$name]);
         }
-        return $default;
+        return $value ?? $default;
     }
     
     /*

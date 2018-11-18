@@ -6,6 +6,7 @@ use framework\core\http\Request;
 class Url
 {
     private $url;
+    
     private static $types = ['scheme', 'host', 'port', 'path', 'query', 'fragment'];
     
     public function __construct($url = null)

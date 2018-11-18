@@ -6,7 +6,7 @@ class Str
     /*
      * 随机串
      */
-    public static function random(int $length = 8, $type = null)
+    public static function random(int $length = 32, $type = null)
     {
         $string = '0123456789qwertyuiopasdfghjklzxcvbnm';
         $str = '';

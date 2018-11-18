@@ -3,7 +3,7 @@ namespace framework\util;
 
 class Hash
 {   
-    public static function random(int $length = 8, $raw = false)
+    public static function random(int $length = 16, $raw = false)
     {
         $bytes = random_bytes($length);
         return $raw ? $bytes : bin2hex($bytes);

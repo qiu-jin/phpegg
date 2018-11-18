@@ -1,50 +1,112 @@
 <?php
 namespace framework\util;
 
+use XMLReader;
+use XmlWriter;
+
 /*
- * 暂不支持XML属性处理
+ * 暂不支持XML属性等
  */
 class Xml
 {
     /*
      * 数组转为XML
      */
-    public static function encode(array $data, $root_element_name = null)
+    public static function encode(array $data, $root_element_name = 'data')
     {
-        $writer = new \XmlWriter();  
+        $writer = new XmlWriter();  
         $writer->openMemory();  
         $writer->startDocument('1.0', 'utf-8');
-        if ($root_element_name) {
-            $writer->startElement($root_element_name);
-            self::arrayToXml($writer, $data);
-            $writer->endElement();  
-        } else {
-            self::arrayToXml($writer, $data);
-        }
-        return $writer->outputMemory(true);
+        self::write($writer, $root_element_name ? [$root_element_name => $data] : $data);
+        return $writer->outputMemory();
     }
 
     /*
      * XML转为数组
      */
-    public static function decode(string $xml, $return_root_element = false)
+    public static function decode(string $str, $return_root_element = false)
     {
-        if ($array = (array) simplexml_load_string($xml, null, LIBXML_NOCDATA)) {
-            return $return_root_element ? [$object->getName() => $array] : $array;
-        }
-        return false;
+        $reader = new XMLReader();
+        $reader->xml($str);
+        $return = self::read($reader);
+        $reader->close();
+        return $return_root_element ? $return : current($return);
     }
     
-    private static function arrayToXml($writer, $arr)
+    /*
+     * 读XML
+     */
+    private static function read($reader)
     {
-        foreach($arr as $key => $value){
-            $writer->startElement($key);
-            if(is_array($value)){
-                self::arrayToXml($writer, $value);
+        $return = null;
+        while ($reader->read()) {
+            switch ($reader->nodeType) {
+                case XMLReader::END_ELEMENT:
+                    return $return;
+                case XMLReader::ELEMENT:
+                    $name = $reader->name;
+                    $value = $reader->isEmptyElement ? '' : self::read($reader);
+                    if (!isset($return[$name])) {
+                        $return[$name] = $value;
+                    } else {
+                        if (!isset($set[$name])) {
+                            $set[$name] = true;
+                            $return[$name] = [$return[$name]];
+                        }
+                        $return[$name][] = $value;
+                    }
+                    break;
+                case XMLReader::TEXT: 
+                case XMLReader::CDATA: 
+                    $return .= $reader->value;
+                    break;
+            }            
+        }
+        return $return;
+    }
+    
+    /*
+     * 写XML
+     */
+    private static function write($writer, $value, $prev = null)
+    {
+        foreach($value as $key => $val){
+            if (is_int($key)) {
+                $array[] = $val;
             } else {
-                $writer->text($value);
+                $assoc[$key] = $val;
             }
-            $writer->endElement();
+        }
+        if (isset($array)) {
+            $len = count($array);
+            foreach($array as $key => $val){
+                if ($key != 0) {
+                    $writer->startElement($prev);
+                }
+                if (is_array($val)) {
+                    self::write($writer, $val);
+                } else {
+                    $writer->text($val);
+                }
+                if ($key != $len - 1) {
+                    $writer->endElement();
+                }
+            }
+        }
+        if (isset($assoc)) {
+            if (isset($array)) {
+                $writer->endElement();
+                $writer->startElement($prev);
+            }
+            foreach($assoc as $key => $val){
+                $writer->startElement($key);
+                if (is_array($val)) {
+                    $ret = self::write($writer, $val, $key);
+                } else {
+                    $writer->text($val);
+                }
+                $writer->endElement();
+            }
         }
     }
 }

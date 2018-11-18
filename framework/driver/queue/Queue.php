@@ -16,12 +16,12 @@ abstract class Queue
 
     public function producer($job = null)
     {
-        return $this->makeInstance('Producer', $job);
+        return $this->makeInstance('producer', $job);
     }
     
     public function consumer($job = null)
     {
-        return $this->makeInstance('Consumer', $job);
+        return $this->makeInstance('consumer', $job);
     }
     
     public function getConnection()
