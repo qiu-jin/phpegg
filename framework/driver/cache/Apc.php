@@ -1,6 +1,9 @@
 <?php
 namespace framework\driver\cache;
 
+/*
+ * http://php.net/apcu
+ */
 class Apc extends Cache
 {
     protected $prefix;

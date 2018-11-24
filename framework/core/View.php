@@ -1,6 +1,7 @@
 <?php
 namespace framework\core;
 
+use framework\util\File;
 use framework\core\exception\ViewException;
 use framework\extend\view\Error as ViewError;
 
@@ -200,7 +201,7 @@ class View
      */
     private static function complieTo($content, $file)
     {
-        if (is_dir($dir = dirname($file)) || mkdir($dir, 0777, true)) {
+        if (File::tryMakeDir(dirname($file), 0777, true)) {
             $result = self::$config['template']['engine']::complie($content);
             if (file_put_contents($file, $result, LOCK_EX)) {
                 if (OPCACHE_LOADED) {

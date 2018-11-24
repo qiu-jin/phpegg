@@ -2,6 +2,7 @@
 namespace framework\core;
 
 use framework\App;
+use framework\util\Arr;
 use framework\core\exception\Exception;
 use framework\core\exception\ErrorException;
 
@@ -35,7 +36,7 @@ class Error
      */
     public static function get($all = false)
     {
-        return $all ? self::$errors : end(self::$errors);
+        return $all ? self::$errors : Arr::last(self::$errors);
     }
     
     /*

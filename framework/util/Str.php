@@ -8,39 +8,55 @@ class Str
      */
     public static function random(int $length = 32, $type = null)
     {
-        $string = '0123456789qwertyuiopasdfghjklzxcvbnm';
-        $str = '';
+        static $string = '0123456789abcdefghijklmnopqrstuvwxyz';
+        $ret = '';
         for ($i = 0; $i < $length; $i++) {
-            $str .= $string[mt_rand(0, 33)];
+            $ret .= $string[mt_rand(0, 33)];
         }
-        return $str;
+        return $ret;
     }
     
     /*
      * 下划线转驼峰
      */
-    public static function camelCase(string $value, string $symbol = '_')
+    public static function camelCase(string $str, string $symbol = '_')
     {
-        $str = '';
-		foreach(explode($symbol, $value) as $v){
-			$str .= ucfirst($v);
+        $ret = '';
+		foreach(explode($symbol, $str) as $v){
+			$ret .= ucfirst($v);
 		}
-		return $str;
+		return $ret;
     }
     
     /*
      * 驼峰转下划线
      */
-    public static function snakeCase(string $value, string $symbol = '_')
+    public static function snakeCase(string $str, string $symbol = '_')
     {
-        $str = '';
-        $len = strlen($value);
-        $value = lcfirst($value);
+        $ret = '';
+        $len = strlen($str);
+        $value = lcfirst($str);
         for ($i = 0; $i < $len; $i++) {
-            $c = $value[$i];
+            $c = $str[$i];
             $l = strtolower($c);
-            $str .= $c === $l ? $c : $symbol.$l;
+            $ret .= $c === $l ? $c : $symbol.$l;
         }
-        return $str;
+        return $ret;
+    }
+    
+    /*
+     * 头部补全
+     */
+    public static function headPad(string $str, string $symbol = '/')
+    {
+        return substr($str, 0, 1) == $symbol ? $str : $symbol.$str;
+    }
+    
+    /*
+     * 尾部补全
+     */
+    public static function tailPad(string $str, string $symbol = '/')
+    {
+        return substr($str, -1) == $symbol ? $str : $str.$symbol;
     }
 }

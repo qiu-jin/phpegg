@@ -116,7 +116,7 @@ class Request
      */
     public static function url()
     {
-        return self::$request['url'] ?? self::$request['url'] = $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+        return (self::isHttps() ? 'https' : 'http').'://'.self::host().$_SERVER['REQUEST_URI'];
     }
     
     /*
@@ -124,7 +124,7 @@ class Request
      */
     public static function host()
     {
-        return self::$request['host'] ?? self::$request['host'] = $_SERVER['HTTP_HOST'];
+        return $_SERVER['HTTP_HOST'];
     }
     
     /*
@@ -132,7 +132,7 @@ class Request
      */
     public static function method()
     {
-        return self::$request['method'] ?? self::$request['method'] = strtoupper($_SERVER['REQUEST_METHOD']);
+        return strtoupper($_SERVER['REQUEST_METHOD']);
     }
     
     /*
@@ -141,11 +141,9 @@ class Request
     public static function ip($proxy = false)
     {
         if (!$proxy) {
-            return self::$request['ip'][0] ?? self::$request['ip'][0] = $_SERVER['REMOTE_ADDR'] ?? false;
+            return $_SERVER['REMOTE_ADDR'] ?? false;
         }
-        return self::$request['ip'][1] ?? self::$request['ip'][1] = (
-            $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? false
-        );
+        return $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? false;
     }
     
     /*
@@ -153,7 +151,7 @@ class Request
      */
     public static function path()
     {
-        return self::$request['path'] ?? self::$request['path'] = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        return parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     }
     
     /*
@@ -203,10 +201,10 @@ class Request
      */
     public static function isHttps($proxy = false)
     {
-        if (isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) === 'on') {
-            return true;
+        if (!$proxy) {
+            return isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) === 'on';
         }
-        return $proxy && isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https';
+        return isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https';
     }
     
     /*

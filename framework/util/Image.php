@@ -24,7 +24,7 @@ class Image
         throw new \Exception("Illegal image file: $path");
     }
     
-    public static function blank(int $width, int $height, $color = null, $type = 'png')
+    public static function canvas(int $width, int $height, $color = null, $type = 'png')
     {
         $image = imagecreate($width, $height);
         if ($color) {

@@ -1,17 +1,19 @@
 <?php
 namespace framework\driver\storage;
 
+use framework\util\Arr;
+use framework\util\File;
+
 class Local extends Storage
 {
     protected $dir;
     
     public function __construct($config)
     {
-        if (isset($config['dir']) && is_dir($config['dir']) && is_writable($config['dir'])) {
-            $this->dir = $config['dir'];
-            $this->domain = $config['domain'] ?? null;
-        } else {
-            throw new \Exception('Storage dir is not writable');
+        $this->dir = $config['dir'];
+        $this->domain = $config['domain'] ?? null;
+        if (!File::isWritableDir($this->dir)) {
+            throw new \Exception("Storage dir $this->dir is not writable");
         }
     }
     
@@ -27,7 +29,7 @@ class Local extends Storage
     
     public function put($from, $to, $is_buffer = false)
     {
-        if ($this->ckdir($to = $this->path($to))) {
+        if (File::makeDir($to = $this->path($to))) {
             return $is_buffer ? (bool) file_put_contents($to, $from) : copy($from, $to);
         }
         return false;
@@ -36,17 +38,17 @@ class Local extends Storage
     public function stat($from)
     {
         $stat = stat($this->path($from));
-        return $stat ? ['size' => $stat['size'], 'mtime' => $stat['mtime'], 'ctime' => $stat['ctime']] : false;
+        return $stat ? Arr::fitlerKeys($stat, ['size', 'mtime', 'ctime']) : false;
     }
     
     public function copy($from, $to)
     {
-        return $this->ckdir($to = $this->path($to)) && copy($this->path($from), $to);
+        return File::makeDir($to = $this->path($to)) && copy($this->path($from), $to);
     }
     
     public function move($from, $to)
     {
-        return $this->ckdir($to = $this->path($to)) && rename($this->path($from), $to);
+        return File::makeDir($to = $this->path($to)) && rename($this->path($from), $to);
     }
     
     public function delete($from)
@@ -57,10 +59,5 @@ class Local extends Storage
     protected function path($path)
     {
         return $this->dir.parent::path($path);
-    }
-    
-    protected function ckdir($path)
-    {
-        return is_dir($dir = dirname($path)) || mkdir($dir, 0777);
     }
 }

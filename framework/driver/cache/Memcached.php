@@ -1,6 +1,9 @@
 <?php
 namespace framework\driver\cache;
 
+/*
+ * http://php.net/memcached
+ */
 class Memcached extends Cache
 {
     protected $connection;
