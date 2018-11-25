@@ -6,10 +6,13 @@ use framework\util\Image;
 
 class Uploaded
 {
+    // 文件信息
     private $file;
+    // 图片实例
     private $image;
-    private $check;
-    private $validate;
+    // 图片检查
+    private $checked;
+    // 错误信息
     private static $error = [
         UPLOAD_ERR_INI_SIZE     => 'UPLOAD_ERR_INI_SIZE',
         UPLOAD_ERR_FORM_SIZE    => 'UPLOAD_ERR_FORM_SIZE',
@@ -19,10 +22,15 @@ class Uploaded
         UPLOAD_ERR_CANT_WRITE   => 'UPLOAD_ERR_CANT_WRITE'
     ];
     
-    public function __construct($file, $validate = null)
+    public function __construct(array $file)
     {
         $this->file = $file;
-        $this->validate = $validate;
+    }
+    
+    public static function file(array $file, array $validate = null)
+    {
+        $uploaded = new self($file);
+        return $validate && !$uploaded->check($validate) ? false : $uploaded;
     }
     
     public function name()
@@ -59,54 +67,49 @@ class Uploaded
     
     public function ext()
     {
-        return isset($this->file['name']) ? pathinfo($this->file['name'], PATHINFO_EXTENSION) : false;
+        return isset($this->file['name']) ? File::ext($this->file['name']) : false;
     }
     
     public function move($to)
     {
-        if (!$this->check && !$this->check()) {
-            return false;
-        }
         return move_uploaded_file($this->file['tmp_name'], $to);
     }
     
     public function uploadTo($to)
     {
-        if (!$this->check && !$this->check()) {
-            return false;
-        }
         return File::upload($this->file['tmp_name'], $to);
     }
     
-    public function check($validate = null)
+    public function isSuccess()
     {
-        $this->check = false;
-        if ($this->file['error'] === UPLOAD_ERR_OK && is_uploaded_file($this->file['tmp_name'])) {
-            if ($v = ($validate ?? $this->validate)) {
-                if (isset($v['ext']) && !in_array($this->ext(), $v['ext'])) {
-                    return false;
-                }
-                if (isset($v['type']) && !in_array($this->type(), $v['type'])) {
-                    return false;
-                }
-                if (isset($v['mime']) && !in_array($this->mime(), $v['mime'])) {
-                    return false;
-                }
-                if (isset($v['image']) && $this->image() && $this->image->check($v['image'])) {
-                    return false;
-                }
-                if (isset($v['size'])) {
-                    $size = $this->size();
-                    if (is_array($v['size'])) {
-                        if ($size < $v['size'][0] || $size > $v['size'][1]) {
-                            return false;
-                        }
-                    } elseif ($size > $v['size']) {
+        return $this->file['error'] === UPLOAD_ERR_OK && is_uploaded_file($this->file['tmp_name']);
+    }
+    
+    public function check(array $validate)
+    {
+        if ($this->isSuccess()) {
+            if (isset($validate['ext']) && !in_array($this->ext(), $validate['ext'])) {
+                return false;
+            }
+            if (isset($validate['type']) && !in_array($this->type(), $validate['type'])) {
+                return false;
+            }
+            if (isset($validate['mime']) && !in_array($this->mime(), $validate['mime'])) {
+                return false;
+            }
+            if (isset($validate['image']) && $this->image() && $this->image->check($validate['image'])) {
+                return false;
+            }
+            if (isset($validate['size'])) {
+                $size = $this->size();
+                if (is_array($validate['size'])) {
+                    if ($size < $validate['size'][0] || $size > $validate['size'][1]) {
                         return false;
                     }
+                } elseif ($size > $validate['size']) {
+                    return false;
                 }
             }
-            return $this->check = true;
         }
         return false;
     }

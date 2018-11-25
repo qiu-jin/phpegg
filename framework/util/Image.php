@@ -9,6 +9,9 @@ class Image
     private $info;
     private $image;
     
+    /*
+     * 打开图片
+     */
     public static function open($path, $ignore_exception = false)
     {
         if ($info = getimagesize($path)) {
@@ -24,6 +27,9 @@ class Image
         throw new \Exception("Illegal image file: $path");
     }
     
+    /*
+     * 创建空白画布
+     */
     public static function canvas(int $width, int $height, $color = null, $type = 'png')
     {
         $image = imagecreate($width, $height);

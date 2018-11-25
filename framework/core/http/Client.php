@@ -40,7 +40,7 @@ class Client
     }
     
     /*
-     * 批量请求
+     * 多进程批量请求
      */
     public static function multi(array $queries, callable $handle = null, $select_timeout = 0.1)
     {
@@ -118,9 +118,9 @@ class Client
     public function file($name, $content, $filename = null, $mimetype = null)
     {
         if (substr($name, -2) === '[]') {
-            $this->request->body[substr($name, 0, -2)][] = $this->curlFile($content, $filename, $mimetype);
+            $this->request->body[substr($name, 0, -2)][] = $this->setCurlFile($content, $filename, $mimetype);
         } else {
-            $this->request->body[$name] = $this->curlFile($content, $filename, $mimetype);
+            $this->request->body[$name] = $this->setCurlFile($content, $filename, $mimetype);
         }
         return $this;
     }
@@ -148,12 +148,12 @@ class Client
         } else {
             $this->request->body = substr($this->request->body, 0, -19);
         }
-        $this->request->body .= $this->multipartFile($name, $content, $filename, $mimetype);
+        $this->request->body .= $this->setMultipartFile($name, $content, $filename, $mimetype);
         return $this;
     }
     
     /*
-     * 发送一个流，只支持put方法，在put大文件时使用节约内存
+     * 发送一个流，只支持PUT方法，在PUT大文件时使用节约内存
      */
     public function stream($fp)
     {
@@ -416,7 +416,7 @@ class Client
     /*
      * 设置curl文件上传
      */
-    protected function curlFile($filepath, $filename, $mimetype)
+    protected function setCurlFile($filepath, $filename, $mimetype)
     {
         $file = new \CURLFile(realpath($filepath));
         if (isset($mimetype)) {
@@ -431,7 +431,7 @@ class Client
     /*
      * 设置multipart协议上传
      */
-    protected function multipartFile($name, $content, $filename, $mimetype)
+    protected function setMultipartFile($name, $content, $filename, $mimetype)
     {
         if (empty($filename)) {
             $filename = $name;

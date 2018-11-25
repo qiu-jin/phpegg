@@ -85,14 +85,13 @@ class Request
                 $keys = array_keys($_FILES[$name]);
                 $count = count($_FILES[$name]['name']);
                 for ($i = 0; $i < $count; $i++) {
-                    $files[] = new Uploaded(array_combine($keys, array_column($_FILES[$name], $i)), $validate);
+                    $files[] = Uploaded::file(array_combine($keys, array_column($_FILES[$name], $i)), $validate);
                 }
                 return $files;
             } else {
-                return new Uploaded($_FILES[$name], $validate);
+                return Uploaded::file($_FILES[$name], $validate);
             }
         }
-        return null;
     }
     
     /*

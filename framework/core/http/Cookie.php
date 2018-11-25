@@ -22,6 +22,9 @@ class Cookie
     // 排除部分系统自处理的cookie，如PHPSESSID
     private static $serialize_except;
     
+    /*
+     * 初始化
+     */
     public static function __init()
     {
         if (self::$init) {
@@ -38,10 +41,15 @@ class Cookie
                 self::$raw_cookie = $_COOKIE;
                 self::$serializer = $config['serializer'];
             }
+        } else {
+            self::$cookie = $_COOKIE;
         }
         self::$serialize_except = $config['serialize_except'] ?? [ini_get('session.name')];
     }
     
+    /*
+     * 获取所有
+     */
     public static function all()
     {
         if (self::$raw_cookie) {
@@ -54,6 +62,9 @@ class Cookie
         return self::$cookie;
     }
     
+    /*
+     * 获取
+     */
     public static function get($name, $default = null)
     {
         if (isset(self::$cookie[$name])) {
@@ -64,23 +75,35 @@ class Cookie
         return $default;
     }
     
+    /*
+     * 是否存在
+     */
     public static function has($name)
     {
         return isset(self::$cookie[$name]) || isset($raw_cookie[$name]);
     }
     
+    /*
+     * 设置
+     */
     public static function set($name, $value, ...$options)
     {
         self::$cookie[$name] = $value;
         self::setCookie($name, $value, ...$options);
     }
     
+    /*
+     * 设置永久
+     */
     public static function forever($name, $value)
     {
         self::$cookie[$name] = $value;
         self::setCookie($name, $value, 315360000);
     }
     
+    /*
+     * 删除
+     */
     public static function delete($name)
     {
         unset(self::$cookie[$name]);
@@ -88,6 +111,9 @@ class Cookie
         self::setCookie($name, null);
     }
     
+    /*
+     * 底层设置
+     */
     public static function setCookie(
         $name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null
     ) {
@@ -107,6 +133,9 @@ class Cookie
         return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
     }
     
+    /*
+     * 反序列化
+     */
     protected static function unserialize($name, $value)
     {
         return in_array($name, self::$serialize_except) ? $value : (self::$serializer[1])($value);

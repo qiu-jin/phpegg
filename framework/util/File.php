@@ -18,7 +18,8 @@ class File
      */
     public static function put($file, $contents, $lock = false)
     {
-        return self::makeDir(dirname($file)) && file_put_contents($file, $contents, $lock ? LOCK_EX : 0);
+        return self::makeDir(dirname($file), 0777, true) &&
+               file_put_contents($file, $contents, $lock ? LOCK_EX : 0);
     }
     
     /*
@@ -26,7 +27,7 @@ class File
      */
     public static function append($file, $contents, $lock = false)
     {
-        return self::makeDir(dirname($file)) && 
+        return self::makeDir(dirname($file), 0777, true) && 
                file_put_contents($file, $contents, ($lock ? LOCK_EX : 0) | FILE_APPEND);
     }
     
@@ -35,7 +36,7 @@ class File
      */
     public static function move($file, $to)
     {
-        return is_file($file) && self::makeDir(dirname($to)) && rename($file, $to);
+        return is_file($file) && self::makeDir(dirname($to), 0777, true) && rename($file, $to);
     }
     
     /*
@@ -43,7 +44,7 @@ class File
      */
     public static function copy($file, $to)
     {
-        return is_file($file) && self::makeDir(dirname($to)) && copy($file, $to);
+        return is_file($file) && self::makeDir(dirname($to), 0777, true) && copy($file, $to);
     }
     
     /*
@@ -55,6 +56,25 @@ class File
     }
     
     /*
+     * 文件扩展名
+     */
+    public static function ext($file)
+    {
+        return pathinfo($file, PATHINFO_EXTENSION);
+    }
+    
+    /*
+     * 文件mime
+     */
+    public static function mime($file, $is_buffer = false)
+    {
+        $finfo = finfo_open(FILEINFO_MIME);
+        $mime  = $is_buffer ? finfo_buffer($finfo, $file) : finfo_file($finfo, $file);
+        finfo_close($finfo);
+        return $mime;
+    }
+    
+    /*
      * 文件hash
      */
     public static function hash($file, $algo = 'md5', $raw = false)
@@ -63,14 +83,11 @@ class File
     }
     
     /*
-     * 文件mime
+     * 是否为图片文件
      */
-    public static function mime($file, $is_buffer = false)
+    public static function isImage($file, $type = null)
     {
-        $finfo = finfo_open(FILEINFO_MIME); 
-        $mime = $is_buffer ? finfo_buffer($finfo, $file) : finfo_file($finfo, $file);
-        finfo_close($finfo);
-        return $mime;
+        return ($image = Image::open($file)) && ($type === null || $image->check($type));
     }
     
     /*
@@ -92,12 +109,12 @@ class File
         $ret = [];
         $path = Str::tailPad($path);
         if ($open = opendir($path)) {
-            while (($file = readdir($open)) !== false) {
-                $f = $path.$file;
-                if (is_file($f)) {
-                    $ret[] = $f;
-                } elseif ($recursive && is_dir($f) && $file !== '.' && $file !== '..') {
-                    $ret = array_merge($ret, self::list($path, $recursive));
+            while (($item = readdir($open)) !== false) {
+                $file = $path.$item;
+                if (is_file($file)) {
+                    $ret[] = $file;
+                } elseif ($recursive && is_dir($file) && $item !== '.' && $item !== '..') {
+                    $ret = array_merge($ret, self::files($file, $recursive));
                 }
             }
             closedir($open);
@@ -122,6 +139,38 @@ class File
     }
     
     /*
+     * 移动目录
+     */
+    public static function moveDir($path, $to)
+    {
+        $path = Str::tailPad($path);
+        $to   = Str::tailPad($to);
+        if ($open = opendir($path)) {
+            while (($item = readdir($open)) !== false) {
+                if (is_dir($file = $path.$item)) {
+                    if ($item !== '.' && $item !== '..') {
+                        self::moveDir($file, $to.$item);
+                    }
+                } else {
+                    self::makeDir($to, 0777, true);
+                    rename($file, $to.$item);
+                }
+            }
+            closedir($open);
+        }
+        rmdir($path);
+    }
+    
+    /*
+     * 删除目录
+     */
+    public static function deleteDir($path)
+    {
+        self::cleanDir($path);
+        rmdir($path);
+    }
+    
+    /*
      * 清空目录
      * $fitler 返回true表示不删除
      */
@@ -130,8 +179,7 @@ class File
         $path = Str::tailPad($path);
         if ($open = opendir($path)) {
             while (($item = readdir($open)) !== false) {
-                $file = $path.$item;
-                if (is_dir($file)) {
+                if (is_dir($file = $path.$item)) {
                     if ($item !== '.' && $item !== '..') {
                         if (self::cleanDir($file, $fitler)) {
                             rmdir($file);
@@ -150,14 +198,5 @@ class File
             closedir($open);
         }
         return $empty ?? true;
-    }
-    
-    /*
-     * 删除目录
-     */
-    public static function deleteDir($path)
-    {
-        self::cleanDir($path);
-        rmdir($path);
     }
 }

@@ -13,6 +13,9 @@ class Session
         'id', 'name', 'save_path', 'cache_expire', 'cache_limiter', 'module_name'
     ];
     
+    /*
+     * 初始化
+     */
     public static function __init()
     {
         if (self::$init) {
@@ -43,21 +46,33 @@ class Session
         session_start();
     }
     
+    /*
+     * 获取所有
+     */
     public static function all()
     {
         return $_SESSION;
     }
     
+    /*
+     * 获取
+     */
     public static function get($name, $default = null)
     {
         return Arr::get($_SESSION, $name, $default);
     }
     
+    /*
+     * 获取
+     */
     public static function has($name)
     {
         return Arr::has($_SESSION, $name);
     }
 
+    /*
+     * 设置
+     */
     public static function set($name, $value = null)
     {
         if (is_array($name)) {
@@ -67,11 +82,17 @@ class Session
         }
     }
     
+    /*
+     * 删除
+     */
     public static function delete($name)
     {
         Arr::delete($_SESSION, $name);
     }
     
+    /*
+     * 清除所有
+     */
     public static function clean()
     {
         session_unset();
@@ -80,7 +101,7 @@ class Session
     }
     
     /*
-     * Session 函数魔术方法
+     * 原生session函数魔术方法
      * session_​abort
      * session_​cache_​expire
      * session_​cache_​limiter

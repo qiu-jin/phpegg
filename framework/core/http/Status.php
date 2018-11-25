@@ -3,6 +3,7 @@ namespace framework\core\http;
 
 class Status
 {
+    // HTTP状态码
     const CODE = [
         100 => 'Continue',
         101 => 'Switching Protocols',
