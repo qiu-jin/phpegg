@@ -112,7 +112,7 @@ class Arr
     /*
      * 首值
      */
-    public static function first(array $array)
+    public static function head(array $array)
     {
         foreach ($array as $value) {
             return $value;
@@ -122,7 +122,7 @@ class Arr
     /*
      * 首键值对
      */
-    public static function firstKv(array $array)
+    public static function headKv(array $array)
     {
         foreach ($array as $key => $value) {
             return [$key, $value];

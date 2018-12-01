@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\storage;
 
+use framework\util\Str;
 use framework\core\Container;
 use framework\core\http\Client;
 
@@ -100,7 +101,6 @@ abstract class Storage
     
     protected function path($path)
     {
-        $path = trim($path);
-        return $path[0] !== '/' ? '/'.$path : $path;
+        return Str::headPad(trim($path), '/');
     }
 }

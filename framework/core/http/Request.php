@@ -78,18 +78,18 @@ class Request
     /*
      * 获取文件上传实例
      */
-    public static function uploaded($name, $validate = null)
+    public static function uploaded($name)
     {
         if (isset($_FILES[$name])) {
             if (is_array($_FILES[$name]['name'])) {
                 $keys = array_keys($_FILES[$name]);
                 $count = count($_FILES[$name]['name']);
                 for ($i = 0; $i < $count; $i++) {
-                    $files[] = Uploaded::file(array_combine($keys, array_column($_FILES[$name], $i)), $validate);
+                    $files[] = new Uploaded(array_combine($keys, array_column($_FILES[$name], $i)));
                 }
                 return $files;
             } else {
-                return Uploaded::file($_FILES[$name], $validate);
+                return new Uploaded($_FILES[$name]);
             }
         }
     }

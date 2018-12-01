@@ -33,6 +33,9 @@ class Router
         $this->method = $method;
     }
 
+    /*
+     * 路由匹配
+     */
     public function route($rules, $step = 0)
     {
         if (!$rules) {
@@ -61,6 +64,9 @@ class Router
         return false;
     }
     
+    /*
+     * 匹配单元
+     */
     private function match($rule, $step)
     {
         $ret = [];

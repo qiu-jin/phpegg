@@ -5,26 +5,33 @@ use framework\core\http\Response;
 
 class Image
 {
-    private $path;
+    // 图片信息
     private $info;
+    // 图片资源
     private $image;
     
     /*
      * 打开图片
      */
-    public static function open($path, $ignore_exception = false)
+    public static function open($path, array $check = null)
     {
-        if ($info = getimagesize($path)) {
-            return new self($path, [
-                'type'      => image_type_to_extension($info[2], false),
+        if (!$info = getimagesize($path)) {
+            return false;
+        }
+        $type = image_type_to_extension($info[2], false);
+        if ($check && !in_array($type, $check)) {
+            return false;
+        }
+        if (function_exists($func = "imagecreatefrom$type") && is_resource($image = $func($path))) {
+            return new self($image, [
+                'path'      => $path,
+                'type'      => $type,
                 'mime'      => $info['mime'],
                 'width'     => $info[0],
                 'height'    => $info[1],
             ]);
-        } elseif ($ignore_exception) {
-            return false;
         }
-        throw new \Exception("Illegal image file: $path");
+        return false;
     }
     
     /*
@@ -47,14 +54,13 @@ class Image
         ]);
     }
     
-    private function __construct($image, $info = null)
+    /*
+     * 构造函数
+     */
+    private function __construct($image, $info)
     {
-        if (is_resource($image)) {
-            $this->image = $image;
-        } else {
-            $this->path  = $image;
-        }
-        $this->info = $info;
+        $this->image = $image;
+        $this->info  = $info;
     }
     
     /*
@@ -66,16 +72,6 @@ class Image
     }
     
     /*
-     * 检查
-     */
-    public function check($type = null)
-    {
-        return $type == null ? isset($this->info) : (
-            is_array($type) ? in_array($this->info['type'], $type) : $this->info['type'] == $type
-        );
-    }
-    
-    /*
      * 裁剪
      */
     public function crop(int $width, int $height, int $x = 0, int $y = 0, int $w = null, int $h = null)
@@ -83,7 +79,7 @@ class Image
         $image = imagecreatetruecolor($width, $height);
         $color = imagecolorallocate($image, 255, 255, 255);
         imagefill($image, 0, 0, $color);
-        imagecopyresampled($image, $this->resource(), 0, 0, $x, $y, $width, $height, $w ?? $width, $h ?? $height);
+        imagecopyresampled($image, $$this->image, 0, 0, $x, $y, $width, $height, $w ?? $width, $h ?? $height);
         $this->info['width']  = $width;
         $this->info['height'] = $height;
         return $this->reset($image);
@@ -110,7 +106,7 @@ class Image
      */
     public function rotate(int $degrees = 90)
     {
-        $image = imagerotate($this->resource(), -$degrees, imagecolorallocatealpha($this->image, 0, 0, 0, 127));
+        $image = imagerotate($$this->image, -$degrees, imagecolorallocatealpha($this->image, 0, 0, 0, 127));
         $this->info['width']  = imagesx($image);
         $this->info['height'] = imagesy($image);
         return $this->reset($image);
@@ -124,7 +120,7 @@ class Image
         $w = $this->info['width'];
         $h = $this->info['height'];
         $image1 = imagecreatetruecolor($w, $h);
-        $image2 = $this->resource();
+        $image2 = $$this->image;
         if ($flip_y) {
             for ($x = 0; $x < $w; $x++) {
                 imagecopy($image1, $image2, $w - $x - 1, 0, $x, 0, 1, $h);
@@ -166,7 +162,7 @@ class Image
         if (is_string($color)) {
             $color = self::parseStringColor($color);
         }
-        $col = imagecolorallocatealpha($this->resource(), ...$color);
+        $col = imagecolorallocatealpha($$this->image, ...$color);
         imagettftext($this->image, $size, $angle, $x, $y, $col, $fontfile, $text);
         return $this;
     }
@@ -198,7 +194,7 @@ class Image
         $image = ('imagecreatefrom'.image_type_to_extension($info[2], false))($path);
         imagealphablending($image, true);
         imagefill($src, 0, 0, $color);
-        imagecopy($src, $this->resource(), 0, 0, $x, $y, $info[0], $info[1]);
+        imagecopy($src, $$this->image, 0, 0, $x, $y, $info[0], $info[1]);
         imagecopy($src, $image, 0, 0, 0, 0, $info[0], $info[1]);
         imagecopymerge($this->image, $src, $x, $y, 0, 0, $info[0], $info[1], $alpha);
         imagedestroy($src);
@@ -211,26 +207,10 @@ class Image
      */
     public function apply(callable $handler)
     {
-        if (is_resource($image = $handler($this->resource()))) {
+        if (is_resource($image = $handler($this->image))) {
             $this->reset($image);
         }
         return $this;
-    }
-    
-    /*
-     * resource
-     */
-    public function resource()
-    {
-        if (isset($this->image)) {
-            return $this->image;
-        }
-        if (function_exists($func = 'imagecreatefrom'.$this->info['type'])
-            && is_resource($image = $func($this->path))
-        ) {
-            return $this->image = $image;
-        }
-        throw new \Exception("Failed to create image resource");
     }
     
     /*
@@ -239,12 +219,12 @@ class Image
     public function save($path = null, $type = null, array $options = null)
     {
         if ($path == null) {
-            if (empty($this->path)) {
+            if (empty($this->info['path'])) {
                 throw \InvalidArgumentException('argument path not is null');
             }
-            $path = $this->path;
+            $path = $this->info['path'];
         }
-        return $this->imageFunc($type)($this->resource(), $path, ...$this->build($options));
+        return $this->imageFunc($type)($$this->image, $path, ...$this->build($options));
     }
     
     /*
@@ -253,7 +233,7 @@ class Image
     public function buffer($type = null, array $options = null)
     {
         ob_start();
-        $ret = $this->imageFunc($type)($this->resource(), null, ...$this->build($options));
+        $ret = $this->imageFunc($type)($$this->image, null, ...$this->build($options));
         $data = ob_get_contents();
         ob_end_clean();
         return $ret === false ? false : $data;

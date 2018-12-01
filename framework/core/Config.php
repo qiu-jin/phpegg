@@ -95,10 +95,10 @@ class Config
     /*
      * 获取配置项首个键值对（仅支持顶级配置项）
      */
-    public static function firstKv($name)
+    public static function headKv($name)
     {
         if (self::check($name)) {
-            return Arr::firstKv(self::$configs[$name]);
+            return Arr::headKv(self::$configs[$name]);
         }
     }
     

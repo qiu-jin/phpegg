@@ -327,7 +327,7 @@ class Command
     
     protected function formatTemplate($text)
     {
-        $regex = '[a-z][a-z0-9_=;-]*';
+        $regex = implode('|', array_keys($this->templates));
         if (!preg_match_all("#<(($regex) | /($regex)?)>#isx", $text, $matches, PREG_OFFSET_CAPTURE)) {
             return $text;
         }
@@ -349,7 +349,7 @@ class Command
                         $part = $last['text'].$part;
                     }
                 } else {
-                    throw new \Exception('Template output error');
+                    throw new \Exception('Template output error 模版标签未闭合');
                 }
             }
             if ($count === 0) {
@@ -360,7 +360,7 @@ class Command
             $offset = $pos + strlen($tag);
         }
         if ($stack) {
-            throw new \Exception('Template output error');
+            throw new \Exception('Template output error 模版标签未闭合');
         }
         return str_replace('\\<', '<', $output.substr($text, $offset));
     }

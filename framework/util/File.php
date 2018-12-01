@@ -83,14 +83,6 @@ class File
     }
     
     /*
-     * 是否为图片文件
-     */
-    public static function isImage($file, $type = null)
-    {
-        return ($image = Image::open($file)) && ($type === null || $image->check($type));
-    }
-    
-    /*
      * 文件上传
      */
     public static function upload($file, $to, $is_buffer = false)
@@ -104,13 +96,13 @@ class File
     /*
      * 目录文件列表
      */
-    public static function files($path, $recursive = false)
+    public static function files($dir, $recursive = false)
     {
         $ret = [];
-        $path = Str::tailPad($path);
-        if ($open = opendir($path)) {
+        $dir = Str::tailPad($dir, '/');
+        if ($open = opendir($dir)) {
             while (($item = readdir($open)) !== false) {
-                $file = $path.$item;
+                $file = $dir.$item;
                 if (is_file($file)) {
                     $ret[] = $file;
                 } elseif ($recursive && is_dir($file) && $item !== '.' && $item !== '..') {
@@ -125,29 +117,29 @@ class File
     /*
      * 目录是否可写
      */
-    public static function isWritableDir($path)
+    public static function isWritableDir($dir)
     {
-        return is_dir($path) && is_writable($path);
+        return is_dir($dir) && is_writable($dir);
     }
     
     /*
      * 如目录不存在则创建目录
      */
-    public static function makeDir($path, $mode = 0777, $recursive = false)
+    public static function makeDir($dir, $mode = 0777, $recursive = false)
     {
-        return is_dir($path) || mkdir($path, $mode, $recursive);
+        return is_dir($dir) || mkdir($dir, $mode, $recursive);
     }
     
     /*
      * 移动目录
      */
-    public static function moveDir($path, $to)
+    public static function moveDir($dir, $to)
     {
-        $path = Str::tailPad($path);
-        $to   = Str::tailPad($to);
+        $dir = Str::tailPad($dir, '/');
+        $to  = Str::tailPad($to, '/');
         if ($open = opendir($path)) {
             while (($item = readdir($open)) !== false) {
-                if (is_dir($file = $path.$item)) {
+                if (is_dir($file = $dir.$item)) {
                     if ($item !== '.' && $item !== '..') {
                         self::moveDir($file, $to.$item);
                     }
@@ -158,28 +150,28 @@ class File
             }
             closedir($open);
         }
-        rmdir($path);
+        rmdir($dir);
     }
     
     /*
      * 删除目录
      */
-    public static function deleteDir($path)
+    public static function deleteDir($dir)
     {
-        self::cleanDir($path);
-        rmdir($path);
+        self::cleanDir($dir);
+        rmdir($dir);
     }
     
     /*
      * 清空目录
      * $fitler 返回true表示不删除
      */
-    public static function cleanDir($path, callable $fitler = null)
+    public static function cleanDir($dir, callable $fitler = null)
     {
-        $path = Str::tailPad($path);
-        if ($open = opendir($path)) {
+        $dir = Str::tailPad($dir, '/');
+        if ($open = opendir($dir)) {
             while (($item = readdir($open)) !== false) {
-                if (is_dir($file = $path.$item)) {
+                if (is_dir($file = $dir.$item)) {
                     if ($item !== '.' && $item !== '..') {
                         if (self::cleanDir($file, $fitler)) {
                             rmdir($file);

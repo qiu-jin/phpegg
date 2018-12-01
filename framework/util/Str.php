@@ -47,16 +47,16 @@ class Str
     /*
      * 头部补全
      */
-    public static function headPad(string $str, string $symbol = '/')
+    public static function headPad(string $str, string $symbol)
     {
-        return substr($str, 0, 1) == $symbol ? $str : $symbol.$str;
+        return substr($str, 0, strlen($symbol)) == $symbol ? $str : $symbol.$str;
     }
     
     /*
      * 尾部补全
      */
-    public static function tailPad(string $str, string $symbol = '/')
+    public static function tailPad(string $str, string $symbol)
     {
-        return substr($str, -1) == $symbol ? $str : $str.$symbol;
+        return substr($str, - strlen($symbol)) == $symbol ? $str : $str.$symbol;
     }
 }

@@ -81,7 +81,7 @@ class Template
     // 内置函数
     protected static $filters = [
         // 是否存在
-        'has'           => 'isset($0)',
+        'isset'         => 'isset($0)',
         // 是否为空
         'empty'         => 'empty($0)',
         // 默认值
@@ -488,9 +488,8 @@ class Template
      */
     protected static function readStructTag($str, &$end)
     {
-        $v = '(?:"[^"]*"|\'[^\']*\')';
-        $a = "(?:\s*[\w-]+(?:\s*=\s*$v)?)";
-        $regex  = "/<([\w-]+)\s+$a*(?:\s*[".self::attrPrefixRegex()."][\w-]+(?:\s*=\s*$v)?)+$a*\s*\/?>/";
+        $v = "\"[^\"]*\"|'[^']*'";
+        $regex  = "/<([\w-]+)\s+[".self::attrPrefixRegex()."][\w-]+(\s*=\s*($v))?($v|[^'\">])*>/";
         if (!preg_match_all($regex, $str, $matches, PREG_OFFSET_CAPTURE)) {
             return $str;
         }

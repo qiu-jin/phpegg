@@ -68,7 +68,7 @@ class Error
     {
         if (error_reporting() & $code) {
             list($level, $prefix) = self::getErrorInfo($code);
-            if (Config::env('STRICT_ERROR_MODE')) {
+            if (Config::env('STRICT_ERROR_MODE', true)) {
                 throw new \ErrorException("[$prefix] $message", 0, $code, $file, $line);
             }
             self::record('error.error', $level, $code, "Error: [$prefix] $message", $file, $line, debug_backtrace(0));

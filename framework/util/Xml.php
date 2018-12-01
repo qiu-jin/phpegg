@@ -5,7 +5,7 @@ use XMLReader;
 use XmlWriter;
 
 /*
- * 暂不支持XML属性等
+ * XML简单编解码
  */
 class Xml
 {
