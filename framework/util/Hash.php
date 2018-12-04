@@ -44,6 +44,15 @@ class Hash
     }
     
     /*
+     * 随机数hex
+     */
+    public static function random(int $length = 16, $raw = false)
+    {
+        $bytes = random_bytes($length);
+        return $raw ? $bytes : bin2hex($bytes);
+    }
+    
+    /*
      * 密码hash
      */
     public static function password($password, array $options = [])
@@ -73,14 +82,5 @@ class Hash
     public static function getInfo($hash)
     {
         return password_get_info($hash);
-    }
-    
-    /*
-     * 随机数hex
-     */
-    public static function random(int $length = 16, $raw = false)
-    {
-        $bytes = random_bytes($length);
-        return $raw ? $bytes : bin2hex($bytes);
     }
 }

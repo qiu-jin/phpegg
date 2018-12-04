@@ -1,28 +1,28 @@
 <?php
 namespace framework\driver\rpc;
 
-use framework\util\Arr;
 use framework\core\Loader;
 
-class Grpc
+class Grpc extends Rpc
 {
     protected $client;
     // 默认配置
     protected $config = [
         /*
-        'host'                      => null,
-        
-        'port'                      => null,
-
-        'endpoint'                  => null,
+        // 服务主机（GRPC）
+        'host'              => null,
+        // 服务端口（GRPC）
+        'port'              => null,
+        // 服务端点（HTTP）
+        'endpoint'          => null,
+        // 公共headers（HTTP）
+        'http_headers'      => null,
+        // CURL设置（HTTP）
+        'http_curlopts'     => null,
+        // grpc设置（GRPC）
+        'grpc_options'      => null,
         // service类名前缀
-        'service_prefix'            => null,
-        // 公共headers（简单模式）
-        'http_headers'              => null,
-        // CURL设置（简单模式）
-        'http_curlopts'             => null,
-        // google grpc 设置
-        'grpc_options'              => null,
+        'service_prefix'    => null,
         */
         /* 参数模式
          * 0 普通参数模式
@@ -53,16 +53,9 @@ class Grpc
         }
     }
     
-    public function __get($name)
-    {
-        return $this->query($name);
-    }
-
-    public function __call($method, $params)
-    {
-        return $this->query()->$method(...$params);
-    }
-    
+    /*
+     * query实例
+     */
     public function query($name = null)
     {
         $ns = [];

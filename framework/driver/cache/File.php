@@ -38,12 +38,10 @@ class File extends Cache
 
     public function has($key)
     {
-        if (is_file($file = $this->filename($key))) {
-            if ($fp = fopen($file, 'r')) {
-                $expiration = (int) trim(fgets($fp));
-                fclose($fp);
-                return $expiration === '0' || $expiration < time();
-            }
+        if (is_file($file = $this->filename($key)) && ($fp = fopen($file, 'r'))) {
+            $expiration = (int) trim(fgets($fp));
+            fclose($fp);
+            return $expiration === '0' || $expiration < time();
         }
         return false;
     }
@@ -53,6 +51,16 @@ class File extends Cache
         return is_file($file = $this->filename($key)) && unlink($file);
     }
     
+    public function increment($key, $value = 1)
+    {
+        return $this->set($key, $this->get($key, 0) + $value);
+    }
+    
+    public function decrement($key, $value = 1)
+    {
+        return $this->set($key, $this->get($key, 0) - $value);
+    }
+
     public function clean()
     {
         File::cleanDir($this->dir);

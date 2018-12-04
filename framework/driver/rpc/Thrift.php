@@ -12,15 +12,21 @@ use Thrift\Transport\TBufferedTransport;
 use Thrift\Protocol\TBinaryProtocol;
 use Thrift\Protocol\TMultiplexedProtocol;
 
-class Thrift
+class Thrift extends Rpc
 {
-    
+    // 服务实例
     protected $services;
+    // 传输编码
     protected $protocol;
+    // 传输层实例
     protected $transport;
+    // 是否多服务类型
     protected $tmultiplexed;
+    // service类名前缀
     protected $service_prefix;
+    // 是否自动绑定参数
     protected $auto_bind_params;
+    // 方法参数数据
     protected $service_method_params;
     
     public function __construct($config)
@@ -41,16 +47,6 @@ class Thrift
         $this->tmultiplexed = $config['tmultiplexed'] ?? false;
         $this->service_prefix = $config['service_prefix'] ?? null;
         $this->auto_bind_param = $config['auto_bind_param'] ?? false;
-    }
-
-    public function __get($name)
-    {
-        return $this->query($name);
-    }
-
-    public function __call($method, $params)
-    {
-        return $this->query()->$method(...$params);
     }
     
     public function query($name = null)

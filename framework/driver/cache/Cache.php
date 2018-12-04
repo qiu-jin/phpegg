@@ -5,17 +5,44 @@ use framework\core\Event;
 
 abstract class Cache
 {
+    // 序列化反序列化处理器
     protected $serializer;
+    // 垃圾回收处理生命周期（部分驱动有效）
     protected $gc_maxlife;
     
+    /*
+     * 获取
+     */
     abstract public function get($key, $default);
     
+    /*
+     * 设置
+     */
     abstract public function set($key, $value, $ttl);
     
+    /*
+     * 检查
+     */
     abstract public function has($key);
     
+    /*
+     * 删除
+     */
     abstract public function delete($key);
     
+    /*
+     * 自增
+     */
+    abstract public function increment($key, $value);
+    
+    /*
+     * 自减
+     */
+    abstract public function decrement($key, $value);
+    
+    /*
+     * 清理
+     */
     abstract public function clean();
     
     public function __construct($config)
@@ -31,26 +58,30 @@ abstract class Cache
         isset($config['serializer']) && $this->serializer = $config['serializer'];
     }
     
-    public function poll($key)
+    /*
+     * 获取并删除
+     */
+    public function pull($key)
     {
         $value = $this->get($key);
         $this->delete($key);
         return $value;
     }
     
+    /*
+     * 不存在则设置
+     */
     public function remember($key, $value, $ttl = null)
     {
         if (!$this->has($key)) {
-            if ($value instanceof \Closure) {
-                $value = call_user_func($value);
-            }
             $this->set($key, $value, $ttl);
-        } else {
-            $value = $this->get($key);
         }
         return $value;
     }
     
+    /*
+     * 获取多个
+     */
     public function getMultiple(array $keys, $default = null)
     {
         foreach ($keys as $key) {
@@ -59,6 +90,9 @@ abstract class Cache
         return $values;
     }
     
+    /*
+     * 设置多个
+     */
     public function setMultiple(array $values, $ttl = null)
     {
         foreach ($values as $key => $value) {
@@ -69,6 +103,9 @@ abstract class Cache
         return true;
     }
     
+    /*
+     * 删除多个
+     */
     public function deleteMultiple(array $keys)
     {
         foreach ($keys as $key) {
@@ -79,11 +116,17 @@ abstract class Cache
         return true;
     }
     
+    /*
+     * 序列化
+     */
     protected function serialize($data)
     {
         return $this->serializer ? ($this->serializer[0])($data) : $data;
     }
     
+    /*
+     * 反序列化
+     */
     protected function unserialize($data)
     {
         return $this->serializer ? ($this->serializer[1])($data) : $data;

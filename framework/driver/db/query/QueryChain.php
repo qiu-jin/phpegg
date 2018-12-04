@@ -15,22 +15,34 @@ abstract class QueryChain
         $this->init(...$params);
     }
     
+    /*
+     * with联表查询
+     */
     public function with($table, $alias = null)
     {
         return new With($this->db, $this->table, $this, $table, $alias);
     }
     
+    /*
+     * relate联表查询
+     */
     public function relate($table, $alias = null)
     {
         return new Relate($this->db, $this->table, $this, $table, $alias);
     }
     
+    /*
+     * select字段
+     */
     public function select(...$fields)
     {
         $this->options['fields'] = $fields;
         return $this;
     }
     
+    /*
+     * 查询where条件
+     */
     public function where(...$where)
     {
         $count = count($where);
@@ -50,6 +62,9 @@ abstract class QueryChain
         return $this;
     }
     
+    /*
+     * 查询where条件或
+     */
     public function  whereOr(...$where)
     {
         $key = 'OR#'.count($this->options['where']);
@@ -66,18 +81,27 @@ abstract class QueryChain
         return $this;
     }
     
+    /*
+     * 查询排序
+     */
     public function order($field, $desc = false)
     {
         $this->options['order'][] = [$field, $desc];
         return $this;
     }
     
+    /*
+     * 查询分组
+     */
     public function group($field)
     {
         $this->options['group'] = $field;
         return $this;
     }
     
+    /*
+     * having条件
+     */
     public function having(...$having)
     {
         if (!isset($this->options['group'])) {
@@ -98,12 +122,18 @@ abstract class QueryChain
         return $this;
     }
     
+    /*
+     * 结果限制
+     */
     public function limit($limit, $offset = null)
     {
         $this->options['limit'] = isset($offset) ? [$limit, $offset] : $limit;
         return $this;
     }
     
+    /*
+     * 结果分页
+     */
     public function page($page, $num)
     {
         $this->options['limit'] = [($page - 1) * $num, $num];

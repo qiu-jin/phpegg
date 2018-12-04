@@ -8,21 +8,33 @@ class Query extends QueryChain
         $this->table = $table;
     }
     
+    /*
+     * 子查询联表查询
+     */
     public function sub($table, $exp = 'IN', $logic = 'AND')
     {
         return new SubQuery($this->db, $this->table, $this->options, $table, $exp, $logic);
     }
     
+    /*
+     * join联表查询
+     */
     public function join($table, $type = 'LEFT', $prefix = true)
     {
         return new Join($this->db, $this->table, $this->options, $table, $type, $prefix);
     }
     
+    /*
+     * union联表查询
+     */
     public function union($table, $all = true)
     {
         return new Union($this->db, $this->table, $this->options, $table, $all);
     }
     
+    /*
+     * 获取单行结果
+     */
     public function get($id = null, $pk = 'id')
     {
         if (isset($id)) {
@@ -31,6 +43,9 @@ class Query extends QueryChain
         return $this->find(1)[0] ?? null;
     }
 
+    /*
+     * 查询结果
+     */
     public function find($limit = 0)
     {
         if ($limit > 0) {
@@ -39,6 +54,9 @@ class Query extends QueryChain
         return $this->db->select(...$this->builder::select($this->table, $this->options));
     }
     
+    /*
+     * 检查结果存在
+     */
     public function has($id = null, $pk = 'id')
     {
         if (isset($id)) {
@@ -49,31 +67,49 @@ class Query extends QueryChain
         return $this->db->fetchRow($query)[0] ?? 0;
     }
     
+    /*
+     * 最大值
+     */
     public function max($field)
     {
         return $this->aggregate('max', $field);
     }
     
+    /*
+     * 最小值
+     */
     public function min($field)
     {
         return $this->aggregate('min', $field);
     }
     
+    /*
+     * 求和
+     */
     public function sum($field)
     {
         return $this->aggregate('sum', $field);
     }
     
+    /*
+     * 求积
+     */
     public function avg($field)
     {
         return $this->aggregate('avg', $field);
     }
     
+    /*
+     * 求数量
+     */
     public function count($field = '*')
     {
         return $this->aggregate('count', $field);
     }
     
+    /*
+     * 聚合查询
+     */
     public function aggregate($func, $field)
     {
         $alias = $func.'_'.$field;
@@ -82,12 +118,18 @@ class Query extends QueryChain
         return $data[0][$alias] ?? false;
     }
     
+    /*
+     * 插入数据
+     */
     public function insert(array $data, $return_id = false)
     {
         list($sql, $params) = $this->builder::insert($this->table, $data);
         return $this->db->insert($sql, $params, $return_id);
     }
     
+    /*
+     * 插入多个
+     */
     public function insertAll($datas)
     {
         list($fields, $values, $params) = $this->builder::insertData(array_shift($datas));
@@ -101,13 +143,19 @@ class Query extends QueryChain
         return $this->db->affectedRows($this->db->prepareExecute($sql, $params));
     }
     
+    /*
+     * 替换数据
+     */
     public function replace(array $data)
     {
         $set = $this->builder::setData($data);
         $sql = "REPLACE INTO ".$this->builder::keywordEscape($this->table)." SET $set[0]";
         return $this->db->affectedRows($this->db->prepareExecute($sql, $set[1]));
     }
-   
+    
+    /*
+     * 更新数据
+     */
     public function update($data, $id = null, $pk = 'id')
     {
         if (isset($id)) {
@@ -116,6 +164,9 @@ class Query extends QueryChain
         return $this->db->update(...$this->builder::update($this->table, $data, $this->options));
     }
     
+    /*
+     * 数据自增自减
+     */
     public function updateAuto($auto, $data = null)
     {
         if (is_array($auto)) {
@@ -145,6 +196,9 @@ class Query extends QueryChain
         return $this->db->update('UPDATE '.$this->builder::keywordEscape($this->table).$sql, $params);
     }
     
+    /*
+     * 删除数据
+     */
     public function delete($id = null, $pk = 'id')
     {
         if (isset($id)) {

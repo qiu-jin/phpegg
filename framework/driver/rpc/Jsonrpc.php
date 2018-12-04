@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\rpc;
 
-class Jsonrpc
+class Jsonrpc extends Rpc
 {
     // 协议版本
     const VERSION = '2.0'; 
@@ -10,23 +10,23 @@ class Jsonrpc
     // 默认配置
     protected $config = [
         /*
-        // 服务端点
-        'endpoint'          => null,
-        // HTTP请求headers
-        'http_headers'      => null,
-        // HTTP请求curlopts
-        'http_curlopts'     => null,
-        // TCP host
+        // 服务主机（TCP）
         'host'              => null,
-        // TCP port
+        // 服务端口（TCP）
         'port'              => null,
-        // 持久TCP链接
+        // 服务端点（HTTP）
+        'endpoint'          => null,
+        // HTTP请求headers（HTTP）
+        'http_headers'      => null,
+        // HTTP请求curl设置（HTTP）
+        'http_curlopts'     => null,
+        // 持久TCP链接（TCP）
         'tcp_persistent'    => false,
-        // TCP连接超时
+        // TCP连接超时（TCP）
         'tcp_timeout'       => 3,
-        // 
-        'id_method_alias' => 'id',
-        // 
+        // id方法别名
+        'id_method_alias'   => 'id',
+        // 批请求call方法别名
         'batch_call_method_alias' => 'call',
         */
         // 请求内容序列化
@@ -45,21 +45,17 @@ class Jsonrpc
         }
     }
     
-    public function __get($name)
-    {
-        return $this->query($name);
-    }
-
-    public function __call($method, $params)
-    {
-        return $this->query()->$method(...$params);
-    }
-    
+    /*
+     * query实例
+     */
     public function query($name = null)
     {
         return new query\Jsonrpc($name, $this->client, $this->config);
     }
     
+    /*
+     * 批请求
+     */
     public function batch($common_ns = null)
     {
         return new query\JsonrpcBatch($common_ns, $this->client, $this->config);

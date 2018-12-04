@@ -5,38 +5,84 @@ use framework\core\Container;
 
 abstract class Db
 {
+    // SQL纪录
     protected $sql;
+    // 调试模式
     protected $debug;
+    // 数据库名
     protected $dbname;
+    // 数据库连接
     protected $connection;
+    // 数据库表字段
     protected $fields;
+    // 数据库表字段缓存实例
     protected $fields_cache;
+    // 数据库表字段缓存实例配置
     protected $fields_cache_config;
     
+    /*
+     * 执行SQL返回结果
+     */
     abstract public function exec($sql);
     
+    /*
+     *  执行SQL返回query
+     */
     abstract public function query($sql);
     
+    /*
+     * 获取一条数据
+     */
     abstract public function fetch($query);
     
+    /*
+     * 获取一条数据（无字段键）
+     */
     abstract public function fetchRow($query);
     
+    /*
+     * 获取所有数据
+     */
     abstract public function fetchAll($query);
     
+    /*
+     * 获取数据条数
+     */
     abstract public function numRows($query);
     
+    /*
+     * 影响数据条数
+     */
     abstract public function affectedRows($query);
     
+    /*
+     * 最近插入数据ID
+     */
     abstract public function insertId();
     
+    /*
+     * 开始事务
+     */
     abstract public function begin();
     
+    /*
+     * 回滚事务
+     */
     abstract public function rollback();
     
+    /*
+     * 提交事务
+     */
     abstract public function commit();
     
+    /*
+     * 转义字符串
+     */
     abstract public function quote($str);
     
+    /*
+     * 获取错误信息
+     */
     abstract public function error();
     
     public function __construct($config)
@@ -49,16 +95,25 @@ abstract class Db
         }
     }
     
+    /*
+     * 魔术方法，生成一个query实例
+     */
     public function __get($name)
     {
         return $this->table($name);
     }
-   
+    
+    /*
+     * 生成一个query实例
+     */
     public function table($name)
     {
         return new query\Query($this, $name);
     }
 
+    /*
+     * 执行事务
+     */
     public function transaction(callable $call)
     {
         try {
@@ -71,6 +126,9 @@ abstract class Db
         }
     }
     
+    /*
+     * 获取表字段
+     */
     public function fields($table)
     {
         if (isset($this->fields[$this->dbname][$table])) {
@@ -92,16 +150,25 @@ abstract class Db
         }
     }
     
+    /*
+     * 设置调试模式
+     */
     public function debug($bool = true)
     {
         $this->debug = (bool) $bool;
     }
     
+    /*
+     * 获取数据Builder类
+     */
     public function getBuilder()
     {
         return static::BUILDER;
     }
     
+    /*
+     * 获取数据库连接
+     */
     public function getConnection()
     {
         return $this->connection;

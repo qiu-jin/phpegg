@@ -54,6 +54,16 @@ class Opcache extends Cache
         return is_php_file($file = $this->filename($key)) && opcache_invalidate($file, true) && unlink($file);
     }
     
+    public function increment($key, $value = 1)
+    {
+        return $this->set($key, $this->get($key, 0) + $value);
+    }
+    
+    public function decrement($key, $value = 1)
+    {
+        return $this->set($key, $this->get($key, 0) - $value);
+    }
+    
     public function clean()
     {
         File::cleanDir($this->dir, function ($file) {

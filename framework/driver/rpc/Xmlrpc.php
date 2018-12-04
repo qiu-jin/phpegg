@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\rpc;
 
-class Xmlrpc
+class Xmlrpc extends Rpc
 {
     // 默认配置
     protected $config = [
@@ -20,16 +20,9 @@ class Xmlrpc
         $this->config = $config + $this->config;
     }
     
-    public function __get($name)
-    {
-        return $this->query($name);
-    }
-
-    public function __call($method, $params)
-    {
-        return $this->query()->$method(...$params);
-    }
-    
+    /*
+     * query实例
+     */
     public function query($name = null)
     {
         return new query\Xmlrpc($name, $this->config);

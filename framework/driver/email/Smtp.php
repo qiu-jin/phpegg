@@ -6,13 +6,13 @@ use framework\driver\email\message\Mime;
 
 class Smtp extends Email
 {
-    protected $fp;
+    protected $sock;
     protected $debug;
     
     protected function init($config)
     {
-        $this->fp = fsockopen($config['host'], $config['port'] ?? 25, $errno, $error, $config['timeout'] ?? 15);
-        if (!is_resource($this->fp)) {
+        $this->sock = fsockopen($config['host'], $config['port'] ?? 25, $errno, $error, $config['timeout'] ?? 15);
+        if (!is_resource($this->sock)) {
             throw new \Exception("Smtp connect error: [$errno] $error");
         }
         $this->debug = $config['debug'] ?? APP_DEBUG;
@@ -51,7 +51,7 @@ class Smtp extends Email
     protected function read()
     {
         $res = '';
-        while ($str = fgets($this->fp, 1024)) {
+        while ($str = fgets($this->sock, 1024)) {
             $res .= $str;
             if (substr($str, 3, 1) == ' ') break;
         }
@@ -64,12 +64,12 @@ class Smtp extends Email
     
     protected function command($cmd)
     {
-        fputs($this->fp, $cmd.Mime::EOL);
+        fputs($this->sock, $cmd.Mime::EOL);
         return $this->read();
     }
     
     public function __destruct()
     {
-        empty($this->fp) || fclose($this->fp);
+        empty($this->sock) || fclose($this->sock);
     }
 }
