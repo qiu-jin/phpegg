@@ -23,7 +23,6 @@ class Request
             'input'     => $_REQUEST,
             'server'    => $_SERVER,
         ];
-        Event::on('exit',[__CLASS__, 'clean']);
         Event::trigger('request', self::$request);
     }
     
@@ -207,7 +206,7 @@ class Request
     }
     
     /*
-     *
+     * 应用匿名函数处理内部数据
      */
     public static function apply(callable $call)
     {

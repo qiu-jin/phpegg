@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\sms;
 
+use framework\util\Str;
 use framework\core\http\Client;
 
 class Tencent extends Sms
@@ -14,10 +15,7 @@ class Tencent extends Sms
         $signname = '【'.($signname ?? $this->signname).'】';
         $message = $this->template[$template];
         if ($data) {
-            foreach ($data as $k => $v) {
-                $replace['{'.$k.'}'] = $v;
-            }
-            $message = strtr($message, $replace);
+            $message = Str::formatReplace($message, $data);
         }
         if (is_array($to)) {
             list($nationcode, $to) = $to;

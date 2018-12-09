@@ -6,21 +6,30 @@ use framework\App;
 abstract class Auth
 {
     private static $init;
+    // 实例
     private static $auth;
-    
+    // 用户信息
     protected $user;
     
-    // 验证用户
+    /*
+     * 验证用户
+     */
     abstract protected function auth();
     
-    // 用户认证失败处理
+    /*
+     * 用户认证失败后续操作
+     */
     abstract protected function fallback();
     
-    // 登记用户信息
-    abstract protected function login($user);
+    /*
+     * 登记用户信息
+     */
+    abstract protected function signin($user);
     
-    // 注销用户信息
-    abstract protected function logout();
+    /*
+     * 注销用户信息
+     */
+    abstract protected function signout();
     
     /*
      * 初始化
@@ -32,11 +41,11 @@ abstract class Auth
         }
         self::$init = true;
         $config = Config::flash('auth');
-        if (!isset($config['class']) || !is_subclass_of($config['class'], __CLASS__)) {
+        if (!is_subclass_of($config['class'], __CLASS__)) {
             throw new Exception('Illegal auth class');
         }
         self::$auth = (new $config['class']($config));
-        if (!isset($config['auto_auth']) || $config['auto_auth'] !== false) {
+        if (!empty($config['auto_auth'])) {
             self::$auth->user = self::$auth->auth();
         }
         Event::on('exit', [__CLASS__, 'clean']);
@@ -50,44 +59,63 @@ abstract class Auth
         return self::$auth->$method(...$params);
     }
     
+    /*
+     * 获取用户id
+     */
     public static function id()
     {
         return self::$auth->user['id'];
     }
     
+    /*
+     * 获取用户信息
+     */
     public static function user()
     {
         return self::$auth->user;
     }
     
-    public static function pass($user, $login = false)
+    /*
+     * 登录
+     */
+    public static function login($user, $temp = false)
     {
-        if ($login) {
+        if (!$temp) {
             self::$auth->login($user);
         }
         self::$auth->user = $user;
     }
     
-    public static function out($logout = false)
+    /*
+     * 登出
+     */
+    public static function logout($temp = false)
     {
-        if ($logout) {
-            self::$auth->logout();
+        if (!$temp) {
+            self::$auth->signout();
         }
         self::$auth->user = null;
     }
     
+    /*
+     * 检查用户认证
+     */
     public static function check()
     {
-        return isset(self::$auth->user) || boolval(self::$auth->user = self::$auth->auth());
+        return isset(self::$auth->user) || (self::$auth->user = self::$auth->auth());
     }
     
-    // 运行认证处理，检查用户是否认证成功，否则失败处理并退出
+    /*
+     * 运行认证处理，检查用户是否认证成功，否则失败处理并退出
+     */
     public static function run()
     {
         $this->check() || self::$auth->fallback() === true || App::exit();
     }
     
-    // 清除
+    /*
+     * 清理
+     */
     public static function clean()
     {
         self::$auth = null;

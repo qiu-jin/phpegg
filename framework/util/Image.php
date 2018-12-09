@@ -79,7 +79,7 @@ class Image
         $image = imagecreatetruecolor($width, $height);
         $color = imagecolorallocate($image, 255, 255, 255);
         imagefill($image, 0, 0, $color);
-        imagecopyresampled($image, $$this->image, 0, 0, $x, $y, $width, $height, $w ?? $width, $h ?? $height);
+        imagecopyresampled($image, $this->image, 0, 0, $x, $y, $width, $height, $w ?? $width, $h ?? $height);
         $this->info['width']  = $width;
         $this->info['height'] = $height;
         return $this->reset($image);
@@ -106,7 +106,7 @@ class Image
      */
     public function rotate(int $degrees = 90)
     {
-        $image = imagerotate($$this->image, -$degrees, imagecolorallocatealpha($this->image, 0, 0, 0, 127));
+        $image = imagerotate($this->image, -$degrees, imagecolorallocatealpha($this->image, 0, 0, 0, 127));
         $this->info['width']  = imagesx($image);
         $this->info['height'] = imagesy($image);
         return $this->reset($image);
@@ -120,7 +120,7 @@ class Image
         $w = $this->info['width'];
         $h = $this->info['height'];
         $image1 = imagecreatetruecolor($w, $h);
-        $image2 = $$this->image;
+        $image2 = $this->image;
         if ($flip_y) {
             for ($x = 0; $x < $w; $x++) {
                 imagecopy($image1, $image2, $w - $x - 1, 0, $x, 0, 1, $h);
@@ -162,7 +162,7 @@ class Image
         if (is_string($color)) {
             $color = self::parseStringColor($color);
         }
-        $col = imagecolorallocatealpha($$this->image, ...$color);
+        $col = imagecolorallocatealpha($this->image, ...$color);
         imagettftext($this->image, $size, $angle, $x, $y, $col, $fontfile, $text);
         return $this;
     }
@@ -194,7 +194,7 @@ class Image
         $image = ('imagecreatefrom'.image_type_to_extension($info[2], false))($path);
         imagealphablending($image, true);
         imagefill($src, 0, 0, $color);
-        imagecopy($src, $$this->image, 0, 0, $x, $y, $info[0], $info[1]);
+        imagecopy($src, $this->image, 0, 0, $x, $y, $info[0], $info[1]);
         imagecopy($src, $image, 0, 0, 0, 0, $info[0], $info[1]);
         imagecopymerge($this->image, $src, $x, $y, 0, 0, $info[0], $info[1], $alpha);
         imagedestroy($src);
@@ -203,7 +203,7 @@ class Image
     }
     
     /*
-     * apply
+     * 应用匿名函数处理图片资源
      */
     public function apply(callable $handler)
     {
@@ -224,7 +224,7 @@ class Image
             }
             $path = $this->info['path'];
         }
-        return $this->imageFunc($type)($$this->image, $path, ...$this->build($options));
+        return $this->imageFunc($type)($this->image, $path, ...$this->build($options));
     }
     
     /*
@@ -233,7 +233,7 @@ class Image
     public function buffer($type = null, array $options = null)
     {
         ob_start();
-        $ret = $this->imageFunc($type)($$this->image, null, ...$this->build($options));
+        $ret = $this->imageFunc($type)($this->image, null, ...$this->build($options));
         $data = ob_get_contents();
         ob_end_clean();
         return $ret === false ? false : $data;
@@ -255,10 +255,7 @@ class Image
      */
     public function uploadTo($to, $type = null, array $options = null)
     {
-        if ($data = $this->buffer($type, $options)) {
-            return File::upload($data, $to, true);
-        }
-        throw new \Exception("Failed to upload image");
+        return ($data = $this->buffer($type, $options)) && File::upload($data, $to, true);
     }
     
     /*

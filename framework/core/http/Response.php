@@ -67,19 +67,19 @@ class Response
     }
     
     /*
+     * 设置视图响应
+     */
+    public static function view($tpl, $vars = null)
+    {
+        self::html(View::render($tpl, $vars));
+    }
+    
+    /*
      * 设置响应html
      */
     public static function html($html)
     {
         self::send($html, 'text/html; charset=UTF-8');
-    }
-    
-    /*
-     * 设置视图响应
-     */
-    public static function view($tpl, $vars = null)
-    {
-        self::send(View::render($tpl, $vars), 'text/html; charset=UTF-8');
     }
     
     /*
@@ -105,7 +105,7 @@ class Response
     /*
      * 设置响应重定向
      */
-    public static function redirect($url, $permanently = false, $exit = true)
+    public static function redirect($url, $permanently = false)
     {
         self::$response['status'] = $permanently ? 301 : 302;
         self::$response['headers']['Location'] = $url;
@@ -114,7 +114,7 @@ class Response
     }
     
     /*
-     * 处理response
+     * 应用匿名函数处理内部数据
      */
     public static function apply(callable $call)
     {

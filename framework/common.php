@@ -1,15 +1,16 @@
 <?php
 use framework\App;
 use framework\core\Error;
+use framework\core\Event;
 use framework\core\Getter;
 use framework\core\Logger;
 use framework\core\Config;
 use framework\core\Container;
 use framework\core\Validator;
-use framework\core\http\Request;
-use framework\core\http\Response;
 use framework\core\http\Cookie;
 use framework\core\http\Session;
+use framework\core\http\Request;
+use framework\core\http\Response;
 use framework\extend\debug\Debug;
 
 define('OPCACHE_LOADED', extension_loaded('opcache'));
@@ -111,6 +112,14 @@ function email($name = null)
 }
 
 /*
+ * 设置事件
+ */
+function event($name, callable $call, $priority = 0)
+{
+    Event::on($name, $call, $priority);
+}
+
+/*
  * 发送队列任务
  */
 function job($name, $message, $driver = null)
@@ -121,9 +130,9 @@ function job($name, $message, $driver = null)
 /*
  * 输出视图页面
  */
-function view($path, array $vars = null)
+function view($tpl, array $vars = null)
 {
-    return Response::view($path, $vars);
+    return Response::view($tpl, $vars);
 }
 
 /*

@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\email\query;
 
-use framework\core\Hook;
+use framework\util\Str;
 use framework\core\View;
 
 class Query
@@ -72,18 +72,18 @@ class Query
     /*
      * 邮件主题
      */
-    public function subject($subject)
+    public function subject($subject, $vars = null)
     {
-        $this->options['subject'] = $subject;
+        $this->options['subject'] = $vars ? Str::formatReplace($subject, $vars) : $subject;
         return $this;
     }
     
     /*
      * 邮件内容
      */
-    public function content($content, $encoding = null)
+    public function content($content, $vars = null, $encoding = null)
     {
-        $this->options['content'] = $content;
+        $this->options['content'] = $vars ? Str::formatReplace($content, $vars) : $content;
         if ($encoding) {
             $this->options['encoding'] = $encoding;
         }
@@ -98,7 +98,7 @@ class Query
         if (!isset($this->options['ishtml'])) {
             $this->options['ishtml'] = true;
         }
-        return $this->content(View::render($tpl, $vars), $encoding);
+        return $this->content(View::render($tpl, $vars), null, $encoding);
     }
     
     /*

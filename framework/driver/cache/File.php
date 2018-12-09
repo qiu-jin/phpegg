@@ -11,7 +11,7 @@ class File extends Cache
     
     protected function init($config)
     {
-        $this->dir = Str::tailPad($config['dir'], '/');
+        $this->dir = Str::lastPad($config['dir'], '/');
         $this->ext = $config['ext'] ?? '.cache.txt';
     }
     

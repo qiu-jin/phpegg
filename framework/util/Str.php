@@ -55,8 +55,20 @@ class Str
     /*
      * 尾部补全
      */
-    public static function tailPad(string $str, string $symbol)
+    public static function lastPad(string $str, string $symbol)
     {
         return substr($str, - strlen($symbol)) == $symbol ? $str : $str.$symbol;
+    }
+    
+    /*
+     * 格式替换
+     */
+    public static function formatReplace(string $str, array $data, string $format = '{%s}')
+    {
+        $replace = [];
+        foreach ($data as $k => $v) {
+            $replace[sprintf($format, $k)] = $v;
+        }
+        return strtr($str, $replace); 
     }
 }

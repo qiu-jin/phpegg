@@ -10,7 +10,7 @@ class File
      */
     public static function get($file)
     {
-        return is_file($file) && file_get_contents($file);
+        return is_file($file) ? file_get_contents($file) : false;
     }
     
     /*
@@ -88,9 +88,9 @@ class File
     public static function upload($file, $to, $is_buffer = false)
     {
         if (strpos($to, '://')) {
-            list($scheme, $uri) = explode('://', $to, 2);
+            list($scheme, $to) = explode('://', $to, 2);
         }
-        return Container::driver('storage', $scheme ?? null)->put($from, $uri ?? $to, $is_buffer);
+        return Container::driver('storage', $scheme ?? null)->put($file, $to, $is_buffer);
     }
     
     /*
@@ -99,7 +99,7 @@ class File
     public static function files($dir, $recursive = false)
     {
         $ret = [];
-        $dir = Str::tailPad($dir, '/');
+        $dir = Str::lastPad($dir, '/');
         if ($open = opendir($dir)) {
             while (($item = readdir($open)) !== false) {
                 $file = $dir.$item;
@@ -135,8 +135,8 @@ class File
      */
     public static function moveDir($dir, $to)
     {
-        $dir = Str::tailPad($dir, '/');
-        $to  = Str::tailPad($to, '/');
+        $dir = Str::lastPad($dir, '/');
+        $to  = Str::lastPad($to, '/');
         if ($open = opendir($path)) {
             while (($item = readdir($open)) !== false) {
                 if (is_dir($file = $dir.$item)) {
@@ -168,7 +168,7 @@ class File
      */
     public static function cleanDir($dir, callable $fitler = null)
     {
-        $dir = Str::tailPad($dir, '/');
+        $dir = Str::lastPad($dir, '/');
         if ($open = opendir($dir)) {
             while (($item = readdir($open)) !== false) {
                 if (is_dir($file = $dir.$item)) {

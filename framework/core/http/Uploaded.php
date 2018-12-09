@@ -105,7 +105,7 @@ class Uploaded
      */
     public function image($check = null)
     {
-        return $this->image ?? $this->image =  $this->check() && Image::open($this->path(), $check);
+        return $this->image ?? $this->image = $this->check() && Image::open($this->path(), $check);
     }
     
     /*

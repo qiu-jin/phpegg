@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\sms;
 
+use framework\util\Str;
 use framework\core\http\Client;
 
 class Nexmo extends Sms
@@ -18,10 +19,7 @@ class Nexmo extends Sms
     {
         $message = $this->template[$template];
         if ($data) {
-            foreach ($data as $k => $v) {
-                $replace['{'.$k.'}'] = $v;
-            }
-            $message = strtr($message, $replace);
+            $message = Str::formatReplace($message, $data);
         }
         $client = Client::post(self::$endpoint)->json([
             'from'      => $signname ?? $this->signname,

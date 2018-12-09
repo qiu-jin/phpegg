@@ -12,7 +12,7 @@ class Opcache extends Cache
 
     protected function init($config)
     {
-        $this->dir = Str::tailPad($config['dir'], '/');
+        $this->dir = Str::lastPad($config['dir'], '/');
         $this->ext = $config['ext'] ?? '.cache.php';
         $this->enable_filter_value = $config['enable_filter_value'] ?? false;
     }
