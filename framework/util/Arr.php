@@ -151,7 +151,7 @@ class Arr
      */
     public static function index(array $array, int $index, $default = null)
     {
-        return array_slice($array, $index, 1)[0] ?? $default;
+        return ($v = array_slice($array, $index, 1)) ? current($v) : $default;
     }
     
     /*

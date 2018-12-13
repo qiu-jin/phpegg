@@ -4,6 +4,7 @@ namespace framework\core;
 class Event
 {
     private static $init;
+    // 事件容器
     private static $events;
     
     /*
@@ -36,7 +37,7 @@ class Event
     }
 
     /*
-     * 触发事件
+     * 触发事件执行
      */
     public static function trigger($name, ...$params)
     {
@@ -59,7 +60,7 @@ class Event
     }
     
     /*
-     * 清除事件
+     * 清理已注册事件
      */
     public static function clean($name = null)
     {

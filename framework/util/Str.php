@@ -61,6 +61,14 @@ class Str
     }
     
     /*
+     * 
+     */
+    public static function baseName(string $str, string $symbol = '/')
+    {
+        return substr(strrchr($str, $symbol), strlen($symbol));
+    }
+    
+    /*
      * 格式替换
      */
     public static function formatReplace(string $str, array $data, string $format = '{%s}')

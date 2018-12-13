@@ -109,9 +109,9 @@ class Url
     /*
      * url重定向
      */
-    public function to($permanently = false)
+    public function to()
     {
-        Response::redirect($this->make(), $permanently);
+        Response::redirect($this->make());
     }
     
     /*

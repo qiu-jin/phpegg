@@ -24,12 +24,12 @@ abstract class Auth
     /*
      * 登记用户信息
      */
-    abstract protected function signin($user);
+    abstract protected function login($user);
     
     /*
      * 注销用户信息
      */
-    abstract protected function signout();
+    abstract protected function logout();
     
     /*
      * 初始化
@@ -76,28 +76,6 @@ abstract class Auth
     }
     
     /*
-     * 登录
-     */
-    public static function login($user, $temp = false)
-    {
-        if (!$temp) {
-            self::$auth->login($user);
-        }
-        self::$auth->user = $user;
-    }
-    
-    /*
-     * 登出
-     */
-    public static function logout($temp = false)
-    {
-        if (!$temp) {
-            self::$auth->signout();
-        }
-        self::$auth->user = null;
-    }
-    
-    /*
      * 检查用户认证
      */
     public static function check()
@@ -111,6 +89,22 @@ abstract class Auth
     public static function run()
     {
         $this->check() || self::$auth->fallback() === true || App::exit();
+    }
+    
+    /*
+     * 设置用户信息
+     */
+    public static function set($user)
+    {
+        self::$auth->user = $user;
+    }
+    
+    /*
+     * 注释用户信息
+     */
+    public static function unset()
+    {
+        self::$auth->user = null;
     }
     
     /*

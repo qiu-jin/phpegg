@@ -16,19 +16,9 @@ class File
     /*
      * 文件写入
      */
-    public static function put($file, $contents, $lock = false)
+    public static function put($file, $contents, $flags = 0)
     {
-        return self::makeDir(dirname($file), 0777, true) &&
-               file_put_contents($file, $contents, $lock ? LOCK_EX : 0);
-    }
-    
-    /*
-     * 文件追加
-     */
-    public static function append($file, $contents, $lock = false)
-    {
-        return self::makeDir(dirname($file), 0777, true) && 
-               file_put_contents($file, $contents, ($lock ? LOCK_EX : 0) | FILE_APPEND);
+        return self::makeDir(dirname($file), 0777, true) && file_put_contents($file, $contents, $flags);
     }
     
     /*
@@ -163,8 +153,8 @@ class File
     }
     
     /*
-     * 清空目录
-     * $fitler 返回true表示不删除
+     * 清空目录（不删目录本身）
+     * $fitler 返回true表示不删除对应文件
      */
     public static function cleanDir($dir, callable $fitler = null)
     {
