@@ -59,9 +59,17 @@ class Str
     {
         return substr($str, - strlen($symbol)) == $symbol ? $str : $str.$symbol;
     }
+	
+    /*
+     * 按位置切割成两半
+     */
+    public static function cut(string $str, int $pos)
+    {
+		return [substr($str, 0, $pos), substr($str, $pos)];
+    }
     
     /*
-     * 
+     * 基本名
      */
     public static function baseName(string $str, string $symbol = '/')
     {
