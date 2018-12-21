@@ -1,5 +1,5 @@
 <?php
-namespace framework\driver\email\message;
+namespace framework\driver\email\query;
 
 use framework\util\File;
 

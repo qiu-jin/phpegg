@@ -18,6 +18,18 @@ class Url
     {
         $this->url = $url;
     }
+	
+    /*
+     * 解析url字符串返回实例
+     */
+    public static function parse($url)
+    {
+        $arr = parse_url($url);
+        if (isset($arr['query'])) {
+            parse_str($arr['query'], $arr['query']);
+        }
+        return new self($arr);
+    }
     
     /*
      * 当前页面url实例
@@ -44,25 +56,16 @@ class Url
     }
     
     /*
-     * 解析url字符串返回实例
-     */
-    public static function parse($url)
-    {
-        $arr = parse_url($url);
-        if (isset($arr['query'])) {
-            parse_str($arr['query'], $arr['query']);
-        }
-        return new self($arr);
-    }
-    
-    /*
-     * 获取url元素值
+     * 获取url元素值魔术方法
      */
     public function __get($name)
     {
         return $this->get($name);
     }
     
+	/*
+	 * 获取url元素值
+	 */
     public function get($name)
     {
         if (in_array($name, self::$types)) {
@@ -70,26 +73,67 @@ class Url
         }
         throw new \Exception("Undefined url property: $$name");
     }
+	
+	/*
+	 * 获取query元素值
+	 */
+    public function getQuery($name = null)
+    {
+		return $name === null ? ($this->url['query'] ?? null) : ($this->url['query'][$name] ?? null);
+    }
     
     /*
-     * 设置url元素值
+     * 设置url元素值魔术方法
      */
     public function __set($name, $value)
     {
         $this->set($name, $value);
     }
     
-    public function set($name, $value, $merge = false)
+	/*
+	 * 设置url元素值
+	 */
+    public function set($name, $value)
     {
         if (in_array($name, self::$types)) {
-            if ($merge && $name === 'query' && isset($this->url[$name])) {
-                $this->url[$name] = array_merge($this->url[$name], $value);
-            } else {
-                $this->url[$name] = $value;
-            }
+			$this->url[$name] = $value;
             return $this;
         }
         throw new \Exception("Undefined url property: $$name");
+    }
+	
+	/*
+	 * 设置query元素值
+	 */
+    public function setQuery($name, $value = null)
+    {
+		if (is_array($name)) {
+			if ($value && isset($this->url['query'])) {
+				$this->url['query'] = $name + $this->url['query'];
+			} else {
+				$this->url['query'] = $name;
+			}
+		} else {
+			$this->url['query'][$name] = $value;
+		}
+		return $this;
+    }
+	
+	/*
+	 * 魔术方法
+	 */
+    public function __call($name, $params)
+    {
+		list($method, $type) = Str::cut(strtolower($name), 3);
+		if (in_array($type, self::$types)) {
+			switch ($method) {
+				case 'get':
+					return $this->get($type);
+				case 'set':
+					return $this->set($type, ...$params);
+			}
+		}
+		throw new \BadMethodCallException("Undefined url method: $name");
     }
     
     /*
@@ -97,21 +141,21 @@ class Url
      */
     public function make()
     {
-        $ret = '';
-        foreach (self::$types as $type) {
-            if (isset($this->url[$type])) {
-                $ret .= $this->build($type, $this->url[$type]);
-            }
-        }
-        return $ret;
+		$url = '';
+		foreach (self::$types as $type) {
+			if (isset($this->url[$type])) {
+				$url .= $this->build($type);
+			}
+		}
+		return $url;
     }
     
     /*
      * url重定向
      */
-    public function to()
+    public function to($permanently = false)
     {
-        Response::redirect($this->make());
+        Response::redirect($this->make(), $permanently);
     }
     
     /*
@@ -133,8 +177,9 @@ class Url
     /*
      * 构建url元素字符串
      */
-    private function build($type, $value)
+    private function build($type)
     {
+		$value = $this->url[$type];
         switch ($type) {
             case 'scheme':
                 return "$value://";

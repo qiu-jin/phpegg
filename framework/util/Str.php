@@ -19,10 +19,10 @@ class Str
     /*
      * 下划线转驼峰
      */
-    public static function camelCase(string $str, string $symbol = '_')
+    public static function camelCase(string $str, string $s = '_')
     {
         $ret = '';
-		foreach(explode($symbol, $str) as $v){
+		foreach(explode($s, $str) as $v){
 			$ret .= ucfirst($v);
 		}
 		return $ret;
@@ -31,7 +31,7 @@ class Str
     /*
      * 驼峰转下划线
      */
-    public static function snakeCase(string $str, string $symbol = '_')
+    public static function snakeCase(string $str, string $s = '_')
     {
         $ret = '';
         $len = strlen($str);
@@ -39,7 +39,7 @@ class Str
         for ($i = 0; $i < $len; $i++) {
             $c = $str[$i];
             $l = strtolower($c);
-            $ret .= $c === $l ? $c : $symbol.$l;
+            $ret .= $c === $l ? $c : $s.$l;
         }
         return $ret;
     }
@@ -47,17 +47,17 @@ class Str
     /*
      * 头部补全
      */
-    public static function headPad(string $str, string $symbol)
+    public static function headPad(string $str, string $s)
     {
-        return substr($str, 0, strlen($symbol)) == $symbol ? $str : $symbol.$str;
+        return substr($str, 0, strlen($s)) == $s ? $str : $s.$str;
     }
     
     /*
      * 尾部补全
      */
-    public static function lastPad(string $str, string $symbol)
+    public static function lastPad(string $str, string $s)
     {
-        return substr($str, - strlen($symbol)) == $symbol ? $str : $str.$symbol;
+        return substr($str, - strlen($s)) == $s ? $str : $str.$s;
     }
 	
     /*
@@ -69,11 +69,11 @@ class Str
     }
     
     /*
-     * 基本名
+     * 基础名
      */
-    public static function baseName(string $str, string $symbol = '/')
+    public static function baseName(string $str, string $s = '/')
     {
-        return substr(strrchr($str, $symbol), strlen($symbol));
+        return substr(strrchr($str, $s), strlen($s));
     }
     
     /*
@@ -85,6 +85,6 @@ class Str
         foreach ($data as $k => $v) {
             $replace[sprintf($format, $k)] = $v;
         }
-        return strtr($str, $replace); 
+        return strtr($str, $replace);
     }
 }

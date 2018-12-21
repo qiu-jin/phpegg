@@ -24,7 +24,7 @@ class Hash
     /*
      * pbkdf2算法hash
      */
-    public static function pbkdf2($data, $salt, array $options = [])
+    public static function pbkdf2($data, $salt, array $options = null)
     {
         return hash_pbkdf2(
             $options['algo'] ?? \app\env\DEFAULT_HASH_ALGO,

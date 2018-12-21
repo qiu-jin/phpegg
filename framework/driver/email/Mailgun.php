@@ -2,7 +2,7 @@
 namespace framework\driver\email;
 
 use framework\core\http\Client;
-use framework\driver\email\message\Mime;
+use framework\driver\email\query\Mime;
 
 class Mailgun extends Email
 {
