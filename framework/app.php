@@ -70,23 +70,6 @@ abstract class App
     }
     
     /*
-     * 运行应用
-     */
-    public function run(callable $return_handler = null)
-    {
-        if (self::$runing) {
-            throw new \RuntimeException('App is runing');
-        }
-        self::$runing = true;
-        $return = $this->call();
-        self::$exit = 2;
-        $handler = $return_handler ?? self::$return_handler;
-        if ($handler === null || $handler($return) === true) {
-            $this->respond($return);
-        }
-    }
-    
-    /*
      * 应用环境初始化
      */
     public static function boot()
@@ -153,17 +136,53 @@ abstract class App
         } else{
             throw new \RuntimeException("Illegal app class: $app");
         }
-        if ($config === null) {
-            $config = Config::get('app');
-        } else {
-            Config::set('app', $config);
-        }
-        self::$app = new $class($config);
+        self::$app = new $class($config ?? Config::get('app'));
         Event::trigger('dispatch', self::$app->dispatch = self::$app->dispatch());
         if (self::$app->dispatch !== false) {
             return self::$app;
         }
         self::abort(404);
+    }
+	
+    /*
+     * 返回应用实例
+     */
+    public static function instance()
+    {
+        return self::$app;
+    }
+
+    /*
+     * 运行应用
+     */
+    public function run(callable $return_handler = null)
+    {
+        if (self::$runing) {
+            throw new \RuntimeException('App is runing');
+        }
+        self::$runing = true;
+        $return = $this->call();
+        self::$exit = 2;
+        $handler = $return_handler ?? self::$return_handler;
+        if ($handler === null || $handler($return) === true) {
+            $this->respond($return);
+        }
+    }
+	
+    /*
+     * 获取配置值
+     */
+    public function getConfig($name = null, $default = null)
+    {
+		return $name === null ? $this->config : ($this->config[$name] ?? $default);
+    }
+	
+    /*
+     * 获取调度信息
+     */
+    public function getDispatch($name = null, $default = null)
+    {
+        return $name === null ? $this->dispatch : ($this->dispatch[$name] ?? $default);
     }
     
     /*
@@ -198,22 +217,6 @@ abstract class App
             self::$app->error($code, $message);
         }
         self::exit();
-    }
-    
-    /*
-     * 返回应用实例
-     */
-    public static function instance()
-    {
-        return self::$app;
-    }
-    
-    /*
-     * 获取调度信息
-     */
-    public static function getDispatch($name = null)
-    {
-        return $name === null ? self::$app->dispatch : (self::$app->dispatch[$name] ?? null);
     }
     
     /*

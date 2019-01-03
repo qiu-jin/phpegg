@@ -7,7 +7,9 @@ use framework\core\Container;
 class Cookie
 {
     private static $init;
+	// 值
     private static $cookie;
+	// 原始值
     private static $raw_cookie;
     // cookie设置项
     private static $options = [
@@ -40,11 +42,11 @@ class Cookie
             } else {
                 self::$raw_cookie = $_COOKIE;
                 self::$serializer = $config['serializer'];
+				self::$serialize_except = $config['serialize_except'] ?? [ini_get('session.name')];
             }
         } else {
             self::$cookie = $_COOKIE;
         }
-        self::$serialize_except = $config['serialize_except'] ?? [ini_get('session.name')];
     }
     
     /*
@@ -52,14 +54,14 @@ class Cookie
      */
     public static function all()
     {
-        if (self::$raw_cookie) {
-            foreach (self::$raw_cookie as $k => $v) {
-                if (!isset(self::$cookie[$k])) {
-                    self::$cookie[$k] = self::unserialize($k, $v);
-                }
-            }
-        }
-        return self::$cookie;
+		if (isset(self::$raw_cookie)) {
+	        foreach (self::$raw_cookie as $k => $v) {
+	            if (!isset(self::$cookie[$k])) {
+	                self::$cookie[$k] = self::unserialize($k, $v);
+	            }
+	        }
+		}
+		return self::$cookie;
     }
     
     /*
@@ -95,20 +97,20 @@ class Cookie
     /*
      * 设置永久
      */
-    public static function forever($name, $value)
+    public static function forever($name, $value, ...$options)
     {
         self::$cookie[$name] = $value;
-        self::setCookie($name, $value, 315360000);
+        self::setCookie($name, $value, 315360000, ...$options);
     }
     
     /*
      * 删除
      */
-    public static function delete($name)
+    public static function delete($name, ...$options)
     {
         unset(self::$cookie[$name]);
         unset(self::$raw_cookie[$name]);
-        self::setCookie($name, null);
+        self::setCookie($name, null, null, , ...$options);
     }
     
     /*

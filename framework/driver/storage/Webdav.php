@@ -76,12 +76,12 @@ class Webdav extends Storage
     
     public function copy($from, $to)
     {
-        return $this->ckdir($to = $this->uri($to)) && $this->send('COPY', $this->uri($from), ['Destination: '.$to]);
+        return $this->ckdir($to = $this->uri($to)) && $this->send('COPY', $this->uri($from), ['Destination' => $to]);
     }
     
     public function move($from, $to)
     {
-        return $this->ckdir($to = $this->uri($to)) && $this->send('MOVE', $this->uri($from), ['Destination: '.$to]);
+        return $this->ckdir($to = $this->uri($to)) && $this->send('MOVE', $this->uri($from), ['Destination' => $to]);
     }
     
     public function delete($from)
@@ -93,7 +93,7 @@ class Webdav extends Storage
     {
         $client = new Client($method, $url);
         if ($auth) {
-            $headers[] = $this->auth();
+            $headers['Authorization'] = 'Basic '.base64_encode("$this->username:$this->password");
         }
         if ($headers) {
             $client->headers($headers);
@@ -132,11 +132,6 @@ class Webdav extends Storage
     protected function uri($path)
     {
         return $this->endpoint.$this->path($path);
-    }
-    
-    protected function auth()
-    {
-        return 'Authorization: Basic '.base64_encode("$this->username:$this->password");
     }
     
     protected function ckdir($path)

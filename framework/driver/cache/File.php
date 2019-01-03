@@ -6,7 +6,9 @@ use framework\util\File;
 
 class File extends Cache
 {
+	// 缓存文件目录
     protected $dir;
+	// 缓存文件扩展名
     protected $ext;
     
     protected function init($config)

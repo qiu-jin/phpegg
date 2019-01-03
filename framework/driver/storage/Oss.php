@@ -127,9 +127,6 @@ class Oss extends Storage
              . (isset($headers['x-oss-copy-source']) ? "x-oss-copy-source:{$headers['x-oss-copy-source']}\n" : '')
              . '/'.$this->bucket.$path;
         $headers['Authorization'] = "OSS $this->acckey:".base64_encode(hash_hmac('sha1', $str, $this->seckey, true));
-        foreach ($headers as $k => $v) {
-            $sendheaders[] = "$k: $v";
-        }
-        return $sendheaders;
+        return $headers;
     }
 }

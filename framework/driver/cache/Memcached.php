@@ -6,6 +6,7 @@ namespace framework\driver\cache;
  */
 class Memcached extends Cache
 {
+	// 连接实例
     protected $connection;
     
     public function __construct($config)

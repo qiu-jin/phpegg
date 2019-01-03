@@ -83,7 +83,7 @@ class Client
     {
         $this->request->body = $body;
         if ($type) {
-            $this->request->headers[] = "Content-Type: $type";
+            $this->request->headers['Content-Type'] = $type;
         }
         return $this;
     }
@@ -94,20 +94,20 @@ class Client
     public function json(array $data)
     {
         $this->request->body = jsonencode($data);
-        $this->request->headers[] = 'Content-Type: application/json; charset=UTF-8';
+        $this->request->headers['Content-Type'] = 'application/json; charset=UTF-8';
         return $this;
     }
 
     /*
-     * 设置表单数据，数据默认为multipart/form-data格式否则为application/x-www-form-urlencoded
+     * 设置表单数据，数据默认为application/x-www-form-urlencoded格式否则为multipart/form-data
      */
-    public function form(array $data, $x_www_form_urlencoded = false)
+    public function form(array $data, $multipart = false)
     {
-        if ($x_www_form_urlencoded) {
-            $this->request->body = http_build_query($data);
-            $this->request->headers[] = 'Content-Type: application/x-www-form-urlencoded';
+        if ($multipart) {
+			$this->request->body = $data;
         } else {
-            $this->request->body = $data;
+            $this->request->body = http_build_query($data);
+            $this->request->headers['Content-Type'] = 'application/x-www-form-urlencoded';
         }
         return $this;
     }
@@ -132,7 +132,7 @@ class Client
     {
         if (empty($this->request->boundary)) {
             $this->request->boundary = uniqid();
-            $this->request->headers[] = 'Content-Type: multipart/form-data; boundary='.$this->request->boundary;
+            $this->request->headers['Content-Type'] = 'multipart/form-data; boundary='.$this->request->boundary;
             if (is_array($this->request->body)) {
                 foreach ($this->request->body as $pk => $pv) {
                     $body[] = '--'.$this->request->boundary;
@@ -168,16 +168,16 @@ class Client
      */
     public function header($name, $value)
     {
-        $this->request->headers[] = $name.': '.$value;
+        $this->request->headers[$name] = $value;
         return $this;
     }
     
     /*
      * 设置多个header
      */
-    public function headers(array $headers)
+    public function headers(array $values)
     {
-        $this->request->headers = array_merge($this->request->headers ?? [], $headers);
+		$this->request->headers = isset($this->request->headers) ? $values + $this->request->headers : $values;
         return $this;
     }
     
@@ -204,7 +204,7 @@ class Client
      */
     public function curlopts(array $values)
     {
-        $this->request->curlopts = $values + ($this->request->curlopts ?? []);
+		$this->request->curlopts = isset($this->request->curlopts) ? $values + $this->request->curlopts : $values;
         return $this;
     }
 
@@ -235,7 +235,9 @@ class Client
             case 'request':
                 return $this->request;
             case 'response':
-                isset($this->response) || $this->send();
+				if (!isset($this->response)) {
+					$this->send();
+				}
                 return $this->response;
             case 'error':
                 return $this->error;
@@ -272,7 +274,9 @@ class Client
      */
     public function getCurlInfo($name)
     {
-        isset($this->response) || $this->send();
+		if (!isset($this->response)) {
+			$this->send();
+		}
         return curl_getinfo($this->ch, $name);
     }
     
@@ -298,12 +302,17 @@ class Client
     {
         $ch = curl_init($this->request->url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($this->request->method));
+        if (isset($this->request->method)){
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($this->request->method));
+        }
         if (isset($this->request->body)){
             curl_setopt($ch, CURLOPT_POSTFIELDS, $this->request->body);
         }
         if (isset($this->request->headers)) {
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $this->request->headers);
+			foreach ($this->request->headers as $name => $value) {
+				$headers[] = "$name: $value";
+			}
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         }
         if (isset($this->request->curlopts)) {
             ksort($this->request->curlopts);
@@ -351,7 +360,7 @@ class Client
         $this->response->status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
         $this->response->body = $content;
         if ($this->return_headers) {
-            $this->response->headers = $this->getResponseHeaders();
+            $this->response->headers = $this->getResponseHeadersFromTempFile();
         }
         if (!($this->response->status >= 200 && $this->response->status < 300)) {
             $this->error();
@@ -361,7 +370,7 @@ class Client
     /*
      * 获取headers
      */
-    protected function getResponseHeaders()
+    protected function getResponseHeadersFromTempFile()
     {
         if ($fp = $this->request->curlopts[CURLOPT_WRITEHEADER]) {
             rewind($fp);

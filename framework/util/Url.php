@@ -1,6 +1,7 @@
 <?php
 namespace framework\util;
 
+use framework\core\http\Client;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
@@ -144,7 +145,7 @@ class Url
 		$url = '';
 		foreach (self::$types as $type) {
 			if (isset($this->url[$type])) {
-				$url .= $this->build($type);
+				$url .= $this->buildItem($type);
 			}
 		}
 		return $url;
@@ -156,6 +157,14 @@ class Url
     public function to($permanently = false)
     {
         Response::redirect($this->make(), $permanently);
+    }
+
+    /*
+     * http请求
+     */
+    public function request($method = null)
+    {
+        return new Client($method, $this->make());
     }
     
     /*
@@ -177,7 +186,7 @@ class Url
     /*
      * 构建url元素字符串
      */
-    private function build($type)
+    private function buildItem($type)
     {
 		$value = $this->url[$type];
         switch ($type) {

@@ -6,7 +6,9 @@ namespace framework\driver\cache;
  */
 class Apc extends Cache
 {
+	// 字段前缀
     protected $prefix;
+	// 是否全局清理
     protected $global_clear;
     
     public function __construct($config)

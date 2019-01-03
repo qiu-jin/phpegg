@@ -28,7 +28,7 @@ class Smtp extends Email
     
     public function handle($options)
     {
-        $mime = Mime::build($options, $addrs)
+        $mime = Mime::build($options, $addrs);
         $res = $this->command("MAIL FROM: <{$options['from'][0]}>");
         if (substr($res, 0, 3) != '250') {
             return warn($res);

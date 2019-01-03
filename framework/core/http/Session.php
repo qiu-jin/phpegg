@@ -2,7 +2,6 @@
 namespace framework\core\http;
 
 use framework\util\Str;
-use framework\util\Arr;
 use framework\core\Config;
 
 class Session
@@ -23,23 +22,23 @@ class Session
         }
         self::$init = true;
         if ($config = Config::flash('session')) {
-            if ($set = Arr::pull($config, 'ini_set')) {
-                foreach ($set as $k => $v) {
+			if (isset($config['ini_set'])) {
+                foreach ($config['ini_set'] as $k => $v) {
                     ini_set("session.$k", $v);
                 }
+			}
+            if (isset($config['cookie_params'])) {
+                session_set_cookie_params(...$config['cookie_params']);
             }
-            if ($v = Arr::pull($config, 'cookie_params')) {
-                session_set_cookie_params(...$v);
+            if (isset($config['save_handler'])) {
+                session_set_save_handler(instance(...$config['save_handler']));
             }
-            if ($v = Arr::pull($config, 'save_handler')) {
-                session_set_save_handler(instance(...$v));
-            }
-            foreach ($config as $k => $v) {
-                if (in_array($k, self::$init_functions)) {
-                    ("session_$k")($v);
+            foreach (self::$init_functions as $func) {
+                if (isset($config[$func])) {
+                    ("session_$func")($config[$func]);
                 }
             }
-            if (Arr::pull($config, 'auto_start') === false) {
+            if (isset($config['auto_start']) && $config['auto_start'] === false) {
                 return;
             }
         }
@@ -93,11 +92,14 @@ class Session
     /*
      * 清除所有
      */
-    public static function clean()
+    public static function clean($delete_cookie = false)
     {
-        session_unset();
         $_SESSION = [];
         session_destroy();
+		if (ini_get('session.use_cookies')) {
+		    extract(session_get_cookie_params());
+		    Cookie::set(session_name(), null, null, $path, $domain, $secure, $httponly);
+		}
     }
     
     /*

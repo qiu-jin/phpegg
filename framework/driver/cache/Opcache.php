@@ -6,8 +6,11 @@ use framework\util\File;
 
 class Opcache extends Cache
 {
+	// 缓存文件目录
     protected $dir;
+	// 缓存文件扩展名
     protected $ext;
+	// 启用值过滤功能
     protected $enable_filter_value;
 
     protected function init($config)

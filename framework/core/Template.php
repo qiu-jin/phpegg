@@ -1114,6 +1114,69 @@ class Template
                 continue;
             }
             if (!self::isVarChars($tmp)) {
+                throw new TemplateException("readFunctionValue error: 非法名称 $tmp");
+            }
+            $arr[] = $tmp;
+            if ($c == '.') {
+                $tmp = null;
+            } elseif ($c == '(') {
+                $pos  = $i;
+                $args = implode(', ', self::readArguments($val, $len, $pos, $strs));
+                // 函数
+                if (count($arr) == 1) {
+                    if (self::$config['allow_php_functions'] === true
+                        || in_array($tmp, self::$config['allow_php_functions'])
+                    ) {
+                        return "$tmp($args)";
+                    }
+                    throw new TemplateException("readFunctionValue error: 不支持的内置函数$tmp");
+                }
+                // 静态方法
+                $tmp = [];
+                while ($v = array_pop($arr)) {
+                    $tmp[] = $v;
+                    $class = implode('\\', $arr);
+                    if (isset(self::$config['allow_static_classes'][$class])) {
+                        $m = array_shift($tmp);
+                        $n = $tmp ? '\\'.implode('\\', array_reverse($tmp)) : '';
+                        return self::$config['allow_static_classes'][$class]."$n::$m($args)";
+                    }
+                }
+                throw new TemplateException("readFunctionValue error: 未定义的静态类$class");
+            } else {
+				$end = true;
+                break;
+            }
+        }
+		if ($tmp) {
+            // 容器
+			if (!isset($end)) {
+				$arr[] = $tmp;
+			}
+            $provider = implode('.', $arr);
+            if (self::$config['allow_container_providers'] === true
+                || in_array($provider, self::$config['allow_container_providers'])
+            ) {
+                $pos = $i - 1;
+                return self::$config['view_container_macro']($provider);
+            }
+            throw new TemplateException("readFunctionValue error: 不支持的容器$provider");
+		}
+        throw new TemplateException("readFunctionValue error: 解析错误");
+    }
+	
+	
+    protected static function _readFunctionValue($ret, $tmp, $val, $len, &$pos, $strs)
+    {
+        $arr = [];
+        $tmp = null;
+        for ($i = $pos + 1; $i < $len; $i++) {
+            $c = $val[$i];
+            if (self::isVarChar($c)) {
+                $tmp .= $c;
+                continue;
+            }
+            if (!self::isVarChars($tmp)) {
                 break;
             }
             $arr[] = $tmp;

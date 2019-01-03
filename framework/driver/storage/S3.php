@@ -147,8 +147,7 @@ class S3 extends Storage
         $servicekey     = hash_hmac('sha256', 's3', $regionkey, true);
         $signkey        = hash_hmac('sha256', 'aws4_request', $servicekey, true);
         $signature      = hash_hmac('sha256', $signstr, $signkey);
-        $setheaders[]   = "Authorization: AWS4-HMAC-SHA256 Credential=$this->acckey/$scope,"
-                        . "SignedHeaders=$signedheaders,Signature=$signature";
-        return $setheaders;
+		$headers['Authorization'] = "AWS4-HMAC-SHA256 Credential=$this->acckey/$scope,SignedHeaders=$signedheaders,Signature=$signature";
+        return $headers;
     }
 }

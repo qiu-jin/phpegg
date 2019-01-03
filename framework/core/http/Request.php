@@ -29,9 +29,25 @@ class Request
     /*
      * 获取GET值
      */
+    public static function get($name = null, $default = null)
+    {
+        return self::query($name, $default);
+    }
+	
+    /*
+     * 获取GET值
+     */
     public static function query($name = null, $default = null)
     {
         return $name === null ? self::$request['query'] : (self::$request['query'][$name] ?? $default);
+    }
+	
+    /*
+     * 获取GET值
+     */
+    public static function post($name = null, $default = null)
+    {
+        return self::param($name, $default);
     }
     
     /*

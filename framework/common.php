@@ -1,5 +1,6 @@
 <?php
 use framework\App;
+use framework\util\Url;
 use framework\core\Error;
 use framework\core\Event;
 use framework\core\Getter;
@@ -7,6 +8,7 @@ use framework\core\Logger;
 use framework\core\Config;
 use framework\core\Container;
 use framework\core\Validator;
+use framework\core\http\Client;
 use framework\core\http\Cookie;
 use framework\core\http\Session;
 use framework\core\http\Request;
@@ -32,6 +34,14 @@ function config($name, $default = null)
 }
 
 /*
+ * 获取容器实例
+ */
+function app($name = null)
+{
+    return $name === null ? App::instance() : Container::make($name);
+}
+
+/*
  * 获取日志实例
  */
 function logger($name = null)
@@ -39,13 +49,6 @@ function logger($name = null)
     return Logger::channel($name);
 }
 
-/*
- * 获取容器实例
- */
-function make($name)
-{
-    return Container::make($name);
-}
 
 /*
  * 获取驱动实例
@@ -96,19 +99,19 @@ function storage($name = null)
 }
 
 /*
- * 获取短信实例
+ * 发送短信或获取短信实例
  */
-function sms($name = null)
+function sms(...$params)
 {
-    return Container::driver('sms', $name);
+    return isset($params[1]) ? Container::driver('sms')->send(...$params) : Container::driver('sms', ...$params);
 }
 
 /*
- * 获取EMAIL实例
+ * 发送EMAIL或获取EMAIL实例
  */
-function email($name = null)
+function email(...$params)
 {
-    return Container::driver('email', $name);
+	return isset($params[1]) ? Container::driver('email')->send(...$params) : Container::driver('email', ...$params);
 }
 
 /*
@@ -164,11 +167,7 @@ function cookie($name, ...$params)
  */
 function session($name, $value = null)
 {
-    if (is_array($name) || $value !== null) {
-        Session::set($name, $value);
-    } else {
-        return Session::get($name); 
-    }
+	return is_array($name) || $value !== null ? Session::set($name, $value) : Session::get($name);
 }
 
 /*
@@ -177,6 +176,22 @@ function session($name, $value = null)
 function validate($rule, $message = null)
 {
     return new Validator($rule, $message);
+}
+
+/*
+ * HTTP请求实例
+ */
+function request($url, $method = null)
+{
+    return new Client($method, $url);
+}
+
+/*
+ * URL实例
+ */
+function url($url)
+{
+    return is_array($url) ? new Url($url) : Url::parse($url);
 }
 
 /*

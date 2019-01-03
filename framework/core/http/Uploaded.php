@@ -31,25 +31,16 @@ class Uploaded
         $this->is_valid = isset($file['tmp_name']) && is_uploaded_file($file['tmp_name']);
         $this->is_success = isset($file['error']) && $file['error'] === UPLOAD_ERR_OK;
     }
-    
+
     /*
      * 文件实例，如设置验证规则验证失败返回false
      */
-    public static function new($name, $check = null)
+    public static function file($name, $check = null)
     {
-        if (strpos('.', $name) === false) {
-            return self::file(Request::file($file), $check);
-        }
-        return self::file(Request::file($file), $check);
-    }
-    
-    /*
-     * 文件实例，如设置验证规则验证失败返回false
-     */
-    public static function file(array $file, $check = null)
-    {
-        $uploaded = new self($file);
-        return (!$check || $uploaded->check($check)) ? $uploaded : false;
+		if ($file = Request::file($name)) {
+			$uploaded = new self($file);
+			return (!$check || $uploaded->check($check)) ? $uploaded : false;
+		}
     }
     
     /*
