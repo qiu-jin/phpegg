@@ -21,7 +21,7 @@ class Mailgun extends Email
         $mime = Mime::build($options, $addrs);
         $options['options']['to'] = implode(',', $addrs);
         $client = Client::post(self::$endpoint."/$this->domain/messages.mime")
-                        ->header('Authorization', 'Basic '.base64_encode("api:$this->acckey"))
+						->auth('api', $this->acckey)
                         ->form($options['options'])
                         ->buffer('message', $mime);
         $result = $client->response->json();

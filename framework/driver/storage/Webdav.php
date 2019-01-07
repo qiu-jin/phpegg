@@ -93,7 +93,7 @@ class Webdav extends Storage
     {
         $client = new Client($method, $url);
         if ($auth) {
-            $headers['Authorization'] = 'Basic '.base64_encode("$this->username:$this->password");
+			$client->auth($this->username, $this->password);
         }
         if ($headers) {
             $client->headers($headers);

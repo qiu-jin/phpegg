@@ -61,6 +61,22 @@ class Str
     }
 	
     /*
+     * 头部剔除
+     */
+    public static function headTrim(string $str, string $s)
+    {
+        return substr($str, 0, $l = strlen($s)) == $s ? substr($str, $l) : $str;
+    }
+    
+    /*
+     * 尾部剔除
+     */
+    public static function lastTrim(string $str, string $s)
+    {
+        return substr($str, - ($l = strlen($s))) == $s ? substr($str, 0, -$l) : $str;
+    }
+	
+    /*
      * 按位置切割成两半
      */
     public static function cut(string $str, int $pos)

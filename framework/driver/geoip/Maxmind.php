@@ -48,7 +48,7 @@ class Maxmind extends Geoip
     protected function apiHandle($ip)
     {
         $client = Client::get(self::$endpoint."/$this->type/$ip");
-        $client->header('Authorization', 'Basic '.base64_encode("$this->api[acckey]:$this->api[seckey]"));
+		$client->auth($this->api['acckey'], $this->api['seckey']);
         if ($result = $client->response->json()) {
             return $result;
         }

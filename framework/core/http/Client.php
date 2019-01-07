@@ -1,6 +1,8 @@
 <?php
 namespace framework\core\http;
 
+use framework\util\Arr;
+
 class Client
 {
     const EOL = "\r\n";
@@ -59,7 +61,7 @@ class Client
                     $ch = $done['handle'];
                     $index = $indices[strval($ch)];
                     $query = $queries[$index];
-                    $query->response(curl_multi_getcontent($ch));
+                    $query->setResponse(curl_multi_getcontent($ch));
                     if (isset($handle)) {
                         $return[$index] = $handle($query, $index);
                     } else {
@@ -180,6 +182,15 @@ class Client
 		$this->request->headers = isset($this->request->headers) ? $values + $this->request->headers : $values;
         return $this;
     }
+	
+    /*
+     * 认证
+     */
+    public function auth($user, $pass)
+    {
+        $this->request->headers['Authorization'] = 'Basic '.base64_encode("$user:$pass");
+        return $this;
+    }
     
     /*
      * 设置请求超时时间
@@ -187,6 +198,18 @@ class Client
     public function timeout($timeout)
     {
         $this->request->curlopts[CURLOPT_TIMEOUT] = (int) $timeout;
+        return $this;
+    }
+	
+    /*
+     * 设置请求超时时间
+     */
+    public function allowRedirects($bool = true, int $max = 3)
+    {
+        $this->request->curlopts[CURLOPT_FOLLOWLOCATION] = $bool;
+		if ($bool && $max > 0) {
+			$this->request->curlopts[CURLOPT_MAXREDIRS] = $max;
+		}
         return $this;
     }
     
@@ -213,7 +236,7 @@ class Client
      */
     public function returnHeaders($bool = true)
     {
-        $this->return_headers = $bool;
+		$this->return_headers = $bool;
         return $this;
     }
     
@@ -236,7 +259,7 @@ class Client
                 return $this->request;
             case 'response':
 				if (!isset($this->response)) {
-					$this->send();
+					$this->response();
 				}
                 return $this->response;
             case 'error':
@@ -254,7 +277,7 @@ class Client
         }
         if ($fp = fopen($file, 'w+')) {
             $this->request->curlopts[CURLOPT_FILE] = $fp;
-            $this->send();
+            $this->setResponse(curl_exec($this->build()));
             $return = $this->response->status === 200 && $this->response->body === true;
             if ($return) {
                 fclose($fp);
@@ -275,7 +298,7 @@ class Client
     public function getCurlInfo($name)
     {
 		if (!isset($this->response)) {
-			$this->send();
+			$this->setResponse(curl_exec($this->build()));
 		}
         return curl_getinfo($this->ch, $name);
     }
@@ -283,16 +306,12 @@ class Client
     /*
      * 发送请求
      */
-    protected function send()
+    public function response()
     {
-        if ($this->debug) {
-            $this->return_headers = true;
-            $this->request->curlopts[CURLINFO_HEADER_OUT] = true;
-        }
-        if ($this->return_headers) {
-            $this->request->curlopts[CURLOPT_WRITEHEADER] = fopen('php://temp', 'r+');
-        }
-        $this->response(curl_exec($this->build()));
+		if (!isset($this->response)) {
+			$this->setResponse(curl_exec($this->build()));
+		}
+		return $this->response;
     }
     
     /*
@@ -314,6 +333,13 @@ class Client
 			}
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         }
+        if ($this->debug) {
+            $this->return_headers = true;
+            $this->request->curlopts[CURLINFO_HEADER_OUT] = true;
+        }
+        if ($this->return_headers) {
+			$this->request->curlopts[CURLOPT_HEADER] = true;
+        }
         if (isset($this->request->curlopts)) {
             ksort($this->request->curlopts);
             curl_setopt_array($ch, $this->request->curlopts);
@@ -322,9 +348,33 @@ class Client
     }
     
     /*
+     * 处理请求响应内容
+     */
+    protected function setResponse($content)
+    {
+        $this->response = new class () {
+            public function json($name = null, $default = null) {
+				$data = jsondecode($this->body);
+				return $name === null ? $data : Arr::get($data, $name, $default);
+            }
+            public function __toString() {
+                return $this->body;
+            }
+        };
+        $this->response->status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
+        $this->response->body   = $content;
+        if ($this->return_headers) {
+			$this->response->headers = $this->getResponseHeadersFromResult($content);
+        }
+        if (!($this->response->status >= 200 && $this->response->status < 300)) {
+            $this->setError();
+        }
+    }
+	
+    /*
      * 处理错误信息
      */
-    protected function error()
+    protected function setError()
     {
         if ($this->response->status) {
             $code = $this->response->status;
@@ -348,78 +398,30 @@ class Client
     }
     
     /*
-     * 处理请求响应内容
-     */
-    protected function response($content)
-    {
-        $this->response = new class () {
-            public function json() {
-                return $this->body ? jsondecode($this->body) : null;
-            }
-        };
-        $this->response->status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-        $this->response->body = $content;
-        if ($this->return_headers) {
-            $this->response->headers = $this->getResponseHeadersFromTempFile();
-        }
-        if (!($this->response->status >= 200 && $this->response->status < 300)) {
-            $this->error();
-        }
-    }
-    
-    /*
      * 获取headers
      */
-    protected function getResponseHeadersFromTempFile()
+    protected function getResponseHeadersFromResult($str)
     {
-        if ($fp = $this->request->curlopts[CURLOPT_WRITEHEADER]) {
-            rewind($fp);
-            $str = stream_get_contents($fp);
-            fclose($fp);
-            if ($str) {
-                return $this->parseHeaders($str);
-            }
+        if (is_string($str) && ($size = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE))) {
+			$this->response->body = substr($str, $size);
+	        foreach (explode(self::EOL, substr($str, 0, $size)) as $v) {
+	            $l = explode(":", $v, 2);
+	            if(isset($l[1])) {
+	                $k = trim($l[0]);
+	                $v = trim($l[1]);
+	                if (isset($headers[$k])) {
+	                    if (count($headers[$k]) === 1) {
+	                        $headers[$k] = [$headers[$k], $v];
+	                    } else {
+	                        $headers[$k][] = $v;
+	                    }
+	                } else {
+	                    $headers[$k] = $v;
+	                }
+	            }
+	        }
+	        return $headers ?? null;
         }
-    }
-    
-    /*
-     * 获取headers
-     */
-    protected function getResponseHeadersFromResult()
-    {
-        if (is_string($body = $this->response->body)) {
-            // 跳过HTTP/1.1 100 continue
-            if (substr($body, 9, 3) === '100') {
-                list(, $str, $this->response->body) = explode(self::EOL.self::EOL, $body, 3);
-            } else {
-                list($str, $this->response->body) = explode(self::EOL.self::EOL, $body, 2);
-            }
-            return $this->parseHeaders($str);
-        }
-    }
-    
-    /*
-     * 解析header字符串
-     */
-    protected function parseHeaders($str)
-    {
-        foreach (explode(self::EOL, $str) as $v) {
-            $line = explode(":", $v, 2);
-            if(isset($line[1])) {
-                $k = trim($line[0]);
-                $v = trim($line[1]);
-                if (isset($headers[$k])) {
-                    if (count($headers[$k]) === 1) {
-                        $headers[$k] = [$headers[$k], $v];
-                    } else {
-                        $headers[$k][] = $v;
-                    }
-                } else {
-                    $headers[$k] = $v;
-                }
-            }
-        }
-        return $headers ?? null;
     }
     
     /*
