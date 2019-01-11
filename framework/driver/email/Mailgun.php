@@ -24,7 +24,7 @@ class Mailgun extends Email
 						->auth('api', $this->acckey)
                         ->form($options['options'])
                         ->buffer('message', $mime);
-        $result = $client->response->json();
+        $result = $client->response()->json();
         return isset($result['id']) ? true : warn($result['message'] ?? $client->error);
     }
 }

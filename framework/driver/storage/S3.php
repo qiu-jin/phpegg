@@ -99,7 +99,7 @@ class S3 extends Storage
                 $client->$client_method(...$params);
             }
         }
-        $response = $client->response;
+        $response = $client->response();
         if ($response->status >= 200 && $response->status < 300) {
             switch ($method) {
                 case 'GET':

@@ -107,7 +107,7 @@ class Qiniu extends Storage
                 $client->$client_method(...$params);
             }
         }
-        if (($response = $client->response)->status === 200) {
+        if (($response = $client->response())->status === 200) {
             return $method === 'GET' ? $response->body : true;
         }
         // 忽略404错误（has stat方法）

@@ -31,7 +31,7 @@ class Tencent extends Sms
             'extend'=> '',
             'ext'   => '',
         ]);
-        $result = $client->response->json();
+        $result = $client->response()->json();
         if (isset($result['result'])) {
             if ($result['result'] === 0) {
                 return true;

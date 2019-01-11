@@ -47,7 +47,18 @@ class Micro extends App
     {
         return $this->method('POST', $role, $call);
     }
-    
+
+    /*
+     * 其它HTTP Method路由魔术方法
+     */
+    public function __call($method, $params)
+    {
+        if(in_array($m = strtoupper($method), ['PUT', 'DELETE', 'PATCH', 'OPTIONS'])) {
+            return $this->method($m, ...$params);
+        }
+        throw new \RuntimeException("Invalid method: $method");
+    }
+	
     /*
      * HTTP Method路由
      */
@@ -61,17 +72,6 @@ class Micro extends App
             $this->dispatch['routes'][$role][":$method"] = $call;
         }
         return $this;
-    }
-    
-    /*
-     * HTTP Method路由魔术方法
-     */
-    public function __call($method, $params)
-    {
-        if(in_array($m = strtoupper($method), ['PUT', 'DELETE', 'PATCH', 'OPTIONS'])) {
-            return $this->method($m, ...$params);
-        }
-        throw new \RuntimeException("Invalid method: $method");
     }
 
     /*
@@ -148,12 +148,12 @@ class Micro extends App
     {
         return is_object($class) ? $class : new $class;
     }
-    
+	
     protected function getControllerInstance($name, $is_dynamic)
     {
         if ($classes = ($this->dispatch['classes'] ?? null)) {
             if (isset($classes[$name])) {
-                return $this->makeClassInstance($classes[$name]);
+                return $this->getClassInstance($classes[$name]);
             }
         } elseif ($class = $this->getControllerClass($name, $is_dynamic)) {
             return new $class;

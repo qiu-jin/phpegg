@@ -174,7 +174,7 @@ class Request
     public static function pathArr()
     {
         $path = trim(self::path(), '/');
-        return empty($path) ? null : explode('/', $path);
+        return empty($path) ? [] : explode('/', $path);
     }
     
     /*

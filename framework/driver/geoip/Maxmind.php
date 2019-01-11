@@ -49,7 +49,7 @@ class Maxmind extends Geoip
     {
         $client = Client::get(self::$endpoint."/$this->type/$ip");
 		$client->auth($this->api['acckey'], $this->api['seckey']);
-        if ($result = $client->response->json()) {
+        if ($result = $client->response()->json()) {
             return $result;
         }
         return warn($result['error'] ?? $client->error);

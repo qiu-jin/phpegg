@@ -40,7 +40,7 @@ class Recaptcha
             'response' => $value ?? Request::post('g-recaptcha-response'),
             'remoteip' => Request::ip(true)
         ]);
-        $result = $client->response->json();
+        $result = $client->response()->json();
         if (isset($result['success']) && $result['success'] === true) {
             return true;
         }

@@ -77,7 +77,7 @@ class Dropbox extends Storage
             $client->returnHeaders();
             $client->timeout($this->timeout);
         }
-        if (($response = $client->headers($headers)->response)->status === 200) {
+        if (($response = $client->headers($headers)->response())->status === 200) {
             return $response;
         }
         return error($client->error, 2);

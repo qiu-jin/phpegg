@@ -22,7 +22,7 @@ class JsonrpcHttp
             $client->curlopts($this->config['http_curlopts']);
         }
         $client->body($this->config['requset_serialize']($data));
-        if (($result = $client->response->body) !== false) {
+        if (($result = $client->response()->body) !== false) {
             return $this->config['response_unserialize']($result);
         }
         if ($error = $client->error) {

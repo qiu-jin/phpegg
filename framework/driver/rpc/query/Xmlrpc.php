@@ -41,7 +41,7 @@ class Xmlrpc
             $client->curlopts($this->config['http_curlopts']);
         }
         $client->body(xmlrpc_encode_request(implode('.', $this->ns), $params));
-        if (($result = $client->response->body) !== false) {
+        if (($result = $client->response()->body) !== false) {
             if ($result = xmlrpc_decode($result)) {
                 if (!xmlrpc_is_fault($result)) {
                     return $result;

@@ -34,7 +34,7 @@ class Aliyun extends Sms
         $query  = http_build_query($params, null, '&', PHP_QUERY_RFC3986);
         $sign   = base64_encode(hash_hmac('sha1', 'GET&%2F&'.urlencode($query), "$this->seckey&", true));
         $client = Client::get(self::$endpoint."/?Signature=$sign&$query");
-        $result = $client->response->json();
+        $result = $client->response()->json();
         if (isset($result['Code'])) {
             if ($result['Code'] === 'OK') {
                 return true;

@@ -48,7 +48,7 @@ class Http
     
     public function response($client)
     {
-        $response = $client->response;
+        $response = $client->response();
         if ($response->status >= 200 && $response->status < 300) {
             $result = $response->body;
             if (isset($this->config['response_decode'])) {

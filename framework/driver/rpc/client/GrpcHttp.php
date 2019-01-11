@@ -25,7 +25,7 @@ class GrpcHttp
         if (!empty($this->config['http_curlopts'])) {
             $client->curlopts($this->config['http_curlopts']);
         }
-        $response = $client->response;
+        $response = $client->response();
         if (isset($response->headers['grpc-status'])) {
             if ($response->headers['grpc-status'] === '0') {
                 $result = unpack('Cencode/Nzise/a*data', $response->body);

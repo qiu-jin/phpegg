@@ -197,7 +197,7 @@ class Url
             case 'port':
                 return ":$value";
             case 'path':
-                return '/'.trim($value, '/');
+                return '/'.ltrim($value, '/');
             case 'query':
                 return '?'.http_build_query($value);
             case 'fragment':

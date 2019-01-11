@@ -8,25 +8,21 @@ class Client
     const EOL = "\r\n";
     // cURL句柄
     private $ch;
-    // 启用调试
-    private $debug;
     // 错误信息
     private $error;
     // 请求设置
     private $request;
     // 响应内容
     private $response;
-    // 是否返回响应headers
-    private $return_headers;
     
     public function __construct($method, $url)
     {
-        $this->debug = APP_DEBUG;
         $this->request = (object) compact('url', 'method');
+		$this->request->debug = APP_DEBUG;
     }
 
     /*
-     * 返回GET实例
+     * GET实例
      */
     public static function get($url)
     {
@@ -34,7 +30,7 @@ class Client
     }
     
     /*
-     * 返回POST实例
+     * POST实例
      */
     public static function post($url)
     {
@@ -79,9 +75,9 @@ class Client
     }
 
     /*
-     * 设置请求的body内容
+     * 设置请求body
      */
-    public function body($body, $type = null)
+    public function body(string $body, $type = null)
     {
         $this->request->body = $body;
         if ($type) {
@@ -91,7 +87,7 @@ class Client
     }
     
     /*
-     * 设置请求的body内容为数组被json_encode后的字符串
+     * 设置请求body为数组被json_encode后的字符串
      */
     public function json(array $data)
     {
@@ -101,7 +97,7 @@ class Client
     }
 
     /*
-     * 设置表单数据，数据默认为application/x-www-form-urlencoded格式否则为multipart/form-data
+     * 设置表单请求数据，数据类型默认为application/x-www-form-urlencoded格式否则为multipart/form-data
      */
     public function form(array $data, $multipart = false)
     {
@@ -115,40 +111,41 @@ class Client
     }
 
     /*
-     * 本地文件上传请求，只支持post方法，通常在form方法后调用
+     * 文件上传
      */
     public function file($name, $content, $filename = null, $mimetype = null)
     {
+		$curlfile = $this->setCurlFile($content, $filename, $mimetype);
         if (substr($name, -2) === '[]') {
-            $this->request->body[substr($name, 0, -2)][] = $this->setCurlFile($content, $filename, $mimetype);
+            $this->request->body[substr($name, 0, -2)][] = $curlfile;
         } else {
-            $this->request->body[$name] = $this->setCurlFile($content, $filename, $mimetype);
+            $this->request->body[$name] = $curlfile;
         }
         return $this;
     }
     
     /*
-     * 变量内容上传，与file方法相似
+     * 变量内容上传（不能与file混用）
      */
     public function buffer($name, $content, $filename = null, $mimetype = null)
     {
-        if (empty($this->request->boundary)) {
+        if (isset($this->request->boundary)) {
+			$this->request->body = substr($this->request->body, 0, -19);
+        } else {
             $this->request->boundary = uniqid();
             $this->request->headers['Content-Type'] = 'multipart/form-data; boundary='.$this->request->boundary;
-            if (is_array($this->request->body)) {
-                foreach ($this->request->body as $pk => $pv) {
+            if (isset($this->request->body) && is_array($this->request->body)) {
+                foreach ($this->request->body as $k => $v) {
                     $body[] = '--'.$this->request->boundary;
-                    $body[] = "Content-Disposition: form-data; name=\"$pk\"";
+                    $body[] = "Content-Disposition: form-data; name=\"$k\"";
                     $body[] = '';
-                    $body[] = $pv;
+                    $body[] = $v;
                 }
                 $body[] = '';
                 $this->request->body = implode(self::EOL, $body);
             } else {
                 $this->request->body = null;
             }
-        } else {
-            $this->request->body = substr($this->request->body, 0, -19);
         }
         $this->request->body .= $this->setMultipartFile($name, $content, $filename, $mimetype);
         return $this;
@@ -191,7 +188,43 @@ class Client
         $this->request->headers['Authorization'] = 'Basic '.base64_encode("$user:$pass");
         return $this;
     }
+	
+    /*
+     * 设置单个cookie
+     */
+    public function cookie($name, $value)
+    {
+        $this->request->cookies[$name] = $value;
+        return $this;
+    }
     
+    /*
+     * 设置多个cookie
+     */
+    public function cookies(array $values)
+    {
+		$this->request->cookies = isset($this->request->cookies) ? $values + $this->request->cookies : $values;
+        return $this;
+    }
+
+    /*
+     * 设置底层curl参数
+     */
+    public function curlopt($name, $value)
+    {
+        $this->request->curlopts[$name] = $value;
+        return $this;
+    }
+    
+    /*
+     * 设置底层curl参数
+     */
+    public function curlopts(array $values)
+    {
+		$this->request->curlopts = isset($this->request->curlopts) ? $values + $this->request->curlopts : $values;
+        return $this;
+    }
+	
     /*
      * 设置请求超时时间
      */
@@ -212,31 +245,13 @@ class Client
 		}
         return $this;
     }
-    
-    /*
-     * 设置底层curl参数
-     */
-    public function curlopt($name, $value)
-    {
-        $this->request->curlopts[$name] = $value;
-        return $this;
-    }
-    
-    /*
-     * 设置底层curl参数
-     */
-    public function curlopts(array $values)
-    {
-		$this->request->curlopts = isset($this->request->curlopts) ? $values + $this->request->curlopts : $values;
-        return $this;
-    }
 
     /*
      * 设置是否获取并解析请求响应的headers数据
      */
     public function returnHeaders($bool = true)
     {
-		$this->return_headers = $bool;
+		$this->request->return_headers = $bool;
         return $this;
     }
     
@@ -245,8 +260,19 @@ class Client
      */
     public function debug($bool = true)
     {
-        $this->debug = $bool;
+        $this->request->debug = $bool;
         return $this;
+    }
+	
+    /*
+     * 获取请求响应
+     */
+    public function response()
+    {
+		if (!isset($this->response)) {
+			$this->setResponse($this->exec());
+		}
+		return $this->response;
     }
     
     /*
@@ -258,13 +284,11 @@ class Client
             case 'request':
                 return $this->request;
             case 'response':
-				if (!isset($this->response)) {
-					$this->response();
-				}
-                return $this->response;
+                return $this->response();
             case 'error':
                 return $this->error;
         }
+		throw new \Exception("Undefined property: $$name");
     }
     
     /*
@@ -273,11 +297,11 @@ class Client
     public function save($file)
     {
         if (isset($this->response)) {
-            return false;
+            throw new \Exception("已完成的请求实例");
         }
         if ($fp = fopen($file, 'w+')) {
             $this->request->curlopts[CURLOPT_FILE] = $fp;
-            $this->setResponse(curl_exec($this->build()));
+            $this->setResponse($this->exec());
             $return = $this->response->status === 200 && $this->response->body === true;
             if ($return) {
                 fclose($fp);
@@ -298,31 +322,28 @@ class Client
     public function getCurlInfo($name)
     {
 		if (!isset($this->response)) {
-			$this->setResponse(curl_exec($this->build()));
+			$this->setResponse($this->exec());
 		}
         return curl_getinfo($this->ch, $name);
     }
-    
+	
     /*
-     * 发送请求
+     * 执行请求
      */
-    public function response()
+    protected function exec()
     {
-		if (!isset($this->response)) {
-			$this->setResponse(curl_exec($this->build()));
-		}
-		return $this->response;
+		return curl_exec($this->build());
     }
     
     /*
-     * build请求数据
+     * 构建请求数据
      */
     protected function build()
     {
         $ch = curl_init($this->request->url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         if (isset($this->request->method)){
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($this->request->method));
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $this->request->method);
         }
         if (isset($this->request->body)){
             curl_setopt($ch, CURLOPT_POSTFIELDS, $this->request->body);
@@ -333,11 +354,14 @@ class Client
 			}
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         }
-        if ($this->debug) {
-            $this->return_headers = true;
+        if (isset($this->request->cookies)) {
+			curl_setopt($ch, CURLOPT_COOKIE, http_build_query($this->request->cookies, '', ';'));
+        }
+        if (!empty($this->request->debug)) {
+            $this->request->return_headers = true;
             $this->request->curlopts[CURLINFO_HEADER_OUT] = true;
         }
-        if ($this->return_headers) {
+        if (!empty($this->request->return_headers)) {
 			$this->request->curlopts[CURLOPT_HEADER] = true;
         }
         if (isset($this->request->curlopts)) {
@@ -348,11 +372,23 @@ class Client
     }
     
     /*
-     * 处理请求响应内容
+     * 处理请求响应
      */
-    protected function setResponse($content)
+    protected function setResponse($body)
     {
-        $this->response = new class () {
+        $status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
+        if (!($status >= 200 && $status < 300)) {
+            $this->setError($status);
+        }
+        if (!empty($this->request->return_headers)) {
+        	$headers = $this->getResponseHeadersFromResult($body);
+        }
+        $this->response = new class ($status, $body, $headers ?? null) {
+            public function __construct($status, $body, $headers) {
+                $this->status	= $status;
+                $this->body 	= $body;
+                $this->headers	= $headers;
+            }
             public function json($name = null, $default = null) {
 				$data = jsondecode($this->body);
 				return $name === null ? $data : Arr::get($data, $name, $default);
@@ -361,32 +397,23 @@ class Client
                 return $this->body;
             }
         };
-        $this->response->status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-        $this->response->body   = $content;
-        if ($this->return_headers) {
-			$this->response->headers = $this->getResponseHeadersFromResult($content);
-        }
-        if (!($this->response->status >= 200 && $this->response->status < 300)) {
-            $this->setError();
-        }
     }
 	
     /*
      * 处理错误信息
      */
-    protected function setError()
+    protected function setError($code)
     {
-        if ($this->response->status) {
-            $code = $this->response->status;
+        if ($code) {
             $message = Status::CODE[$code] ?? 'unknown status';
         } else {
-            $code = curl_errno($this->ch);
+            $code  	 = curl_errno($this->ch);
             $message = curl_error($this->ch);
         }
         $this->error = new class ($code, $message, $this->request) {
             private $request;
             public function __construct($code, $message, $request) {
-                $this->code = $code;
+                $this->code    = $code;
                 $this->message = $message;
                 $this->request = $request;
             }
@@ -398,13 +425,12 @@ class Client
     }
     
     /*
-     * 获取headers
+     * 获取响应头
      */
-    protected function getResponseHeadersFromResult($str)
+    protected function getResponseHeadersFromResult(&$body)
     {
-        if (is_string($str) && ($size = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE))) {
-			$this->response->body = substr($str, $size);
-	        foreach (explode(self::EOL, substr($str, 0, $size)) as $v) {
+        if (is_string($body) && ($size = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE))) {
+	        foreach (explode(self::EOL, substr($body, 0, $size)) as $v) {
 	            $l = explode(":", $v, 2);
 	            if(isset($l[1])) {
 	                $k = trim($l[0]);
@@ -420,6 +446,7 @@ class Client
 	                }
 	            }
 	        }
+			$body = substr($body, $size);
 	        return $headers ?? null;
         }
     }
@@ -427,16 +454,9 @@ class Client
     /*
      * 设置curl文件上传
      */
-    protected function setCurlFile($filepath, $filename, $mimetype)
+    protected function setCurlFile($file, $filename, $mimetype)
     {
-        $file = new \CURLFile(realpath($filepath));
-        if (isset($mimetype)) {
-            $file->setMimeType($mimetype);
-        }
-        if (isset($filename)) {
-            $file->setPostFilename($filename);
-        }
-        return $file;
+        return new \CURLFile(realpath($file), $mimetype, $filename);
     }
     
     /*
@@ -444,24 +464,21 @@ class Client
      */
     protected function setMultipartFile($name, $content, $filename, $mimetype)
     {
-        if (empty($filename)) {
-            $filename = $name;
-        }
-        if (empty($mimetype)) {
-            $mimetype = 'application/octet-stream';
-        }
         return implode(self::EOL, [
             '--'.$this->request->boundary,
-            "Content-Disposition: form-data; name=\"$name\"; filename=\"$filename\"",
-            "Content-Type: $mimetype",
-            "Content-Transfer-Encoding: binary",
+            'Content-Disposition: form-data; name="'.$name.'"; filename="'.($filename ?? $name).'"',
+            'Content-Type: '.($mimetype ?? 'application/octet-stream'),
+            'Content-Transfer-Encoding: binary',
             '',
-            (string) $content,
+            $content,
             "--{$this->request->boundary}--",
             ''
         ]);
     }
     
+    /*
+     * 析构方法，关闭curl句柄
+     */
     public function __destruct()
     {
         empty($this->ch) || curl_close($this->ch);

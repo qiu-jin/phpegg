@@ -29,7 +29,7 @@ class Nexmo extends Sms
             'api_secret'=> $this->seckey,
             'type'      => strlen($message) === mb_strlen($message) ? 'text' : 'unicode'
         ]);
-        $result = $client->response->json();
+        $result = $client->response()->json();
         if (isset($result['messages'][0])) {
             if ($result['messages'][0]['status'] === '0') {
                 return true;
