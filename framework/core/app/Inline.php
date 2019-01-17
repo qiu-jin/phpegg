@@ -41,7 +41,7 @@ class Inline extends App
     protected function dispatch()
     {
         $path = trim(Request::path(), '/');
-        foreach ($this->config['dispatch_mode'] as $mode) {
+        foreach ((array) $this->config['dispatch_mode'] as $mode) {
             if ($dispatch = $this->{$mode.'Dispatch'}($path)) {
                 return $dispatch;
             }

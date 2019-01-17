@@ -115,12 +115,7 @@ class Client
      */
     public function file($name, $content, $filename = null, $mimetype = null)
     {
-		$curlfile = $this->setCurlFile($content, $filename, $mimetype);
-        if (substr($name, -2) === '[]') {
-            $this->request->body[substr($name, 0, -2)][] = $curlfile;
-        } else {
-            $this->request->body[$name] = $curlfile;
-        }
+		$this->request->body[$name] = new \CURLFile(realpath($file), $mimetype, $filename);
         return $this;
     }
     
@@ -147,7 +142,16 @@ class Client
                 $this->request->body = null;
             }
         }
-        $this->request->body .= $this->setMultipartFile($name, $content, $filename, $mimetype);
+        $this->request->body .= implode(self::EOL, [
+            '--'.$this->request->boundary,
+            'Content-Disposition: form-data; name="'.$name.'"; filename="'.($filename ?? $name).'"',
+            'Content-Type: '.($mimetype ?? 'application/octet-stream'),
+            'Content-Transfer-Encoding: binary',
+            '',
+            $content,
+            "--{$this->request->boundary}--",
+            ''
+        ]);
         return $this;
     }
     
@@ -449,31 +453,6 @@ class Client
 			$body = substr($body, $size);
 	        return $headers ?? null;
         }
-    }
-    
-    /*
-     * 设置curl文件上传
-     */
-    protected function setCurlFile($file, $filename, $mimetype)
-    {
-        return new \CURLFile(realpath($file), $mimetype, $filename);
-    }
-    
-    /*
-     * 设置multipart协议上传
-     */
-    protected function setMultipartFile($name, $content, $filename, $mimetype)
-    {
-        return implode(self::EOL, [
-            '--'.$this->request->boundary,
-            'Content-Disposition: form-data; name="'.$name.'"; filename="'.($filename ?? $name).'"',
-            'Content-Type: '.($mimetype ?? 'application/octet-stream'),
-            'Content-Transfer-Encoding: binary',
-            '',
-            $content,
-            "--{$this->request->boundary}--",
-            ''
-        ]);
     }
     
     /*
