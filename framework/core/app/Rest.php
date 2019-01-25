@@ -41,17 +41,6 @@ class Rest extends App
         'default_dispatch_controllers' => null,
         // 默认调度下允许的HTTP方法
         'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-        // 资源调度的控制器，为空不限制
-        'resource_dispatch_controllers' => null,
-        // 资源调度默认路由表
-        'resource_dispatch_routes' => [
-            '/'     => [':GET' => 'index', ':POST' => 'create'],
-            'create'=> [':GET' => 'new'],
-            '*'     => [':GET' => 'show',  ':PUT'  => 'update', ':DELETE' => 'destroy'],
-            '*/edit'=> [':GET' => 'edit']
-        ],
-        // 资源调度的控制器路径转为驼峰风格
-        'resource_dispatch_controller_to_camel' => null,
         /* 路由调度的参数模式
          * 0 无参数
          * 1 循序参数
@@ -64,13 +53,28 @@ class Rest extends App
         'route_dispatch_dynamic' => false,
         // 设置动作路由属性名，为null则不启用动作路由
         'route_dispatch_action_routes' => null,
+        // 资源调度的控制器，为空不限制
+        'resource_dispatch_controllers' => null,
+        // 资源调度默认路由表
+        'resource_dispatch_routes' => [
+            '/'     => [':GET' => 'index', ':POST' => 'create'],
+            'create'=> [':GET' => 'new'],
+            '*'     => [':GET' => 'show',  ':PUT'  => 'update', ':DELETE' => 'destroy'],
+            '*/edit'=> [':GET' => 'edit']
+        ],
+        // 资源调度的控制器路径转为驼峰风格
+        'resource_dispatch_controller_to_camel' => null,
     ];
-    protected $method;
+	// HTTP请求方法
+    protected $http_method;
     
+    /*
+     * 调度
+     */
     protected function dispatch()
     {
         $path = Request::pathArr();
-        $this->method = Request::method();
+        $this->http_method = Request::method();
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
             if ($dispatch = $this->{$mode.'Dispatch'}($path)) {
                 return $dispatch;
@@ -79,6 +83,9 @@ class Rest extends App
         return false;
     }
 
+    /*
+     * 调用
+     */
     protected function call()
     {
         extract($this->dispatch);
@@ -86,15 +93,15 @@ class Rest extends App
             $this->setRequestParam();
         }
         if ($param_mode) {
-            $rm = new \ReflectionMethod($controller_instance, $action);
+            $mr = new \ReflectionMethod($controller_instance, $action);
             if ($param_mode === 1) {
-                $params = MethodParameter::bindListParams($rm, $params);
+                $params = MethodParameter::bindListParams($mr, $params);
             } elseif ($param_mode === 2) {
                 $request_param_type = [1 => 'query', 2 => 'param', 3 => 'input'];
                 if (isset($request_param_type[$this->config['bind_request_param']])) {
                     $params = Request::{$request_param_type[$this->config['bind_request_param']]}() + $params;
                 }
-                $params = MethodParameter::bindKvParams($rm, $params);
+                $params = MethodParameter::bindKvParams($mr, $params);
             }
             if ($params === false) {
                 self::abort(400, 'Missing argument');
@@ -103,12 +110,18 @@ class Rest extends App
         return $controller_instance->$action(...$params);
     }
     
+    /*
+     * 错误
+     */
     protected function error($code = null, $message = null)
     {
         Response::status(isset(Status::CODE[$code]) ? $code : 500);
         Response::json(['error' => compact('code', 'message')]);
     }
     
+    /*
+     * 响应
+     */
     protected function respond($return = null)
     {
         Response::json($return);
@@ -158,7 +171,7 @@ class Rest extends App
 				return;
 			}
         }
-        if (in_array($action = $this->method, $this->config['default_dispatch_http_methods'])
+        if (in_array($action = $this->http_method, $this->config['default_dispatch_http_methods'])
             && is_callable([$controller_instance = new $class(), $action])
         ) {
             if (isset($params)) {
@@ -191,7 +204,7 @@ class Rest extends App
             }
             $dynamic = $this->config['route_dispatch_dynamic'];
             $param_mode = $this->config['route_dispatch_param_mode'];
-            if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic, $this->method)) {
+            if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic, $this->http_method)) {
                 $call = explode('::', $dispatch[0]);
                 $class = $this->getControllerClass($call[0], $dispatch[2]);
                 if (isset($call[1])) {
@@ -249,7 +262,7 @@ class Rest extends App
             return;
         }
         $routes  = $this->config['resource_dispatch_routes'];
-        if (($dispatch = Dispatcher::route($action_path, $routes, 0, false, $this->method))
+        if (($dispatch = Dispatcher::route($action_path, $routes, 0, false, $this->http_method))
             && is_callable([$controller_instance = new $class(), $dispatch[0]])
         ) {
             return [
@@ -279,7 +292,7 @@ class Rest extends App
             return;
         }
         $dynamic = $this->config['route_dispatch_dynamic'];
-        if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic, $this->method)) {
+        if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic, $this->http_method)) {
             if ($dispatch[2]
                 && ($dispatch[0][0] === '_' || !is_callable([$controller_instance = new $class(), $dispatch[0]]))
             ) {

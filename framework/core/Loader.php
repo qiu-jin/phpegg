@@ -49,22 +49,23 @@ class Loader
         switch (strtolower($type)) {
             case 'prefix':
                 self::$class_prefix = $rules + self::$class_prefix;
-                break;
+                return;
             case 'map':
                 self::$class_map    = $rules + self::$class_map;
-                break;
+                return;
             case 'alias':
                 self::$class_alias  = $rules + self::$class_alias;
-                break;
+                return;
             case 'psr4':
                 self::addPsr4($rules);
-                break;
+                return;
             case 'files':
                 foreach ($rules as $name) {
                     self::import($name, false);
                 }
-                break;
+                return;
         }
+		throw new \Exception("Invalid loader type: $type");
     }
 
     /*

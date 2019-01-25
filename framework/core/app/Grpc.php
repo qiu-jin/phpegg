@@ -47,6 +47,9 @@ class Grpc extends App
         'response_message_format'   => '{service}{method}Response',
     ];
     
+    /*
+     * 调度
+     */
     protected function dispatch()
     {
         if (count($arr = Request::pathArr()) !== 2) {
@@ -77,6 +80,9 @@ class Grpc extends App
         return false;
     }
     
+    /*
+     * 调用
+     */
     protected function call()
     {
         if ($this->config['enable_timeout']) {
@@ -87,18 +93,24 @@ class Grpc extends App
                 Loader::add($type, $rules);
             }
         }
-        $rm = new \ReflectionMethod($this->dispatch['controller_instance'], $this->dispatch['action']);
-        if ($return = $this->config['param_mode'] ? $this->callWithReqResParams($rm) : $this->callWithParams($rm)) {
+        $mr = new \ReflectionMethod($this->dispatch['controller_instance'], $this->dispatch['action']);
+        if ($return = $this->config['param_mode'] ? $this->callWithReqResParams($mr) : $this->callWithParams($mr)) {
             return $return;
         }
         self::abort(500, 'Illegal message scheme class');
     }
     
+    /*
+     * 错误
+     */
     protected function error($code = null, $message = null)
     {
         Response::headers(['grpc-status' => $code, 'grpc-message' => $message ?? Status::CODE[$code] ?? '']);
     }
     
+    /*
+     * 响应
+     */
     protected function respond($return)
     {
         $data = $return->serializeToString();
@@ -118,6 +130,9 @@ class Grpc extends App
         Response::send(pack('C1N1a'.$size, $encode, $size, $data), 'application/grpc+proto');
     }
     
+    /*
+     * 读取请求参数
+     */
     protected function readParams()
     {
         if (($body = Request::body()) && strlen($body) > 5) {
@@ -137,6 +152,9 @@ class Grpc extends App
         self::abort(400, 'Invalid params');
     }
     
+    /*
+     * 调用（普通参数模式）
+     */
     protected function callWithParams($reflection_method)
     {
         list($request_class, $response_class) = $this->getDefaultReqResClass();
@@ -154,6 +172,9 @@ class Grpc extends App
         }
     }
     
+    /*
+     * 调用（request response 参数模式）
+     */
     protected function callWithReqResParams($reflection_method)
     {
         if ($this->config['param_mode'] == '2') {
@@ -177,6 +198,9 @@ class Grpc extends App
         }
     }
     
+    /*
+     * 设置请求超时
+     */
     protected function setTimeout()
     {
         if (($timeout = Request::header('grpc-timeout'))
@@ -196,6 +220,9 @@ class Grpc extends App
         }
     }
     
+    /*
+     * 获取request response 类（默认规则）
+     */
     protected function getDefaultReqResClass()
     {
         $replace = [

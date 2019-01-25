@@ -63,8 +63,12 @@ class Standard extends App
         // 设置动作路由属性名，为null则不启用动作路由
         'route_dispatch_action_routes' => null,
     ];
-    protected $reflection_method;
+	// 方法反射实例
+    protected $method_reflection;
     
+    /*
+     * 调度
+     */
     protected function dispatch()
     {
         $path = Request::pathArr();
@@ -76,20 +80,23 @@ class Standard extends App
         return false;
     }
 
+    /*
+     * 调用
+     */
     protected function call()
     {
         extract($this->dispatch);
         if ($param_mode) {
-            $rm = $this->reflection_method ?? new \ReflectionMethod($controller_instance, $action);
+            $mr = $this->method_reflection ?? new \ReflectionMethod($controller_instance, $action);
             $to_null = $this->config['missing_params_to_null'];
             if ($param_mode === 1) {
-                $params = MethodParameter::bindListParams($rm, $params, $to_null);
+                $params = MethodParameter::bindListParams($mr, $params, $to_null);
             } elseif ($param_mode === 2) {
                 $request_param_type = [1 => 'query', 2 => 'param', 3 => 'input'];
                 if (isset($request_param_type[$this->config['bind_request_param']])) {
                     $params = Request::{$request_param_type[$this->config['bind_request_param']]}() + $params;
                 }
-                $params = MethodParameter::bindKvParams($rm, $params, $to_null);
+                $params = MethodParameter::bindKvParams($mr, $params, $to_null);
             }
             if ($params === false) {
                 self::abort(400, 'Missing argument');
@@ -98,6 +105,9 @@ class Standard extends App
         return $controller_instance->$action(...$params);
     }
     
+    /*
+     * 错误
+     */
     protected function error($code = null, $message = null)
     {
         if (isset(Status::CODE[$code])) {
@@ -110,6 +120,9 @@ class Standard extends App
         }
     }
     
+    /*
+     * 响应
+     */
     protected function respond($return = [])
     {
         if ($this->config['enable_view']) {
@@ -308,10 +321,10 @@ class Standard extends App
      */
     protected function checkMethodAccessible($controller, $action)
     {
-        $this->reflection_method = new \ReflectionMethod($controller, $action);
-        if (!$this->reflection_method->isPublic()) {
-            if ($this->reflection_method->isProtected()) {
-                $this->reflection_method->setAccessible(true);
+        $this->method_reflection = new \ReflectionMethod($controller, $action);
+        if (!$this->method_reflection->isPublic()) {
+            if ($this->method_reflection->isProtected()) {
+                $this->method_reflection->setAccessible(true);
             } else {
                 throw new \Exception("Route action $action() not exists");
             }

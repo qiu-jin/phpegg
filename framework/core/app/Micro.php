@@ -98,11 +98,17 @@ class Micro extends App
         return $this;
     }
     
+    /*
+     * 调度
+     */
     protected function dispatch()
     {
         return ['routes' => []];
     }
     
+    /*
+     * 调用
+     */
     protected function call()
     {
         $router = new Router(Request::pathArr(), Request::method());
@@ -133,22 +139,34 @@ class Micro extends App
         throw new \RuntimeException('Invalid route call type');
     }
     
+    /*
+     * 错误
+     */
     protected function error($code = null, $message = null)
     {
         Response::status(isset(Status::CODE[$code]) ? $code : 500);
         Response::json(['error' => compact('code', 'message')]);
     }
     
+    /*
+     * 响应
+     */
     protected function respond($return = null)
     {
         Response::json($return);
     }
     
+    /*
+     * 获取定义类实例
+     */
     protected function getClassInstance($class)
     {
         return is_object($class) ? $class : new $class;
     }
 	
+    /*
+     * 获取控制器实例
+     */
     protected function getControllerInstance($name, $is_dynamic)
     {
         if ($classes = ($this->dispatch['classes'] ?? null)) {

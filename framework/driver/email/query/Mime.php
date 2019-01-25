@@ -5,8 +5,12 @@ use framework\util\File;
 
 class Mime
 {
+	// 换行符
     const EOL = "\r\n";
     
+    /*
+     * 构建邮件
+     */
     public static function build($options, &$addrs = null)
     {
         $data = ["MIME-Version: 1.0", "Date: ".date("D, j M Y G:i:s O")];
@@ -58,16 +62,25 @@ class Mime
         return implode(self::EOL, $data);
     }
     
+    /*
+     * 构建地址
+     */
     public static function buildAddr($addr)
     {
         return empty($addr[1]) ? "<$addr[0]>" : self::encodeHeader($addr[1])."<$addr[0]>";
     }
 
+    /*
+     * 编码头
+     */
     public static function encodeHeader($str)
     {
         return '=?utf-8?B?'.base64_encode($str).'?=';
     }
     
+    /*
+     * 编码内容
+     */
     public static function encodeContent($str, $encoding = 'base64')
     {
         switch ($encoding)
@@ -91,6 +104,9 @@ class Mime
         throw new \Exception("Encoding invalid: $encoding");
     }
     
+    /*
+     * 构建附件
+     */
     public static function buildAttachments($attachs, $boundary, $is_buffer)
     {
         foreach ($attachs as $attach) {

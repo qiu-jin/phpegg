@@ -6,7 +6,9 @@ use framework\core\View;
 
 class Query
 {
+	// 邮件驱动
     protected $email;
+	// 请求设置值
     protected $options;
     
     public function __construct($email, $options)
@@ -114,7 +116,7 @@ class Query
     }
     
     /*
-     * 邮件选项设置（单个）
+     * 邮件额外选项单个设置（部分邮件驱动有效）
      */
     public function option($name, $value)
     {
@@ -123,7 +125,7 @@ class Query
     }
     
     /*
-     * 邮件选项设置（多个）
+     * 邮件额外选项多个设置（部分邮件驱动有效）
      */
     public function options(array $value)
     {

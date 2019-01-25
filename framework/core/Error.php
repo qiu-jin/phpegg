@@ -8,12 +8,16 @@ use framework\core\exception\ErrorException;
 
 class Error
 {
+    /*
+     * 错误等级常量
+     */
     const ERROR    = E_USER_ERROR;
     const WARNING  = E_USER_WARNING;
     const NOTICE   = E_USER_NOTICE;
     // 保存错误信息
     private static $errors;
-    private static $error_info = [
+	// 错误信息类型
+    private static $error_info_types = [
         E_ERROR             => [Logger::CRITICAL ,'E_ERROR'],
         E_WARNING           => [Logger::WARNING  ,'E_WARNING'],
         E_PARSE             => [Logger::ALERT    ,'E_PARSE'],
@@ -140,6 +144,6 @@ class Error
      */
     private static function getErrorInfo($code)
     {
-        return self::$error_info[$code] ?? [Logger::ERROR, 'UNKNOEN_ERROR'];
+        return self::$error_info_types[$code] ?? [Logger::ERROR, 'UNKNOEN_ERROR'];
     }
 }

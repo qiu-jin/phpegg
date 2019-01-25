@@ -38,6 +38,9 @@ class Inline extends App
         'route_dispatch_extract_params' => false,
     ];
     
+    /*
+     * 调度
+     */
     protected function dispatch()
     {
         $path = trim(Request::path(), '/');
@@ -49,6 +52,9 @@ class Inline extends App
         return false;
     }
     
+    /*
+     * 调用
+     */
     protected function call()
     {
         if (empty($this->config['enable_getter'])) {
@@ -74,6 +80,9 @@ class Inline extends App
         return $return === 1 && $this->config['return_1_to_null'] ? null : $return;
     }
 
+    /*
+     * 错误
+     */
     protected function error($code = null, $message = null)
     {
         if (isset(Status::CODE[$code])) {
@@ -86,6 +95,9 @@ class Inline extends App
         }
     }
     
+    /*
+     * 响应
+     */
     protected function respond($return = null)
     {
         if (empty($this->config['enable_view'])) {
@@ -95,6 +107,9 @@ class Inline extends App
         }
     }
     
+    /*
+     * 默认调度
+     */
     protected function defaultDispatch($path) 
     {
         if ($path) {
@@ -111,11 +126,14 @@ class Inline extends App
         }
     }
     
+    /*
+     * 路由调度
+     */
     protected function routeDispatch($path)
     {
         if (!empty($routes = $this->config['route_dispatch_routes'])) {
             $dispatch = Dispatcher::route(
-                empty($path) ? null : explode('/', $path),
+                empty($path) ? [] : explode('/', $path),
                 is_string($routes) ? Config::flash($routes) : $routes,
                 2,
                 $this->config['route_dispatch_dynamic']
@@ -132,16 +150,25 @@ class Inline extends App
         }
     }
     
+    /*
+     * 获取控制器文件
+     */
     protected function getControllerFile($controller)
     {
         return APP_DIR.$this->config['controller_path']."/$controller.php";
     }
     
+    /*
+     * 设置返回默认默认调度结果
+     */
     protected function defaultDispatchResult($controller)
     {
         return ['controller' => $controller, 'controller_file' => $this->getControllerFile($controller)];
     }
     
+    /*
+     * 获取并验证控制器文件
+     */
     protected function getAndCheckControllerFile($controller)
     {
         if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)

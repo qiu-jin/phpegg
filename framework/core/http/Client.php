@@ -40,7 +40,7 @@ class Client
     /*
      * 多进程批量请求
      */
-    public static function multi(array $queries, callable $handle = null, $select_timeout = 0.1)
+    public static function batch(array $queries, callable $handle = null, $select_timeout = 0.1)
     {
         $mh = curl_multi_init();
         foreach ($queries as $i => $query) {

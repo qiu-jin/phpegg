@@ -104,6 +104,9 @@ class Jsonrpc extends App
         return $this;
     }
 
+    /*
+     * 调度
+     */
     protected function dispatch()
     {
         $body = Request::body();
@@ -125,6 +128,9 @@ class Jsonrpc extends App
         self::abort(-32700, 'Parse error');
     }
     
+    /*
+     * 调用
+     */
     protected function call()
     {
         foreach ($this->dispatch as $dispatch) {
@@ -165,6 +171,9 @@ class Jsonrpc extends App
         return $ret;
     }
     
+    /*
+     * 处理
+     */
     protected function handle($dispatch)
     {
         extract($dispatch);
@@ -183,6 +192,9 @@ class Jsonrpc extends App
         self::abort(-32601, 'Method not found');
     }
     
+    /*
+     * 错误
+     */
     protected function error($code = null, $message = null)
     {
         if ($this->is_batch_call) {
@@ -215,11 +227,17 @@ class Jsonrpc extends App
         }
     }
     
+    /*
+     * 响应
+     */
     protected function respond($return = null)
     {
         Response::send(($this->config['response_serialize'])($return), $this->config['response_content_type']);
     }
     
+    /*
+     * 解析请求信息单元
+     */
     protected function parseRequestItem($item)
     {
         $id = $item['id'] ?? null;
@@ -232,20 +250,26 @@ class Jsonrpc extends App
         return ['id' => $id, 'error' => ['code' => -32600, 'message' => 'Invalid Request']];
     }
     
+    /*
+     * 默认调用
+     */
     protected function defaultCall($method)
     {
         if (count($method_array = explode('.', $method)) > 1) {
             $action = array_pop($method_array);
             $controller = implode('\\', $method_array);
-            if ($action[0] !== '_'
-                && ($controller_instance = $this->makeControllerInstance($controller))
+            if (($controller_instance = $this->makeControllerInstance($controller))
                 && is_callable([$controller_instance, $action])
+				&& $action[0] !== '_'
             ) {
                 return [$controller_instance, $action];
             }
         }
     }
     
+    /*
+     * 自定义调用
+     */
     protected function customCall($method)
     {
         if (isset($this->custom_methods['method'][$method])) {
@@ -258,20 +282,25 @@ class Jsonrpc extends App
             $pos = strrpos($method, '.');
             if ($pos !== false) {
                 $class = substr($method, 0, $pos);
-                $method = substr($method, $pos);
+                $method = substr($method, $pos + 1);
                 if (isset($this->custom_methods['classes'][$class])
                     && is_callable([$instance = $this->makeCustomClassInstance($class), $method])
+					&& $method[0] !== '_'
                 ) {
                     return [$instance, $method];
                 }
             } elseif (isset($this->custom_methods['class'])
                 && is_callable([$instance = $this->makeCustomClassInstance(), $method])
+				&& $method[0] !== '_'
             ) {
                 return [$instance, $method];
             }
         }
     }
     
+    /*
+     * 生成控制器实例
+     */
     protected function makeControllerInstance($controller)
     {
         if (isset($this->config['controller_alias'][$controller])) {
@@ -289,6 +318,9 @@ class Jsonrpc extends App
         }
     }
     
+    /*
+     * 生成自定义类实例
+     */
     protected function makeCustomClassInstance($name = null)
     {
         if ($name === null) {
@@ -303,6 +335,9 @@ class Jsonrpc extends App
         return $this->custom_methods['classes'][$name] = instance($this->custom_methods['classes'][$name]);
     }
     
+    /*
+     * 获取方法反射实例
+     */
     protected function getMethodReflection($name, $method)
     {
         if (isset($this->method_reflections[$name])) {
@@ -311,6 +346,9 @@ class Jsonrpc extends App
         return $this->method_reflections[$name] = new \ReflectionMethod($method[0], $method[1]);
     }
     
+    /*
+     * 批请求中断错误信息
+     */
     protected function batchAbortError($return_count, $dispatch_count)
     {
         if ($dispatch_count > $return_count) {
@@ -324,6 +362,9 @@ class Jsonrpc extends App
         }
     }
     
+    /*
+     * 添加队列任务
+     */
     protected function addQueueJob($dispatch)
     {
         $message = [
@@ -336,6 +377,9 @@ class Jsonrpc extends App
         Container::driver('queue', $this->config['notification_type'])->producer()->push($message);
     }
     
+    /*
+     * 添加关闭事件任务
+     */
     protected function addCloseEventJob($dispatch)
     {
         Event::on('close', function () use ($dispatch) {
@@ -350,6 +394,9 @@ class Jsonrpc extends App
         });
     }
     
+    /*
+     * 设置错误信息
+     */
     protected function setError($e)
     {
         $message = $e->getMessage();

@@ -86,51 +86,53 @@ class Command
         }
     }
     
+    
+    /*
+     * 获取进程id
+     */
     public function pid()
     {
         return $this->pid ?? $this->pid = getmypid();
     }
     
-    public function params()
+    /*
+     * 获取参数
+     */
+    public function param(int $index = null, $default = null)
     {
-        return $this->arguments['params'] ?? null;
+        return $index === null ? ($this->arguments['params'] ?? null) 
+							   : ($this->arguments['params'][$index - 1] ?? $default);
     }
     
-    public function param(int $index, $default = null)
+    /*
+     * 获取设置值
+     */
+    public function option($name = null, $default = null)
     {
-        return $this->arguments['params'][$index - 1] ?? $default;
+        return $name === null ? ($this->options ?? null) : ($this->options[$name] ?? $default);
     }
     
-    public function options()
+    /*
+     * 获取长设置值
+     */
+    public function longOption($name = null, $default = null)
     {
-        return $this->options ?? null;
+        return $name === null ? ($this->arguments['long_options'] ?? null)
+			                  ? ($this->arguments['long_options'][$name] ?? $default);
     }
     
-    public function option($name, $default = null)
+    /*
+     * 获取短设置值
+     */
+    public function shortOption($name = null, $default = null)
     {
-        return $this->options[$name] ?? $default;
+        return $name === null ? ($this->arguments['short_options'] ?? null)
+			                  ? ($this->arguments['short_options'][$name] ?? $default);
     }
     
-    public function longOptions()
-    {
-        return $this->arguments['long_options'] ?? null;
-    }
-    
-    public function longOption($name, $default = null)
-    {
-        return $this->arguments['long_options'][$name] ?? $default;
-    }
-    
-    public function shortOptions()
-    {
-        return $this->arguments['short_options'] ?? null;
-    }
-    
-    public function shortOption($name, $default = null)
-    {
-        return $this->arguments['short_options'][$name] ?? $default;
-    }
-    
+    /*
+     * 读输入
+     */
     public function read($prompt = null)
     {
         if ($prompt !== null) {
@@ -139,6 +141,9 @@ class Command
         return fgets(STDIN);
     }
     
+    /*
+     * 写输出
+     */
     public function write($text, $style = null)
     {
         if ($style === true) {
@@ -149,47 +154,74 @@ class Command
         fwrite(STDOUT, $text);
     }
     
+    /*
+     * 输出单行
+     */
     public function line($text, $style = null)
     {
         $this->write($text, $style);
         $this->newline();
     }
     
+    /*
+     * 错误
+     */
     public function error($text)
     {
         $this->line("<error>$text</error>", true);
     }
-    
-    public function info($text)
-    {
-        $this->line("<info>$text</info>", true);
-    }
-    
-    public function comment($text)
-    {
-        $this->line("<comment>$text</comment>", true);
-    }
-    
-    public function question($text)
-    {
-        $this->line("<question>$text</question>", true);
-    }
-    
-    public function highlight($text)
-    {
-        $this->line("<highlight>$text</highlight>", true);
-    }
-    
+	
+    /*
+     * 警告
+     */
     public function warning($text)
     {
         $this->line("<warning>$text</warning>", true);
     }
     
+    /*
+     * 信息
+     */
+    public function info($text)
+    {
+        $this->line("<info>$text</info>", true);
+    }
+    
+    /*
+     * 注释
+     */
+    public function comment($text)
+    {
+        $this->line("<comment>$text</comment>", true);
+    }
+    
+    /*
+     * 高亮
+     */
+    public function highlight($text)
+    {
+        $this->line("<highlight>$text</highlight>", true);
+    }
+	
+    /*
+     * 
+     */
+    public function question($text)
+    {
+        $this->line("<question>$text</question>", true);
+    }
+    
+    /*
+     * 格式化json
+     */
     public function json($data)
     {
         $this->line(json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), true);
     }
     
+    /*
+     * 表格
+     */
     public function table(array $data, array $head = null)
     {
         $data = array_values($data);
@@ -221,26 +253,41 @@ class Command
         $this->line(implode(PHP_EOL, $table));
     }
     
+    /*
+     * 换行
+     */
     public function newline($num = 1)
     {
         $this->write(str_repeat(PHP_EOL, $num));
     }
     
+    /*
+     * 问答
+     */
     public function ask($prompt, array $auto_complete = null)
     {
         return $this->read($prompt, $auto_complete);
     }
     
+    /*
+     * 确认
+     */
     public function confirm($prompt)
     {
         return in_array(strtolower($this->read($prompt)), ['y', 'yes'], true);
     }
 
+    /*
+     * 选择
+     */
     public function choice($prompt, array $options, $is_multi_select = false)
     {
         
     }
     
+    /*
+     * 进度条
+     */
     public function progress($total = 100, $plus = '+', $reduce = '-', $format = '[%s%s] %3d%% Complete')
     {
         return new class ($this->app, compact('total', 'plus', 'reduce', 'format')) {
@@ -271,6 +318,9 @@ class Command
         };
     }
     
+    /*
+     * 隐藏输入字符（替换为星号*）
+     */
     public function hidden($prompt)
     {
         if ($this->hasStty()) {
@@ -288,6 +338,9 @@ class Command
         throw new \RuntimeException('Unable to hide the response.');
     }
     
+    /*
+     * 输入补全
+     */
     public function anticipate($prompt, array $values)
     {
         if ($this->hasReadline()) {
@@ -306,6 +359,9 @@ class Command
         throw new \RuntimeException('Anticipate method must enable readline.');
     }
     
+    /*
+     * 格式化样式
+     */
     public function formatStyle($text, array $style)
     {
         foreach ($style as $k => $v) {
@@ -325,6 +381,9 @@ class Command
         return $text;
     }
     
+    /*
+     * 格式化模版
+     */
     protected function formatTemplate($text)
     {
         $regex = implode('|', array_keys($this->templates));
@@ -365,11 +424,17 @@ class Command
         return str_replace('\\<', '<', $output.substr($text, $offset));
     }
     
+    /*
+     * 是否为win系统
+     */
     public function isWin()
     {
         return $this->is_win ?? $this->is_win = stripos(PHP_OS, 'win') === 0;
     }
     
+    /*
+     * 是否安装stty命令工具
+     */
     public function hasStty()
     {
         if (isset($this->has_stty)) {
@@ -379,11 +444,17 @@ class Command
         return $this->has_stty = $code === 0;
     }
     
+    /*
+     * 是否安装readline扩展
+     */
     public function hasReadline()
     {
         return $this->has_readline ?? $this->has_readline = extension_loaded('readline');
     }
     
+    /*
+     * 设置进程标题
+     */
     public function setTitle($title)
     {
         cli_set_process_title($title);

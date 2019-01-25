@@ -27,6 +27,9 @@ class Cli extends App
         500 => 'Internal Server Error',
     ];
     
+    /*
+     * 设置命令行调用
+     */
     public function command($name, $call = null)
     {
         if ($call !== null) {
@@ -42,6 +45,9 @@ class Cli extends App
         return $this;
     }
     
+    /*
+     * 调度
+     */
     protected function dispatch()
     {
         if (!App::IS_CLI) {
@@ -49,6 +55,9 @@ class Cli extends App
         }
     }
     
+    /*
+     * 调用
+     */
     protected function call()
     {
         $this->parseArguments();
@@ -94,6 +103,9 @@ class Cli extends App
         return $call(...($arguments['params'] ?? []));
     }
     
+    /*
+     * 错误
+     */
     protected function error($code = null, $message = null)
     {
         $command = $this->dispatch['instance'] ?? new Command;
@@ -101,12 +113,18 @@ class Cli extends App
         $command->highlight(is_array($message) ? var_export($message, true) : $message);
     }
     
+    /*
+     * 响应
+     */
     protected function respond($return = null)
     {
         self::exit(2);
         exit((int) $return);
     }
     
+    /*
+     * 解析命令行参数
+     */
     protected function parseArguments()
     {
         $argv = $_SERVER['argv'];
