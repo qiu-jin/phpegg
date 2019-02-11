@@ -40,8 +40,8 @@ trait Getter
     private function __makeModelNs($ns, $depth)
     {
         return new class($ns, $depth) {
-            protected $_ns;
-            protected $_depth;
+            private $_ns;
+            private $_depth;
             public function __construct($ns, $depth) {
                 $this->_ns[] = $ns;
                 $this->_depth = $depth - 1;

@@ -118,7 +118,7 @@ class Command
     public function longOption($name = null, $default = null)
     {
         return $name === null ? ($this->arguments['long_options'] ?? null)
-			                  ? ($this->arguments['long_options'][$name] ?? $default);
+			                  : ($this->arguments['long_options'][$name] ?? $default);
     }
     
     /*
@@ -127,7 +127,7 @@ class Command
     public function shortOption($name = null, $default = null)
     {
         return $name === null ? ($this->arguments['short_options'] ?? null)
-			                  ? ($this->arguments['short_options'][$name] ?? $default);
+			                  : ($this->arguments['short_options'][$name] ?? $default);
     }
     
     /*
@@ -459,6 +459,4 @@ class Command
     {
         cli_set_process_title($title);
     }
-    
-    public function __tostring() {}
 }

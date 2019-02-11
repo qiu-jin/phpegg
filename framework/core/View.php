@@ -97,7 +97,7 @@ class View
     {
         $phpfile = self::getView($tpl);
         if (!empty(self::$config['template']['engine'])) {
-            if (!is_file($tplfile = self::getTemplate($tpl))) {
+            if (!is_file($tplfile = self::getTemplateFile($tpl))) {
                 throw new ViewException("Template file not found: $tplfile");
             }
             if ($force || self::$config['template']['debug'] || !is_file($phpfile)
@@ -114,7 +114,8 @@ class View
      */
     public static function exists($tpl)
     {
-        return empty(self::$config['template']['engine']) ? is_php_file(self::getView($tpl)) : is_file(self::getTemplate($tpl));
+        return empty(self::$config['template']['engine']) ? is_php_file(self::getView($tpl))
+														  : is_file(self::getTemplateFile($tpl));
     }
     
     /*
@@ -133,7 +134,7 @@ class View
      */
     public static function readTemplate($tpl)
     {
-        if (is_file($file = self::getTemplate($tpl))) {
+        if (is_file($file = self::getTemplateFile($tpl))) {
             return self::readTemplateFile($file);
         }
         throw new ViewException("Template file no exists: $file");
@@ -148,7 +149,7 @@ class View
             return;
         }
         foreach ($tpls as $tpl) {
-            if (is_file($tplfile = self::getTemplate($tpl))) {
+            if (is_file($tplfile = self::getTemplateFile($tpl))) {
                 throw new ViewException("Template file not found: $tplfile");
             }
             if (filemtime($phpfile) < filemtime($tplfile)) {
@@ -180,7 +181,7 @@ class View
     /*
      * 获取模版文件路径
      */
-    private static function getTemplate($tpl)
+    private static function getTemplateFile($tpl)
     {
         return (self::$config['template']['dir'] ?? self::$config['dir']).$tpl.self::$config['template']['ext'];
     }
@@ -214,6 +215,9 @@ class View
         throw new ViewException("View dir create fail: $dir");
     }
     
+    /*
+     * 清理
+     */
     public static function clean($name = null)
     {
         if ($name === null) {

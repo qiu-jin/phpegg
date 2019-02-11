@@ -89,7 +89,7 @@ class Config
      */
     public static function flash($name)
     {
-        return self::$configs[$name] ?? self::load($name);
+        return self::$configs[$name] ?? self::read($name);
     }
     
     /*
@@ -124,13 +124,13 @@ class Config
             return false;
         }
         self::$checked[$name] = true;
-        return self::$dir && (self::$configs[$name] = self::load($name));
+        return self::$dir && (self::$configs[$name] = self::read($name));
     }
     
     /*
-     * 从配置目录中导入子配置文件
+     * 从配置目录中读取子配置文件
      */
-    private static function load($name)
+    private static function read($name)
     {
         if (is_php_file($file = self::$dir."$name.php") && is_array($config = __include($file))) {
             return $config;
