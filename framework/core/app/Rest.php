@@ -199,7 +199,7 @@ class Rest extends App
     {
         if (!empty($this->config['route_dispatch_routes'])) {
             $routes = $this->config['route_dispatch_routes'];
-            if (is_string($routes) && !($routes = Config::flash($routes))) {
+            if (is_string($routes) && !($routes = Config::read($routes))) {
                 return;
             }
             $dynamic = $this->config['route_dispatch_dynamic'];

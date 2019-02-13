@@ -21,7 +21,7 @@ class Session
             return;
         }
         self::$init = true;
-        if ($config = Config::flash('session')) {
+        if ($config = Config::read('session')) {
 			if (isset($config['ini_set'])) {
                 foreach ($config['ini_set'] as $k => $v) {
                     ini_set("session.$k", $v);

@@ -6,19 +6,19 @@ use framework\App;
 class Loader
 {
     private static $init;
-    // 类文件
-    private static $class_map = [];
-    // 类PSR-4
-    private static $class_psr4 = [];
-    // 类别名
-    private static $class_alias = [
-        'App' => App::class
-    ];
-    // 类前缀目录
-    private static $class_prefix = [
-        'app' => APP_DIR,
-        'framework' => FW_DIR
-    ];
+	// 映射
+	private static $map_rules = [];
+	// PSR-4
+	private static $psr4_rules = [];
+	// 别名
+	private static $alias_rules = [
+		'App' => App::class
+	];
+	// 前缀目录
+	private static $prefix_rules = [
+		'app' => APP_DIR,
+		'framework' => FW_DIR
+	];
     
     /*
      * 初始化
@@ -29,14 +29,14 @@ class Loader
             return;
         }
         self::$init = true;
-        if ($config = Config::flash('loader')) {
+        if ($config = Config::read('loader')) {
             foreach ($config as $type => $rules) {
                 self::add($type, $rules);
             }
         }
         // composer vendor目录
-        if ($vendor = Config::env('VENDOR_DIR')) {
-            self::import($vendor.'autoload', false);  
+        if ($dir = Config::env('VENDOR_DIR')) {
+            self::import($dir.'autoload', false);  
         }
         spl_autoload_register([__CLASS__, 'autoload'], true, true);
     }
@@ -46,22 +46,22 @@ class Loader
      */
     public static function add($type, array $rules)
     {
-        switch (strtolower($type)) {
+        switch ($type = strtolower($type)) {
             case 'prefix':
-                self::$class_prefix = $rules + self::$class_prefix;
-                return;
-            case 'map':
-                self::$class_map    = $rules + self::$class_map;
-                return;
-            case 'alias':
-                self::$class_alias  = $rules + self::$class_alias;
+                self::$prefix_rules	= $rules + self::$prefix_rules;
                 return;
             case 'psr4':
                 self::addPsr4($rules);
                 return;
-            case 'files':
-                foreach ($rules as $name) {
-                    self::import($name, false);
+            case 'map':
+				self::$map_rules	= $rules + self::$map_rules;
+                return;
+            case 'alias':
+                self::$alias_rules	= $rules + self::$alias_rules;
+                return;
+			case 'files':
+                foreach ($rules as $v) {
+                    self::import($v, false);
                 }
                 return;
         }
@@ -73,19 +73,18 @@ class Loader
      */
     private static function autoload($class)
     {
-        if (isset(self::$class_map[$class])) {
-            self::import(self::$class_map[$class]);
-        } elseif (isset(self::$class_alias[$class])) {
-            class_alias(self::$class_alias[$class], $class);
-        } else {
-            $arr = explode('\\', $class, 2);
-            if (isset($arr[1])) {
-                if (isset(self::$class_prefix[$arr[0]])) {
-                    self::import(self::$class_prefix[$arr[0]].strtr($arr[1], '\\', '/'));
-                } elseif (isset(self::$class_psr4[$arr[0]])) {
-                    self::loadPsr4($arr[0], $class);
-                }
+        $arr = explode('\\', $class, 2);
+        if (isset($arr[1])) {
+            if (isset(self::$prefix_rules[$arr[0]])) {
+                self::import(self::$prefix_rules[$arr[0]].strtr($arr[1], '\\', '/'));
+            } elseif (isset(self::$psr4_rules[$arr[0]])) {
+                self::loadPsr4($arr[0], $class);
             }
+        }
+        if (isset(self::$map_rules[$class])) {
+            self::import(self::$map_rules[$class]);
+        } elseif (isset(self::$alias_rules[$class])) {
+            class_alias(self::$alias_rules[$class], $class);
         }
     }
 
@@ -107,7 +106,7 @@ class Loader
     {
         foreach ($rules as $k => $v) {
             $k = trim($k, '\\');
-            self::$class_psr4[strstr($k, '\\', true) ?: $k]["$k\\"] = $v;
+            self::$psr4_rules[strstr($k, '\\', true) ?: $k]["$k\\"] = $v;
         }
     }
     
@@ -117,7 +116,7 @@ class Loader
     private static function loadPsr4($prefix, $class)
     {
         $i = 0;
-        foreach (self::$class_psr4[$prefix] as $k => $v) {
+        foreach (self::$psr4_rules[$prefix] as $k => $v) {
             $l = strlen($k);
             if ($l > $i && strncmp($k, $class, $l) === 0) {
                 $i = $l;

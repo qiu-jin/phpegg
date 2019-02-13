@@ -42,7 +42,7 @@ class Logger
             return;
         }
         self::$init = true;
-        if ($configs = Config::flash('logger')) {
+        if ($configs = Config::read('logger')) {
             foreach ($configs as $name => $config) {
                 if (isset($config['level'])) {
                     foreach (array_unique((array) $config['level']) as $lv) {

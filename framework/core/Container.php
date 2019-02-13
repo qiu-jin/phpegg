@@ -47,7 +47,7 @@ class Container
             return;
         }
         self::$init = true;
-        if ($config = Config::flash('container')) {
+        if ($config = Config::read('container')) {
             foreach ($config as $type => $value) {
                 if (isset(self::$providers[$type])) {
                     self::$providers[$type] = $value + self::$providers[$type];

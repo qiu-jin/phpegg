@@ -103,7 +103,7 @@ class View extends App
         if (!empty($routes = $this->config['route_dispatch_routes'])) {
             $dispatch = Dispatcher::route(
                 empty($path) ? null : explode('/', $path),
-                is_string($routes) ? Config::flash($routes) : $routes,
+                is_string($routes) ? Config::read($routes) : $routes,
                 2,
                 $this->config['route_dispatch_dynamic']
             );

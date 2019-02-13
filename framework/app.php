@@ -10,10 +10,11 @@ abstract class App
     // 版本号
     const VERSION = '1.0.0';
     // 内核版本号
-    const CORE_VERSION = '1.0.0';
+    const YOLK_VERSION = '1.0.0';
     // 是否命令行环境
-    const IS_CLI  = PHP_SAPI == 'cli';
-    
+    const IS_CLI = PHP_SAPI == 'cli';
+    // 应用模式
+    const MODES = ['Standard', 'Rest', 'Micro', 'Inline', 'View', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'];
     // 应用实例容器
     private static $app;
     // 标示boot方法是否已执行，防止重复执行
@@ -33,7 +34,6 @@ abstract class App
     private static $error_handler;
     // 设置返回值处理器
     private static $return_handler;
-    
     // 应用配置项
     protected $config;
     // 应用调度结果
@@ -88,8 +88,8 @@ abstract class App
                 define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
             }
         }
-        if (extension_loaded('eggcore')) {
-            eggcore_boot(self::VERSION, self::CORE_VERSION);
+        if (extension_loaded('yolk')) {
+            yolk_boot(self::VERSION, self::YOLK_VERSION);
         } else {
             require FW_DIR.'common.php';
             require FW_DIR.'core/Config.php';
@@ -129,7 +129,7 @@ abstract class App
             return;
         }
         define('APP_MODE', $app);
-        if (in_array($app, ['Standard', 'Rest', 'Micro', 'Inline', 'View', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'])) {
+        if (in_array($app, self::MODES)) {
             $class = "framework\core\app\\$app";
         } elseif (is_subclass_of($app, __CLASS__)) {
             $class = $app;

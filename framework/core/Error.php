@@ -9,12 +9,12 @@ use framework\core\exception\ErrorException;
 class Error
 {
     /*
-     * 错误等级常量
+     * 等级常量
      */
     const ERROR    = E_USER_ERROR;
     const WARNING  = E_USER_WARNING;
     const NOTICE   = E_USER_NOTICE;
-    // 保存错误信息
+    // 错误信息
     private static $errors;
 	// 错误信息类型
     private static $error_info_types = [
@@ -132,7 +132,7 @@ class Error
     }
     
     /*
-     * 响应错误给客户端
+     * 响应错误
      */
     private static function respond()
     {

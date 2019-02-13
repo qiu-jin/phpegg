@@ -409,7 +409,7 @@ class Client
     protected function setError($code)
     {
         if ($code) {
-            $message = Status::CODE[$code] ?? 'unknown status';
+            $message = Status::CODE[$code] ?? 'Unknown Status';
         } else {
             $code  	 = curl_errno($this->ch);
             $message = curl_error($this->ch);
@@ -422,7 +422,7 @@ class Client
                 $this->request = $request;
             }
             public function __toString() {
-                return ($this->code ? "[$this->code]$this->message" : 'unknown http error')
+                return ($this->code ? "[$this->code]$this->message" : 'Unknown HTTP Error')
                        .": {$this->request->method} {$this->request->url}";
             }
         };

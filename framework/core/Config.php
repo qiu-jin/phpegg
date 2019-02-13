@@ -85,11 +85,11 @@ class Config
     }
     
     /*
-     * 获取配置项值，不缓存（仅支持顶级配置项）
+     * 读取配置项值，不缓存（仅支持顶级配置项）
      */
-    public static function flash($name)
+    public static function read($name)
     {
-        return self::$configs[$name] ?? self::read($name);
+        return self::$configs[$name] ?? self::load($name);
     }
     
     /*
@@ -124,13 +124,13 @@ class Config
             return false;
         }
         self::$checked[$name] = true;
-        return self::$dir && (self::$configs[$name] = self::read($name));
+        return self::$dir && (self::$configs[$name] = self::load($name));
     }
     
     /*
      * 从配置目录中读取子配置文件
      */
-    private static function read($name)
+    private static function load($name)
     {
         if (is_php_file($file = self::$dir."$name.php") && is_array($config = __include($file))) {
             return $config;
@@ -150,9 +150,9 @@ class Config
     /*
      * 导入单文件配置
      */
-    private static function loadFile($path)
+    private static function loadFile($file)
     {
-        if (is_array($configs = __include($path))) {
+        if (is_array($configs = __include($file))) {
             self::$configs = $configs;
         }
     }

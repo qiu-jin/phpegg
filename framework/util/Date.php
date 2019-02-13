@@ -43,7 +43,7 @@ class Date extends DateTime
             return;
         }
         self::$init = true;
-        if ($config = Config::flash('date')) {
+        if ($config = Config::read('date')) {
             self::$config = $config + self::$config;
         }
     }

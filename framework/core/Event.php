@@ -16,7 +16,7 @@ class Event
             return;
         }
         self::$init = true;
-        if ($config = Config::flash('event')) {
+        if ($config = Config::read('event')) {
             foreach ($config as $name => $events) {
                 foreach ($events as $i => $event) {
                     self::on($name, $event, $i);
@@ -30,29 +30,22 @@ class Event
      */
     public static function on($name, callable $call, $priority = 0)
     {
-        if (!isset(self::$events[$name])) {
-            self::$events[$name] = new \SplPriorityQueue();
-        }
-        self::$events[$name]->insert($call, $priority);
+		(self::$events[$name] ?? self::$events[$name] = new \SplPriorityQueue())->insert($call, $priority);
     }
 
     /*
-     * 触发事件执行
+     * 触发事件
      */
     public static function trigger($name, ...$params)
     {
         if (isset(self::$events[$name])) {
-            while (self::$events[$name]->valid()) {
-                if ((self::$events[$name]->extract())(...$params) === false) {
-                    break;
-                }
-            }
+            while(self::$events[$name]->valid() && (self::$events[$name]->extract())(...$params) !== false);
             unset(self::$events[$name]);
         }
     }
     
     /*
-     * 事件是否注册
+     * 是否注册
      */
     public static function has($name)
     {
@@ -60,7 +53,7 @@ class Event
     }
     
     /*
-     * 清理已注册事件
+     * 清理事件
      */
     public static function clean($name = null)
     {

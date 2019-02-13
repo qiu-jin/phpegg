@@ -40,7 +40,7 @@ abstract class Auth
             return;
         }
         self::$init = true;
-        $config = Config::flash('auth');
+        $config = Config::read('auth');
         if (!is_subclass_of($config['class'], __CLASS__)) {
             throw new Exception('Illegal auth class');
         }

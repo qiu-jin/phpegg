@@ -33,7 +33,7 @@ class Cookie
             return;
         }
         self::$init = true;
-        if ($config = Config::flash('cookie')) {
+        if ($config = Config::read('cookie')) {
             if (isset($config['options'])) {
                 self::$options = $config['options'] + self::$options;
             }
