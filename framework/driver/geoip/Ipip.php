@@ -11,14 +11,16 @@ class Ipip extends Geoip
     protected $db;
     protected $index;
     protected $offset;
-    protected $is_paid_db;
+    protected $is_paid_db = false;
 
     protected function init($config)
     {
+        if (isset($config['is_paid_db'])) {
+            $this->is_paid_db = $config['is_paid_db'];
+        }
         if (!$this->db = fopen($config['database'], 'rb')) {
             throw new \Exception("Database open error");
         }
-        $this->is_paid_db = !empty($config['is_paid_db']);
         $this->offset = unpack('N', fread($this->db, 4));
         $this->index  = fread($this->db, $this->offset[1] - 4);
     }

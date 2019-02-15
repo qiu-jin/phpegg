@@ -11,7 +11,7 @@ class Ip2location extends Geoip
     // 数据库实例
     protected $db;
     // 数据表名 ip2location
-    protected $table;
+    protected $table = 'ip2location';
     /*
      * 数据表字段名
      * 0 起始位置 begin_ip_num
@@ -21,13 +21,17 @@ class Ip2location extends Geoip
      * 4 地区名称（可选）state_name
      * 5 城市名称（可选）city_name
      */
-    protected $fields;
+    protected $fields = ['begin_ip_num', 'end_ip_num', 'country_code', 'country_name'];
 
     protected function init($config)
     {
-        $this->db     = Container::driver('db', $config['db']);
-        $this->table  = $config['table']  ?? 'ip2location';
-        $this->fields = $config['fields'] ?? ['begin_ip_num', 'end_ip_num', 'country_code', 'country_name'];
+        if (isset($config['table'])) {
+            $this->table = $config['table'];
+        }
+        if (isset($config['fields'])) {
+            $this->fields = $config['fields'];
+        }
+		$this->db = Container::driver('db', $config['db']);
     }
     
     protected function handle($ip)

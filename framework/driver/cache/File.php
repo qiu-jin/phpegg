@@ -9,12 +9,14 @@ class File extends Cache
 	// 缓存文件目录
     protected $dir;
 	// 缓存文件扩展名
-    protected $ext;
+    protected $ext = '.cache.txt';
     
     protected function init($config)
     {
+		if (isset($config['ext'])) {
+			$this->ext = $config['ext'];
+		}
         $this->dir = Str::lastPad($config['dir'], '/');
-        $this->ext = $config['ext'] ?? '.cache.txt';
     }
     
     public function get($key, $default = null)

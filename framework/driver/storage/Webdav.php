@@ -17,8 +17,8 @@ class Webdav extends Storage
     protected $endpoint;
     protected $username;
     protected $password;
-    protected $public_read;
-    protected $auto_create_dir;
+    protected $public_read = false;
+    protected $auto_create_dir = false;
     
     protected function init($config)
     {
@@ -26,8 +26,12 @@ class Webdav extends Storage
         $this->username = $config['username'];
         $this->password = $config['password'];
         $this->domain   = $config['domain'] ?? $this->endpoint;
-        $this->public_read = $config['public_read'] ?? false;
-        $this->auto_create_dir = $config['auto_create_dir'] ?? false;
+        if (isset($config['public_read'])) {
+            $this->public_read = $config['public_read'];
+        }
+        if (isset($config['auto_create_dir'])) {
+            $this->auto_create_dir = $config['auto_create_dir'];
+        }
     }
     
     public function get($from, $to = null)

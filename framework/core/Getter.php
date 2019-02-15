@@ -6,57 +6,39 @@ defined('app\env\GETTER_PROVIDERS_NAME') || define('app\env\GETTER_PROVIDERS_NAM
 trait Getter
 {
     /*
-     * 获取容器实例
+     * 获取Provider实例
      */
     public function __get($name)
     {
         $n = \app\env\GETTER_PROVIDERS_NAME;
         if (isset($this->$n) && isset($this->$n[$name])) {
-            $v = $this->$n[$name];
-            if (is_string($v)) {
-                return $this->$name = Container::make($v);
-            } elseif (is_array($v)) {
-                return $this->$name = new $v[0](...array_slice($v, 1));
-            } elseif ($value instanceof \Closure) {
-                return $this->$name = $v();
+			return Container::makeProviderInstance($this->$n[$name]);
+        } elseif ($type = Container::getProviderType($name)) {
+            if ($type !== 'model') {
+				return $this->$name = Container::{"make$type"}($name);
             }
-            throw new \Exception("Provider $name invalid type");
-        } else {
-            if ($type = Container::getProviderType($name)) {
-                if ($type === 'model') {
-                    $depth = Container::getProviderValue('model', $name);
-                    return $this->$name = $this->__makeModelNs($name, is_array($depth) ? $depth[1] : 1);
-                } else {
-                    return $this->$name = Container::{"make$type"}($name);
-                }
-            }
-            throw new \Exception("Undefined property: $$name");
+            $v = Container::getProviderValue('model', $name);
+			// 模型名称空间链实例
+			return $this->$name = new class($name, is_array($v) ? $v[1] : 1) {
+	            private $_ns;
+	            private $_depth;
+	            public function __construct($name, $depth) {
+	                $this->_ns[] = $name;
+	                $this->_depth = $depth - 1;
+	            }
+	            public function __get($name) {
+	                $this->_ns[] = $name;
+	                if ($name[0] === '_') {
+	                    throw new \Exception('Undefined property: $'.implode('->', $this->_ns));
+	                }
+	                if ($this->_depth > 0) {
+	                    return $this->$name = new self($this->_ns, $this->_depth);
+	                } else {
+	                    return $this->$name = Container::model(implode('.', $this->_ns));
+	                }
+	            }
+			};
         }
-    }
-    
-    /*
-     * 获取模型名称空间链实例
-     */
-    private function __makeModelNs($ns, $depth)
-    {
-        return new class($ns, $depth) {
-            private $_ns;
-            private $_depth;
-            public function __construct($ns, $depth) {
-                $this->_ns[] = $ns;
-                $this->_depth = $depth - 1;
-            }
-            public function __get($name) {
-                $this->_ns[] = $name;
-                if ($name[0] === '_') {
-                    throw new \Exception('Undefined property: $'.implode('->', $this->_ns));
-                }
-                if ($this->_depth > 0) {
-                    return $this->$name = new self($this->_ns, $this->_depth);
-                } else {
-                    return $this->$name = Container::model(implode('.', $this->_ns));
-                }
-            }
-        };
+		throw new \Exception("Undefined property: $$name");
     }
 }

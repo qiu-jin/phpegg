@@ -9,15 +9,19 @@ class Opcache extends Cache
 	// 缓存文件目录
     protected $dir;
 	// 缓存文件扩展名
-    protected $ext;
+    protected $ext = '.cache.php';
 	// 启用值过滤功能
-    protected $enable_filter_value;
+    protected $enable_filter_value = false;
 
     protected function init($config)
     {
-        $this->dir = Str::lastPad($config['dir'], '/');
-        $this->ext = $config['ext'] ?? '.cache.php';
-        $this->enable_filter_value = $config['enable_filter_value'] ?? false;
+		$this->dir = Str::lastPad($config['dir'], '/');
+		if (isset($config['ext'])) {
+			$this->ext = $config['ext'];
+		}
+		if (isset($config['enable_filter_value'])) {
+			$this->enable_filter_value = $config['enable_filter_value'];
+		}
     }
     
     public function get($key, $default = null)

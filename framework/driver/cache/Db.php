@@ -13,15 +13,19 @@ class Db extends Cache
     // 数据库实例
     protected $db;
     // 数据表名
-    protected $table;
+    protected $table = 'cache';
     // 数据表字段名
-    protected $fields;
+    protected $fields = ['key', 'value', 'expiration'];;
 
     protected function init($config)
-    {
-        $this->db = Container::driver('db', $config['db']);
-        $this->table = $config['table'] ?? 'cache';
-        $this->fields = $config['fields'] ?? ['key', 'value', 'expiration'];
+    
+		if (isset($config['table'])) {
+			$this->table = $config['table'];
+		}
+		if (isset($config['fields'])) {
+			$this->fields = $config['fields'];
+		}
+		$this->db = Container::driver('db', $config['db']);
     }
     
     public function get($key, $default = null)

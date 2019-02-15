@@ -5,13 +5,15 @@ use framework\core\http\Client;
 
 class Aliyun extends Sms
 {
-    protected $region;
+    protected $region = 'cn-hangzhou';
     protected static $endpoint = 'https://dysmsapi.aliyuncs.com';
     
     public function __construct(array $config)
     {
         parent::__construct($config);
-        $this->region = $config['region'] ?? 'cn-hangzhou';
+        if (isset($config['region'])) {
+            $this->region = $config['region'];
+        }
     }
 
     protected function handle($to, $template, $data, $signname = null)

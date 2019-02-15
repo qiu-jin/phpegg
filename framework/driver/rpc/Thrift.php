@@ -21,11 +21,11 @@ class Thrift extends Rpc
     // 传输层实例
     protected $transport;
     // 是否多服务类型
-    protected $tmultiplexed;
+    protected $tmultiplexed = false;
     // service类名前缀
     protected $service_prefix;
     // 是否自动绑定参数
-    protected $auto_bind_params;
+    protected $auto_bind_params = false;
     // 方法参数数据
     protected $service_method_params;
     
@@ -44,9 +44,15 @@ class Thrift extends Rpc
         foreach ($config['service_load_rules'] as $type => $rules) {
             Loader::add($type, $rules);
         }
-        $this->tmultiplexed = $config['tmultiplexed'] ?? false;
-        $this->service_prefix = $config['service_prefix'] ?? null;
-        $this->auto_bind_param = $config['auto_bind_param'] ?? false;
+        if (isset($config['tmultiplexed'])) {
+            $this->tmultiplexed = $config['tmultiplexed'];
+        }
+        if (isset($config['service_prefix'])) {
+            $this->service_prefix = $config['service_prefix'];
+        }
+        if (isset($config['auto_bind_param'])) {
+            $this->auto_bind_param = $config['auto_bind_param'];
+        }
     }
     
     public function query($name = null)

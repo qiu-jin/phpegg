@@ -14,13 +14,19 @@ class Maxmind extends Geoip
 {
     protected $db;
     protected $api;
-    protected $lang;
-    protected $type;
+    protected $lang = 'en';
+    protected $type = 'country';
     protected $handle;
     protected static $endpoint = 'https://geoip.maxmind.com/geoip/v2.1';
     
     protected function init($config)
     {
+        if (isset($config['lang'])) {
+            $this->lang = $config['lang'];
+        }
+        if (isset($config['type'])) {
+            $this->type = $config['type'];
+        }
         if (isset($config['database'])) {
             $this->handle = 'dbHandle';
             $this->db = new Reader($config['database']);
@@ -31,8 +37,6 @@ class Maxmind extends Geoip
         } else {
             throw new \Exception("Invalid configuration");
         }
-        $this->lang = $config['lang'] ?? 'en';
-        $this->type = $config['type'] ?? 'country';
     }
     
     protected function handle($ip)

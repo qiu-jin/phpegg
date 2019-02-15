@@ -14,7 +14,9 @@ abstract class Email
     public function __construct($config)
     {
         $this->init($config);
-        isset($config['from']) && $this->from = $config['from'];
+        if (isset($config['from'])) {
+        	$this->from = $config['from'];
+        }
     }
     
     /*

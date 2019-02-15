@@ -11,16 +11,18 @@ class Oss extends Storage
     protected $acckey;
     protected $seckey;
     protected $endpoint;
-    protected $public_read;
+    protected $public_read = false;
     
     protected function init($config)
     {
-        $this->bucket = $config['bucket'];
-        $this->acckey = $config['acckey'];
-        $this->seckey = $config['seckey'];
+        $this->bucket 	= $config['bucket'];
+        $this->acckey 	= $config['acckey'];
+        $this->seckey 	= $config['seckey'];
         $this->endpoint = $config['endpoint'];
         $this->domain   = $config['domain'] ?? "'http://{$config['bucket']}.{$config['endpoint']}";
-        $this->public_read = $config['public_read'] ?? false;
+        if (isset($config['public_read'])) {
+            $this->public_read = $config['public_read'];
+        }
     }
     
     public function get($from, $to = null)

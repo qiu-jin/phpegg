@@ -12,7 +12,7 @@ class S3 extends Storage
     protected $acckey;
     protected $seckey;
     protected $endpoint;
-    protected $public_read;
+    protected $public_read = false;
     
     protected function init($config)
     {
@@ -22,7 +22,9 @@ class S3 extends Storage
         $this->region = $config['region'];
         $this->endpoint = $config['endpoint'] ?? 'https://s3.amazonaws.com';
         $this->domain   = $config['domain']   ?? "$this->endpoint/$this->bucket";
-        $this->public_read = $config['public_read'] ?? false;
+        if (isset($config['public_read'])) {
+            $this->public_read = $config['public_read'];
+        }
     }
     
     public function get($from, $to = null)

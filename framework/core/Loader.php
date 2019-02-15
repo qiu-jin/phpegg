@@ -48,17 +48,13 @@ class Loader
     {
         switch ($type = strtolower($type)) {
             case 'prefix':
-                self::$prefix_rules	= $rules + self::$prefix_rules;
+            case 'map':
+            case 'alias':
+				$t = $type.'_rules';
+				self::$$t = $rules + self::$$t;
                 return;
             case 'psr4':
-                self::addPsr4($rules);
-                return;
-            case 'map':
-				self::$map_rules	= $rules + self::$map_rules;
-                return;
-            case 'alias':
-                self::$alias_rules	= $rules + self::$alias_rules;
-                return;
+                return self::addPsr4($rules);
 			case 'files':
                 foreach ($rules as $v) {
                     self::import($v, false);

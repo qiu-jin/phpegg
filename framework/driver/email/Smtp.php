@@ -7,15 +7,17 @@ use framework\driver\email\query\Mime;
 class Smtp extends Email
 {
     protected $sock;
-    protected $debug;
+    protected $debug = APP_DEBUG;
     
     protected function init($config)
     {
+        if (isset($config['debug'])) {
+            $this->debug = $config['debug'];
+        }
         $this->sock = fsockopen($config['host'], $config['port'] ?? 25, $errno, $error, $config['timeout'] ?? 15);
         if (!is_resource($this->sock)) {
             throw new \Exception("Smtp connect error: [$errno] $error");
         }
-        $this->debug = $config['debug'] ?? APP_DEBUG;
         $this->read();
         $this->command('EHLO '.$config['host']);
         $this->command('AUTH LOGIN');

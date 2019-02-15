@@ -9,7 +9,8 @@
         }
     ],
     "require": {
-        "php": ">=7.0"
+        "php": ">=7.0",
+        "webonyx/graphql-php": "^0.13.0"
     },
     "require-dev": {
         "gregwar/captcha": "^1.1",

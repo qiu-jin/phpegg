@@ -10,12 +10,15 @@ class File extends Logger
     // 日志格式化处理器
     protected $formatter;
     // 是否实时写入日志
-    protected $real_write;
+    protected $real_write = false;
     
     public function __construct($config)
     {
         $this->logfile = $config['logfile'];
-        if (!$this->real_write = $config['real_write'] ?? false) {
+        if (isset($config['real_write'])) {
+            $this->real_write = $config['real_write'];
+        }
+        if (!$this->real_write) {
             Event::on('close', [$this, 'flush']);
         }
         $this->formatter = new formatter\Formatter(

@@ -6,12 +6,14 @@ namespace framework\driver\search;
  */
 class Elastic
 {
-    protected $type;
+    protected $type = '_doc';
     protected $endpoint;
     
     public function __construct($config)
     {
-        $this->type = $config['type'] ?? '_doc';
+        if (isset($config['type'])) {
+            $this->type = $config['type'];
+        }
         $this->endpoint = $config['host'].':'.($config['port'] ?? '9200');
     }
 

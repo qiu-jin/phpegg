@@ -8,7 +8,7 @@ abstract class Db
     // SQL纪录
     protected $sql;
     // 调试模式
-    protected $debug;
+    protected $debug = APP_DEBUG;
     // 数据库名
     protected $dbname;
     // 数据库连接
@@ -89,7 +89,9 @@ abstract class Db
     {
         $this->connection = $this->connect($config);
         $this->dbname = $config['dbname'];
-        $this->debug  = !empty($config['debug']) || APP_DEBUG;
+        if (isset($config['debug'])) {
+            $this->debug = $config['debug'];
+        }
         if (isset($config['fields_cache_config'])) {
             $this->fields_cache_config = $config['fields_cache_config'];
         }

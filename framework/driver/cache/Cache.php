@@ -8,7 +8,7 @@ abstract class Cache
     // 序列化反序列化处理器
     protected $serializer;
     // 垃圾回收处理生命周期（部分驱动有效）
-    protected $gc_maxlife;
+    protected $gc_maxlife = 2592000;
     
     /*
      * 获取
@@ -52,10 +52,14 @@ abstract class Cache
             && method_exists($this, 'gc')
             && mt_rand(1, $config['gc_random'][1]) <= $config['gc_random'][0]
         ) {
-            $this->gc_maxlife = $config['gc_maxlife'] ?? 2592000;
+			if (isset($config['gc_maxlife'])) {
+				$this->gc_maxlife = $config['gc_maxlife'];
+			}
             Event::on('close', [$this, 'gc']);
         }
-        isset($config['serializer']) && $this->serializer = $config['serializer'];
+		if (isset($config['serializer'])) {
+			$this->serializer = $config['serializer'];
+		}
     }
     
     /*

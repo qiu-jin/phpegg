@@ -90,6 +90,14 @@ class Container
             unset(self::$instances[$name]);
         }
     }
+	
+    /*
+     * 清除已存实例
+     */
+    public static function clean()
+    {
+        self::$instances = null;
+    }
     
     /*
      * 绑定实例生成规则
@@ -154,8 +162,7 @@ class Container
      */
     public static function makeClass($name)
     {
-        $value = self::$providers['class'][$name];
-        return new $value[0](...array_slice($value, 1));
+		return instance(...self::$providers['class'][$name]);
     }
 
     /*
@@ -163,7 +170,7 @@ class Container
      */
     public static function makeClosure($name)
     {
-        return is_object($object = self::$providers['closure'][$name]()) ? $object : null;
+        return self::$providers['closure'][$name]();
     }
     
     /*
@@ -197,6 +204,21 @@ class Container
         $class = $config['class'] ?? self::$providers['driver'][$type].'\\'.ucfirst($config['driver']);
         return new $class($config);
     }
+	
+    /*
+     * 生成Provider实例
+     */
+    public static function makeProviderInstance($provider)
+    {
+        if (is_string($provider)) {
+            return self::make($provider);
+        } elseif (is_array($provider)) {
+            return instance(...$provider);
+        } elseif ($provider instanceof \Closure) {
+            return $provider();
+        }
+		throw new \Exception("Invalid provider type");
+    }
     
     /*
      * 获取实例规则类型
@@ -216,14 +238,6 @@ class Container
     public static function getProviderValue($type, $name)
     {
         return self::$providers[$type][$name] ?? null;
-    }
-    
-    /*
-     * 清除已存实例
-     */
-    public static function clean()
-    {
-        self::$instances = null;
     }
 }
 Container::__init();

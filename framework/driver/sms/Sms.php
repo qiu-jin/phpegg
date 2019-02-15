@@ -13,7 +13,9 @@ abstract class Sms
         $this->acckey   = $config['acckey'];
         $this->seckey   = $config['seckey'];
         $this->template = $config['template'];
-        isset($config['signname']) && $this->signname = $config['signname'];
+        if (isset($config['signname'])) {
+            $this->signname = $config['signname'];
+        }
     }
     
     /* 

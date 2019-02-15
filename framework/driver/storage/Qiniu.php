@@ -9,7 +9,7 @@ class Qiniu extends Storage
     protected $region;
     protected $acckey;
     protected $seckey;
-    protected $public_read;
+    protected $public_read = false;
     protected static $endpoint = 'https://rs.qbox.me';
     
     protected function init($config)
@@ -21,7 +21,9 @@ class Qiniu extends Storage
         if (isset($config['region'])) {
             $this->region = '-'.$config['region'];
         }
-        $this->public_read = $config['public_read'] ?? false;
+        if (isset($config['public_read'])) {
+            $this->public_read = $config['public_read'];
+        }
     }
 
     public function get($from, $to = null)

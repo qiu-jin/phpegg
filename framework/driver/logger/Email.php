@@ -14,7 +14,7 @@ class Email extends Logger
     // 缓存驱动配置
     protected $cache;
     // 邮件发送间隔时间（秒数）
-    protected $send_interval;
+    protected $send_interval = 600;
     
     public function __construct($config)
     {
@@ -24,7 +24,9 @@ class Email extends Logger
             'driver'    => 'opcache',
             'dir'       => APP_DIR.'storage/cache/',
         ];
-        $this->send_interval = $config['send_interval'] ?? 600;
+        if (isset($config['send_interval'])) {
+            $this->send_interval = $config['send_interval'];
+        }
         Event::on('close', [$this, 'flush']);
     }
     

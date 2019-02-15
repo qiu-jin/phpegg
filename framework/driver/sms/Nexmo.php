@@ -6,13 +6,15 @@ use framework\core\http\Client;
 
 class Nexmo extends Sms
 {
-    protected $area_code;
+    protected $area_code = '86';
     protected static $endpoint = 'https://rest.nexmo.com/sms/json';
     
     public function __construct(array $config)
     {
         parent::__construct($config);
-        $this->area_code = $config['area_code'] ?? '86';
+        if (isset($config['area_code'])) {
+            $this->area_code = $config['area_code'];
+        }
     }
     
     protected function handle($to, $template, $data, $signname = null)

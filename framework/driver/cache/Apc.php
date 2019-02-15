@@ -9,12 +9,14 @@ class Apc extends Cache
 	// 字段前缀
     protected $prefix;
 	// 是否全局清理
-    protected $global_clear;
+    protected $global_clean = false;
     
     public function __construct($config)
     {
         $this->prefix = $config['prefix'];
-        $this->global_clean = $config['global_clean'] ?? false;
+		if (isset($config['global_clean'])) {
+			$this->global_clean = $config['global_clean'];
+		}
     }
     
     public function get($key, $default = null)

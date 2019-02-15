@@ -14,7 +14,7 @@ class Image
     // 验证码图片地址
     protected $src;
     // 表单验证码字段名
-    protected $name;
+    protected $name = 'image-captcha';
     // 验证码文字
     protected $text;
     // 默认验证码图片样式
@@ -48,16 +48,20 @@ class Image
         // 背景图片集合数组
         //'background_images'  => [],
     ];
-    protected $enable_session;
+    protected $enable_session = true;
 
     public function __construct($config)
     {
         $this->src = $config['src'];
-        $this->name = $config['name'] ?? 'image-captcha';
+		if (isset($config['name'])) {
+			$this->name = $config['name'];
+		}
         if (isset($config['style'])) {
             $this->style = $config['style'] + $this->style;
         }
-        $this->enable_session = $config['enable_session'] ?? true;
+		if (isset($config['enable_session'])) {
+			$this->enable_session = $config['enable_session'];
+		}
     }
     
     public function src()

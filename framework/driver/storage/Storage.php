@@ -56,7 +56,9 @@ abstract class Storage
     public function __construct($config)
     {
         $this->init($config);
-        isset($config['timeout']) && $this->timeout = $config['timeout'];
+        if (isset($config['timeout'])) {
+            $this->timeout = $config['timeout'];
+        }
     }
     
     /* 
