@@ -59,14 +59,6 @@ function driver($type, $name = null)
 }
 
 /*
- * 获取模型实例
- */
-function model($name)
-{
-    return Container::model($name);
-}
-
-/*
  * 获取数据库实例
  */
 function db($name = null)

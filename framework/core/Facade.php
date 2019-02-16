@@ -9,11 +9,19 @@ abstract class Facade
 	protected static $provider;
 	
     /*
-     * 魔术方法，执行Provider实例方法
+     * 魔术方法，执行实例方法
      */
     public static function __callStatic($method, $params)
     {
-		return (self::$instances[static::class] ?? 
-				self::$instances[static::class] = Container::makeProviderInstance(static::$provider))->$method(...$params);
+		return static::make()->$method(...$params);
+    }
+	
+    /*
+     * 手册生成实例
+     */
+    protected static function make()
+    {
+		return self::$instances[static::class] ?? 
+			   self::$instances[static::class] = Container::makeCustomProvider(static::$provider);
     }
 }

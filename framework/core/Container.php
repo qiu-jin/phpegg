@@ -3,41 +3,36 @@ namespace framework\core;
 
 class Container
 {
+	// Provider类型常量
+	const T_DRIVER	= 1;
+	const T_MODEL 	= 2;
+	const T_CLASS 	= 3;
+	const T_CLOSURE	= 4;
+	const T_ALIAS 	= 5;
+
     protected static $init;
     // 容器实例
     protected static $instances;
     // 容器提供者设置
     protected static $providers = [
-        // 驱动（驱动名称空间）
-        'driver'    => [
-            'db'        => 'framework\driver\db',
-            'sms'       => 'framework\driver\sms',
-            'rpc'       => 'framework\driver\rpc',
-            'data'      => 'framework\driver\data',
-            'cache'     => 'framework\driver\cache',
-            'crypt'     => 'framework\driver\crypt',
-            'queue'     => 'framework\driver\queue',
-            'email'     => 'framework\driver\email',
-            'geoip'     => 'framework\driver\geoip',
-            'search'    => 'framework\driver\search',
-            'logger'    => 'framework\driver\logger',
-            'captcha'   => 'framework\driver\captcha',
-            'storage'   => 'framework\driver\storage',
-        ],
-        // 模型（模型名称空间与模型层级）
-        'model'     => [
-            'model'     => ['app\model', 1],
-            'logic'     => ['app\logic', 1],
-            'service'   => ['app\service', 1],
-        ],
-        // 匿名函数（执行匿名函数返回一个实例）
-        'closure'   => [],
-        // 类（类配置，第一个元素是类名，其余为类实例化参数）
-        'class'     => [],
-        // 别名（别名指向非别名类型提供者）
-        'alias'     => [],
+        'db'        => [self::T_DRIVER],
+        'sms'       => [self::T_DRIVER],
+        'rpc'       => [self::T_DRIVER],
+        'data'      => [self::T_DRIVER],
+        'cache'     => [self::T_DRIVER],
+        'crypt'     => [self::T_DRIVER],
+        'queue'     => [self::T_DRIVER],
+        'email'     => [self::T_DRIVER],
+        'geoip'     => [self::T_DRIVER],
+        'search'    => [self::T_DRIVER],
+        'logger'    => [self::T_DRIVER],
+        'captcha'   => [self::T_DRIVER],
+        'storage'   => [self::T_DRIVER],
+        'model'     => [self::T_MODEL, ['app\model', 1]],
+        'logic'     => [self::T_MODEL, ['app\logic', 1]],
+        'service'   => [self::T_MODEL, ['app\service', 1]],
     ];
-
+	
     /*
      * 初始化
      */
@@ -47,18 +42,14 @@ class Container
             return;
         }
         self::$init = true;
-        if ($config = Config::read('container')) {
-            foreach ($config as $type => $value) {
-                if (isset(self::$providers[$type])) {
-                    self::$providers[$type] = $value + self::$providers[$type];
-                }
-            }
+		$config = Config::read('container');
+        if (isset($config['providers'])) {
+			self::$providers = $config['providers'] + self::$providers;
         }
-        Event::on('exit', [__CLASS__, 'clean']);
     }
     
     /*
-     * 获取已有实例
+     * 获取实例
      */
     public static function get($name)
     {
@@ -66,7 +57,7 @@ class Container
     }
     
     /*
-     * 检查已有实例存在
+     * 检查实例
      */
     public static function has($name)
     {
@@ -82,7 +73,7 @@ class Container
     }
     
     /*
-     * 删除已有实例
+     * 删除实例
      */
     public static function delete($name)
     {
@@ -92,7 +83,7 @@ class Container
     }
 	
     /*
-     * 清除已存实例
+     * 清除实例
      */
     public static function clean()
     {
@@ -100,11 +91,11 @@ class Container
     }
     
     /*
-     * 绑定实例生成规则
+     * 添加规则
      */
-    public static function bind($type, $name, $value)
+    public static function bind($name, $type, $value = null)
     {
-        self::$providers[$type][$name] = $value;
+        self::$providers[$name] = [$type, $value];
     }
     
     /*
@@ -115,21 +106,10 @@ class Container
         if (isset(self::$instances[$name])) {
             return self::$instances[$name];
         }
-        $params = explode('.', $name);
-        if ($type = self::getProviderType($params[0])) {
-            return self::$instances[$name] = self::{"make$type"}(...$params);
-        }
-    }
-    
-    /*
-     * 获取模型实例
-     */
-    public static function model($name)
-    {
-        $ns = explode('.', $name);
-        if (isset(self::$providers['model'][$ns[0]])) {
-            return self::$instances[$name] ?? self::$instances[$name] = self::makeModel(...$ns);
-        }
+		$params = explode('.', $name);
+		if (isset(self::$providers[$params[0]])) {
+			return self::$instances[$name] = self::makeProvider($params);
+		}
     }
     
     /*
@@ -137,78 +117,27 @@ class Container
      */
     public static function driver($type, $name = null)
     {
-        if (isset(self::$providers['driver'][$type])) {
+        if (isset(self::$providers[$type])) {
             if (is_array($name)) {
                 return self::makeDriverInstance($type, $name);
             }
             $key = $name ? "$type.$name" : $type;
-            return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($type, $name);
+            return self::$instances[$key] ?? self::$instances[$key] = self::makeDriverProvider($type, $name);
         }
-    }
-    
-    /*
-     * 生成别名规则实例
-     */
-    public static function makeAlias($name)
-    {
-        $params = explode('.', self::$providers['alias'][$name]);
-        if (($type = self::getProviderType($params[0])) !== 'alias') {
-            return self::{"make$type"}(...$params);
-        }
-    }
-
-    /*
-     * 生成类定义规则实例
-     */
-    public static function makeClass($name)
-    {
-		return instance(...self::$providers['class'][$name]);
-    }
-
-    /*
-     * 生成匿名函数规则实例
-     */
-    public static function makeClosure($name)
-    {
-        return self::$providers['closure'][$name]();
-    }
-    
-    /*
-     * 生成模型实例
-     */
-    public static function makeModel($type, ...$ns)
-    {
-        $provider = self::$providers['model'][$type];
-        $class = (is_array($provider) ? $provider[0] : $provider).'\\'.implode('\\', $ns);
-        return new $class();
-    }
-
-    /*
-     * 生成驱动实例
-     */
-    public static function makeDriver($type, $index = null)
-    {
-        if ($index) {
-            return self::makeDriverInstance($type, Config::get("$type.$index"));
-        }
-        list($index, $config) = Config::headKv($type);
-        $key = "$type.$index";
-        return self::$instances[$key] ?? self::$instances[$key] = self::makeDriverInstance($type, $config);
-    }
-    
-    /*
-     * 生成驱动实例（不缓存）
-     */
-    public static function makeDriverInstance($type, $config)
-    {
-        $class = $config['class'] ?? self::$providers['driver'][$type].'\\'.ucfirst($config['driver']);
-        return new $class($config);
     }
 	
     /*
-     * 生成Provider实例
+     * 获取实例规则
      */
-    public static function makeProviderInstance($provider)
+    public static function getProvider($name)
+    {
+		return self::$providers[$name] ?? null;
+    }
+	
+    /*
+     * 生成自定义Provider实例
+     */
+    public static function makeCustomProvider($provider)
     {
         if (is_string($provider)) {
             return self::make($provider);
@@ -219,25 +148,76 @@ class Container
         }
 		throw new \Exception("Invalid provider type");
     }
-    
+	
     /*
-     * 获取实例规则类型
+     * 生成Provider实例
      */
-    public static function getProviderType($name)
+    protected static function makeProvider($params)
     {
-        foreach (self::$providers as $type => $provider) {
-            if (isset($provider[$name])) {
-                return $type;
-            }
-        }
+		$c = count($params);
+		$v = self::$providers[$params[0]];
+		switch ($v[0]) {
+			case self::T_DRIVER:
+				if ($c == 1 || $c == 2) {
+					return self::makeDriverProvider(...$params);
+				}
+				break;
+			case self::T_MODEL:
+				if ($c - 1 == $v[1][1] ?? 1) {
+					return instance($v[1][0].'\\'.implode('\\', array_slice($params, 1)));
+				}
+				break;
+			case self::T_CLASS:
+				if ($c == 1) {
+					return instance(...$v[1]);
+				}
+				break;
+			case self::T_CLOSURE:
+				if ($c == 1) {
+					return $v[1]();
+				}
+				break;
+			case self::T_ALIAS:
+				if ($c == 1) {
+					$a = explode('.', $v[1]);
+					if (isset(self::$providers[$a[0]])) {
+						if (self::$providers[$a[0]][0] != self::T_ALIAS) {
+							return self::makeProvider($a);
+						}
+						throw new \Exception("Alias Provider的源不允许为Alias");
+					}
+				}
+				break;
+			default:
+			    throw new \Exception("无效的Provider类型: $v[0]");
+		}
+		throw new \Exception("出成Provider实例失败");
     }
-    
+
     /*
-     * 获取实例规则
+     * 生成驱动实例
      */
-    public static function getProviderValue($type, $name)
+    protected static function makeDriverProvider($type, $index = null)
     {
-        return self::$providers[$type][$name] ?? null;
+        if ($index) {
+            return self::makeDriverInstance($type, Config::get("$type.$index"));
+        }
+        list($index, $config) = Config::headKv($type);
+        $key = "$type.$index";
+        return self::$instances[$key] ?? self::$instances[$key] = self::makeDriverInstance($type, $config);
+    }
+	
+    /*
+     * 生成驱动实例
+     */
+    protected static function makeDriverInstance($type, $config)
+    {
+		if (isset($config['class'])) {
+			$class = $config['class'];
+		} else {
+			$class = (self::$providers[$type][1] ?? "framework\driver\\$type").'\\'.ucfirst($config['driver']);
+		}
+		return new $class($config);
     }
 }
 Container::__init();
