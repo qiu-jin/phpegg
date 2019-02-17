@@ -11,14 +11,6 @@ class Url
     private $url;
     // url元素类型
     private static $types = ['scheme', 'host', 'port', 'path', 'query', 'fragment'];
-    
-    /*
-     * url实例
-     */
-    public function __construct(array $url = [])
-    {
-        $this->url = $url;
-    }
 	
     /*
      * 解析url字符串返回实例
@@ -54,6 +46,11 @@ class Url
     public static function prev()
     {
         return self::parse(Request::server('HTTP_REFERER'));
+    }
+	
+    public function __construct(array $url = [])
+    {
+        $this->url = $url;
     }
     
     /*

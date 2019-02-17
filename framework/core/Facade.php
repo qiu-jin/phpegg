@@ -17,11 +17,26 @@ abstract class Facade
     }
 	
     /*
-     * 手册生成实例
+     * 清理实例
+     */
+    public static function clean($class = null)
+    {
+		if (__CLASS__ != static::class) {
+			return static::__callStatic('clean', func_get_args());
+		}
+		if ($class === null) {
+			self::$instances = null;
+		} elseif (isset(self::$instances[$class])) {
+			unset(self::$instances[$class]);
+		}
+    }
+	
+    /*
+     * 生成实例
      */
     protected static function make()
     {
-		return self::$instances[static::class] ?? 
-			   self::$instances[static::class] = Container::makeCustomProvider(static::$provider);
+		return self::$instances[static::class] ??
+			   self::$instances[static::class] = Container::makeCustom(static::$provider);
     }
 }

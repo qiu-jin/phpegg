@@ -1367,7 +1367,7 @@ class Template
     
     protected static function ContainerMacro($name)
     {
-        return Container::class."::make('$name')";
+        return Container::class."::get('$name')";
     }
     
     protected static function includeMacro($name, $is_var = false)

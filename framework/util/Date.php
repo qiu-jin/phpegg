@@ -47,11 +47,6 @@ class Date extends DateTime
             self::$config = $config + self::$config;
         }
     }
-    
-    public function __construct($time, $tz = null)
-    {
-		parent::__construct($time, self::makeTimeZone($tz));
-    }
 	
 	/*
 	 * 时间实例
@@ -93,6 +88,11 @@ class Date extends DateTime
 		if ($datetime = DateTime::createFromFormat($format, $time, $tz = self::makeTimeZone($tz))) {
 			return new self('@'.$datetime->getTimestamp(), $tz);
 		}
+    }
+	
+    public function __construct($time, $tz = null)
+    {
+		parent::__construct($time, self::makeTimeZone($tz));
     }
     
 	/*

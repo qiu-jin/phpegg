@@ -47,15 +47,21 @@ class Container
 			self::$providers = $config['providers'] + self::$providers;
         }
     }
-    
+
     /*
-     * 获取实例
+     * 生成实例
      */
     public static function get($name)
     {
-        return self::$instances[$name] ?? null;
+        if (isset(self::$instances[$name])) {
+            return self::$instances[$name];
+        }
+		$params = explode('.', $name);
+		if (isset(self::$providers[$params[0]])) {
+			return self::$instances[$name] = self::make($params);
+		}
     }
-    
+	
     /*
      * 检查实例
      */
@@ -63,21 +69,21 @@ class Container
     {
         return isset(self::$instances[$name]);
     }
-    
+	
     /*
-     * 设置实例
+     * 检查实例
      */
-    public static function set($name, object $value)
+    public static function set($name, object $instance)
     {
-        self::$instances[$name] = $value;
+        return self::$instances[$name] = $instance;
     }
-    
+	
     /*
-     * 删除实例
+     * 清除实例
      */
     public static function delete($name)
     {
-        if (isset(self::$instances[$name])) {
+		if (isset(self::$instances[$name])) {
             unset(self::$instances[$name]);
         }
     }
@@ -87,9 +93,9 @@ class Container
      */
     public static function clean()
     {
-        self::$instances = null;
+		self::$instances = null;
     }
-    
+	
     /*
      * 添加规则
      */
@@ -97,19 +103,13 @@ class Container
     {
         self::$providers[$name] = [$type, $value];
     }
-    
+	
     /*
-     * 生成实例
+     * 获取规则
      */
-    public static function make($name)
+    public static function getProvider($name)
     {
-        if (isset(self::$instances[$name])) {
-            return self::$instances[$name];
-        }
-		$params = explode('.', $name);
-		if (isset(self::$providers[$params[0]])) {
-			return self::$instances[$name] = self::makeProvider($params);
-		}
+		return self::$providers[$name] ?? null;
     }
     
     /*
@@ -122,25 +122,17 @@ class Container
                 return self::makeDriverInstance($type, $name);
             }
             $key = $name ? "$type.$name" : $type;
-            return self::$instances[$key] ?? self::$instances[$key] = self::makeDriverProvider($type, $name);
+            return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($type, $name);
         }
-    }
-	
-    /*
-     * 获取实例规则
-     */
-    public static function getProvider($name)
-    {
-		return self::$providers[$name] ?? null;
     }
 	
     /*
      * 生成自定义Provider实例
      */
-    public static function makeCustomProvider($provider)
+    public static function makeCustom($provider)
     {
         if (is_string($provider)) {
-            return self::make($provider);
+            return self::get($provider);
         } elseif (is_array($provider)) {
             return instance(...$provider);
         } elseif ($provider instanceof \Closure) {
@@ -152,19 +144,20 @@ class Container
     /*
      * 生成Provider实例
      */
-    protected static function makeProvider($params)
+    protected static function make($params)
     {
 		$c = count($params);
 		$v = self::$providers[$params[0]];
 		switch ($v[0]) {
 			case self::T_DRIVER:
 				if ($c == 1 || $c == 2) {
-					return self::makeDriverProvider(...$params);
+					return self::makeDriver(...$params);
 				}
 				break;
 			case self::T_MODEL:
 				if ($c - 1 == $v[1][1] ?? 1) {
-					return instance($v[1][0].'\\'.implode('\\', array_slice($params, 1)));
+					$params[0] = $v[1][0];
+					return instance(implode('\\', $params)); 
 				}
 				break;
 			case self::T_CLASS:
@@ -182,7 +175,7 @@ class Container
 					$a = explode('.', $v[1]);
 					if (isset(self::$providers[$a[0]])) {
 						if (self::$providers[$a[0]][0] != self::T_ALIAS) {
-							return self::makeProvider($a);
+							return self::make($a);
 						}
 						throw new \Exception("Alias Provider的源不允许为Alias");
 					}
@@ -197,14 +190,14 @@ class Container
     /*
      * 生成驱动实例
      */
-    protected static function makeDriverProvider($type, $index = null)
+    protected static function makeDriver($type, $index = null)
     {
         if ($index) {
             return self::makeDriverInstance($type, Config::get("$type.$index"));
         }
         list($index, $config) = Config::headKv($type);
         $key = "$type.$index";
-        return self::$instances[$key] ?? self::$instances[$key] = self::makeDriverInstance($type, $config);
+		return self::$instances[$key] ?? self::$instances[$key] = self::makeDriverInstance($type, $config);
     }
 	
     /*

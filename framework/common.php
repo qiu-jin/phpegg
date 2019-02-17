@@ -38,7 +38,7 @@ function config($name, $default = null)
  */
 function app($name = null)
 {
-    return $name === null ? App::instance() : Container::make($name);
+    return $name === null ? App::instance() : Container::get($name);
 }
 
 /*

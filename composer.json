@@ -5,14 +5,14 @@
     "authors": [
         {
             "name": "qiujin",
-            "email": "i@qiujin.net"
+            "email": "qiu-jin@qq.com"
         }
     ],
     "require": {
         "php": ">=7.0",
-        "webonyx/graphql-php": "^0.13.0"
     },
     "require-dev": {
+		"webonyx/graphql-php": "^0.13.0",
         "gregwar/captcha": "^1.1",
         "maxmind-db/reader": "^1.1",
         "pda/pheanstalk": "^3.1",
