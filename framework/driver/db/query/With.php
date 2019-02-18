@@ -3,12 +3,19 @@ namespace framework\driver\db\query;
 
 class With extends QueryChain
 {
+	// with表名
     protected $with;
+	// 别名（防止字段冲突）
     protected $alias;
+	// query实例
     protected $query;
+	// 是否优化
     protected $optimize;
-    
-    protected function init($table, $query, $with, $alias = null, $optimize = true)
+	
+    /*
+     * 初始化
+     */
+    protected function __init($table, $query, $with, $alias = null, $optimize = true)
     {
         $this->with = $with;
         $this->table = $table;
@@ -18,12 +25,18 @@ class With extends QueryChain
         $this->options['where'] = [];
     }
     
+    /*
+     * 设置关联表字段关联
+     */
     public function on($field1, $field2)
     {
         $this->options['on'] = [$field1, $field2];
         return $this;
     }
     
+    /*
+     * 查询（单条）
+     */
     public function get($id = null, $pk = 'id')
     {
         if ($data = $this->query->get($id, $pk)) {
@@ -34,6 +47,9 @@ class With extends QueryChain
         return null;
     }
 
+    /*
+     * 查询（多条）
+     */
     public function find($limit = 0)
     {
         if ($data = $this->query->find($limit)) {
@@ -49,6 +65,9 @@ class With extends QueryChain
         return $data;
     }
     
+    /*
+     * with表数据
+     */
     protected function withData($count, &$data)
     {
         $where = $this->options['where'];
@@ -59,6 +78,9 @@ class With extends QueryChain
         }
     }
     
+    /*
+     * with表数据（优化查询）
+     */
     protected function withOptimizeData($count, &$data)
     {
         list($field1, $field2) = $this->getOnFields();

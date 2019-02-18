@@ -28,9 +28,9 @@ class Container
         'logger'    => [self::T_DRIVER],
         'captcha'   => [self::T_DRIVER],
         'storage'   => [self::T_DRIVER],
-        'model'     => [self::T_MODEL, ['app\model', 1]],
-        'logic'     => [self::T_MODEL, ['app\logic', 1]],
-        'service'   => [self::T_MODEL, ['app\service', 1]],
+        'model'     => [self::T_MODEL],
+        'logic'     => [self::T_MODEL],
+        'service'   => [self::T_MODEL],
     ];
 	
     /*
@@ -71,7 +71,7 @@ class Container
     }
 	
     /*
-     * 检查实例
+     * 设置实例
      */
     public static function set($name, object $instance)
     {
@@ -79,7 +79,7 @@ class Container
     }
 	
     /*
-     * 清除实例
+     * 删除实例
      */
     public static function delete($name)
     {
@@ -155,8 +155,8 @@ class Container
 				}
 				break;
 			case self::T_MODEL:
-				if ($c - 1 == $v[1][1] ?? 1) {
-					$params[0] = $v[1][0];
+				if ($c - 1 == ($v[1] ?? 1)) {
+					$params[0] = $v[2] ?? "app\\$params[0]";
 					return instance(implode('\\', $params)); 
 				}
 				break;
@@ -184,7 +184,7 @@ class Container
 			default:
 			    throw new \Exception("无效的Provider类型: $v[0]");
 		}
-		throw new \Exception("出成Provider实例失败");
+		throw new \Exception("生成Provider实例失败");
     }
 
     /*

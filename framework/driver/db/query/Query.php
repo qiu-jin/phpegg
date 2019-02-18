@@ -3,7 +3,10 @@ namespace framework\driver\db\query;
 
 class Query extends QueryChain
 {
-    protected function init($table)
+    /*
+     * 初始化
+     */
+    protected function __init($table)
     {
         $this->table = $table;
     }
@@ -33,7 +36,7 @@ class Query extends QueryChain
     }
     
     /*
-     * 获取单行结果
+     * 查询（单条）
      */
     public function get($id = null, $pk = 'id')
     {
@@ -44,7 +47,7 @@ class Query extends QueryChain
     }
 
     /*
-     * 查询结果
+     * 查询（多条）
      */
     public function find($limit = 0)
     {

@@ -17,21 +17,6 @@ abstract class Facade
     }
 	
     /*
-     * 清理实例
-     */
-    public static function clean($class = null)
-    {
-		if (__CLASS__ != static::class) {
-			return static::__callStatic('clean', func_get_args());
-		}
-		if ($class === null) {
-			self::$instances = null;
-		} elseif (isset(self::$instances[$class])) {
-			unset(self::$instances[$class]);
-		}
-    }
-	
-    /*
      * 生成实例
      */
     protected static function make()

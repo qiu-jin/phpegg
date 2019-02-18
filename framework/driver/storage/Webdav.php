@@ -20,8 +20,9 @@ class Webdav extends Storage
     protected $public_read = false;
     protected $auto_create_dir = false;
     
-    protected function init($config)
+    public function __construct($config)
     {
+		parent::__construct($config);
         $this->endpoint = $config['endpoint'];
         $this->username = $config['username'];
         $this->password = $config['password'];

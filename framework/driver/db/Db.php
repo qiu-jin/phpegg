@@ -26,7 +26,7 @@ abstract class Db
     abstract public function exec($sql);
     
     /*
-     *  执行SQL返回query
+     * 执行SQL返回query
      */
     abstract public function query($sql);
     
@@ -85,6 +85,9 @@ abstract class Db
      */
     abstract public function error();
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->connection = $this->connect($config);
@@ -98,7 +101,7 @@ abstract class Db
     }
     
     /*
-     * 魔术方法，生成一个query实例
+     * 魔术方法，query实例
      */
     public function __get($name)
     {
@@ -106,7 +109,7 @@ abstract class Db
     }
     
     /*
-     * 生成一个query实例
+     * query实例
      */
     public function table($name)
     {

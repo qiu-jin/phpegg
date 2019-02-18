@@ -52,10 +52,11 @@ abstract class Storage
      */
     abstract public function delete($from);
     
-    
+    /* 
+     * 构造方法
+     */
     public function __construct($config)
     {
-        $this->init($config);
         if (isset($config['timeout'])) {
             $this->timeout = $config['timeout'];
         }

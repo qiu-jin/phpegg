@@ -3,12 +3,18 @@ namespace framework\driver\db\builder;
 
 class Builder
 {
+	// 左关键词转义符
     const KEYWORD_ESCAPE_LEFT = '`';
+	// 右关键词转义符
     const KEYWORD_ESCAPE_RIGHT = '`';
-
+	// where 逻辑符
     protected static $where_logic = ['AND', 'OR', 'XOR', 'NOT', 'AND NOT', 'OR NOT', 'XOR NOT'];
+	// where 关系符
     protected static $where_operator = ['=', '!=', '>', '>=', '<', '<=', 'LIKE', 'IN', 'IS', 'BETWEEN'];
 
+	/*
+	 * select语句
+	 */
     public static function select($table, array $options)
     {
         $params = [];
@@ -31,12 +37,18 @@ class Builder
         return [$sql, $params];
     }
     
+	/*
+	 * insert语句
+	 */
     public static function insert($table, $data)
     {
         list($fields, $values, $params) = self::insertData($data);
         return ['INSERT INTO '.self::keywordEscape($table)." ($fields) VALUES ($values)", $params];
     }
     
+	/*
+	 * update语句
+	 */
     public static function update($table, $data, $options)
     {
         list($set, $params) = self::setData($data);
@@ -50,6 +62,9 @@ class Builder
         return [$sql, $params];
     }
     
+	/*
+	 * delete语句
+	 */
     public static function delete($table, $options)
     {
         $params = [];
@@ -63,6 +78,9 @@ class Builder
         return [$sql, $params];
     }
     
+	/*
+	 * insert数据
+	 */
     public static function insertData($data)
     {
         return [
@@ -72,6 +90,9 @@ class Builder
         ];
     }
     
+	/*
+	 * select from部分
+	 */
     public static function selectFrom($table, array $fields = null)
     {
         if (!$fields) {
@@ -95,6 +116,9 @@ class Builder
         return 'SELECT '.implode(',', $select).' FROM '.self::keywordEscape($table);
     }
 
+	/*
+	 * where语句
+	 */
     public static function whereClause($data, &$params, $prefix = null)
     {
         $sql = null;
@@ -109,11 +133,17 @@ class Builder
         return $sql;
     }
     
+	/*
+	 * group语句
+	 */
     public static function groupClause($field, $table = null)
     {
         return ' GROUP BY '.($table ? self::keywordEscapePair($table, $field) : self::keywordEscape($field));
     }
     
+	/*
+	 * having语句
+	 */
     public static function havingClause($data, &$params, $prefix = null)
     {
         $sql = null;
@@ -129,6 +159,9 @@ class Builder
         return $sql;
     }
     
+	/*
+	 * order语句
+	 */
 	public static function orderClause($orders)
     {
         foreach ($orders as $order) {
@@ -138,6 +171,9 @@ class Builder
         return ' ORDER BY '.implode(',', $items);
 	}
 
+	/*
+	 * limit语句
+	 */
     public static function limitClause($limit)
     {
         if (is_array($limit)) {
@@ -147,6 +183,9 @@ class Builder
         }
     }
     
+	/*
+	 * 设置数据
+	 */
 	public static function setData($data , $glue = ',')
     {
         $params = $items = [];
@@ -157,6 +196,9 @@ class Builder
         return [implode(" $glue ", $items), $params];
 	}
     
+	/*
+	 * where 逻辑语句
+	 */
     public static function whereLogicClause($logic, $and)
     {
         if (is_integer($logic)) {
@@ -171,12 +213,18 @@ class Builder
         }
     }
     
+	/*
+	 * where 单元
+	 */
     public static function whereItem($prefix, &$params, $field, $exp, $value)
     {
         return ' '.(isset($prefix) ? self::keywordEscapePair($prefix, $field) 
                                    : self::keywordEscape($field)).' '.self::whereItemValue($params, $exp, $value);
     }
     
+	/*
+	 * having 单元
+	 */
     public static function havingItem($prefix, &$params, $num, $values)
     {
         $sql = $values[$num] == '*' ? '*' : self::keywordEscape($values[$num]);
@@ -189,6 +237,9 @@ class Builder
         return " $sql ".self::whereItemValue($params, $values[$num + 1], $values[$num + 2]);
     }
     
+	/*
+	 * where 单元值
+	 */
     public static function whereItemValue(&$params, $exp, $value)
     {
         switch ($exp) {
@@ -216,6 +267,9 @@ class Builder
         throw new \Exception("SQL where ERROR: $exp ".var_export($value, true));
     }
     
+	/*
+	 * 关键词转义
+	 */
     public static function keywordEscape($kw)
     {
         /*
@@ -226,6 +280,9 @@ class Builder
         return static::KEYWORD_ESCAPE_LEFT.$kw.static::KEYWORD_ESCAPE_RIGHT;
     }
     
+	/*
+	 * 关键词组转义
+	 */
     public static function keywordEscapePair($kw1, $kw2)
     {
         return self::keywordEscape($kw1).'.'.self::keywordEscape($kw2);

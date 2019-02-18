@@ -3,6 +3,9 @@ namespace framework\driver\db\builder;
 
 class Sqlite extends Builder
 {
+	/*
+	 * limit语句
+	 */
     public static function limitClause($limit)
     {
         if (is_array($limit)) {

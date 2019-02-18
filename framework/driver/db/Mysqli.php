@@ -5,8 +5,12 @@ use framework\extend\debug\Db as DBDebug;
 
 class Mysqli extends Db
 {
+	// 构造器
     const BUILDER = builder\Builder::class;
     
+	/*
+	 * 连接数据库
+	 */
     protected function connect($config)
     {
         $connection = new \mysqli(
@@ -31,12 +35,18 @@ class Mysqli extends Db
         return $connection;
     }
     
+	/*
+	 * 查询
+	 */
     public function select($sql, $params = null)
     {
         $query = $params ? $this->prepareExecute($sql, $params)->get_result() : $this->connection->query($sql);
         return $query->fetch_all(MYSQLI_ASSOC);
     }
     
+	/*
+	 * 插入
+	 */
     public function insert($sql, $params = null, $return_id = false)
     {
         if ($params) {
@@ -52,6 +62,9 @@ class Mysqli extends Db
         }
     }
     
+	/*
+	 * 更新
+	 */
     public function update($sql, $params = null)
     {
         if ($params) {
@@ -62,11 +75,17 @@ class Mysqli extends Db
         }
     }
     
+	/*
+	 * 删除
+	 */
     public function delete($sql, $params = null)
     {
         return $this->update($sql, $params);
     }
     
+    /*
+     * 执行sql
+     */
     public function exec($sql, array $params = null, $is_assoc = false)
     {
         $cmd = trim(strtoupper(strtok($sql, ' ')),"\t(");
@@ -101,6 +120,9 @@ class Mysqli extends Db
         }
     }
     
+    /*
+     * 请求sql
+     */
     public function query($sql, array $params = null, $is_assoc = false)
     {
         if ($params) {
@@ -110,6 +132,9 @@ class Mysqli extends Db
         }
     }
     
+    /*
+     * 切换数据库
+     */
     public function switch($dbname, callable $call)
     {
         $raw_dbname = $this->dbname;
@@ -124,67 +149,106 @@ class Mysqli extends Db
         }
     }
     
+    /*
+     * 获取一条数据
+     */
     public function fetch($query)
     {
         return $query->fetch_assoc();
     }
     
+    /*
+     * 获取一条数据（无字段键）
+     */
     public function fetchRow($query)
     {
         return $query->fetch_row();
     }
     
+    /*
+     * 获取所有数据
+     */
     public function fetchAll($query)
     {
         return $query->fetch_all(MYSQLI_ASSOC);
     }
     
+    /*
+     * 获取数据条数
+     */
     public function numRows($query)
     {
         return $query->num_rows;
     }
     
+    /*
+     * 影响数据条数
+     */
     public function affectedRows($query = null)
     {
         return $query ? $query->affected_rows : $this->connection->affected_rows;
     }
     
+    /*
+     * 最近插入数据id
+     */
     public function insertId()
     {
         return $this->connection->insert_id;
     }
 
+    /*
+     * 转义字符串
+     */
     public function quote($str)
     {
         return "'".$this->connection->escape_string($str)."'";
     }
     
+    /*
+     * 开始事务
+     */
     public function begin()
     {
 		return $this->connection->autocommit(false) && $this->connection->begin_transaction();
     }
     
+    /*
+     * 回滚事务
+     */
     public function rollback()
     {
         return $this->connection->rollback() && $this->connection->autocommit(true);
     }
     
+    /*
+     * 提交事务
+     */
     public function commit()
     {
 		return $this->connection->commit() && $this->connection->autocommit(true);
     }
     
+    /*
+     * 获取错误信息
+     */
     public function error($query = null)
     {
         $q = $query ?? $this->connection;
         return array($q->errno, $q->error);
     }
     
+    /*
+     * 获取表字段名
+     */
     public function getFields($table)
     {
         return array_column($this->select("desc `$table`"), 'Field');
     }
     
+    /*
+     * 执行请求
+     */
     public function realQuery($sql)
     {
         $this->debug && DBDebug::write($sql);
@@ -194,6 +258,9 @@ class Mysqli extends Db
         throw new \Exception($this->exceptionMessage());
     }
     
+    /*
+     * 预处理执行
+     */
     public function prepareExecute($sql, $params, $is_assoc = false)
     {
         $this->debug && DBDebug::write($sql, $params, $is_assoc);
@@ -228,11 +295,17 @@ class Mysqli extends Db
         throw new \Exception($this->exceptionMessage());
     }
     
+    /*
+     * 异常信息
+     */
     protected function exceptionMessage()
     {
         return 'DB ERROR: ['.$this->connection->errno.'] '.$this->connection->error;
     }
 
+    /*
+     * 析构函数
+     */
     public function __destruct()
     {
         $this->connection->close();

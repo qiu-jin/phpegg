@@ -12,8 +12,9 @@ class Qiniu extends Storage
     protected $public_read = false;
     protected static $endpoint = 'https://rs.qbox.me';
     
-    protected function init($config)
+    public function __construct($config)
     {
+		parent::__construct($config);
         $this->bucket = $config['bucket'];
         $this->domain = $config['domain'];
         $this->acckey = $config['acckey'];

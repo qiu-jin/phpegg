@@ -3,16 +3,23 @@ namespace framework\driver\db\query;
 
 abstract class QueryChain
 {
+	// 实例
     protected $db;
+	// 表名
     protected $table;
+	// 构建器
     protected $builder;
+	// 设置项
     protected $options = ['where' => null, 'fields' => null];
     
+    /*
+     * 构造函数
+     */
 	public function __construct($db, ...$params)
     {
         $this->db = $db;
         $this->builder = $db->getBuilder();
-        $this->init(...$params);
+        $this->__init(...$params);
     }
     
     /*

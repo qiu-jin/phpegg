@@ -18,11 +18,11 @@ trait Getter
 				return $this->$name = Container::get($name);
             }
 			// 模型名称空间链实例
-			return $this->$name = new class($name, $v[1][1] ?? 1) {
+			return $this->$name = new class([$name], $v[1] ?? 1) {
 	            private $_ns;
 	            private $_depth;
-	            public function __construct($name, $depth) {
-	                $this->_ns[] = $name;
+	            public function __construct($ns, $depth) {
+	                $this->_ns = $ns;
 	                $this->_depth = $depth - 1;
 	            }
 	            public function __get($name) {

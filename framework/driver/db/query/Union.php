@@ -3,12 +3,17 @@ namespace framework\driver\db\query;
 
 class Union extends QueryChain
 {
-    private $all;
-    private $union;
-    private $fields;
-    private $table_options = [];
-    
-    protected function init($table, $options, $union, $all = true)
+	// UNION ALL
+    protected $all;
+	// union表名
+    protected $union;
+	// 多联表设置项
+    protected $table_options = [];
+	
+    /*
+     * 初始化
+     */
+    protected function __init($table, $options, $union, $all = true)
     {
         $this->all = $all;
         $this->table = $table;
@@ -16,6 +21,9 @@ class Union extends QueryChain
         $this->table_options[$table] = $options;
     }
     
+    /*
+     * union表链
+     */
 	public function union($table)
     {
         $this->options['fields'] = $this->table_options[$this->table]['fields'];
@@ -24,6 +32,9 @@ class Union extends QueryChain
         return $this;
     }
     
+    /*
+     * 查询（多条）
+     */
     public function find()
     {
         $sql = $params = [];

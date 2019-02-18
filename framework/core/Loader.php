@@ -36,7 +36,7 @@ class Loader
         }
         // composer vendor目录
         if ($dir = Config::env('VENDOR_DIR')) {
-            self::import($dir.'autoload', false);  
+            self::import($dir.'autoload', false);
         }
         spl_autoload_register([__CLASS__, 'autoload'], true, true);
     }

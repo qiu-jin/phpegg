@@ -3,8 +3,12 @@ namespace framework\driver\db;
 
 class Mysql extends Pdo
 {
+	// 构造器
     const BUILDER = builder\Builder::class;
     
+    /*
+     * 获取dsn
+     */
     protected function getDsn($config)
     {
         $dsn = 'mysql:dbname='.$config['dbname'];
@@ -22,6 +26,9 @@ class Mysql extends Pdo
         return $dsn;
     }
     
+    /*
+     * 获取表字段名
+     */
     protected function getFields($table)
     {
         return array_column($this->select("desc `$table`"), 'Field');

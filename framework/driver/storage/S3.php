@@ -14,8 +14,9 @@ class S3 extends Storage
     protected $endpoint;
     protected $public_read = false;
     
-    protected function init($config)
+    public function __construct($config)
     {
+		parent::__construct($config);
         $this->bucket = $config['bucket'];
         $this->acckey = $config['acckey'];
         $this->seckey = $config['seckey'];

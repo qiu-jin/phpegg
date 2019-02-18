@@ -218,13 +218,9 @@ class View
     /*
      * 清理
      */
-    public static function clean($name = null)
+    public static function clean()
     {
-        if ($name === null) {
-            self::$view = null;
-        } elseif (isset(self::$view[$name])) {
-            self::$view[$name] = null;
-        }
+		self::$view = null;
     }
 }
 View::__init();

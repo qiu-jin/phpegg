@@ -8,8 +8,9 @@ class Dropbox extends Storage
     protected $acckey;
     protected static $endpoint = 'https://%s.dropboxapi.com/2/files/';
     
-    protected function init($config)
+    public function __construct($config)
     {
+		parent::__construct($config);
         $this->acckey = $config['acckey'];
     }
     

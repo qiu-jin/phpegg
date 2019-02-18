@@ -3,25 +3,37 @@ namespace framework\driver\db\query;
 
 class Relate extends QueryChain
 {
+	// with表名
     protected $with;
+	// 别名（防止字段冲突）
     protected $alias;
+	// query实例
     protected $query;
-
-    protected function init($table, $query, $with, $alias = null)
+	
+    /*
+     * 初始化
+     */
+    protected function __init($table, $query, $with, $alias = null)
     {
-        $this->with = $with;
+        $this->with	= $with;
         $this->table = $table;
         $this->alias = $alias;
         $this->query = $query;
         $this->options = ['where' => [], 'order' => null, 'fields' => null];
     }
     
+    /*
+     * 设置关联表字段关联
+     */
     public function on($related, array $field1 = null, array $field2 = null)
     {
         $this->options['on'] = [$related, $field1, $field2];
         return $this;
     }
     
+    /*
+     * 查询（单条）
+     */
     public function get($id = null, $pk = 'id')
     {
         if ($data = $this->query->get($id, $pk)) {
@@ -32,6 +44,9 @@ class Relate extends QueryChain
         return null;
     }
 
+    /*
+     * 查询（多条）
+     */
     public function find($limit = 0)
     {
         if ($data = $this->query->find($limit)) {
@@ -40,6 +55,9 @@ class Relate extends QueryChain
         return $data;
     }
     
+    /*
+     * with表子数据
+     */
     protected function withSubData(&$data)
     {
         if (isset($this->options['on'])) {

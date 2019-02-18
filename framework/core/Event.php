@@ -51,17 +51,23 @@ class Event
     {
         return isset(self::$events[$name]);
     }
+	
+    /*
+     * 删除事件
+     */
+    public static function delete($name)
+    {
+		if (isset(self::$events[$name])) {
+            unset(self::$events[$name]);
+        }
+    }
     
     /*
      * 清理事件
      */
-    public static function clean($name = null)
+    public static function clean()
     {
-        if ($name === null) {
-            self::$events = null;
-        } elseif (isset(self::$events[$name])) {
-            unset(self::$events[$name]);
-        }
+		self::$events = null;
     }
 }
 Event::__init();

@@ -3,8 +3,22 @@ namespace framework\driver\db;
 
 class Sqlsrv extends Pdo
 {
+	// 构造器
     const BUILDER = builder\Sqlsrv::class;
     
+    /*
+     * 构造函数
+     */
+    public function __construct($config)
+    {
+		parent::__construct($config);
+		$this->query('SET QUOTED_IDENTIFIER ON');
+		$this->query('SET ANSI_NULLS ON');
+    }
+	
+    /*
+     * 获取dsn
+     */
     protected function getDsn($config)
     {
         if (strstr(PHP_OS, 'WIN')) {
@@ -18,11 +32,12 @@ class Sqlsrv extends Pdo
                 $dsn .= ':'.$config['port'];
             }
         }
-        $this->commands[] = 'SET QUOTED_IDENTIFIER ON';
-        $this->commands[] = 'SET ANSI_NULLS ON';
         return $dsn;
     }
     
+    /*
+     * 获取表字段名
+     */
     protected function getFields($table)
     {
         // 待测

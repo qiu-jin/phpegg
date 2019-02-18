@@ -3,20 +3,24 @@ namespace framework\driver\db\query;
 
 class Join extends QueryChain
 {
+	// 当前表名
     protected $cur;
+	// 关联设置
     protected $join = [];
-    protected $fields = [];
+	// 多关联表设置项
     protected $table_options = [];
+	// 支持关联类型
     protected static $join_type = ['INNER', 'LEFT', 'RIGHT'];
 
-    protected function init($table, $options, $join, $type = 'LEFT', $prefix = true)
+    /*
+     * 初始化
+     */
+    protected function __init($table, $options, $join, $type = 'LEFT', $prefix = true)
     {
-        if (!in_array($type, self::$join_type, true)) {
-            throw new \Exception('Join Type Error: '.var_export($type, true));
-        }
+		$this->checkJoinType($type);
         $this->cur = $join;
         $this->table = $table;
-        $this->join[$join] = compact('type');
+        $this->join[$join] = ['type' => $type];
         $options['prefix'] = false;
         if (!isset($options['fields'])) {
             $options['fields'] = null;
@@ -25,24 +29,31 @@ class Join extends QueryChain
         $this->table_options[$table] = $options;
     }
 
+    /*
+     * 设置关联表
+     */
     public function join($join, $type = 'LEFT', $prefix = true)
     {
-        if (!in_array($type, self::$join_type, true)) {
-            throw new \Exception('Join Type Error: '.var_export($type, true));
-        }
+        $this->checkJoinType($type);
         $this->table_options[$this->cur] = $this->options;
         $this->cur = $join;
         $this->options = ['prefix' => $prefix, 'fields' => null];
-        $this->join[$join] = compact('type');
+        $this->join[$join] = ['type' => $type];
         return $this;
     }
     
+    /*
+     * 设置关联表字段关联
+     */
     public function on($field1, $field2)
     {
         $this->join[$this->cur]['on'] = array($field1, $field2);
         return $this;
     }
     
+    /*
+     * 查询（单条）
+     */
     public function get($id = null, $pk = 'id')
     {
         if (isset($id)) {
@@ -51,6 +62,9 @@ class Join extends QueryChain
         return $this->find(1)[0] ?? null;
     }
 
+    /*
+     * 查询（多条）
+     */
     public function find($limit = 0)
     {
         if ($limit) {
@@ -60,6 +74,9 @@ class Join extends QueryChain
         return $this->db->select(...$this->build());
     }
     
+    /*
+     * 生成 sql
+     */
     protected function build()
     {
         $limit = 0;
@@ -74,7 +91,7 @@ class Join extends QueryChain
                 switch ($name) {
                     case 'fields':
                         if ($value !== [false]) {
-                            $fields = array_merge($fields, $this->setJoinFields($table, $value, $options['prefix']));
+                            $fields = array_merge($fields, $this->buildField($table, $value, $options['prefix']));
                         }
                         break;
                     case 'where':
@@ -129,7 +146,10 @@ class Join extends QueryChain
         return [$sql, $params];
     }
     
-    protected function setJoinFields($table, $value, $prefix)
+    /*
+     * 生成 字段sql
+     */
+    protected function buildField($table, $value, $prefix)
     {
         if ($prefix) {
             if ($prefix === true) {
@@ -143,7 +163,7 @@ class Join extends QueryChain
             } else {
                 foreach ($value as $field) {
                     if (is_array($field)) {
-                        $fields[] = $this->fields($field, $table);
+                        $fields[] = $this->buildFieldItem($field, $table);
                     } else {
                         $fields[] = $this->builder::keywordEscapePair($table, $field).' AS '
                                   . $this->builder::keywordEscape("{$prefix}_$field");
@@ -154,7 +174,7 @@ class Join extends QueryChain
             if ($value) {
                 foreach ($value as $field) {
                     if (is_array($field)) {
-                        $fields[] = $this->fields($field, $table);
+                        $fields[] = $this->buildFieldItem($field, $table);
                     } else {
                         $fields[] = $this->builder::keywordEscapePair($table, $field);
                     }
@@ -166,7 +186,10 @@ class Join extends QueryChain
         return $fields;
     }
     
-    protected function setField(array $field, $table)
+    /*
+     * 生成 字段sql单元
+     */
+    protected function buildFieldItem(array $field, $table)
     {
         $count = count($field);
         if ($count === 2) {
@@ -176,5 +199,15 @@ class Join extends QueryChain
             return "$field[0](".$this->builder::keywordEscape($table).".$field1) AS ".$this->builder::keywordEscape($field[2]);
         }
         throw new \Exception('Join Field ERROR: '.var_export($field, true));
+    }
+	
+    /*
+     * 检查join类型
+     */
+    protected function checkJoinType($type)
+    {
+        if (!in_array($type, self::$join_type)) {
+            throw new \Exception('Join Type Error: '.var_export($type, true));
+        }
     }
 }

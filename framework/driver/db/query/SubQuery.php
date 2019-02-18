@@ -3,13 +3,21 @@ namespace framework\driver\db\query;
 
 class SubQuery extends QueryChain
 {
+	// 当前表名
     protected $cur;
+	// 主表设置项
     protected $master;
+	// 多子联表设置项
     protected $table_options = [];
+	// 支持的子表关系式
     protected static $sub_exp = ['=', '>', '<', '>=', '<=', '<>', 'ANY', 'IN', 'SOME', 'ALL', 'EXISTS'];
+	// 支持的子表逻辑
     protected static $sub_logic = ['AND', 'OR', 'XOR', 'AND NOT', 'OR NOT', 'NOT'];
-    
-    protected function init($table, $options, $sub, $exp, $logic)
+	
+    /*
+     * 初始化
+     */
+    protected function __init($table, $options, $sub, $exp, $logic)
     {
         $this->checkExpLogic($exp, $logic);
         $this->cur = $sub;
@@ -19,6 +27,9 @@ class SubQuery extends QueryChain
         $this->options['logic'] = $logic;
     }
 
+    /*
+     * 子表链
+     */
     public function sub($sub, $exp = 'IN', $logic = 'AND')
     {
         $this->checkExpLogic($exp, $logic);
@@ -28,17 +39,26 @@ class SubQuery extends QueryChain
         return $this;
     }
 
+    /*
+     * 设置子表字段关联
+     */
     public function on($fields1, $fields2 = null)
     {
         $this->options['on'] = [$fields1, $fields2];
         return $this;
     }
     
+    /*
+     * 查询（单条）
+     */
     public function get()
     {
         return $this->find(1)[0] ?? null;
     }
     
+    /*
+     * 查询（多条）
+     */
     public function find($limit = 0)
     {
         if ($limit) {
@@ -48,6 +68,9 @@ class SubQuery extends QueryChain
         return $this->db->select(...$this->buildSelect());
     }
     
+    /*
+     * 更新数据
+     */
     public function update($data)
     {
         list($set, $params) = $this->builder::setData($data);
@@ -58,6 +81,9 @@ class SubQuery extends QueryChain
         return $this->db->update($sql, $params);
     }
     
+    /*
+     * 删除数据
+     */
     public function delete()
     {
         $sql = "DELETE FROM ".$this->builder::keywordEscape($this->table).self::buildSubQuery($params);
@@ -67,6 +93,9 @@ class SubQuery extends QueryChain
         return $this->db->delete($sql, $params);
     }
     
+    /*
+     * 生成查询语句sql
+     */
     protected function buildSelect()
     {
         $params = [];
@@ -87,6 +116,9 @@ class SubQuery extends QueryChain
         return [$sql, $params];
     }
     
+    /*
+     * 生成子查询语句sql
+     */
     protected function buildSubQuery(&$params = [])
     {
         $sql = '';
@@ -118,6 +150,9 @@ class SubQuery extends QueryChain
         return $sql;
     }
     
+    /*
+     * 检查子查询逻辑关系
+     */
     protected function checkExpLogic($exp, $logic)
     {
         if (!in_array($exp, self::$sub_exp, true)) {
