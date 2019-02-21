@@ -6,8 +6,12 @@ use framework\core\http\Client;
 
 class Tencent extends Sms
 {
+	// 服务端点
     protected static $endpoint = 'https://yun.tim.qq.com/v5/tlssmssvr/sendsms';
 
+    /*
+     * 处理请求
+     */
     protected function handle($to, $template, $data, $signname = null)
     {
         $time   = time();

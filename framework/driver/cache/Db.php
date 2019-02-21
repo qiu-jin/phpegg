@@ -17,7 +17,10 @@ class Db extends Cache
     // 数据表字段名
     protected $fields = ['key', 'value', 'expiration'];;
 
-    protected function init($config)
+    /*
+     * 初始化
+     */
+    protected function __init($config)
     
 		if (isset($config['table'])) {
 			$this->table = $config['table'];
@@ -28,6 +31,9 @@ class Db extends Cache
 		$this->db = Container::driver('db', $config['db']);
     }
     
+    /*
+     * 获取
+     */
     public function get($key, $default = null)
     {
         $cache = $this->db->select($this->format(
@@ -35,7 +41,20 @@ class Db extends Cache
         ), [$key]);
         return $cache ? $this->unserialize($cache[0]['value']) : $default;
     }
+
+    /*
+     * 检查
+     */
+    public function has($key)
+    {
+        return $this->db->numRows($this->db->query($this->format(
+            'SELECT %s FROM %s WHERE %s = ? AND %s > '.time(), $this->fields[1], $this->table, $this->fields[0], $this->fields[2]
+        ), [$key])) > 0;
+    }
     
+    /*
+     * 设置
+     */
     public function set($key, $value, $ttl = null)
     {
         return (bool) $this->db->exec($this->format(
@@ -45,18 +64,37 @@ class Db extends Cache
         ]);
     }
 
-    public function has($key)
-    {
-        return $this->db->numRows($this->db->query($this->format(
-            'SELECT %s FROM %s WHERE %s = ? AND %s > '.time(), $this->fields[1], $this->table, $this->fields[0], $this->fields[2]
-        ), [$key])) > 0;
-    }
-    
+    /*
+     * 删除
+     */
     public function delete($key)
     {
         return (bool) $this->db->delete($this->format('DELETE FROM %s WHERE %s = ?', $this->table, $this->fields[0]), [$key]);
     }
+	
+    /*
+     * 自增
+     */
+    public function increment($key, $value = 1)
+    {
+        return (bool) $this->db->update($this->format(
+            'UPDATE %s SET %s = %s + ? WHERE %s = ?', $this->table, $this->fields[1], $this->fields[1], $this->fields[2]
+        ), [$value, $key]);
+    }
     
+    /*
+     * 自减
+     */
+    public function decrement($key, $value = 1)
+    {
+        return (bool) $this->db->update($this->format(
+            'UPDATE %s SET %s = %s - ? WHERE %s = ?', $this->table, $this->fields[1], $this->fields[1], $this->fields[2]
+        ), [$value, $key]);
+    }
+    
+    /*
+     * 获取多个
+     */
     public function getMultiple(array $keys, $default = null)
     {
         $in = implode(',', array_fill(0, count($keys), '?'));
@@ -71,36 +109,34 @@ class Db extends Cache
         return $caches;
     }
     
+    /*
+     * 删除多个
+     */
     public function deleteMultiple(array $keys)
     {
         $in = implode(',', array_fill(0, count($keys), '?'));
         return (bool) $this->db->delete($this->format("DELETE FROM %s WHERE %s IN ($in)", $this->table. $this->fields[0]), $keys);
     }
-    
-    public function increment($key, $value = 1)
-    {
-        return (bool) $this->db->update($this->format(
-            'UPDATE %s SET %s = %s + ? WHERE %s = ?', $this->table, $this->fields[1], $this->fields[1], $this->fields[2]
-        ), [$value, $key]);
-    }
-    
-    public function decrement($key, $value = 1)
-    {
-        return (bool) $this->db->update($this->format(
-            'UPDATE %s SET %s = %s - ? WHERE %s = ?', $this->table, $this->fields[1], $this->fields[1], $this->fields[2]
-        ), [$value, $key]);
-    }
-    
+
+    /*
+     * 清理
+     */
     public function clean()
     {
         return (bool) $this->db->query($this->format('TRUNCATE %s', $this->table));
     }
     
+    /*
+     * 垃圾回收
+     */
     public function gc()
     {
         $this->db->delete($this->format('DELETE FROM %s WHERE %s < '.time(), $this->table, $this->fields[2]));
     }
     
+    /*
+     * sql格式化
+     */
     protected function format($sql, ...$params)
     {
         $builder = $this->db::Builder;

@@ -6,8 +6,12 @@ namespace framework\driver\crypt;
  */
 class Sodium extends Crypt
 {
+	// 随机数
     protected $nonce;
     
+    /*
+     * 加密
+     */
     public function encrypt($data, $raw = false)
     {
         $secret = sodium_crypto_secretbox(
@@ -18,6 +22,9 @@ class Sodium extends Crypt
         return $raw ? $secret : base64_encode($secret);
     }
     
+    /*
+     * 解密
+     */
     public function decrypt($data, $raw = false)
     {
         return $this->unserialize(sodium_crypto_secretbox_open(
@@ -27,6 +34,9 @@ class Sodium extends Crypt
         ));
     }
     
+    /*
+     * 获取随机数
+     */
     protected function getNonce()
     {
         return $this->nonce ?? $this->nonce = sodium_crypto_generichash($this->config['salt'] ?? '', null, 24);

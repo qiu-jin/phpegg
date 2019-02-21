@@ -3,6 +3,7 @@ namespace framework\driver\crypt;
 
 abstract class Crypt
 {
+	// 配置项
     protected $config = [];
          
     /*
@@ -15,6 +16,9 @@ abstract class Crypt
      */
     abstract public function decrypt($data);
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->config = $config + $this->config;

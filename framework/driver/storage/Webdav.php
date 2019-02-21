@@ -14,12 +14,20 @@ use framework\core\http\Client;
  */
 class Webdav extends Storage
 {
+	// 服务端点
     protected $endpoint;
+	// 账号
     protected $username;
+	// 密码
     protected $password;
+	// 是否公共读取
     protected $public_read = false;
+	// 是否自动创建目录
     protected $auto_create_dir = false;
     
+    /* 
+     * 构造方法
+     */
     public function __construct($config)
     {
 		parent::__construct($config);
@@ -35,6 +43,9 @@ class Webdav extends Storage
         }
     }
     
+    /* 
+     * 读取
+     */
     public function get($from, $to = null)
     {
         $methods['timeout'] = [$this->timeout];
@@ -44,11 +55,17 @@ class Webdav extends Storage
         return $this->send('GET', $this->uri($from), null, $methods, !$this->public_read);
     }
     
+    /* 
+     * 检查
+     */
     public function has($from)
     {
         return $this->send('HEAD', $this->uri($from), null, ['curlopt' => [CURLOPT_NOBODY, true]], !$this->public_read);
     }
     
+    /* 
+     * 上传
+     */
     public function put($from, $to, $is_buffer = false)
     {
         if ($this->ckdir($to = $this->uri($to))) {
@@ -67,6 +84,9 @@ class Webdav extends Storage
         return false;
     }
 
+    /* 
+     * 获取属性
+     */
     public function stat($from)
     {
         $stat = $this->send('HEAD', $this->uri($from), null, [
@@ -79,21 +99,33 @@ class Webdav extends Storage
         ] : false;
     }
     
+    /* 
+     * 复制
+     */
     public function copy($from, $to)
     {
         return $this->ckdir($to = $this->uri($to)) && $this->send('COPY', $this->uri($from), ['Destination' => $to]);
     }
     
+    /* 
+     * 移动
+     */
     public function move($from, $to)
     {
         return $this->ckdir($to = $this->uri($to)) && $this->send('MOVE', $this->uri($from), ['Destination' => $to]);
     }
     
+    /* 
+     * 删除
+     */
     public function delete($from)
     {
         return $this->send('DELETE', $this->uri($from));
     }
     
+    /* 
+     * 发送请求
+     */
     protected function send($method, $url, $headers = null, $client_methods = null, $auth = true)
     {
         $client = new Client($method, $url);
@@ -134,11 +166,17 @@ class Webdav extends Storage
         return error($client->error, 2);
     }
     
+    /* 
+     * 获取uri
+     */
     protected function uri($path)
     {
         return $this->endpoint.$this->path($path);
     }
     
+    /* 
+     * 检查目录
+     */
     protected function ckdir($path)
     {
         return $this->auto_create_dir || $this->send('MKCOL', dirname($path).'/');

@@ -6,9 +6,14 @@ use framework\core\http\Client;
 
 class Nexmo extends Sms
 {
+	// 国家区号
     protected $area_code = '86';
+	// 服务端点
     protected static $endpoint = 'https://rest.nexmo.com/sms/json';
     
+    /*
+     * 构造函数
+     */
     public function __construct(array $config)
     {
         parent::__construct($config);
@@ -17,6 +22,9 @@ class Nexmo extends Sms
         }
     }
     
+    /*
+     * 处理请求
+     */
     protected function handle($to, $template, $data, $signname = null)
     {
         $message = $this->template[$template];

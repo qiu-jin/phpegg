@@ -11,9 +11,12 @@ abstract class Email
      */
     abstract public function handle($options);
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
-        $this->init($config);
+        $this->__init($config);
         if (isset($config['from'])) {
         	$this->from = $config['from'];
         }

@@ -2,8 +2,8 @@
 namespace framework\core;
 
 use framework\util\File;
+use framework\core\misc\ViewError;
 use framework\core\exception\ViewException;
-use framework\extend\view\Error as ViewError;
 
 class View
 {    

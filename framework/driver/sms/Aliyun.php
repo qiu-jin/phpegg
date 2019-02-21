@@ -5,9 +5,14 @@ use framework\core\http\Client;
 
 class Aliyun extends Sms
 {
+	// 地区
     protected $region = 'cn-hangzhou';
+	// 服务端点
     protected static $endpoint = 'https://dysmsapi.aliyuncs.com';
     
+    /*
+     * 构造函数
+     */
     public function __construct(array $config)
     {
         parent::__construct($config);
@@ -16,6 +21,9 @@ class Aliyun extends Sms
         }
     }
 
+    /*
+     * 处理请求
+     */
     protected function handle($to, $template, $data, $signname = null)
     {
         $params = [

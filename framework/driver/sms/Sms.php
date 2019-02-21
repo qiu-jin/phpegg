@@ -3,11 +3,18 @@ namespace framework\driver\sms;
 
 abstract class Sms
 {
+	// 访问key
     protected $acckey;
+	// 加密key
     protected $seckey;
+	// 短信签名
     protected $signname;
+	// 信息模版
     protected $template;
     
+    /*
+     * 构造函数
+     */
     public function __construct(array $config)
     {
         $this->acckey   = $config['acckey'];

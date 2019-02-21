@@ -7,13 +7,20 @@ use framework\core\http\Client;
 
 class Http
 {
+	// 配置项
     protected $config;
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->config = $config;
     }
     
+    /*
+     * 生成client实例
+     */
     public function make($method, $ns, $filters, $params)
     {
         if ($params) {
@@ -46,6 +53,9 @@ class Http
         return $client;
     }
     
+    /*
+     * 响应处理
+     */
     public function response($client)
     {
         $response = $client->response();
@@ -74,6 +84,9 @@ class Http
         return error(isset($error_code) ? "[$error_code]".($error_message ?? '')  : $client->error, 2);
     }
     
+    /*
+     * 设置filter
+     */
     protected function setFilter($filters)
     {
         foreach ($filters as $filter) {
@@ -87,6 +100,9 @@ class Http
         return isset($arr) ? http_build_query($arr) : '';
     }
     
+    /*
+     * 解析参数
+     */
     protected function parseParams($ns, $params)
     {
         $body = is_array(end($params)) ? array_pop($params) : null;
@@ -96,6 +112,9 @@ class Http
         return [$ns, $body];
     }
     
+    /*
+     * 转换url风格
+     */
     protected function convertUrlStyle($path)
     {
         switch ($this->config['url_style']) {

@@ -1,6 +1,8 @@
 <?php
 namespace framework\driver\db;
 
+use framework\util\Str;
+use framework\core\Logger;
 use framework\core\Container;
 
 abstract class Db
@@ -177,6 +179,21 @@ abstract class Db
     public function getConnection()
     {
         return $this->connection;
+    }
+	
+    /*
+     * 日志
+     */
+    protected function log($sql, $params = null)
+    {
+        if ($params) {
+            if (isset($params[0])) {
+                $sql = vsprintf(str_replace("?", "'%s'", $sql), $params);
+            } else {
+                $sql = Str::formatReplace($sql, $params, ':%s');
+            }
+        }
+        Logger::write(Logger::DEBUG, $sql);
     }
     
     /*

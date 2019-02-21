@@ -15,6 +15,9 @@ class Xmlrpc extends Rpc
         */
     ];
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->config = $config + $this->config;

@@ -11,6 +11,9 @@ class Apc extends Cache
 	// 是否全局清理
     protected $global_clean = false;
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->prefix = $config['prefix'];
@@ -19,36 +22,57 @@ class Apc extends Cache
 		}
     }
     
+    /*
+     * 获取
+     */
     public function get($key, $default = null)
     {
         return apcu_fetch($this->prefix.$key) ?? $default;
     }
 
+    /*
+     * 检查
+     */
     public function has($key)
     {
         return apcu_exists($this->prefix.$key);
     }
-    
+	
+    /*
+     * 设置
+     */
     public function set($key, $value, $ttl = null)
     {
         return apcu_store($this->prefix.$key, $value, $ttl ?? 0);
     }
-    
+	
+    /*
+     * 删除
+     */
     public function delete($key)
     {
         return apcu_delete($this->prefix.$key);
     }
     
+    /*
+     * 自增
+     */
     public function increment($key, $value = 1)
     {
         return apcu_inc($this->prefix.$key, $value);
     }
     
+    /*
+     * 自减
+     */
     public function decrement($key, $value = 1)
     {
         return apcu_dec($this->prefix.$key, $value);
     }
     
+    /*
+     * 清理
+     */
     public function clean()
     {
         if ($this->global_clean) {

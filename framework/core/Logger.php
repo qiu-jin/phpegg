@@ -6,7 +6,7 @@ use framework\driver\logger\Logger as LoggerDriver;
 class Logger
 {
     /*
-     * 日志等级常量
+     * 日志等级
      */
     const EMERGENCY = 'emergency';
     const ALERT     = 'alert';
@@ -99,7 +99,7 @@ class Logger
         } elseif (isset(self::$group_handler_names[$name])) {
             return self::getGroupHandler($name);
         }
-        if (Config::env('ENABLE_NULL_LOGGER')) {
+        if (!empty(self::$config['null_logger'])) {
             return self::getNullHandler();
         }
         throw new \Exception("Invalid logger channel: $name");
@@ -140,16 +140,15 @@ class Logger
      */
     public static function getGroupHandler($name)
     {
-        return self::$group_handlers[$name] ?? 
-               self::$group_handlers[$name] = self::makeGroupHandler(self::$group_handler_names[$name]);
+        return self::$group_handlers[$name] ?? self::$group_handlers[$name] = self::makeGroupHandler($name);
     }
     
     /*
      * 组实例
      */
-    public static function makeGroupHandler(array $names)
+    private static function makeGroupHandler($name)
     {
-        return new class ($names) extends LoggerDriver {
+        return new class (self::$group_handler_names[$name]) extends LoggerDriver {
             private $names;
             public function __construct($names) {
                 $this->names = $names;

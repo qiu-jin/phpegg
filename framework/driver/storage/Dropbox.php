@@ -5,15 +5,23 @@ use framework\core\http\Client;
 
 class Dropbox extends Storage
 {
+	// 访问key
     protected $acckey;
+	// 服务端点
     protected static $endpoint = 'https://%s.dropboxapi.com/2/files/';
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
 		parent::__construct($config);
         $this->acckey = $config['acckey'];
     }
     
+    /* 
+     * 读取
+     */
     public function get($from, $to = null)
     {
         $response = $this->send('download', ['path' => $this->path($from)]);
@@ -23,17 +31,26 @@ class Dropbox extends Storage
         return $to === null ? $response->body : (bool) file_put_contents($to, $response->body);
     }
     
+    /* 
+     * 检查
+     */
     public function has($from)
     {
         return $this->result($this->send('get_metadata', ['path' => $this->path($from)])->json(), true);
     }
     
+    /* 
+     * 上传
+     */
     public function put($from, $to, $is_buffer = false)
     {
         $params = ['path' => $this->path($to), 'mode' => 'overwrite'];
         return $this->result($this->send('upload', $params, $is_buffer ? $from : file_get_contents($from))->json());
     }
 
+    /* 
+     * 获取属性
+     */
     public function stat($from)
     {
         return ($stat = $this->result($this->send('get_metadata', ['path' => $this->path($from)])->json(), false)) ? [

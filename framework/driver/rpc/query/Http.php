@@ -3,13 +3,22 @@ namespace framework\driver\rpc\query;
 
 class Http
 {
+	// namespace
     protected $ns;
+	// 配置项
     protected $config;
+	// client实例
     protected $client;
+	// filter设置
     protected $filters;
+	// 构建处理器
     protected $build_handler;
+	// 响应处理器
     protected $response_handler;
     
+    /*
+     * 构造函数
+     */
     public function __construct($client, $name , $config)
     {
         if (isset($name)) {
@@ -19,12 +28,18 @@ class Http
         $this->config = $config;
     }
 
+    /*
+     * 魔术方法，设置namespace
+     */
     public function __get($name)
     {
         $this->ns[] = $name;
         return $this;
     }
     
+    /*
+     * 魔术方法，调用rpc方法
+     */
     public function __call($method, $params)
     {
         switch ($method) {
@@ -46,6 +61,9 @@ class Http
         }
     }
     
+    /*
+     * 调用
+     */
     protected function call($params)
     {
         $method = $params && is_array(end($params)) ? 'POST' : 'GET';

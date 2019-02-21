@@ -12,14 +12,23 @@ use MaxMind\Db\Reader;
 
 class Maxmind extends Geoip
 {
+	// 本地数据库
     protected $db;
+	// API服务
     protected $api;
+	// 语言
     protected $lang = 'en';
+	// 国家
     protected $type = 'country';
+	// 处理类型
     protected $handle;
+	// 服务端点
     protected static $endpoint = 'https://geoip.maxmind.com/geoip/v2.1';
     
-    protected function init($config)
+    /*
+     * 初始化
+     */
+    protected function __init($config)
     {
         if (isset($config['lang'])) {
             $this->lang = $config['lang'];
@@ -39,16 +48,25 @@ class Maxmind extends Geoip
         }
     }
     
+    /*
+     * 处理请求
+     */
     protected function handle($ip)
     {
         return $this->{$this->handle}($ip);
     }
     
+    /*
+     * 使用本地数据库处理
+     */
     protected function dbHandle($ip)
     {
         return $this->db->get($ip);
     }
     
+    /*
+     * 使用API服务处理
+     */
     protected function apiHandle($ip)
     {
         $client = Client::get(self::$endpoint."/$this->type/$ip");
@@ -59,6 +77,9 @@ class Maxmind extends Geoip
         return warn($result['error'] ?? $client->error);
     }
     
+    /*
+     * 结果过滤
+     */
     protected function fitler($result)
     {
         $return = [
@@ -72,6 +93,9 @@ class Maxmind extends Geoip
         return $return;
     }
     
+    /* 
+     * 析构函数
+     */
     public function __destruct()
     {
         isset($this->db) && $this->db->close();

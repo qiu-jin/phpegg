@@ -12,6 +12,9 @@ class File extends Logger
     // 是否实时写入日志
     protected $real_write = false;
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->logfile = $config['logfile'];
@@ -27,6 +30,9 @@ class File extends Logger
         );
     }
     
+    /*
+     * 写入
+     */
     public function write($level, $message, $context = null)
     {
         if ($this->real_write) {
@@ -35,7 +41,10 @@ class File extends Logger
             $this->logs[] = [$level, $message, $context];
         }
     }
-    
+	
+    /*
+     * 冲刷
+     */
     public function flush()
     {
         if ($this->logs) {
@@ -46,6 +55,9 @@ class File extends Logger
         }
     }
     
+    /*
+     * 实时写入
+     */
     protected function realWrite($level, $message, $context)
     {
         error_log($this->formatter->make($level, $message, $context).PHP_EOL, 3, $this->logfile);

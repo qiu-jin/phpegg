@@ -7,12 +7,20 @@ use framework\core\http\Client;
 
 class Oss extends Storage
 {
+	// 桶
     protected $bucket;
+	// 访问key
     protected $acckey;
+	// 加密key
     protected $seckey;
+	// 服务端点
     protected $endpoint;
+	// 是否公共读取
     protected $public_read = false;
     
+    /* 
+     * 构造方法
+     */
     public function __construct($config)
     {
 		parent::__construct($config);
@@ -26,6 +34,9 @@ class Oss extends Storage
         }
     }
     
+    /* 
+     * 读取
+     */
     public function get($from, $to = null)
     {
         $methods['timeout'] = [$this->timeout];
@@ -35,11 +46,17 @@ class Oss extends Storage
         return $this->send('GET', $from, null, $methods, !$this->public_read);
     }
     
+    /* 
+     * 检查
+     */
     public function has($from)
     {
         return $this->send('HEAD', $from, null, ['curlopt' => [CURLOPT_NOBODY, 1]], !$this->public_read);
     }
     
+    /* 
+     * 上传
+     */
     public function put($from, $to, $is_buffer = false)
     {
         $methods['timeout'] = [$this->timeout];
@@ -60,6 +77,9 @@ class Oss extends Storage
         }
     }
 
+    /* 
+     * 获取属性
+     */
     public function stat($from)
     {
         $stat = $this->send('HEAD', $from, null, [
@@ -71,22 +91,34 @@ class Oss extends Storage
             'mtime' => strtotime($stat['Last-Modified']),
         ] : false;
     }
-
-    public function move($from, $to)
-    {
-        return $this->copy($from, $to) && $this->delete($from);
-    }
-    
+	
+    /* 
+     * 复制
+     */
     public function copy($from, $to)
     {
         return $this->send('PUT', $to, ['x-oss-copy-source' => '/'.$this->bucket.$this->path($from)]);
     }
 
+    /* 
+     * 移动
+     */
+    public function move($from, $to)
+    {
+        return $this->copy($from, $to) && $this->delete($from);
+    }
+    
+    /* 
+     * 删除
+     */
     public function delete($from)
     {
         return $this->send('DELETE', $from);
     }
     
+    /* 
+     * 发送请求
+     */
     protected function send($method, $path, $headers = null, $client_methods = null, $auth = true)
     {
         $path = $this->path($path);
@@ -120,6 +152,9 @@ class Oss extends Storage
         return error("[{$result['Code']}] {$result['Message']}" ?? $client->error, 2);
     }
 
+    /* 
+     * 设置请求header
+     */
     protected function setHeaders($method, $path, $headers)
     {
         $headers['Date'] = gmdate('D, d M Y H:i:s').' GMT';

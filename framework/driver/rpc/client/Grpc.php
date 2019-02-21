@@ -8,14 +8,22 @@ use Grpc\ChannelCredentials;
 
 class Grpc
 {
+	// 配置项
     protected $config;
+	// client实例
     protected $clients;
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->config = $config;
     }
     
+    /*
+     * 发送请求
+     */
     public function send($service, $method, $message)
     {
         list($response_message, $status) = $this->getClient($service)->$method($message)->wait();
@@ -25,6 +33,9 @@ class Grpc
         error("[$status->code]$status->details");
     }
     
+    /*
+     * 获取client实例
+     */
     protected function getClient($service)
     {
         if (isset($this->clients[$service])) {

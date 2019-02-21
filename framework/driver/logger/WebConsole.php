@@ -13,7 +13,9 @@ use framework\core\http\Response;
  */
 class WebConsole extends Logger
 {
+	// 版本
     const VERSION = '4.0.0';
+	// 日志等级
     protected static $loglevel = [
         'emergency'  => 'error',
         'alert'      => 'error',
@@ -34,6 +36,9 @@ class WebConsole extends Logger
     // 最大日志数据大小
     protected $message_size_limit = 4000;
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         if (isset($config['allow_ips']) && !in_array(Request::ip(), $config['allow_ips'], true)) {
@@ -51,6 +56,9 @@ class WebConsole extends Logger
         Event::on('exit', [$this, 'flush']);
     }
     
+    /*
+     * 写入
+     */
     public function write($level, $message, $context = null)
     {
         if ($this->flush) {
@@ -58,26 +66,41 @@ class WebConsole extends Logger
         }
     }
     
+    /*
+     * 表格
+     */
     public function table(array $values, $contex = null)
     {
         $this->write('table', $values, $contex);
     }
     
+    /*
+     * 分组
+     */
     public function group($value)
     {
         $this->write('group', $value);
     }
     
+    /*
+     * 分组折叠
+     */
     public function groupCollapsed($value = null, $contex = null)
     {
         $this->write('groupCollapsed', $value, $contex);
     }
     
+    /*
+     * 分组结束
+     */
     public function groupEnd($value)
     {
         $this->write('groupEnd', $value);
     }
     
+    /*
+     * 冲刷
+     */
     public function flush()
     {        
         if ($this->logs) {
@@ -108,6 +131,9 @@ class WebConsole extends Logger
         }
     }
     
+    /*
+     * 编码
+     */
     protected function encode ($data)
     {
         return base64_encode(json_encode($data));

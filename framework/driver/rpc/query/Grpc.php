@@ -8,10 +8,16 @@ use Google\Protobuf\Internal\Message;
 
 class Grpc
 {
+	// namespace
     protected $ns;
+	// client实例
     protected $client;
+	// 配置项
     protected $config;
 
+    /*
+     * 构造函数
+     */
     public function __construct($ns, $client, $config)
     {
         $this->ns = $ns;
@@ -19,12 +25,18 @@ class Grpc
         $this->config = $config;
     }
     
+    /*
+     * 魔术方法，设置namespace
+     */
     public function __get($name)
     {
         $this->ns[] = $name;
         return $this;
     }
     
+    /*
+     * 魔术方法，调用rpc方法
+     */
     public function __call($method, $params)
     {
         if (!$this->ns) {
@@ -35,6 +47,9 @@ class Grpc
         return $this->response($this->client->send($service, $method, $message));
     }
     
+    /*
+     * 响应信息处理
+     */
     protected function response($message)
     {
         if (empty($this->config['response_to_array'])) {
@@ -43,6 +58,9 @@ class Grpc
         return json_decode($message->serializeToJsonString(), true);
     }
     
+    /*
+     * 生成请求信息实例
+     */
     protected function makeRequestMessage($service, $method, $params)
     {
         switch ($this->config['param_mode']) {

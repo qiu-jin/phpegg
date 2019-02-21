@@ -5,15 +5,26 @@ use framework\core\http\Client;
 
 class HttpBatch
 {
+	// namespace
     protected $ns;
+	// 配置项
     protected $config;
+	// client实例
     protected $client;
+	// filter设置
     protected $filters;
+	// 请求集合
     protected $queries;
+	// 公共namespace
     protected $common_ns;
+	// 构建处理器
     protected $build_handler;
+	// 公共构建处理器
     protected $common_build_handler;
     
+    /*
+     * 构造函数
+     */
     public function __construct($client, $common_ns, $config, $common_build_handler)
     {
         $this->client = $client;
@@ -24,12 +35,18 @@ class HttpBatch
         $this->common_build_handler = $common_build_handler;
     }
 
+    /*
+     * 魔术方法，设置namespace
+     */
     public function __get($name)
     {
         $this->ns[] = $name;
         return $this;
     }
     
+    /*
+     * 魔术方法，调用rpc方法
+     */
     public function __call($method, $params)
     {
         switch ($method) {
@@ -51,6 +68,9 @@ class HttpBatch
         }
     }
     
+    /*
+     * 调用
+     */
     protected function call(callable $handler = null)
     {
         return Client::multi(
@@ -60,6 +80,9 @@ class HttpBatch
         );
     }
     
+    /*
+     * 构建请求
+     */
     protected function buildQuery($params)
     {
         $method = $params && is_array(end($params)) ? 'POST' : 'GET';

@@ -6,11 +6,16 @@ namespace framework\driver\rpc\client;
  */
 class JsonrpcTcp
 {
+	换行符
     const EOL = "\n";
-    
+    // 配置项
     protected $config;
+	// 套接字
     protected $socket;
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->config = $config;
@@ -25,6 +30,9 @@ class JsonrpcTcp
         }
     }
     
+    /*
+     * 发送请求
+     */
     public function send($data)
     {
         $data = $this->config['requset_serialize']($data).self::EOL;
@@ -41,6 +49,9 @@ class JsonrpcTcp
         error('-32000: Invalid response');
     }
     
+    /*
+     * 析构函数
+     */
     public function __destruct()
     {
         empty($this->socket) || fclose($this->socket);

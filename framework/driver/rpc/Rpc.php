@@ -20,7 +20,7 @@ abstract class Rpc
     }
     
     /* 
-     * 短信发送处理
+     * query实例
      */
     abstract public function query($name);
 }

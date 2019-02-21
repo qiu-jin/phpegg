@@ -13,26 +13,39 @@ class Recaptcha
     protected $acckey;
     // 加密key
     protected $seckey;
-    // javascript地址
+    // 脚本地址
     protected $script = 'https://www.google.com/recaptcha/api.js';
+	// 服务端点
     protected static $endpoint = 'https://www.google.com/recaptcha/api/siteverify';
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->acckey = $config['acckey'];
         $this->seckey = $config['seckey'];
     }
     
+    /*
+     * 获取脚本地址
+     */
     public function script()
     {
         return $this->script;
     }
     
+    /*
+     * 获取访问key
+     */
     public function sitekey()
     {
         return $this->acckey;
     }
 
+    /*
+     * 验证
+     */
     public function verify($value = null)
     {
         $client = Client::post(self::$endpoint)->form([

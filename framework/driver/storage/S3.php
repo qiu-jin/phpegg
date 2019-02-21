@@ -7,13 +7,22 @@ use framework\core\http\Client;
 
 class S3 extends Storage
 {
+	// 桶
     protected $bucket;
+	// 地区
     protected $region;
+	// 访问key
     protected $acckey;
+	// 加密key
     protected $seckey;
+	// 服务端点
     protected $endpoint;
+	// 是否公共读取
     protected $public_read = false;
     
+    /* 
+     * 构造方法
+     */
     public function __construct($config)
     {
 		parent::__construct($config);
@@ -28,6 +37,9 @@ class S3 extends Storage
         }
     }
     
+    /* 
+     * 读取
+     */
     public function get($from, $to = null)
     {
         $methods['timeout'] = [$this->timeout];
@@ -37,11 +49,17 @@ class S3 extends Storage
         return $this->send('GET', $from, null, $methods, !$this->public_read);
     }
     
+    /* 
+     * 检查
+     */
     public function has($from)
     {
         return $this->send('HEAD', $from, null, ['curlopt' => [CURLOPT_NOBODY, 1]], !$this->public_read);
     }
     
+    /* 
+     * 上传
+     */
     public function put($from, $to, $is_buffer = false)
     {
         $methods['timeout'] = [$this->timeout];
@@ -63,6 +81,9 @@ class S3 extends Storage
         return false;
     }
 
+    /* 
+     * 获取属性
+     */
     public function stat($from)
     {
         $stat = $this->send('HEAD', $from, null, [
@@ -75,21 +96,33 @@ class S3 extends Storage
         ] : false;
     }
     
+    /* 
+     * 复制
+     */
     public function copy($from, $to)
     {
         return $this->send('PUT', $to, ['X-Amz-Copy-Source' => '/'.$this->bucket.$this->path($from)]);
     }
     
+    /* 
+     * 移动
+     */
     public function move($from, $to)
     {
         return $this->copy($from, $to) && $this->delete($from);
     }
     
+    /* 
+     * 删除
+     */
     public function delete($from)
     {
         return $this->send('DELETE', $from);
     }
     
+    /* 
+     * 发送请求
+     */
     protected function send($method, $path, $headers = null, $client_methods = null, $auth = true)
     {
         $path = $this->path($path);
@@ -123,6 +156,9 @@ class S3 extends Storage
         return error($result['Message'] ?? $client->error , 2);
     }
     
+    /* 
+     * 设置请求header
+     */
     protected function setHeaders($method, $path, $headers)
     {
         $headers['Host'] = parse_url($this->endpoint, PHP_URL_HOST);

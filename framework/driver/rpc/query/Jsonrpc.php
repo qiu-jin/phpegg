@@ -5,11 +5,18 @@ use framework\driver\rpc\Jsonrpc as Jrpc;
 
 class Jsonrpc
 {
+	// 请求id
     protected $id;
+	// namespace
     protected $ns;
+	// client实例
     protected $client;
+	// 配置项
     protected $config;
     
+    /*
+     * 构造函数
+     */
     public function __construct($name, $client, $config)
     {
         $this->client = $client;
@@ -19,12 +26,18 @@ class Jsonrpc
         $this->config = $config;
     }
 
+    /*
+     * 魔术方法，设置namespace
+     */
     public function __get($name)
     {
         $this->ns[] = $name;
         return $this;
     }
     
+    /*
+     * 魔术方法，调用rpc方法
+     */
     public function __call($method, $params)
     {
         if ($method === ($this->config['id_method_alias'] ?? 'id')) {
@@ -35,6 +48,9 @@ class Jsonrpc
         return $this->call($params);
     }
     
+    /*
+     * 调用
+     */
     protected function call($params)
     {
         $data = [

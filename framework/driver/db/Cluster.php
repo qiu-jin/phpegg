@@ -17,7 +17,7 @@ class Cluster
     protected $builder;
 	// 写入方法集合
     protected static $write_methods = [
-        'insertid', 'affectedrows', 'begin', 'rollback', 'commit', 'transaction', 'switch'
+        'insert', 'update', 'delete', 'insertid', 'affectedrows', 'begin', 'rollback', 'commit', 'transaction'
     ];
     
     /*

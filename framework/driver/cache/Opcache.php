@@ -13,7 +13,10 @@ class Opcache extends Cache
 	// 启用值过滤功能
     protected $enable_filter_value = false;
 
-    protected function init($config)
+    /*
+     * 初始化
+     */
+    protected function __init($config)
     {
 		$this->dir = Str::lastPad($config['dir'], '/');
 		if (isset($config['ext'])) {
@@ -24,6 +27,9 @@ class Opcache extends Cache
 		}
     }
     
+    /*
+     * 获取
+     */
     public function get($key, $default = null)
     {
         if (is_php_file($file = $this->filename($key))) {
@@ -34,7 +40,22 @@ class Opcache extends Cache
         }
         return $default;
     }
+
+    /*
+     * 检查
+     */
+    public function has($key)
+    {
+        if (is_php_file($file = $this->filename($key))) {
+            require($file);
+            return $expiration === 0 || $expiration < time();
+        }
+        return false;
+    }
     
+    /*
+     * 设置
+     */
     public function set($key, $value, $ttl = null)
     {
         if ($this->enable_filter_value) {
@@ -47,30 +68,33 @@ class Opcache extends Cache
         return file_put_contents($file = $this->filename($key), $contents) && opcache_compile_file($file);
     }
 
-    public function has($key)
-    {
-        if (is_php_file($file = $this->filename($key))) {
-            require($file);
-            return $expiration === 0 || $expiration < time();
-        }
-        return false;
-    }
-    
+    /*
+     * 删除
+     */
     public function delete($key)
     {
         return is_php_file($file = $this->filename($key)) && opcache_invalidate($file, true) && unlink($file);
     }
     
+    /*
+     * 自增
+     */
     public function increment($key, $value = 1)
     {
         return $this->set($key, $this->get($key, 0) + $value);
     }
     
+    /*
+     * 自减
+     */
     public function decrement($key, $value = 1)
     {
         return $this->set($key, $this->get($key, 0) - $value);
     }
     
+    /*
+     * 清理
+     */
     public function clean()
     {
         File::cleanDir($this->dir, function ($file) {
@@ -78,6 +102,9 @@ class Opcache extends Cache
         });
     }
     
+    /*
+     * 垃圾回收
+     */
     public function gc()
     {
         $maxtime = time() + $this->gc_maxlife;
@@ -89,11 +116,17 @@ class Opcache extends Cache
         });
     }
 
+    /*
+     * 获取文件名
+     */
     protected function filename($key)
     {
         return $this->dir.md5($key).$this->ext;
     }
     
+    /*
+     * 过滤设置值
+     */
     protected function filterValue(&$value)
     {
         if (is_array($value)) {

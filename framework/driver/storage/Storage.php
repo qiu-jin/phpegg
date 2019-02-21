@@ -7,7 +7,9 @@ use framework\core\http\Client;
 
 abstract class Storage
 {
+	// 域名
     protected $domain;
+	// 请求超时设置
     protected $timeout;
     
     /* 
@@ -97,11 +99,17 @@ abstract class Storage
         return $data ? $this->put($data, $to, true) : false;
     }
     
+    /* 
+     * 设置超时
+     */
     public function timeout($timeout)
     {
         return $this->timeout = $timeout;
     }
     
+    /* 
+     * 获取访问路径
+     */
     protected function path($path)
     {
         return Str::headPad(trim($path), '/');

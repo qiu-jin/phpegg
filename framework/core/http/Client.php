@@ -2,6 +2,7 @@
 namespace framework\core\http;
 
 use framework\util\Arr;
+use framework\core\Logger;
 
 class Client
 {
@@ -453,6 +454,14 @@ class Client
 			$body = substr($body, $size);
 	        return $headers ?? null;
         }
+    }
+	
+    /*
+     * 日志
+     */
+    protected static function log()
+    {
+        //Logger::write(Logger::DEBUG, $log);
     }
     
     /*

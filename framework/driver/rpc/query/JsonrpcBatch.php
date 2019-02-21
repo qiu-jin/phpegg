@@ -5,14 +5,22 @@ use framework\driver\rpc\Jsonrpc;
 
 class JsonrpcBatch
 {
+	// 请求id
     protected $id;
+	// namespace
     protected $ns;
+	// 配置项
     protected $config;
+	// client实例
     protected $client;
+	// 请求集合
     protected $queries;
+	// 公共namespace
     protected $common_ns;
     
-    
+    /*
+     * 构造函数
+     */
     public function __construct($common_ns, $client, $config)
     {
         $this->client = $client;
@@ -22,12 +30,18 @@ class JsonrpcBatch
         }
     }
 
+    /*
+     * 魔术方法，设置namespace
+     */
     public function __get($name)
     {
         $this->ns[] = $name;
         return $this;
     }
     
+    /*
+     * 魔术方法，调用rpc方法
+     */
     public function __call($method, $params)
     {
         if ($method === ($this->config['batch_call_method_alias'] ?? 'call')) {
@@ -48,6 +62,9 @@ class JsonrpcBatch
         return $this;
     }
 
+    /*
+     * 调用
+     */
     protected function call($handler = null)
     {
         $result = $this->client->send($this->queries);

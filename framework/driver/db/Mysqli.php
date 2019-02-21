@@ -1,8 +1,6 @@
 <?php
 namespace framework\driver\db;
 
-use framework\extend\debug\Db as DBDebug;
-
 class Mysqli extends Db
 {
 	// 构造器
@@ -251,7 +249,7 @@ class Mysqli extends Db
      */
     public function realQuery($sql)
     {
-        $this->debug && DBDebug::write($sql);
+        $this->debug && $this->log($sql);
         if ($query = $this->connection->query($sql)) {
             return $query;
         }
@@ -263,7 +261,7 @@ class Mysqli extends Db
      */
     public function prepareExecute($sql, $params, $is_assoc = false)
     {
-        $this->debug && DBDebug::write($sql, $params, $is_assoc);
+        $this->debug && $this->log($sql, $params, $is_assoc);
         $bind_params = [];
         if ($is_assoc) {
             if (preg_match_all('/\:(\w+)/', $sql, $matchs, PREG_OFFSET_CAPTURE)) {

@@ -11,6 +11,9 @@ class Query
 	// 请求设置值
     protected $options;
     
+    /*
+     * 构造函数
+     */
     public function __construct($email, $options)
     {
         $this->email = $email;

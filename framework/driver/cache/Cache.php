@@ -16,15 +16,15 @@ abstract class Cache
     abstract public function get($key, $default);
     
     /*
-     * 设置
-     */
-    abstract public function set($key, $value, $ttl);
-    
-    /*
      * 检查
      */
     abstract public function has($key);
-    
+	
+    /*
+     * 设置
+     */
+    abstract public function set($key, $value, $ttl);
+
     /*
      * 删除
      */
@@ -45,9 +45,12 @@ abstract class Cache
      */
     abstract public function clean();
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
-        $this->init($config);
+        $this->__init($config);
         if (isset($config['gc_random'])
             && method_exists($this, 'gc')
             && mt_rand(1, $config['gc_random'][1]) <= $config['gc_random'][0]

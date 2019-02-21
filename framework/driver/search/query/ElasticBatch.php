@@ -5,13 +5,22 @@ use framework\core\http\Client;
 
 class ElasticBatch
 {
+	// 获取类型设置集合
     protected $mget;
+	// 修改类型设置集合
     protected $bulk;
+	// 类型(7.x版本中去除)
     protected $type;
+	// 索引
     protected $index;
+	// 服务端点
     protected $endpoint;
+	// 公共索引
     protected $common_index;
     
+    /*
+     * 构造函数
+     */
     public function __construct($endpoint, $index, $type)
     {
         $this->type = $type;
@@ -19,6 +28,9 @@ class ElasticBatch
         $this->common_index = $index;
     }
     
+    /*
+     * 魔术方法，设置index
+     */
     public function __get($name)
     {
         if (!isset($this->index)) {
@@ -28,12 +40,18 @@ class ElasticBatch
         throw new \Exception('Index has been set');
     }
     
+    /*
+     * 获取
+     */
     public function get($id, $options = [])
     {
         $this->mget[] = array_merge($options, $this->getQuery($id));
         return $this;
     }
     
+    /*
+     * 设置
+     */
     public function set($id, $data)
     {
         $this->bulk[] = json_encode(['index' => $this->getQuery($id)]);
@@ -41,6 +59,9 @@ class ElasticBatch
         return $this;
     }
     
+    /*
+     * 创建
+     */
     public function create($data)
     {
         $this->bulk[] = json_encode(['index' => $this->getQuery()]);
@@ -48,6 +69,9 @@ class ElasticBatch
         return $this;
     }
     
+    /*
+     * 更新
+     */
     public function update($id, $data)
     {
         $this->bulk[] = json_encode(['update' => $this->getQuery($id)]);
@@ -55,12 +79,18 @@ class ElasticBatch
         return $this;
     }
     
+    /*
+     * 删除
+     */
     public function delete($id)
     {
         $this->bulk[] = json_encode(['delete' => $this->getQuery($id)]);
         return $this;
     }
     
+    /*
+     * 调用
+     */
     public function call()
     {
         if (isset($this->bulk)) {
@@ -79,13 +109,16 @@ class ElasticBatch
             throw new \Exception('Query is empty');
         }
         $client = Client::post("$this->endpoint/$method")->body($body);
-        $response = $client->response;
+        $response = $client->response();
         if ($response->status >= 200 && $response->status < 300) {
             return $response->json();
         }
         error($client->error);
     }
     
+    /*
+     * 获取请求设置
+     */
     protected function getQuery($id = null)
     {
         if ($this->index) {

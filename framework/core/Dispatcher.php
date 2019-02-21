@@ -14,7 +14,7 @@ class Dispatcher
     }
     
     /*
-     * 调度信息
+     * 获取调度信息
      */
     public static function dispatch($route, $param_mode = 0, $dynamic_dispatch = false)
     {

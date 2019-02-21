@@ -88,6 +88,14 @@ class Session
     {
         Arr::delete($_SESSION, $name);
     }
+	
+    /*
+     * 获取并删除
+     */
+    public static function pull($name, $default = null)
+    {
+		return Arr::pull($_SESSION, $name, $default);
+	}
     
     /*
      * 清除所有

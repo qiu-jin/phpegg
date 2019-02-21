@@ -1,18 +1,17 @@
 <?php
-namespace framework\extend\debug;
+namespace framework\core;
 
 use Symfony\Component\VarDumper\VarDumper;
 
 class Debug
 {
+	/*
+	 * dump
+	 */
     public static function dump(...$vars)
     {
         ob_start();
-        if (class_exists(VarDumper::class)) {
-            VarDumper::dump(...$vars);
-        } else {
-            var_dump(...$vars);
-        }
+		class_exists(VarDumper::class) ? VarDumper::dump(...$vars) : var_dump(...$vars);
         return ob_get_clean();
     }
 }

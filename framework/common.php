@@ -1,6 +1,7 @@
 <?php
 use framework\App;
 use framework\util\Url;
+use framework\core\Debug;
 use framework\core\Error;
 use framework\core\Event;
 use framework\core\Getter;
@@ -13,7 +14,7 @@ use framework\core\http\Cookie;
 use framework\core\http\Session;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\extend\debug\Debug;
+
 
 define('OPCACHE_LOADED', extension_loaded('opcache'));
 

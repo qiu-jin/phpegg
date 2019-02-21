@@ -1,8 +1,6 @@
 <?php
 namespace framework\driver\db;
 
-use framework\extend\debug\Db as DBDebug;
-
 abstract class Pdo extends Db
 {
     /*
@@ -209,7 +207,7 @@ abstract class Pdo extends Db
      */
     public function realQuery($sql)
     {
-        $this->debug && DBDebug::write($sql);
+        $this->debug && $this->log($sql);
         if ($query = $this->connection->query($sql)) {
             return $query;
         }
@@ -221,7 +219,7 @@ abstract class Pdo extends Db
      */
     public function realExec($sql)
     {
-        $this->debug && DBDebug::write($sql);
+        $this->debug && $this->log($sql);
         if ($result = $this->connection->exec($sql)) {
             return $result;
         }
@@ -233,7 +231,7 @@ abstract class Pdo extends Db
      */
     public function prepareExecute($sql, $params)
     {
-        $this->debug && DBDebug::write($sql, $params);
+        $this->debug && $this->log($sql, $params);
         if ($query = $this->connection->prepare($sql)) {
             if ($query->execute($params)) {
                 return $query;

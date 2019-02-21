@@ -6,10 +6,15 @@ use framework\driver\email\query\Mime;
 
 class Smtp extends Email
 {
+	// 套接字
     protected $sock;
+	// 调试模式
     protected $debug = APP_DEBUG;
     
-    protected function init($config)
+    /*
+     * 初始化
+     */
+    protected function __init($config)
     {
         if (isset($config['debug'])) {
             $this->debug = $config['debug'];
@@ -28,6 +33,9 @@ class Smtp extends Email
         }
     }
     
+    /*
+     * 处理请求
+     */
     public function handle($options)
     {
         $mime = Mime::build($options, $addrs);
@@ -50,6 +58,9 @@ class Smtp extends Email
         return true;
     }
     
+    /*
+     * 读网络流
+     */
     protected function read()
     {
         $res = '';
@@ -64,12 +75,18 @@ class Smtp extends Email
         return $res;
     }
     
+    /*
+     * 执行SMTP命令
+     */
     protected function command($cmd)
     {
         fputs($this->sock, $cmd.Mime::EOL);
         return $this->read();
     }
     
+    /*
+     * 析构函数
+     */
     public function __destruct()
     {
         empty($this->sock) || fclose($this->sock);

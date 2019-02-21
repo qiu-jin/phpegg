@@ -23,7 +23,10 @@ class Ip2location extends Geoip
      */
     protected $fields = ['begin_ip_num', 'end_ip_num', 'country_code', 'country_name'];
 
-    protected function init($config)
+    /*
+     * 初始化
+     */
+    protected function __init($config)
     {
         if (isset($config['table'])) {
             $this->table = $config['table'];
@@ -34,6 +37,9 @@ class Ip2location extends Geoip
 		$this->db = Container::driver('db', $config['db']);
     }
     
+    /*
+     * 处理请求
+     */
     protected function handle($ip)
     {
         if ($long = ip2long($ip)) {
@@ -54,6 +60,9 @@ class Ip2location extends Geoip
         }
     }
     
+    /*
+     * 结果过滤
+     */
     protected function fitler($result)
     {
         $return = [

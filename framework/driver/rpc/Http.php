@@ -3,8 +3,9 @@ namespace framework\driver\rpc;
 
 class Http extends Rpc
 {
+	// client实例
     protected $client;
-    
+    // 配置项
     protected $config = [
         /*
         // 服务端点
@@ -44,6 +45,9 @@ class Http extends Rpc
         */
     ];
 
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->config = $config + $this->config;

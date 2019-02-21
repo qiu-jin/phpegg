@@ -1,9 +1,9 @@
 <?php
-namespace framework\extend\view;
+namespace framework\core\misc;
 
 use framework\core\Logger;
 
-class Error
+class ViewError
 {   
     public static function render404($message)
     {

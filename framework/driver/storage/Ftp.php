@@ -6,8 +6,12 @@ namespace framework\driver\storage;
  */
 class Ftp extends Storage
 {
+	// 连接资源
     protected $connection;
     
+    /* 
+     * 构造方法
+     */
     public function __construct($config)
     {
         $port = $config['port'] ?? 21;
@@ -25,6 +29,9 @@ class Ftp extends Storage
         $this->domain = $config['domain'] ?? $config['host'];
     }
     
+    /* 
+     * 读取
+     */
     public function get($from ,$to = null)
     {
         $from = $this->path($from);
@@ -41,11 +48,17 @@ class Ftp extends Storage
         }
     }
     
+    /* 
+     * 检查
+     */
     public function has($from)
     {
         return (bool) @ftp_size($this->connection, $this->path($from));
     }
     
+    /* 
+     * 上传
+     */
     public function put($from, $to, $is_buffer = false)
     {
         if ($this->ckdir($to = $this->path($to))) {
@@ -61,6 +74,9 @@ class Ftp extends Storage
         }
     }
 
+    /* 
+     * 获取属性
+     */
     public function stat($from)
     {
         $from = $this->path($from);
@@ -70,6 +86,9 @@ class Ftp extends Storage
         ];
     }
     
+    /* 
+     * 复制
+     */
     public function copy($from, $to)
     {
         if ($this->ckdir($to = $this->path($to))) {
@@ -84,26 +103,41 @@ class Ftp extends Storage
         return false;
     }
     
+    /* 
+     * 移动
+     */
     public function move($from, $to)
     {
         return $this->ckdir($to = $this->path($to)) ? ftp_rename($this->connection, $this->path($from), $to) : false;
     }
     
+    /* 
+     * 删除
+     */
     public function delete($from)
     {
         return ftp_delete($this->connection, $this->path($from));
     }
     
+    /* 
+     * 获取连接
+     */
     public function getConnection()
     {
         return $this->connection;
     }
     
+    /* 
+     * 检查目录
+     */
     protected function ckdir($path) {
         $dir = dirname($path);
         return @ftp_chdir($this->connection, $dir) || ftp_mkdir($this->connection, $dir);
     }
     
+    /* 
+     * 析构函数
+     */
     public function __destruct()
     {
         $this->connection && ftp_close($this->connection);

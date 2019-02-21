@@ -150,7 +150,7 @@ class Container
 		$v = self::$providers[$params[0]];
 		switch ($v[0]) {
 			case self::T_DRIVER:
-				if ($c == 1 || $c == 2) {
+				if ($c <= 2) {
 					return self::makeDriver(...$params);
 				}
 				break;
@@ -173,12 +173,10 @@ class Container
 			case self::T_ALIAS:
 				if ($c == 1) {
 					$a = explode('.', $v[1]);
-					if (isset(self::$providers[$a[0]])) {
-						if (self::$providers[$a[0]][0] != self::T_ALIAS) {
-							return self::make($a);
-						}
-						throw new \Exception("Alias Provider的源不允许为Alias");
+					if (isset(self::$providers[$a[0]]) && self::$providers[$a[0]][0] != self::T_ALIAS) {
+						return self::make($a);
 					}
+					throw new \Exception("源不存在或为alias类型");
 				}
 				break;
 			default:

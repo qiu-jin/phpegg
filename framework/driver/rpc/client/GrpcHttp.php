@@ -5,13 +5,20 @@ use framework\core\http\Client;
 
 class GrpcHttp
 {
+	// 配置项
     protected $config;
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->config = $config;
     }
     
+    /*
+     * 发送请求
+     */
     public function send($service, $method, $message)
     {
         $url    = $this->config['endpoint'].'/'.strtr($service, '\\', '.').'/'.$method;

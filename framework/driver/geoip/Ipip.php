@@ -8,12 +8,19 @@ use framework\core\http\Client;
  */
 class Ipip extends Geoip
 {
+	// 本地数据库
     protected $db;
+	// 数据库index
     protected $index;
+	// 数据库offset
     protected $offset;
+	// 是否收费数据库
     protected $is_paid_db = false;
 
-    protected function init($config)
+    /*
+     * 初始化
+     */
+    protected function __init($config)
     {
         if (isset($config['is_paid_db'])) {
             $this->is_paid_db = $config['is_paid_db'];
@@ -25,6 +32,9 @@ class Ipip extends Geoip
         $this->index  = fread($this->db, $this->offset[1] - 4);
     }
     
+    /*
+     * 处理请求
+     */
     protected function handle($ip)
     {
         if (!$long = pack('N', ip2long($ip))) {
@@ -56,6 +66,9 @@ class Ipip extends Geoip
         return explode("\t", fread($this->db, $length[1]));
     }
     
+    /*
+     * 结果过滤
+     */
     protected function fitler($result)
     {
         return [
@@ -65,6 +78,9 @@ class Ipip extends Geoip
         ];
     }
     
+    /* 
+     * 析构函数
+     */
     public function __destruct()
     {
         empty($this->db) || fclose($this->db);

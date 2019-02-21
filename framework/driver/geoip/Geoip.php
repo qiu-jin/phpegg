@@ -8,9 +8,12 @@ abstract class Geoip
     // 缓存
     protected $cache;
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
-        $this->init($config);
+        $this->__init($config);
         if (isset($config['cache'])) {
             $this->cache = Container::driver('cache', $config['cache']);
         }

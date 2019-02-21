@@ -5,8 +5,9 @@ use framework\core\Loader;
 
 class Grpc extends Rpc
 {
+	// client实例
     protected $client;
-    // 默认配置
+    // 配置项
     protected $config = [
         /*
         // 服务主机（GRPC）
@@ -38,6 +39,9 @@ class Grpc extends Rpc
         'response_message_format'   => '{service}{method}Response',
     ];
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->config = $config + $this->config;

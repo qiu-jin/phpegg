@@ -6,16 +6,25 @@ use framework\driver\email\query\Mime;
 
 class Mailgun extends Email
 {
+	// 访问key
     protected $acckey;
+	// 域名
     protected $domain;
+	// 服务端点
     protected static $endpoint = 'https://api.mailgun.net/v3';
     
-    protected function init($config)
+    /*
+     * 初始化
+     */
+    protected function __init($config)
     {
         $this->domain = $config['domain'];
         $this->acckey = $config['acckey'];
     }
     
+    /*
+     * 处理请求
+     */
     public function handle($options)
     {
         $mime = Mime::build($options, $addrs);

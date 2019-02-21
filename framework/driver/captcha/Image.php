@@ -3,12 +3,9 @@ namespace framework\driver\captcha;
 
 use framework\util\Arr;
 use framework\util\Image as Img;
-use framework\core\http\Session;
 use framework\core\http\Request;
+use framework\core\http\Session;
 
-/*
- * <input name='$this->name'></input><image src='$this->src' />
- */
 class Image
 {
     // 验证码图片地址
@@ -48,8 +45,10 @@ class Image
         // 背景图片集合数组
         //'background_images'  => [],
     ];
-    protected $enable_session = true;
 
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->src = $config['src'];
@@ -59,60 +58,68 @@ class Image
         if (isset($config['style'])) {
             $this->style = $config['style'] + $this->style;
         }
-		if (isset($config['enable_session'])) {
-			$this->enable_session = $config['enable_session'];
-		}
     }
     
+    /*
+     * 获取验证码图片地址
+     */
     public function src()
     {
         return $this->src;
     }
     
+    /*
+     * 获取验证表单字段名
+     */
     public function name()
     {
         return $this->name;
     }
     
+    /*
+     * 获取验证文字
+     */
     public function text()
     {
         return $this->text;
     }
-    
-    public function value($clean = true)
-    {
-        $v = Session::get($this->name);
-        $clean && $this->clean();
-        return $v;
-    }
-    
-    public function clean()
-    {
-        Session::delete($this->name);
-    }
-
-    public function verify($value = null, $clean = true)
-    {
-        $v = $this->value($clean);
-        return $v !== null && $v == $value ?? Request::post($this->name);
-    }
-    
+	
+    /*
+     * 输出验证码图片
+     */
     public function output(array $style = null)
     {
         $this->build($style)->output();
     }
     
+    /*
+     * 获取验证码图片数据
+     */
     public function buffer(array $style = null)
     {
         return $this->build($style)->buffer();
     }
     
+    /*
+     * 编码验证码图片
+     */
     public function encode(array $style = null)
     {
         $image = $this->build($style);
         return 'data:image/'.$image->info('type').';base64,'.base64_encode($image->buffer());
     }
+	
+    /*
+     * 验证
+     */
+    public function verify($value = null)
+    {
+		return ($v = Request::post($this->name)) !== null && $v === ($value ?? Session::pull($this->name));
+    }
     
+    /*
+     * 生成验证码图片
+     */
     protected function build($style)
     {
         $style = $style ? $style + $this->style : $this->style;
@@ -155,12 +162,12 @@ class Image
                 );
             }
         });
-        if ($this->enable_session) {
-            Session::set($this->name, $this->text);
-        }
         return $image;
     }
     
+    /*
+     * 字体颜色
+     */
     protected function fontColor($style)
     {
         if (empty($style['font_colors'])) {

@@ -5,13 +5,20 @@ use framework\core\http\Client;
 
 class JsonrpcHttp
 {
+	// 配置项
     protected $config;
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $this->config = $config;
     }
 
+    /*
+     * 发送请求
+     */
     public function send($data)
     {
         $client = Client::post($this->config['endpoint']);

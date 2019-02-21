@@ -6,9 +6,14 @@ use framework\core\http\Client;
 
 class Xmlrpc
 {
+	// namespace
     protected $ns;
+	// 配置项
     protected $config;
     
+    /*
+     * 构造函数
+     */
     public function __construct($name, $config)
     {
         if (isset($name)) {
@@ -17,18 +22,27 @@ class Xmlrpc
         $this->config = $config;
     }
 
+    /*
+     * 魔术方法，设置namespace
+     */
     public function __get($name)
     {
         $this->ns[] = $name;
         return $this;
     }
     
+    /*
+     * 魔术方法，调用rpc方法
+     */
     public function __call($method, $params)
     {
         $this->ns[] = $method;
         return $this->call($params);
     }
     
+    /*
+     * 调用
+     */
     protected function call($params)
     {
         $client = Client::post($this->config['endpoint']);

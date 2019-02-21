@@ -3,7 +3,7 @@ namespace framework\driver\logger;
 
 use framework\core\Event;
 use framework\core\Container;
-use framework\extend\view\Error;
+use framework\core\misc\ViewError;
 
 class Email extends Logger
 {
@@ -12,24 +12,32 @@ class Email extends Logger
     // 邮件驱动配置
     protected $email;
     // 缓存驱动配置
-    protected $cache;
+    protected $cache = [
+        'driver'	=> 'opcache',
+        'dir'       => APP_DIR.'storage/cache/',
+    ];
     // 邮件发送间隔时间（秒数）
     protected $send_interval = 600;
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
-        $this->to       = $config['to'];
-        $this->email    = $config['email'];
-        $this->cache    = $config['cache'] ?? [
-            'driver'    => 'opcache',
-            'dir'       => APP_DIR.'storage/cache/',
-        ];
+        $this->to = $config['to'];
+        $this->email = $config['email'];
+        if (isset($config['cache'])) {
+            $this->cache = $config['cache'];
+        }
         if (isset($config['send_interval'])) {
             $this->send_interval = $config['send_interval'];
         }
         Event::on('close', [$this, 'flush']);
     }
     
+    /*
+     * 冲刷
+     */
     public function flush()
     {
         if ($this->logs) {
@@ -38,9 +46,9 @@ class Email extends Logger
                 $key = md5(($end['file'] ?? '').($end['line'] ?? ''));
                 if (!$cache->has($key)) {
                     $cache->set($key, 1, $this->interval);
-                    if ($email = Container::driver('email', $this->email)) 
+                    if ($email = Container::driver('email', $this->email)) {
                         $title = 'Error report ['.date('Y-m-d H:i:s').']';
-                        $content = Error::renderError($this->logs);
+                        $content = ViewError::renderError($this->logs);
                         $email->send($this->to, $title, $content);
                     }
                 }

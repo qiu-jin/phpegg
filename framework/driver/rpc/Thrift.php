@@ -29,6 +29,9 @@ class Thrift extends Rpc
     // 方法参数数据
     protected $service_method_params;
     
+    /*
+     * 构造函数
+     */
     public function __construct($config)
     {
         $socket = new TSocket($config['host'], $config['port']);
@@ -55,11 +58,17 @@ class Thrift extends Rpc
         }
     }
     
+    /*
+     * query实例
+     */
     public function query($name = null)
     {
         return new query\Thrift($this, $name);
     }
     
+    /*
+     * 调用
+     */
     public function call($ns, $method, $params)
     {
         if (isset($this->service_prefix)) {
@@ -83,6 +92,9 @@ class Thrift extends Rpc
         return $this->services[$class]->$method(...$params);
     }
     
+    /* 
+     * 参数绑定
+     */
     protected function bindParams($class, $method, &$params)
     {
         if (isset($this->service_method_params[$class][$method])) {
@@ -104,6 +116,9 @@ class Thrift extends Rpc
         }
     }
     
+    /* 
+     * 析构函数
+     */
     public function __destruct()
     {
         $this->transport && $this->transport->close();
