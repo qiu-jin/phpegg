@@ -41,7 +41,7 @@ class WebConsole extends Logger
      */
     public function __construct($config)
     {
-        if (isset($config['allow_ips']) && !in_array(Request::ip(), $config['allow_ips'], true)) {
+        if (isset($config['allow_ips']) && !in_array(Request::ip(), $config['allow_ips'])) {
             return;
         }
         if (isset($config['check_header_accept'])

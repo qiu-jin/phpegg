@@ -144,10 +144,10 @@ class Image
             $margin = $padding + ($i * ($style['width'] - $padding) / $style['length']);
             $image->text($char, Arr::random($style['font_files']), $size, $this->fontColor($style), $angle, 1, 0, $margin);
         }
-        // 画线
+        // 干扰线
         $image->apply(function ($im) use ($style) {
             for ($i = rand(...$style['line_count_rand']); $i > 0; $i--) {
-                $color = $this->fontColor($style);
+                $color = $this->randomFontColor($style);
                 if (is_string($color)) {
                     $color = Img::parseStringColor($color);
                 }
@@ -166,9 +166,9 @@ class Image
     }
     
     /*
-     * 字体颜色
+     * 随机字体颜色
      */
-    protected function fontColor($style)
+    protected function randomFontColor($style)
     {
         if (empty($style['font_colors'])) {
             return [rand(0, 255), rand(0, 255), rand(0, 255), 0];

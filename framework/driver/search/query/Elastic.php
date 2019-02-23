@@ -66,7 +66,7 @@ class Elastic
         if (!is_array($query)) {
             return $this->result($this->call('POST', "$query/_update", $options, $data), 'updated');
         }
-        return $this->result($this->call('POST', '_update_by_query', $options, compact('query') + $data), 'updated');
+        return $this->result($this->call('POST', '_update_by_query', $options, ['query' => $query] + $data), 'updated');
     }
     
     /*
@@ -77,7 +77,7 @@ class Elastic
         if (!is_array($query)) {
             return $this->result($this->call('DELETE', $query, $options), 'found');
         }
-        return $this->result($this->call('POST', '_delete_by_query', $options, compact('query')), 'found');
+        return $this->result($this->call('POST', '_delete_by_query', $options, ['query' => $query]), 'found');
     }
     
     /*

@@ -6,7 +6,7 @@ use framework\App;
 abstract class Auth
 {
     private static $init;
-    // 实例
+    // 认证实例
     private static $auth;
     // 用户信息
     protected $user;
@@ -44,11 +44,10 @@ abstract class Auth
         if (!is_subclass_of($config['class'], __CLASS__)) {
             throw new Exception('Illegal auth class');
         }
-        self::$auth = (new $config['class']($config));
+        self::$auth = instance($config['class'], $config);
         if (!empty($config['auto_auth'])) {
             self::$auth->user = self::$auth->auth();
         }
-        Event::on('exit', [__CLASS__, 'clean']);
     }
     
     /*
@@ -64,7 +63,7 @@ abstract class Auth
      */
     public static function id()
     {
-        return self::$auth->user['id'];
+        return self::user()['id'] ?? null;
     }
     
     /*
@@ -72,7 +71,7 @@ abstract class Auth
      */
     public static function user()
     {
-        return self::$auth->user;
+        return self::$auth->user ?? self::$auth->user = self::$auth->auth();
     }
     
     /*
@@ -80,7 +79,7 @@ abstract class Auth
      */
     public static function check()
     {
-        return isset(self::$auth->user) || (self::$auth->user = self::$auth->auth());
+        return bool self::user();
     }
     
     /*
@@ -105,14 +104,6 @@ abstract class Auth
     public static function unset()
     {
         self::$auth->user = null;
-    }
-    
-    /*
-     * 清理
-     */
-    public static function clean()
-    {
-        self::$auth = null;
     }
 }
 Auth::__init();

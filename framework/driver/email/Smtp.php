@@ -70,7 +70,7 @@ class Smtp extends Email
         }
         $res = trim($res);
         if ($this->debug) {
-            logger::write(Logger::DEBUG, $res);
+            Logger::write(Logger::DEBUG, $res);
         }
         return $res;
     }

@@ -2,6 +2,7 @@
 namespace framework\driver\logger;
 
 use framework\core\Event;
+use framework\driver\logger\formatter\Formatter;
 
 class File extends Logger
 {
@@ -24,10 +25,7 @@ class File extends Logger
         if (!$this->real_write) {
             Event::on('close', [$this, 'flush']);
         }
-        $this->formatter = new formatter\Formatter(
-            $config['format'] ?? "[{date}] [{level}] {message}",
-            $config['format_options'] ?? null
-        );
+		$this->formatter = isset($config['formatter']) ? instance($config['formatter']) : new Formatter();
     }
     
     /*

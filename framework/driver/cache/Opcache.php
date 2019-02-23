@@ -139,7 +139,7 @@ class Opcache extends Cache
                 $this->filterValue($val);
             }
         } elseif (is_resource($value)) {
-            throw new \Exception('Not allow value is a resource');
+            $value = null;
         }
     }
 }

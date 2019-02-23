@@ -15,9 +15,6 @@ use framework\core\http\Session;
 use framework\core\http\Request;
 use framework\core\http\Response;
 
-
-define('OPCACHE_LOADED', extension_loaded('opcache'));
-
 /*
  * 获取环境设置
  */
@@ -285,6 +282,8 @@ function getter($providers = null)
 /*
  * 检查文件存在
  */
+define('OPCACHE_LOADED', extension_loaded('opcache'));
+
 function is_php_file($file)
 {
     return (OPCACHE_LOADED && opcache_is_script_cached($file)) || is_file($file);
