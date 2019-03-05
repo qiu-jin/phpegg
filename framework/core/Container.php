@@ -157,7 +157,7 @@ class Container
 			case self::T_MODEL:
 				if ($c - 1 == ($v[1] ?? 1)) {
 					$params[0] = $v[2] ?? "app\\$params[0]";
-					return instance(implode('\\', $params)); 
+					return instance(implode('\\', $params));
 				}
 				break;
 			case self::T_CLASS:

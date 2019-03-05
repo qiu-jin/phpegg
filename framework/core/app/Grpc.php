@@ -37,6 +37,10 @@ class Grpc extends App
          * 2 request response 参数模式（自定义）
          */
         'param_mode'            => 0,
+        // 是否启用closure getter魔术方法
+        'closure_enable_getter' => true,
+        // Getter providers
+        'closure_getter_providers' => null,
         // 请求解压处理器
         'request_decode'        => ['gzip' => 'gzdecode'],
         // 响应压缩处理器
@@ -46,6 +50,23 @@ class Grpc extends App
         // 默认响应message格式
         'response_message_format'   => '{service}{method}Response',
     ];
+    // 自定义服务集合
+    protected $custom_services;
+	
+    /*
+     * 自定义服务类或实例
+     */
+    public function service($name, $method, $call = null)
+    {
+        if ($call !== null) {
+            $this->custom_services[$name][$method] = $call;
+        } elseif (is_array($method) && isset($this->custom_services[$name])) {
+			$this->custom_services[$name] = $method + $this->custom_services[$name];
+        } else {
+			$this->custom_services[$name] = $method;
+        }
+        return $this;
+    }
     
     /*
      * 调度
@@ -55,31 +76,17 @@ class Grpc extends App
         if (count($arr = Request::pathArr()) !== 2) {
             return false;
         }
-        $action = $arr[1];
-        $controller = strtr($arr[0], '.', '\\');
+		list($service, $method) = $arr;
         if ($this->config['service_prefix']) {
             $len = strlen($this->config['service_prefix']);
-            if (strncasecmp($this->config['service_prefix'], $controller, $len) !== 0) {
+            if (strncasecmp($this->config['service_prefix'], $service, $len) !== 0) {
                 return false;
             }
-            $controller = substr($controller, $len + 1);
+            $service = substr($service, $len + 1);
         }
-        if (isset($this->config['controller_alias'][$controller])) {
-            $controller = $this->config['controller_alias'][$controller];
-        } elseif (!isset($this->config['dispatch_controllers'])) {
-            $check = true;
-        } elseif (!in_array($controller, $this->config['dispatch_controllers'])) {
-            return false;
-        }
-        if ($action[0] !== '_'
-            && ($class = $this->getControllerClass($controller, isset($check)))
-            && is_callable([$controller_instance = new $class(), $action])
-        ) {
-            return compact('action', 'controller', 'controller_instance');
-        }
-        return false;
+		return compact('method', 'service');
     }
-    
+	
     /*
      * 调用
      */
@@ -93,13 +100,15 @@ class Grpc extends App
                 Loader::add($type, $rules);
             }
         }
-        $mr = new \ReflectionMethod($this->dispatch['controller_instance'], $this->dispatch['action']);
-        if ($return = $this->config['param_mode'] ? $this->callWithReqResParams($mr) : $this->callWithParams($mr)) {
-            return $return;
-        }
+		if (!$call = $this->custom_methods ? $this->getCustomCall() : $this->getDefaultCall()) {
+			self::abort(404);
+		}
+		if ($return = $this->config['param_mode'] ? $this->callWithReqResParams($call) : $this->callWithParams($call)) {
+			return $return;
+		}
         self::abort(500, 'Illegal message scheme class');
     }
-    
+
     /*
      * 错误
      */
@@ -153,19 +162,69 @@ class Grpc extends App
     }
     
     /*
+     * 默认调用
+     */
+    protected function getDefaultCall()
+    {
+		$action = $this->dispatch['method'];
+		$controller = strtr($this->dispatch['service'], '.', '\\');
+        if (isset($this->config['controller_alias'][$controller])) {
+            $controller = $this->config['controller_alias'][$controller];
+        } elseif (!isset($this->config['dispatch_controllers'])) {
+            $check = true;
+        } elseif (!in_array($controller, $this->config['dispatch_controllers'])) {
+            return;
+        }
+        if (($class = $this->getControllerClass($controller, isset($check)))
+            && is_callable([$controller_instance = new $class(), $action])
+			&& $action[0] !== '_'
+        ) {
+            return [$controller_instance, $action];
+        }
+    }
+    
+    /*
+     * 自定义调用
+     */
+    protected function getCustomCall()
+    {
+		extract($this->dispatch);
+		if (isset($this->custom_services[$service])) {
+			if (is_array($this->custom_services[$service])) {
+				if (isset($this->custom_services[$service][$method])) {
+					$call = $this->custom_services[$service][$method];
+					if ($call instanceof \Closure) {
+			            if ($this->config['closure_enable_getter']) {
+			                $call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
+			            }
+						return $call;
+					}
+					throw new \RuntimeException('Invalid call type');
+				}
+			} else {
+                if (is_callable([$instance = is_object($service) ? $service : new $service, $method])
+					&& $method[0] !== '_'
+                ) {
+                    return [$instance, $method];
+                }
+			}
+		}
+    }
+	
+    /*
      * 调用（普通参数模式）
      */
-    protected function callWithParams($reflection_method)
+    protected function callWithParams($call)
     {
         list($request_class, $response_class) = $this->getDefaultReqResClass();
         if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
             $request_message = new $request_class;
             $request_message->mergeFromString($this->readParams());
             $params = MethodParameter::bindKvParams(
-                $reflection_method,
+                $this->getReflection($call),
                 json_decode($request_message->serializeToJsonString(), true)
             );
-            $return = $this->dispatch['controller_instance']->{$this->dispatch['action']}(...$params);
+            $return = $call(...$params);
             $response_message = new $response_class;
             $response_message->mergeFromJsonString(json_encode($return));
             return $response_message;
@@ -175,13 +234,14 @@ class Grpc extends App
     /*
      * 调用（request response 参数模式）
      */
-    protected function callWithReqResParams($reflection_method)
+    protected function callWithReqResParams($call)
     {
         if ($this->config['param_mode'] == '2') {
-            if ($reflection_method->getnumberofparameters() !== 2) {
+			$reflection = $this->getReflection($call);
+            if ($reflection->getnumberofparameters() !== 2) {
                 return;
             }
-            list($request_param, $response_param) = $reflection_method->getParameters();
+            list($request_param, $response_param) = $reflection->getParameters();
             $request_class = (string) $request_param->getType();
             $response_class = (string) $response_param->getType();
         } else {
@@ -190,10 +250,7 @@ class Grpc extends App
         if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
             $request_message = new $request_class;
             $request_message->mergeFromString($this->readParams());
-            $this->dispatch['controller_instance']->{$this->dispatch['action']}(
-                $request_message,
-                $response_message = new $response_class
-            );
+            $call($request_message, $response_message = new $response_class);
             return $response_message;
         }
     }
@@ -236,5 +293,13 @@ class Grpc extends App
             $response_class = $this->config['service_prefix']."\\$response_class";
         }
         return [$request_class, $response_class];
+    }
+	
+    /*
+     * 获取方法反射实例
+     */
+    protected function getReflection($call)
+    {
+		return $call instanceof \Closure ? new \ReflectionFunction($call) : new \ReflectionMethod(...$call);
     }
 }

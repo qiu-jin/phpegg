@@ -84,16 +84,17 @@ class Micro extends App
     }
     
     /*
-     * 指定类或实例
+     * 自定义服务类或实例
      */
-    public function class($name, $class = null)
+    public function service($name, $class = null)
     {
         if ($class !== null) {
-            $this->dispatch['classes'][$name] = $class;
+            $this->dispatch['services'][$name] = $class;
         } elseif (is_array($name)) {
-            $this->dispatch['classes'] = $name + ($this->dispatch['classes'] ?? []);
+            $this->dispatch['services'] = isset($this->dispatch['services'])
+				                        ? $name + $this->dispatch['services'] : $name;
         } else {
-            $this->dispatch['class'] = $name;
+            $this->dispatch['service'] = $name;
         }
         return $this;
     }
@@ -126,8 +127,8 @@ class Micro extends App
             $arr = explode('::', $dispatch[0]);
             if (isset($arr[1])) {
                 $call = [$this->getControllerInstance($arr[0], $dispatch[2]), $arr[1]];
-            } elseif (isset($this->dispatch['class'])) {
-                $call = [$this->getClassInstance($this->dispatch['class']), $arr[0]];
+            } elseif (isset($this->dispatch['service'])) {
+                $call = [$this->getClassInstance($this->dispatch['service']), $arr[0]];
             } else {
                 $call = $this->getControllerInstance($arr[0], $dispatch[2]);
             }
@@ -169,7 +170,7 @@ class Micro extends App
      */
     protected function getControllerInstance($name, $is_dynamic)
     {
-        if ($classes = ($this->dispatch['classes'] ?? null)) {
+        if ($classes = ($this->dispatch['services'] ?? null)) {
             if (isset($classes[$name])) {
                 return $this->getClassInstance($classes[$name]);
             }

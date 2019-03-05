@@ -80,7 +80,7 @@ class Jsonrpc extends App
     public function method($method, $call = null)
     {
         if ($call !== null) {
-            $this->custom_methods['method'][$method] = $call;
+            $this->custom_methods['methods'][$method] = $call;
         } elseif (empty($this->custom_methods['methods'])) {
             $this->custom_methods['methods'] = $method;
         } else {
@@ -90,16 +90,17 @@ class Jsonrpc extends App
     }
     
     /*
-     * 自定义方法类
+     * 自定义服务类或实例
      */
-    public function class($name, $class = null)
+    public function service($name, $class = null)
     {
         if ($class !== null) {
-            $this->custom_methods['classes'][$name] = $class;
+            $this->custom_methods['services'][$name] = $class;
         } elseif (is_array($name)) {
-            $this->custom_methods['classes'] = $name + ($this->custom_methods['classes'] ?? []);
+            $this->custom_methods['services'] = isset($this->custom_methods['services']) 
+				                              ? $name + $this->custom_methods['services'] : $name;
         } else {
-            $this->custom_methods['class'] = $name;
+            $this->custom_methods['service'] = $name;
         }
         return $this;
     }
@@ -177,7 +178,7 @@ class Jsonrpc extends App
     protected function handle($dispatch)
     {
         extract($dispatch);
-        if ($call = $this->custom_methods ? $this->customCall($method) : $this->defaultCall($method)) {
+        if ($call = $this->custom_methods ? $this->getCustomCall($method) : $this->getDefaultCall($method)) {
             if ($this->config['param_mode'] == 1) {
                 return ['result' => $call(...$params)];
             } elseif ($this->config['param_mode'] == 2) {
@@ -253,7 +254,7 @@ class Jsonrpc extends App
     /*
      * 默认调用
      */
-    protected function defaultCall($method)
+    protected function getDefaultCall($method)
     {
         if (count($method_array = explode('.', $method)) > 1) {
             $action = array_pop($method_array);
@@ -270,7 +271,7 @@ class Jsonrpc extends App
     /*
      * 自定义调用
      */
-    protected function customCall($method)
+    protected function getCustomCall($method)
     {
         if (isset($this->custom_methods['method'][$method])) {
             $call = $this->custom_methods['method'][$method];
@@ -283,14 +284,14 @@ class Jsonrpc extends App
             if ($pos !== false) {
                 $class = substr($method, 0, $pos);
                 $method = substr($method, $pos + 1);
-                if (isset($this->custom_methods['classes'][$class])
-                    && is_callable([$instance = $this->makeCustomClassInstance($class), $method])
+                if (isset($this->custom_methods['services'][$class])
+                    && is_callable([$instance = $this->makeCustomServiceInstance($class), $method])
 					&& $method[0] !== '_'
                 ) {
                     return [$instance, $method];
                 }
-            } elseif (isset($this->custom_methods['class'])
-                && is_callable([$instance = $this->makeCustomClassInstance(), $method])
+            } elseif (isset($this->custom_methods['service'])
+                && is_callable([$instance = $this->makeCustomServiceInstance(), $method])
 				&& $method[0] !== '_'
             ) {
                 return [$instance, $method];
@@ -321,18 +322,18 @@ class Jsonrpc extends App
     /*
      * 生成自定义类实例
      */
-    protected function makeCustomClassInstance($name = null)
+    protected function makeCustomServiceInstance($name = null)
     {
         if ($name === null) {
-            if (is_object($this->custom_methods['class'])) {
-                return $this->custom_methods['class'];
+            if (is_object($this->custom_methods['service'])) {
+                return $this->custom_methods['service'];
             }
-            return $this->custom_methods['class'] = instance($this->custom_methods['class']);
+            return $this->custom_methods['service'] = instance($this->custom_methods['service']);
         }
-        if (is_object($this->custom_methods['classes'][$name])) {
-            return $this->custom_methods['classes'][$name];
+        if (is_object($this->custom_methods['services'][$name])) {
+            return $this->custom_methods['services'][$name];
         }
-        return $this->custom_methods['classes'][$name] = instance($this->custom_methods['classes'][$name]);
+        return $this->custom_methods['services'][$name] = instance($this->custom_methods['services'][$name]);
     }
     
     /*
