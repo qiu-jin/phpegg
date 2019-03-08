@@ -133,15 +133,13 @@ class Query extends QueryChain
     /*
      * 插入多个
      */
-    public function insertAll($datas)
+    public function insertAll(array $datas)
     {
         list($fields, $values, $params) = $this->builder::insertData(array_shift($datas));
         $sql = 'INSERT INTO '.$this->builder::keywordEscape($this->table)." ($fields) VALUES ($values)";
-        if ($datas) {
-            foreach ($datas as $data) {
-                $sql .= ", ($values)";
-                $params = array_merge($params, array_values($data));
-            }
+        foreach ($datas as $data) {
+            $sql .= ", ($values)";
+            $params = array_merge($params, array_values($data));
         }
         return $this->db->affectedRows($this->db->prepareExecute($sql, $params));
     }

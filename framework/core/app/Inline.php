@@ -57,20 +57,20 @@ class Inline extends App
      */
     protected function call()
     {
-        if (empty($this->config['enable_getter'])) {
-            $call = static function($__file, $_PARAMS, $__extract) {
-                if ($__extract && $_PARAMS) {
-                    extract($_PARAMS, EXTR_SKIP);
-                }
-                return require $__file;
-            };
-        } else {
+        if ($this->config['enable_getter']) {
             $call = \Closure::bind(function($__file, $_PARAMS, $__extract) {
                 if ($__extract && $_PARAMS) {
                     extract($_PARAMS, EXTR_SKIP);
                 }
                 return require $__file;
             }, getter($this->config['getter_providers']));
+        } else {
+            $call = static function($__file, $_PARAMS, $__extract) {
+                if ($__extract && $_PARAMS) {
+                    extract($_PARAMS, EXTR_SKIP);
+                }
+                return require $__file;
+            };
         }
         $return = $call(
             $this->dispatch['controller_file'],

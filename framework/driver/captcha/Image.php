@@ -170,10 +170,9 @@ class Image
      */
     protected function randomFontColor($style)
     {
-        if (empty($style['font_colors'])) {
-            return [rand(0, 255), rand(0, 255), rand(0, 255), 0];
-        } else {
+        if (isset($style['font_colors'])) {
             return Arr::random($style['font_colors']);
         }
+		return [rand(0, 255), rand(0, 255), rand(0, 255), 0];
     }
 }

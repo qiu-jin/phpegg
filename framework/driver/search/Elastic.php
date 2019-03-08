@@ -23,7 +23,7 @@ class Elastic
     }
 
     /*
-     * 魔术方法，query实例
+     * 魔术方法，索引实例
      */
     public function __get($name)
     {
@@ -31,7 +31,7 @@ class Elastic
     }
     
     /*
-     * query实例
+     * 索引实例
      */
     public function index($name, $type = null)
     {

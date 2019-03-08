@@ -29,12 +29,14 @@ class Elastic
     /*
      * 查询
      */
-    public function find($query, $options = null)
+    public function search($query, array $options = null)
     {
-        if (!is_array($query)) {
-            $result = $this->call('GET', '_search', ['q' => $query] + $options);
+        if (is_array($query)) {
+			$options['query'] = $query;
+            $result = $this->call('POST', '_search', null, $options);
         } else {
-            $result = $this->call('POST', '_search', null, ['query' => $query] + $options);
+			$options['q'] = $query;
+			$result = $this->call('GET', '_search', $options);
         }
         if ($this->raw) {
             return $result;
@@ -63,10 +65,13 @@ class Elastic
      */
     public function update($query, $data, $options = null)
     {
-        if (!is_array($query)) {
-            return $this->result($this->call('POST', "$query/_update", $options, $data), 'updated');
-        }
-        return $this->result($this->call('POST', '_update_by_query', $options, ['query' => $query] + $data), 'updated');
+		if (is_array($query)) {
+			$data['query'] = $query;
+			$result = $this->call('POST', '_update_by_query', $options, $data);
+		} else {
+			$result = $this->call('POST', "$query/_update", $options, $data);
+		}
+		return $this->result($result, 'updated');
     }
     
     /*

@@ -36,14 +36,6 @@ class Hash
     }
     
     /*
-     * 验证两个hash是否相同
-     */
-    public static function equals($str1, $str2)
-    {
-        return hash_equals($str1, $str2);
-    }
-    
-    /*
      * 随机数hex
      */
     public static function random(int $length = 16, $raw = false)
@@ -61,9 +53,17 @@ class Hash
     }
     
     /*
+     * 验证两个hash是否相同
+     */
+    public static function equals($str1, $str2)
+    {
+        return hash_equals($str1, $str2);
+    }
+	
+    /*
      * 验证密码hash
      */
-    public static function check($password, $hash)
+    public static function verify($password, $hash)
     {
         return password_verify($password, $hash);
     }

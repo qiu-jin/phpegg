@@ -17,7 +17,7 @@ class Cluster
     protected $builder;
 	// 写入方法集合
     protected static $write_methods = [
-        'insert', 'update', 'delete', 'insertid', 'affectedrows', 'begin', 'rollback', 'commit', 'transaction'
+        'insertid', 'affectedrows', 'begin', 'rollback', 'commit', 'transaction'
     ];
     
     /*
@@ -43,6 +43,38 @@ class Cluster
     public function table($name)
     {
         return new query\Query($this, $name);
+    }
+	
+	/*
+	 * 查询
+	 */
+    public function select($sql, $params = null)
+    {
+		return $this->selectDatabase('read')->select($sql, $params);
+    }
+    
+	/*
+	 * 插入
+	 */
+    public function insert($sql, $params = null, $return_id = false)
+    {
+		return $this->selectDatabase('write')->insert($sql, $params, $return_id);
+    }
+    
+	/*
+	 * 更新
+	 */
+    public function update($sql, $params = null)
+    {
+		return $this->selectDatabase('write')->update($sql, $params);
+    }
+    
+	/*
+	 * 删除
+	 */
+    public function delete($sql, $params = null)
+    {
+		return $this->selectDatabase('write')->delete($sql, $params);
     }
     
     /*
@@ -98,7 +130,7 @@ class Cluster
             return $this->work = $this->write;
         }
         return $this->work = $this->$type ?? (
-			$this->$type = Container::makeDriverInstance('db', ['driver' => $this->config['dbtype']] + $this->config[$type])
+			$this->$type = Container::driver('db', ['driver' => $this->config['dbtype']] + $this->config[$type])
         );
     }
     

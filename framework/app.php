@@ -123,7 +123,7 @@ abstract class App
     /*
      * 启动应用，应用调度成功返回一个应用实例，否则调用abort终止应用
      */
-    public static function start($app = 'Standard', array $config = null)
+    public static function start($app = 'Standard', $config = 'app')
     {
         if (self::$app) {
             return;
@@ -136,8 +136,8 @@ abstract class App
         } else{
             throw new \RuntimeException("Illegal app class: $app");
         }
-        self::$app = new $class($config ?? Config::get('app'));
-        Event::trigger('dispatch', self::$app->dispatch = self::$app->dispatch());
+		self::$app = new $class(is_array($config) ? $config : Config::get($config));
+        Event::trigger('start', self::$app->dispatch = self::$app->dispatch());
         if (self::$app->dispatch !== false) {
             return self::$app;
         }

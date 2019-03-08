@@ -23,8 +23,7 @@ class SubQuery extends QueryChain
         $this->cur = $sub;
         $this->table = $table;
         $this->master = $options;
-        $this->options['exp'] = $exp;
-        $this->options['logic'] = $logic;
+		$this->options = ['exp' => $exp, 'logic' => $logic];
     }
 
     /*
@@ -35,7 +34,7 @@ class SubQuery extends QueryChain
         $this->checkExpLogic($exp, $logic);
         $this->table_options[$this->cur] = $this->options;
         $this->cur = $sub;
-        $this->options = compact('exp', 'logic');
+        $this->options = ['exp' => $exp, 'logic' => $logic];
         return $this;
     }
 

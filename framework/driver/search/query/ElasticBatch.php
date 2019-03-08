@@ -37,7 +37,7 @@ class ElasticBatch
             $this->index = $name;
             return $this;
         }
-        throw new \Exception('Index has been set');
+        throw new \Exception('Index已经被设置');
     }
     
     /*
@@ -95,18 +95,18 @@ class ElasticBatch
     {
         if (isset($this->bulk)) {
             if (isset($this->mget)) {
-                throw new \Exception('No support read and write mix');
+                throw new \Exception('不支持读写混合请求');
             }
             $method = '_bulk';
             $body = implode("\n", $this->bulk)."\n";
         } elseif (isset($this->mget)) {
             if (isset($this->bulk)) {
-                throw new \Exception('No support read and write mix');
+                throw new \Exception('不支持读写混合请求');
             }
             $method = '_mget';
             $body = json_encode(['docs' => $this->mget]);
         } else {
-            throw new \Exception('Query is empty');
+            throw new \Exception('请求为空');
         }
         $client = Client::post("$this->endpoint/$method")->body($body);
         $response = $client->response();
@@ -128,7 +128,7 @@ class ElasticBatch
         } elseif ($this->common_index) {
             return $query = ['_index' => $this->common_index, '_type' => $this->type];
         } else {
-            throw new \Exception('Index is empty');
+            throw new \Exception('Index为空');
         }
         if (isset($id)) {
             $query['_id'] = $id;

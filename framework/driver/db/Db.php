@@ -97,8 +97,8 @@ abstract class Db
         if (isset($config['debug'])) {
             $this->debug = $config['debug'];
         }
-        if (isset($config['fields_cache_config'])) {
-            $this->fields_cache_config = $config['fields_cache_config'];
+        if (isset($config['fields_cache'])) {
+            $this->fields_cache_config = $config['fields_cache'];
         }
     }
     
@@ -142,16 +142,15 @@ abstract class Db
             return $this->fields[$this->dbname][$table];
         } else {
             if (isset($this->fields_cache_config)) {
-                if (!isset($this->fields_cache)) {
-                    $this->fields_cache = Container::driver('cache', $this->fields_cache_config);
-                }
-                if ($fields = $this->fields_cache->get($key = "$this->dbname-$table")) {
+				$cache = $this->fields_cache ??
+					     $this->fields_cache = Container::driver('cache', $this->fields_cache_config);
+                if ($fields = $cache->get($key = "$this->dbname-$table")) {
                     return $fields;
                 }
             }
             $fields = $this->getFields($table);
-            if (isset($this->fields_cache)) {
-                $this->fields_cache->set($key, $fields);
+            if (isset($cache)) {
+                $cache->set($key, $fields);
             }
             return $this->fields[$this->dbname][$table] = $fields;
         }
@@ -193,13 +192,10 @@ abstract class Db
                 $sql = Str::formatReplace($sql, $params, ':%s');
             }
         }
-        Logger::write(Logger::DEBUG, $sql);
+		if ($this->debug === true) {
+			Logger::write(Logger::DEBUG, $sql);
+		} else {
+			Logger::channel($this->debug)->debug($sql);
+		}
     }
-    
-    /*
-    public function getSql($all = true)
-    {
-        return $all ? $this->sql : end($this->sql);
-    }
-    */
 }
