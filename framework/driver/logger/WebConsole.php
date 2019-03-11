@@ -29,11 +29,10 @@ class WebConsole extends Logger
         'group'      => 'group',
         'groupEnd'   => 'groupEnd',
         'groupCollapsed' => 'groupCollapsed'
-            
     ];
-    // 是否刷新输出日志
+    // 是否输出日志
     protected $flush;
-    // 最大日志数据大小
+    // 日志数据大小限制（防止过大导致HTTP服务器报错）
     protected $message_size_limit = 4000;
     
     /*
@@ -99,7 +98,7 @@ class WebConsole extends Logger
     }
     
     /*
-     * 冲刷
+     * 输出缓冲
      */
     public function flush()
     {        

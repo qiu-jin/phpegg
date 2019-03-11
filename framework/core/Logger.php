@@ -22,8 +22,6 @@ class Logger
     private static $configs;
     // 日志驱动处理器
     private static $handlers;
-    // 日志空处理器（忽略日志）
-    private static $null_handler;
     // 分级日志处理器
     private static $level_handler;
     // 分组日志处理器
@@ -84,25 +82,20 @@ class Logger
     }
  
     /*
-     * 获取日志频道实例
+     * 获取实例
      */
+	
     public static function channel($name = null)
     {
-        if ($name === null) {
-            return self::getLevelHandler();
-        }
-        if (is_array($name)) {
-            return self::makeGroupHandler($name);
-        }
-        if (isset(self::$configs[$name])) {
-            return self::getHandler($name);
-        } elseif (isset(self::$group_handler_names[$name])) {
-            return self::getGroupHandler($name);
-        }
-        if (!empty(self::$config['null_logger'])) {
-            return self::getNullHandler();
-        }
-        throw new \Exception("Invalid logger channel: $name");
+		return $name === null ? self::getLevelHandler() : self::getHandler($name);
+    }
+
+    /*
+     * 获取组实例
+     */
+    public static function group($name = null)
+    {
+		return is_array($name) ? self::makeGroupHandler($name) : self::getGroupHandler($name);
     }
     
     /*
@@ -110,17 +103,17 @@ class Logger
      */
     public static function getHandler($name)
     {
-        return self::$handlers[$name] ?? self::$handlers[$name] = Container::driver('logger', self::$configs[$name]);
+        return self::$handlers[$name] ?? 
+			   self::$handlers[$name] = Container::driver('logger', self::$configs[$name]);
     }
-    
+	
     /*
-     * 空日志实例
+     * 分组日志实例
      */
-    public static function getNullHandler()
+    public static function getGroupHandler($name)
     {
-        return self::$null_handler ?? self::$null_handler = new class () extends LoggerDriver {
-            public function write($level, $message, $context = null) {}
-        };
+        return self::$group_handlers[$name] ?? 
+			   self::$group_handlers[$name] = self::makeGroupHandler(self::$group_handler_names[$name]);
     }
     
     /*
@@ -136,19 +129,11 @@ class Logger
     }
     
     /*
-     * 分组日志实例
-     */
-    public static function getGroupHandler($name)
-    {
-        return self::$group_handlers[$name] ?? self::$group_handlers[$name] = self::makeGroupHandler($name);
-    }
-    
-    /*
      * 组实例
      */
-    private static function makeGroupHandler($name)
+    public static function makeGroupHandler($names)
     {
-        return new class (self::$group_handler_names[$name]) extends LoggerDriver {
+        return new class ($names) extends LoggerDriver {
             private $names;
             public function __construct($names) {
                 $this->names = $names;

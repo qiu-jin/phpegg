@@ -1,19 +1,22 @@
 <?php
 namespace framework\driver\logger\formatter;
 
+use framework\util\Str;
 use framework\core\http\Request;
 
 class Formatter
 {
 	// 格式
-    private $format = '[{date}] [{level}] {message}';
-	// 替换变量
-    private $replace;
+    protected $format = '[{@date}] [{level}] {message} on {file} {line}';
 	// 设置项
-    private $options = [
-        'proxy_ip'      => false,
+    protected $options = [
+        'ip_proxy'      => false,
         'date_format'   => 'Y-m-d H:i:s',
     ];
+	// 替换变量
+    protected $replace;
+	// 替换方法
+    protected $replace_methods;
     
     /*
      * 初始化
@@ -26,14 +29,14 @@ class Formatter
         if ($options) {
             $this->options = $options + $this->options;
         }
-        if (preg_match_all('/\{(\w+)\}/', $this->format, $matchs)) {
-            foreach (array_unique($matchs[1]) as $var) {
-                $method = "get$var";
-                if (method_exists($this, $method)) {
-                    $this->replace['{'.$var.'}'] = $this->$method();
-                } else {
-                    $this->replace['{'.$var.'}'] = '';
-                }
+        if (preg_match_all('/\{(\@?)(\w+)\}/', $this->format, $matchs)) {
+            foreach (array_unique($matchs[2]) as $i => $v) {
+				$m = 'get'.Str::camelCase($v);
+				if ($matchs[1][$i]) {
+					$this->replace_methods['{@'.$k.'}'] = $m;
+				} else {
+					$this->replace['{'.$v.'}'] = method_exists($this, $m) ? $this->$m() : '';
+				}
             }
         }
     }
@@ -41,7 +44,7 @@ class Formatter
     /*
      * 格式化处理
      */
-    public function make($level, $message, $context = null)
+    public function format($level, $message, $context = null)
     {
         $replace = ['{level}' => $level, '{message}' => $message] + $this->replace;
         if ($context) {
@@ -49,29 +52,42 @@ class Formatter
                 $replace['{'.$k.'}'] = $v;
             }
         }
+        if ($this->replace_methods) {
+            foreach ($this->replace_methods as $k => $v) {
+                $replace[$k] = $this->$v();
+            }
+        }
         return strtr($this->format, $replace);
-    }
-    
-    /*
-     * 获取请求ip
-     */
-    private function getIp()
-    {
-        return Request::ip($this->options['proxy_ip']);
     }
     
     /*
      * 获取请求进程id
      */
-    private function getPid()
+    public function getPid()
     {
         return getmypid();
+    }
+	
+    /*
+     * 获取使用内存大小
+     */
+    public function getMemory()
+    {
+        return memory_get_usage();
+    }
+	
+    /*
+     * 获取使用内存大小峰值 
+     */
+    public function getMemoryPeak()
+    {
+        return memory_get_peak_usage();
     }
     
     /*
      * 获取uuid
      */
-    private function getUuid()
+    public function getUuid()
     {
         return uniqid();
     }
@@ -79,7 +95,7 @@ class Formatter
     /*
      * 获取当前时间戳
      */
-    private function getTime()
+    public function getTime()
     {
         return time();
     }
@@ -87,24 +103,48 @@ class Formatter
     /*
      * 获取当前日期
      */
-    private function getDate()
+    public function getDate()
     {
         return date($this->options['date_format']);
     }
-    
+
     /*
      * 获取请求url
      */
-    private function getUrl()
+    public function getUrl()
     {
         return Request::url();
+    }
+	
+    /*
+     * 获取请求路径
+     */
+    public function gePath()
+    {
+        return Request::path();
     }
     
     /*
      * 获取请求referrer
      */
-    private function getReferrer()
+    public function getReferrer()
     {
-        return Request::header('referrer');
+        return Request::server('HTTP_REFERRER');
+    }
+	
+    /*
+     * 获取请求方法
+     */
+    public function getMethod()
+    {
+        return Request::method();
+    }
+	
+    /*
+     * 获取请求ip
+     */
+    public function getIp()
+    {
+        return Request::ip($this->options['ip_proxy']);
     }
 }

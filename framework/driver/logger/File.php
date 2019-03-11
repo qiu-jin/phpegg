@@ -25,7 +25,10 @@ class File extends Logger
         if (!$this->real_write) {
             Event::on('close', [$this, 'flush']);
         }
-		$this->formatter = isset($config['formatter']) ? instance($config['formatter']) : new Formatter();
+		if (isset($config['formatter'])) {
+			$class = $config['formatter']['class'] ?? Formatter::class;
+			$this->formatter = new $class($config['formatter']['format'] ?? null);
+		}
     }
     
     /*
@@ -41,7 +44,7 @@ class File extends Logger
     }
 	
     /*
-     * 冲刷
+     * 输出缓冲
      */
     public function flush()
     {
@@ -58,6 +61,7 @@ class File extends Logger
      */
     protected function realWrite($level, $message, $context)
     {
-        error_log($this->formatter->make($level, $message, $context).PHP_EOL, 3, $this->logfile);
+		$log = $this->formatter ? $this->formatter->format($level, $message, $context) : $message;
+        error_log($log.PHP_EOL, 3, $this->logfile);
     }
 }

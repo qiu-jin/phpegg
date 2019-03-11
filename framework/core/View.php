@@ -18,8 +18,6 @@ class View
         'dir'       => APP_DIR.'view/',
         // 错误页面
         'error'     => null,
-        // 是否清理数据
-        'clean'     => true,
         // 模版配置
         'template'  => [
             // 模版文件扩展名
@@ -44,9 +42,6 @@ class View
         self::$init = true;
         if ($config = Config::get('view')) {
             self::$config = array_replace_recursive(self::$config, $config);
-        }
-        if (self::$config['clean']) {
-            Event::on('exit', [__CLASS__, 'clean']);
         }
     }
     
@@ -79,7 +74,7 @@ class View
     /*
      * 渲染页面
      */
-    public static function render($tpl, array $vars = [])
+    public static function render($tpl, array $vars = [], $no_clean = false)
     {
         ob_start();
         (static function($__file, $__vars) {
@@ -87,6 +82,9 @@ class View
             unset($__vars);
             return require $__file;
         })(self::make($tpl), isset(self::$view['vars']) ? $vars + self::$view['vars'] : $vars);
+		if (!$no_clean) {
+			self::$view = null;
+		}
         return ob_get_clean();
     }
     
@@ -137,7 +135,7 @@ class View
         if (is_file($file = self::getTemplateFile($tpl))) {
             return self::readTemplateFile($file);
         }
-        throw new ViewException("Template file no exists: $file");
+        throw new ViewException("模版文件: $file 不存在");
     }
     
     /*
@@ -150,7 +148,7 @@ class View
         }
         foreach ($tpls as $tpl) {
             if (is_file($tplfile = self::getTemplateFile($tpl))) {
-                throw new ViewException("Template file not found: $tplfile");
+                throw new ViewException("模版文件: $file 不存在");
             }
             if (filemtime($phpfile) < filemtime($tplfile)) {
                 $tpl = substr($phpfile, strlen(realpath(self::$config['dir'])) + 1, - strlen(self::$config['ext']));
@@ -167,7 +165,7 @@ class View
         if (isset(self::$view['filters'][$name])) {
             return self::$view['filters'][$name](...$params);
         }
-        throw new \BadMethodCallException("Call undefined filter: $name");
+        throw new \BadMethodCallException("调用未定义过滤器: $name");
     }
     
     /*
@@ -194,7 +192,7 @@ class View
         if ($result = file_get_contents($file)) {
             return $result;
         }
-        throw new ViewException("Template file read fail: $file");
+        throw new ViewException("读取模版文件: $file 失败");
     }
 
     /*
@@ -210,9 +208,9 @@ class View
                 }
                 return true;
             }
-            throw new ViewException("View file write fail: $file");
+            throw new ViewException("写入视图文件: $file 失败");
         }
-        throw new ViewException("View dir create fail: $dir");
+        throw new ViewException("创建视图文件目录失败");
     }
     
     /*
