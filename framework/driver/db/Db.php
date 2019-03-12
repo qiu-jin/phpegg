@@ -195,7 +195,7 @@ abstract class Db
 		if ($this->debug === true) {
 			Logger::write(Logger::DEBUG, $sql);
 		} else {
-			Logger::channel($this->debug)->debug($sql);
+			Logger::get($this->debug)->debug($sql);
 		}
     }
 }

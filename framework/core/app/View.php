@@ -50,7 +50,6 @@ class View extends App
                 return $dispatch;
             }
         }
-        return false;
     }
     
     protected function call()

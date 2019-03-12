@@ -45,19 +45,19 @@ class Hash
     }
     
     /*
-     * 密码hash
-     */
-    public static function password($password, array $options = [])
-    {
-        return password_hash($password, $options['algo'] ?? PASSWORD_DEFAULT, $options);
-    }
-    
-    /*
      * 验证两个hash是否相同
      */
     public static function equals($str1, $str2)
     {
         return hash_equals($str1, $str2);
+    }
+	
+    /*
+     * 密码hash
+     */
+    public static function password($password, array $options = [])
+    {
+        return password_hash($password, $options['algo'] ?? PASSWORD_DEFAULT, $options);
     }
 	
     /*

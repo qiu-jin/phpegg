@@ -49,7 +49,6 @@ class Inline extends App
                 return $dispatch;
             }
         }
-        return false;
     }
     
     /*

@@ -73,7 +73,7 @@ class Smtp extends Email
 			if ($this->debug === true) {
 				Logger::write(Logger::DEBUG, $res);
 			} else {
-				Logger::channel($this->debug)->debug($res);
+				Logger::get($this->debug)->debug($res);
 			}
         }
         return $res;

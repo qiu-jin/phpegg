@@ -77,7 +77,6 @@ class Standard extends App
 				return $dispatch;
 			}
         }
-        return false;
     }
 
     /*

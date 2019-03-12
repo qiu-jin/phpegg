@@ -50,9 +50,10 @@ class Cli extends App
      */
     protected function dispatch()
     {
-        if (!App::IS_CLI) {
-            throw new \RuntimeException('NOT CLI SAPI');
+        if (App::IS_CLI) {
+            return true;
         }
+		throw new \RuntimeException('NOT CLI SAPI');
     }
     
     /*

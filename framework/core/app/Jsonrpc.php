@@ -26,7 +26,7 @@ class Jsonrpc extends App
         /* 参数模式
          * 0 单参数
          * 1 顺序参数
-         * 3 键值参数
+         * 2 键值参数
          */
         'param_mode'            => 1,
         // 是否启用closure getter魔术方法
@@ -52,7 +52,6 @@ class Jsonrpc extends App
          * msgpack https://pecl.php.net/package/msgpack 'msgpack_unserialize' 'msgpack_serialize'
          * igbinary https://pecl.php.net/package/igbinary 'igbinary_unserialize' 'igbinary_serialize'
          * bson http://php.net/manual/zh/book.bson.php 'MongoDB\BSON\toPHP' 'MongoDB\BSON\fromPHP'
-         * hprose https://github.com/hprose/hprose-pecl 'hprose_unserialize' 'hprose_serialize'
          */
         'request_unserialize'   => 'jsondecode',
         'response_serialize'    => 'jsonencode',
@@ -259,7 +258,7 @@ class Jsonrpc extends App
         if (count($method_array = explode('.', $method)) > 1) {
             $action = array_pop($method_array);
             $controller = implode('\\', $method_array);
-            if (($controller_instance = $this->makeControllerInstance($controller))
+            if (($controller_instance = $this->getControllerInstance($controller))
                 && is_callable([$controller_instance, $action])
 				&& $action[0] !== '_'
             ) {
@@ -285,13 +284,13 @@ class Jsonrpc extends App
                 $class = substr($method, 0, $pos);
                 $method = substr($method, $pos + 1);
                 if (isset($this->custom_methods['services'][$class])
-                    && is_callable([$instance = $this->makeCustomServiceInstance($class), $method])
+                    && is_callable([$instance = $this->getCustomServiceInstance($class), $method])
 					&& $method[0] !== '_'
                 ) {
                     return [$instance, $method];
                 }
             } elseif (isset($this->custom_methods['service'])
-                && is_callable([$instance = $this->makeCustomServiceInstance(), $method])
+                && is_callable([$instance = $this->getCustomServiceInstance(), $method])
 				&& $method[0] !== '_'
             ) {
                 return [$instance, $method];
@@ -302,8 +301,13 @@ class Jsonrpc extends App
     /*
      * 生成控制器实例
      */
-    protected function makeControllerInstance($controller)
+    protected function getControllerInstance($controller)
     {
+        if ($this->is_batch_call) {
+			if (isset($this->controller_instances[$controller])) {
+				return $this->controller_instances[$controller];
+			}
+        }
         if (isset($this->config['controller_alias'][$controller])) {
             $controller = $this->config['controller_alias'][$controller];
         } elseif (!isset($this->config['dispatch_controllers'])) {
@@ -312,17 +316,15 @@ class Jsonrpc extends App
             return;
         }
         if ($class = $this->getControllerClass($controller, isset($check))) {
-            if (!$this->is_batch_call) {
-                return new $class;
-            }
-            return $this->controller_instances[$class] ?? $this->controller_instances[$class] = new $class();
+			$instance = new $class;
+			return $this->is_batch_call ? ($this->controller_instances[$controller] = $instance) : $instance;
         }
     }
     
     /*
      * 生成自定义类实例
      */
-    protected function makeCustomServiceInstance($name = null)
+    protected function getCustomServiceInstance($name = null)
     {
         if ($name === null) {
             if (is_object($this->custom_methods['service'])) {

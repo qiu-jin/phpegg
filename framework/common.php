@@ -44,7 +44,7 @@ function app($name = null)
  */
 function logger($name = null)
 {
-    return Logger::channel($name);
+    return Logger::get($name);
 }
 
 

@@ -56,6 +56,22 @@ class Logger
             self::$configs = $configs;
         }
     }
+	
+    /*
+     * 获取实例
+     */
+    public static function get($name = null)
+    {
+		return $name === null ? self::getLevelHandler() : self::getHandler($name);
+    }
+
+    /*
+     * 获取组实例
+     */
+    public static function group($name = null)
+    {
+		return is_array($name) ? self::makeGroupHandler($name) : self::getGroupHandler($name);
+    }
     
     /*
      * 分级写入日志
@@ -79,23 +95,6 @@ class Logger
                 self::getHandler($n)->write($level, $message, $context);
             }
         }
-    }
- 
-    /*
-     * 获取实例
-     */
-	
-    public static function channel($name = null)
-    {
-		return $name === null ? self::getLevelHandler() : self::getHandler($name);
-    }
-
-    /*
-     * 获取组实例
-     */
-    public static function group($name = null)
-    {
-		return is_array($name) ? self::makeGroupHandler($name) : self::getGroupHandler($name);
     }
     
     /*

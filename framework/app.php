@@ -138,7 +138,7 @@ abstract class App
         }
 		self::$app = new $class(is_array($config) ? $config : Config::get($config));
         Event::trigger('start', self::$app->dispatch = self::$app->dispatch());
-        if (self::$app->dispatch !== false) {
+        if (self::$app->dispatch) {
             return self::$app;
         }
         self::abort(404);

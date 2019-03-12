@@ -55,7 +55,7 @@ class Loader
                 return;
             case 'psr4':
                 return self::addPsr4($rules);
-			case 'files':
+			case 'file':
                 foreach ($rules as $v) {
                     self::import($v, false);
                 }

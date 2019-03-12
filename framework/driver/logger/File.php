@@ -26,8 +26,9 @@ class File extends Logger
             Event::on('close', [$this, 'flush']);
         }
 		if (isset($config['formatter'])) {
-			$class = $config['formatter']['class'] ?? Formatter::class;
-			$this->formatter = new $class($config['formatter']['format'] ?? null);
+			$f = $config['formatter'];
+			$class = $f['class'] ?? Formatter::class;
+			$this->formatter = new $class($f['format'] ?? null, $f['options'] ?? null);
 		}
     }
     

@@ -80,7 +80,6 @@ class Rest extends App
                 return $dispatch;
             }
         }
-        return false;
     }
 
     /*
