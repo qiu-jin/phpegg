@@ -62,7 +62,7 @@ class Opcache extends Cache
             $this->filterValue($value);
         }
         $contents = sprintf('<?php $expiration = %d;'.PHP_EOL.'return %s;',
-            $ttl ? $ttl + time() : 0,
+            ($t = $ttl ?? $this->ttl) == 0 ? 0 : $t + time(),
             var_export($value, true)
         );
         return file_put_contents($file = $this->filename($key), $contents) && opcache_compile_file($file);

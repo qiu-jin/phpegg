@@ -2,7 +2,7 @@
 namespace framework\driver\cache;
 
 use framework\util\Str;
-use framework\util\File;
+use framework\util\File as F;
 
 class File extends Cache
 {
@@ -58,7 +58,7 @@ class File extends Cache
      */
     public function set($key, $value, $ttl = null)
     {
-        $expiration = $ttl ? $ttl + time() : 0;
+        $expiration = ($t = $ttl ?? $this->ttl) == 0 ? 0 : $t + time();
         return (bool) file_put_contents($this->filename($key), $expiration.PHP_EOL.$this->serialize($value));
     }
 
@@ -91,7 +91,7 @@ class File extends Cache
      */
     public function clean()
     {
-        File::cleanDir($this->dir);
+        F::cleanDir($this->dir);
     }
     
     /*
@@ -100,7 +100,7 @@ class File extends Cache
     public function gc()
     {
         $maxtime = time() + $this->gc_maxlife;
-        File::cleanDir($this->dir, function ($file) use ($maxtime) {
+        F::cleanDir($this->dir, function ($file) use ($maxtime) {
             return $maxtime > filemtime($file);
         });
     }

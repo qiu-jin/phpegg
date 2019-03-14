@@ -52,10 +52,10 @@ class Redis extends Cache
      */
     public function set($key, $value, $ttl = null)
     {
-        if ($ttl) {
-            return $this->connection->setex($key, $ttl, $value);
+        if (($t = $ttl ?? $this->ttl) == 0) {
+            return $this->connection->set($key, $value);
         } else {
-            return $this->connection->set($key, $value); 
+			return $this->connection->setex($key, $t, $value);
         }
     }
 

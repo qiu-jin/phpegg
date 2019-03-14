@@ -5,6 +5,8 @@ use framework\core\Event;
 
 abstract class Cache
 {
+    // 默认缓存过期时间
+    protected $ttl = 0;
     // 序列化反序列化处理器
     protected $serializer;
     // 垃圾回收处理生命周期（部分驱动有效）
@@ -19,7 +21,7 @@ abstract class Cache
      * 检查
      */
     abstract public function has($key);
-	
+
     /*
      * 设置
      */
@@ -51,18 +53,21 @@ abstract class Cache
     public function __construct($config)
     {
         $this->__init($config);
+		if (isset($config['ttl'])) {
+			$this->ttl = $config['ttl'];
+		}
+		if (isset($config['serializer'])) {
+			$this->serializer = $config['serializer'];
+		}
         if (isset($config['gc_random'])
             && method_exists($this, 'gc')
-            && mt_rand(1, $config['gc_random'][1]) <= $config['gc_random'][0]
+            && mt_rand(0, $config['gc_random'][1]) < $config['gc_random'][0]
         ) {
 			if (isset($config['gc_maxlife'])) {
 				$this->gc_maxlife = $config['gc_maxlife'];
 			}
             Event::on('close', [$this, 'gc']);
         }
-		if (isset($config['serializer'])) {
-			$this->serializer = $config['serializer'];
-		}
     }
     
     /*

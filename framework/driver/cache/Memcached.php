@@ -101,7 +101,7 @@ class Memcached extends Cache
      */
     public function setMultiple(array $values, $ttl = null)
     {
-        return $this->connection->setMulti($values, $ttl ?? 0);
+        return $this->connection->setMulti($values, $ttl ?? $this->ttl);
     }
     
     /*

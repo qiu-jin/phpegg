@@ -7,7 +7,7 @@ use framework\core\http\Request;
 class Formatter
 {
 	// 格式
-    protected $format = '[{@date}] [{level}] {message} on {file} {line}';
+    protected $format = '[{date}] [{level}] {message} on {file} {line}';
 	// 设置项
     protected $options = [
         'ip_proxy'      => false,

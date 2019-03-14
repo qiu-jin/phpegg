@@ -15,13 +15,13 @@ class Db extends Cache
     // 数据表名
     protected $table = 'cache';
     // 数据表字段名
-    protected $fields = ['key', 'value', 'expiration'];;
+    protected $fields = ['key', 'value', 'expiration'];
 
     /*
      * 初始化
      */
     protected function __init($config)
-    
+	{
 		if (isset($config['table'])) {
 			$this->table = $config['table'];
 		}
@@ -60,7 +60,7 @@ class Db extends Cache
         return (bool) $this->db->exec($this->format(
             'REPLACE INTO %s SET %s = ?, %s = ?, %s = ?', $this->table, ...$this->fields
         ), [
-            $key, $this->serialize($value), time() + ($ttl ?? $this->gc_maxlife)
+            $key, $this->serialize($value), time() + (($t = $ttl ?? $this->ttl) == 0 ? $this->gc_maxlife : $t)
         ]);
     }
 
