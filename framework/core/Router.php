@@ -78,6 +78,7 @@ class Router
             $c = $v[0];
             $s = $this->path[$step] ?? null;
             if ($s) {
+				// 可选匹配
                 if ($c === '?') {
                     $v = substr($v, 1);
                     $c = $v[0];
@@ -136,7 +137,7 @@ class Router
                         break;
                     }
                     return false;
-                // 匹配剩余
+                // 余部匹配
                 case '~':
                     if ($v === '~') {
                         return [
@@ -145,7 +146,7 @@ class Router
                         ];
                     }
                     return false;
-                // 匹配HTTP方法
+                // HTTP方法匹配
                 case ':':
                     foreach (explode(' ', substr($v, 1)) as $n) {
                         if (trim($n) === $this->method) {

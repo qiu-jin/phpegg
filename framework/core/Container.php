@@ -42,10 +42,14 @@ class Container
             return;
         }
         self::$init = true;
-		$config = Config::read('container');
-        if (isset($config['providers'])) {
-			self::$providers = $config['providers'] + self::$providers;
-        }
+		if ($config = Config::read('container')) {
+	        if (isset($config['providers'])) {
+				self::$providers = $config['providers'] + self::$providers;
+	        }
+			if (!empty($config['exit_clean'])) {
+				Event::on('exit', [__CLASS__, 'clean']);
+			}
+		}
     }
 
     /*

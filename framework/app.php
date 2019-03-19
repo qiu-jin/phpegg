@@ -103,19 +103,19 @@ abstract class App
         });
         register_shutdown_function(function () {
             try {
-                if (!isset(self::$exit)) {
-                    Error::fatalHandler();
-                }
+	            if (!isset(self::$exit)) {
+	                Error::fatalHandler();
+	            }
                 Event::trigger('exit');
+				self::$app = null;
+				Event::trigger('flush');
+	            if (function_exists('fastcgi_finish_request')) {
+	                fastcgi_finish_request();
+	            }
+	            Event::trigger('close');
             } catch (\Throwable $e) {
                 Error::exceptionHandler($e);
             }
-            self::$app = null;
-            Event::trigger('flush');
-            if (function_exists('fastcgi_finish_request')) {
-                fastcgi_finish_request();
-            }
-            Event::trigger('close');
         });
         Event::trigger('boot');
     }
@@ -168,22 +168,6 @@ abstract class App
             $this->respond($return);
         }
     }
-	
-    /*
-     * 获取配置值
-     */
-    public function getConfig($name = null, $default = null)
-    {
-		return $name === null ? $this->config : ($this->config[$name] ?? $default);
-    }
-	
-    /*
-     * 获取调度信息
-     */
-    public function getDispatch($name = null, $default = null)
-    {
-        return $name === null ? $this->dispatch : ($this->dispatch[$name] ?? $default);
-    }
     
     /*
      * 退出应用
@@ -233,6 +217,22 @@ abstract class App
     public static function setReturnHandler(callable $handler)
     {
         self::$return_handler = $handler;
+    }
+	
+    /*
+     * 获取配置值
+     */
+    public function getConfig($name = null, $default = null)
+    {
+		return $name === null ? $this->config : ($this->config[$name] ?? $default);
+    }
+	
+    /*
+     * 获取调度信息
+     */
+    public function getDispatch($name = null, $default = null)
+    {
+        return $name === null ? $this->dispatch : ($this->dispatch[$name] ?? $default);
     }
     
     /*
