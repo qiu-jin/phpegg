@@ -69,12 +69,13 @@ class Template
     ];
     // 魔术变量
     protected static $vars    = [
+		'input'     => Request::class.'::input',
         'query'     => Request::class.'::query',
         'param'     => Request::class.'::param',
         'cookie'    => Request::class.'::cookie',
-        'session'   => Request::class.'::session',
         'header'    => Request::class.'::header',
         'server'    => Request::class.'::server',
+		'session'   => Request::class.'::session',
     ];
     // 内置函数
     protected static $filters = [

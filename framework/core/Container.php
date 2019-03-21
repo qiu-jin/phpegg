@@ -42,7 +42,7 @@ class Container
             return;
         }
         self::$init = true;
-		if ($config = Config::read('container')) {
+		if ($config = Config::get('container')) {
 	        if (isset($config['providers'])) {
 				self::$providers = $config['providers'] + self::$providers;
 	        }
