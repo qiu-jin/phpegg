@@ -125,7 +125,7 @@ abstract class Db
     {
         try {
             $this->begin();
-            ($return = $call()) ? $this->commit() : $this->rollback();
+            ($return = $call($this)) === false ? $this->commit() : $this->rollback();
             return $return;
         } catch (\Exception $e) {
             $this->rollback();

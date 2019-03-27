@@ -172,7 +172,7 @@ class Mysqli extends Db
     }
     
     /*
-     * 获取数据条数
+     * 获取查询到的数据条数
      */
     public function numRows($query)
     {
@@ -180,7 +180,7 @@ class Mysqli extends Db
     }
     
     /*
-     * 影响数据条数
+     * 获取更新的数据条数
      */
     public function affectedRows($query = null)
     {
@@ -188,7 +188,7 @@ class Mysqli extends Db
     }
     
     /*
-     * 最近插入数据id
+     * 获取最近插入数据的ID
      */
     public function insertId()
     {
