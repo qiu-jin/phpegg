@@ -16,18 +16,10 @@ class View extends App
     protected $config = [
         // 调度模式，支持default route组合
         'dispatch_mode'     => ['default'],
-        // 初始视图模型
-        'boot_view_model'   => null,
-        // 视图模型目录
-        'view_model_path'   => null,
-        // 视图模型目录
-        'view_models'       => null,
+        // 视图模型namespace
+        'viewmodel_ns'		=> 'viewmodel',
         // 是否启用pjax
         'enable_pjax'       => false,
-        // 是否启用Getter魔术方法
-        'enable_getter'     => true,
-        // Getter providers
-        'getter_providers'  => null,
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
         // 默认调度的视图，为空不限制
@@ -87,10 +79,10 @@ class View extends App
             $view = $this->config['default_dispatch_hyphen_to_underscore'] ? strtr($path, '-', '_') : $path;
             if (!isset($this->config['default_dispatch_views'])) {
                 if ($this->checkViewFile($view)) {
-                    return compact('view');
+                    return ['view' => $view];
                 }
             } elseif (in_array($view, $this->config['default_dispatch_views'])) {
-                return compact('view');
+                return ['view' => $view];
             }
         } elseif ($this->config['default_dispatch_index']) {
             return ['view' => $this->config['default_dispatch_index']];
@@ -99,9 +91,9 @@ class View extends App
     
     protected function routeDispatch($path)
     {
-        if (!empty($routes = $this->config['route_dispatch_routes'])) {
+        if ($routes = $this->config['route_dispatch_routes']) {
             $dispatch = Dispatcher::route(
-                empty($path) ? null : explode('/', $path),
+                $path ? explode('/', $path) : [],
                 is_string($routes) ? Config::read($routes) : $routes,
                 2,
                 $this->config['route_dispatch_dynamic']

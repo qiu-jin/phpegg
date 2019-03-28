@@ -141,8 +141,9 @@ class Session
     */
     public static function __callStatic($method, $params)
     {
-        if (function_exists($function = 'session_'.Str::snakeCase($method))) {
-            return $function(...$params);
+		$func = 'session_'.Str::snakeCase($method);
+        if (function_exists($func)) {
+            return $func(...$params);
         }
         throw new \BadMethodCallException('Call to undefined method '.__CLASS__."::$method");
     }

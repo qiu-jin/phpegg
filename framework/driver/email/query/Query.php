@@ -103,7 +103,11 @@ class Query
         if (!isset($this->options['ishtml'])) {
             $this->options['ishtml'] = true;
         }
-        return $this->content(View::render($tpl, $vars), null, $encoding);
+        $this->options['content'] = View::render($tpl, $vars);
+        if ($encoding) {
+            $this->options['encoding'] = $encoding;
+        }
+        return $this;
     }
     
     /*

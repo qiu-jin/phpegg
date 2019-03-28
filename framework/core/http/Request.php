@@ -174,7 +174,7 @@ class Request
     public static function pathArr()
     {
         $path = trim(self::path(), '/');
-        return empty($path) ? [] : explode('/', $path);
+        return $path ? explode('/', $path) : [];
     }
     
     /*
@@ -189,9 +189,9 @@ class Request
     /*
      * 获取请求UserAgent实例
      */
-    public static function agent($str = null)
+    public static function agent()
     {
-        return new UserAgent($str ?? $_SERVER['HTTP_USER_AGENT']);
+        return self::$request['agent'] ?? self::$request['agent'] = new UserAgent($_SERVER['HTTP_USER_AGENT']);
     }
     
     /*

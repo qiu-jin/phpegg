@@ -25,6 +25,9 @@ class Uploaded
         UPLOAD_ERR_CANT_WRITE   => 'UPLOAD_ERR_CANT_WRITE'
     ];
     
+    /*
+     * 构造函数
+     */
     public function __construct(array $file)
     {
         $this->file = $file;
