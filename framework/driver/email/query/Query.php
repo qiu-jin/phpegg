@@ -145,9 +145,15 @@ class Query
      */
     public function send($to = null, $subject = null, $content = null)
     {
-        $to      && $this->options['to']      = is_array($to) ? [$to] : [[$to]];
-        $subject && $this->options['subject'] = $subject;
-        $content && $this->options['content'] = $content;
+		if ($to) {
+			$this->options['to'] = is_array($to) ? [$to] : [[$to]];
+		}
+		if ($subject) {
+			$this->options['subject'] = $subject;
+		}
+		if ($content) {
+			$this->options['content'] = $content;
+		}
         return $this->email->handle($this->options);
     }
 }

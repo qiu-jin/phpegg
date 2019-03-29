@@ -1,6 +1,7 @@
 <?php
 namespace framework\core\http;
 
+use framework\core\Event;
 use framework\core\Config;
 use framework\core\Container;
 
@@ -47,6 +48,7 @@ class Cookie
         } else {
             self::$cookie = $_COOKIE;
         }
+		Event::trigger('cookie', self::$cookie);
     }
     
     /*
@@ -110,7 +112,7 @@ class Cookie
     {
         unset(self::$cookie[$name]);
         unset(self::$raw_cookie[$name]);
-        self::setCookie($name, null, null, , ...$options);
+        self::setCookie($name, null, null, ...$options);
     }
     
     /*

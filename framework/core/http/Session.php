@@ -2,16 +2,13 @@
 namespace framework\core\http;
 
 use framework\util\Str;
+use framework\core\Event;
 use framework\core\Config;
 
 class Session
 {
     private static $init;
-    // 可用初始函数
-    private static $init_functions = [
-        'id', 'name', 'save_path', 'cache_expire', 'cache_limiter', 'module_name'
-    ];
-    
+	
     /*
      * 初始化
      */
@@ -21,6 +18,7 @@ class Session
             return;
         }
         self::$init = true;
+		Event::trigger('session');
         if ($config = Config::read('session')) {
 			if (isset($config['ini_set'])) {
                 foreach ($config['ini_set'] as $k => $v) {
@@ -32,11 +30,6 @@ class Session
             }
             if (isset($config['save_handler'])) {
                 session_set_save_handler(instance(...$config['save_handler']));
-            }
-            foreach (self::$init_functions as $func) {
-                if (isset($config[$func])) {
-                    ("session_$func")($config[$func]);
-                }
             }
             if (isset($config['auto_start']) && $config['auto_start'] === false) {
                 return;
