@@ -138,10 +138,10 @@ class Response
      */
     public static function flush()
     {
-        Event::trigger('response', self::$response);
         if (headers_sent()) {
             throw new \Exception('Response headers sent failure');
         }
+        Event::trigger('response', self::$response);
         if (isset(self::$response['status'])) {
             http_response_code(self::$response['status']);
         }

@@ -1,6 +1,7 @@
 <?php
 namespace framework\core\http;
 
+use framework\util\Arr;
 use framework\util\Str;
 use framework\core\Event;
 use framework\core\Config;
@@ -8,6 +9,8 @@ use framework\core\Config;
 class Session
 {
     private static $init;
+	// 只读
+	private static $read_only = false;
 	
     /*
      * 初始化
@@ -18,7 +21,6 @@ class Session
             return;
         }
         self::$init = true;
-		Event::trigger('session');
         if ($config = Config::read('session')) {
 			if (isset($config['ini_set'])) {
                 foreach ($config['ini_set'] as $k => $v) {
@@ -31,11 +33,25 @@ class Session
             if (isset($config['save_handler'])) {
                 session_set_save_handler(instance(...$config['save_handler']));
             }
+            if (isset($config['read_only'])) {
+                self::$read_only = $config['read_only'];
+            }
             if (isset($config['auto_start']) && $config['auto_start'] === false) {
                 return;
             }
         }
+		self::start();
+    }
+	
+    /*
+     * 开始
+     */
+    public static function start()
+    {
         session_start();
+		if (self::$read_only) {
+			session_write_close();
+		}
     }
     
     /*
@@ -97,9 +113,9 @@ class Session
     {
         $_SESSION = [];
         session_destroy();
-		if (ini_get('session.use_cookies')) {
+		if ($delete_cookie) {
 		    extract(session_get_cookie_params());
-		    Cookie::set(session_name(), null, null, $path, $domain, $secure, $httponly);
+		    Cookie::delete(session_name(), $path, $domain, $secure, $httponly);
 		}
     }
     

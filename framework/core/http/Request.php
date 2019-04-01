@@ -95,18 +95,7 @@ class Request
      */
     public static function uploaded($name)
     {
-        if (isset($_FILES[$name])) {
-            if (is_array($_FILES[$name]['name'])) {
-                $keys = array_keys($_FILES[$name]);
-                $count = count($_FILES[$name]['name']);
-                for ($i = 0; $i < $count; $i++) {
-                    $files[] = new Uploaded(array_combine($keys, array_column($_FILES[$name], $i)));
-                }
-                return $files;
-            } else {
-                return new Uploaded($_FILES[$name]);
-            }
-        }
+		return new Uploaded($_FILES[$name]);
     }
     
     /*
@@ -155,9 +144,9 @@ class Request
     public static function ip($proxy = false)
     {
         if (!$proxy) {
-            return $_SERVER['REMOTE_ADDR'] ?? false;
+            return $_SERVER['REMOTE_ADDR'] ?? null;
         }
-        return $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? false;
+        return $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
     }
     
     /*
@@ -189,9 +178,10 @@ class Request
     /*
      * 获取请求UserAgent实例
      */
-    public static function agent()
+    public static function agent($cache = false)
     {
-        return self::$request['agent'] ?? self::$request['agent'] = new UserAgent($_SERVER['HTTP_USER_AGENT']);
+        return $cache ? (self::$request['agent'] ?? self::$request['agent'] = new UserAgent($_SERVER['HTTP_USER_AGENT'])
+                      : new UserAgent($_SERVER['HTTP_USER_AGENT'];
     }
     
     /*

@@ -38,7 +38,7 @@ class Uploaded
     /*
      * 文件实例，如设置验证规则验证失败返回false
      */
-    public static function file($name, $check = null)
+    public static function file($name, $check = false)
     {
 		if ($file = Request::file($name)) {
 			$uploaded = new self($file);
