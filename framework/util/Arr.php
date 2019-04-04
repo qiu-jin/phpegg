@@ -8,7 +8,10 @@ class Arr
      */
     public static function get(array $array, $name, $default = null)
     {
-        foreach ((is_array($name) ? $name : explode('.', $name)) as $n) {
+		if (strpos($name, '.') === false) {
+			return $array[$name] ?? $default;
+		}
+        foreach (explode('.', $name) as $n) {
             if (isset($array[$n])) {
                 $array = $array[$n];
             } else {
@@ -23,13 +26,17 @@ class Arr
      */
     public static function set(array &$array, $name, $value)
     {
-        foreach ((is_array($name) ? $name : explode('.', $name)) as $n) {
-            if (!isset($array[$n]) || !is_array($array[$n])) {
-                $array[$n] = [];
-            }
-            $array =& $array[$n];
-        }
-        $array = $value;
+		if (strpos($name, '.') === false) {
+			$array[$name] = $value;
+		} else {
+	        foreach (explode('.', $name) as $n) {
+	            if (!isset($array[$n]) || !is_array($array[$n])) {
+	                $array[$n] = [];
+	            }
+	            $array =& $array[$n];
+	        }
+	        $array = $value;
+		}
     }
     
     /*
@@ -37,7 +44,10 @@ class Arr
      */
     public static function has(array $array, $name)
     {
-        foreach ((is_array($name) ? $name : explode('.', $name)) as $n) {
+		if (strpos($name, '.') === false) {
+			return isset($array[$name]);
+		}
+        foreach (explode('.', $name) as $n) {
             if (isset($array[$n])) {
                 $array = $array[$n];
             } else {
@@ -52,8 +62,8 @@ class Arr
      */
     public static function delete(array &$array, $name)
     {
-        $ns = is_array($name) ? $name : explode('.', $name);
-        if (isset($ns[1])) {
+        if (strpos($name, '.') !== false) {
+			$ns = explode('.', $name);
             $ln = array_pop($ns);
             foreach ($ns as $n) {
                 if (!isset($array[$n])) {
@@ -61,10 +71,9 @@ class Arr
                 }
                 $array =& $array[$n];
             }
-            unset($array[$ln]);
-        } else {
-            unset($array[$name]);
+            $name = $ln;
         }
+		unset($array[$name]);
     }
     
     /*
@@ -72,8 +81,8 @@ class Arr
      */
     public static function pull(array &$array, $name, $default = null)
     {
-        $ns = is_array($name) ? $name : explode('.', $name);
-        if (isset($ns[1])) {
+        if (strpos($name, '.') !== false) {
+			$ns = explode('.', $name);
             $ln = array_pop($ns);
             foreach ($ns as $n) {
                 if (!isset($array[$n])) {
@@ -81,15 +90,14 @@ class Arr
                 }
                 $array =& $array[$n];
             }
-            if (isset($array[$ln])) {
-                $value = $array[$ln];
-                unset($array[$ln]);
-            }
-        } elseif (isset($array[$name])) {
+            $name = $ln;
+        }
+		if (isset($array[$name])) {
             $value = $array[$name];
             unset($array[$name]);
-        }
-        return $value ?? $default;
+			return $value;
+		}
+        return $default;
     }
     
     /*

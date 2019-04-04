@@ -36,7 +36,7 @@ function config($name, $default = null)
  */
 function app($name = null)
 {
-    return $name === null ? App::instance() : Container::get($name);
+    return $name === null ? App::instance() : Container::make($name);
 }
 
 /*
@@ -131,7 +131,7 @@ function view($tpl, array $vars = null)
 /*
  * 获取请求参数
  */
-function input($name, $default = null)
+function input($name = null, $default = null)
 {
     return Request::input($name, $default);
 }
@@ -249,22 +249,6 @@ function jsondecode($data)
 }
 
 /*
- * 安全引用文件
- */
-function __include($file)
-{
-    return include $file;
-}
-
-/*
- * 安全引用文件
- */
-function __require($file)
-{
-    return require $file;
-}
-
-/*
  * 获取Getter
  */
 function getter($providers = null)
@@ -287,4 +271,20 @@ define('OPCACHE_LOADED', extension_loaded('opcache'));
 function is_php_file($file)
 {
     return (OPCACHE_LOADED && opcache_is_script_cached($file)) || is_file($file);
+}
+
+/*
+ * 安全引用文件
+ */
+function __include($file)
+{
+    return include $file;
+}
+
+/*
+ * 安全引用文件
+ */
+function __require($file)
+{
+    return require $file;
 }

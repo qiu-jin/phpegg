@@ -19,10 +19,10 @@ class Sendmail extends Email
     /*
      * 处理请求
      */
-    public function handle($options)
+    protected function handle($options)
     {
         $subject = Mime::encodeHeader(Arr::pull($options, 'subject'));
-        list($header, $body) = explode(Mime::EOL.Mime::EOL, Mime::build($options, $addrs), 2);
+        list($header, $body) = explode(Mime::EOL.Mime::EOL, Mime::make($options, $addrs), 2);
         return mail(implode(',', $addrs), $subject, $body, $header);
     }
 }

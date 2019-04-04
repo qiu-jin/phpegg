@@ -18,7 +18,7 @@ class File
      */
     public static function put($file, $contents, $flags = 0)
     {
-        return self::makeDir(dirname($file), 0777, true) && file_put_contents($file, $contents, $flags);
+        return self::makeDir(dirname($file)) && file_put_contents($file, $contents, $flags);
     }
     
     /*
@@ -26,7 +26,7 @@ class File
      */
     public static function move($file, $to)
     {
-        return is_file($file) && self::makeDir(dirname($to), 0777, true) && rename($file, $to);
+        return is_file($file) && self::makeDir(dirname($to)) && rename($file, $to);
     }
     
     /*
@@ -34,7 +34,7 @@ class File
      */
     public static function copy($file, $to)
     {
-        return is_file($file) && self::makeDir(dirname($to), 0777, true) && copy($file, $to);
+        return is_file($file) && self::makeDir(dirname($to)) && copy($file, $to);
     }
     
     /*
@@ -115,7 +115,7 @@ class File
     /*
      * 如目录不存在则创建目录
      */
-    public static function makeDir($dir, $mode = 0777, $recursive = false)
+    public static function makeDir($dir, $mode = 0777, $recursive = true)
     {
         return is_dir($dir) || mkdir($dir, $mode, $recursive);
     }
@@ -134,7 +134,7 @@ class File
                         self::moveDir($file, $to.$item);
                     }
                 } else {
-                    self::makeDir($to, 0777, true);
+                    self::makeDir($to);
                     rename($file, $to.$item);
                 }
             }

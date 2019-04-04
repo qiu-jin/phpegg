@@ -2,6 +2,7 @@
 namespace framework\core\http;
 
 use framework\App;
+use framework\util\File;
 use framework\core\View;
 use framework\core\Event;
 
@@ -27,7 +28,9 @@ class Response
      */
     public static function status($code = 200)
     {
-        self::$response['status'] = isset(Status::CODE[$code]) ? $code : 200;
+		if (isset(Status::CODE[$code])) {
+			self::$response['status'] = $code;
+		}
     }
     
     /*
@@ -53,9 +56,10 @@ class Response
     /*
      * 设置响应cookie
      */
-    public static function cookie($name, $value, $expire = 0, $path = '/', $domain = null, $secure = false, $httponly = false)
-    {
-        Cookie::set($name, $value, $expire, $path, $domain, $secure, $httponly);
+    public static function cookie(
+    	$name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null
+    ) {
+        self::$response['cookies'][] = func_get_args();
     }
     
     /*
@@ -89,6 +93,14 @@ class Response
     {
         self::send(jsonencode($data), 'application/json; charset=UTF-8');
     }
+	
+    /*
+     * 设置文件输出
+     */
+    public static function file($path, $type = null)
+    {
+		self::send(file_get_contents($path), $type ?? File::mime($path));
+    }
     
     /*
      * 设置响应body内容
@@ -112,6 +124,28 @@ class Response
         self::$response['body'] = null;
         App::exit();
     }
+	
+    /*
+     * 设置文件下载
+     */
+    public static function download($file, $name = null, $is_buffer = false)
+    {
+		if ($is_buffer) {
+			$size = strlen($file);
+			$body = $file;
+		} else {
+			$name = $name ?? basename($file);
+			$size = filesize($file);
+			$body = file_get_contents($file);
+		}
+		self::$response['headers']['Content-Length'] = $size;
+		self::$response['headers']['Content-Disposition'] = 'attachment; filename="'.$name.'"';
+		if (!isset(self::$response['headers']['Content-Type'])) {
+			self::$response['headers']['Content-Type'] = File::mime($file, $is_buffer) ?: 'application/octet-stream';
+		}
+		self::$response['body'] = $body;
+		App::exit();
+    }
     
     /*
      * 应用匿名函数处理内部数据
@@ -119,18 +153,6 @@ class Response
     public static function apply(callable $call)
     {
         return $call(self::$response);
-    }
-    
-    /*
-     * 清除响应值
-     */
-    public static function clean($name = null)
-    {
-        if ($name === null) {
-            self::$response = null;
-        } elseif (isset(self::$response[$name])) {
-            unset(self::$response[$name]);
-        }
     }
     
     /*
@@ -150,6 +172,11 @@ class Response
                 header("$k: $v");
             }
         }
+		if (isset(self::$response['cookies'])) {
+			foreach (self::$response['cookies'] as $v) {
+				Cookie::setCookie(...$v);
+			}
+		}
         if (isset(self::$response['body'])) {
             echo self::$response['body'];
         }

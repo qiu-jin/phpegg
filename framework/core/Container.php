@@ -4,9 +4,9 @@ namespace framework\core;
 class Container
 {
 	// Provider类型常量
-	const T_DRIVER	= 1;
-	const T_MODEL 	= 2;
-	const T_CLASS 	= 3;
+	const T_CLASS 	= 1;
+	const T_DRIVER	= 2;
+	const T_MODEL 	= 3;
 	const T_CLOSURE	= 4;
 	const T_ALIAS 	= 5;
 
@@ -42,7 +42,7 @@ class Container
             return;
         }
         self::$init = true;
-		if ($config = Config::get('container')) {
+		if ($config = Config::read('container')) {
 	        if (isset($config['providers'])) {
 				self::$providers = $config['providers'] + self::$providers;
 	        }
@@ -55,23 +55,15 @@ class Container
     /*
      * 生成实例
      */
-    public static function get($name)
+    public static function make($name)
     {
         if (isset(self::$instances[$name])) {
             return self::$instances[$name];
         }
 		$params = explode('.', $name);
 		if (isset(self::$providers[$params[0]])) {
-			return self::$instances[$name] = self::make($params);
+			return self::$instances[$name] = self::makeProvider($params);
 		}
-    }
-	
-    /*
-     * 检查实例
-     */
-    public static function has($name)
-    {
-        return isset(self::$instances[$name]);
     }
 	
     /*
@@ -79,17 +71,7 @@ class Container
      */
     public static function set($name, object $instance)
     {
-        return self::$instances[$name] = $instance;
-    }
-	
-    /*
-     * 删除实例
-     */
-    public static function delete($name)
-    {
-		if (isset(self::$instances[$name])) {
-            unset(self::$instances[$name]);
-        }
+        self::$instances[$name] = $instance;
     }
 	
     /*
@@ -103,9 +85,9 @@ class Container
     /*
      * 添加规则
      */
-    public static function bind($name, $type, $value = null)
+    public static function bind($name, ...$params)
     {
-        self::$providers[$name] = [$type, $value];
+        self::$providers[$name] = $params;
     }
 	
     /*
@@ -133,22 +115,22 @@ class Container
     /*
      * 生成自定义Provider实例
      */
-    public static function makeCustom($provider)
+    public static function makeCustomProvider($provider)
     {
         if (is_string($provider)) {
-            return self::get($provider);
+            return self::make($provider);
         } elseif (is_array($provider)) {
             return instance(...$provider);
         } elseif ($provider instanceof \Closure) {
             return $provider();
         }
-		throw new \Exception("Invalid provider type");
+		throw new \Exception("无效的自定义Provider类型");
     }
 	
     /*
      * 生成Provider实例
      */
-    protected static function make($params)
+    protected static function makeProvider($params)
     {
 		$c = count($params);
 		$v = self::$providers[$params[0]];
@@ -176,19 +158,30 @@ class Container
 				break;
 			case self::T_ALIAS:
 				if ($c == 1) {
-					$a = explode('.', $v[1]);
-					if (isset(self::$providers[$a[0]]) && self::$providers[$a[0]][0] != self::T_ALIAS) {
-						return self::make($a);
-					}
-					throw new \Exception("源不存在或为alias类型");
+					return self::makeAlias($v[1]);
 				}
 				break;
 			default:
 			    throw new \Exception("无效的Provider类型: $v[0]");
 		}
-		throw new \Exception("生成Provider实例失败");
+		throw new \Exception("生成Provider实例失败: $params[0]");
     }
-
+	
+    /*
+     * 生成别名实例
+     */
+    protected static function makeAlias($name)
+    {
+		if (isset(self::$instances[$name])) {
+			return self::$instances[$name];
+		}
+		$p = explode('.', $name);
+		if (isset(self::$providers[$p[0]]) && self::$providers[$p[0]][0] != self::T_ALIAS) {
+			return self::$instances[$name] = self::makeProvider($p);
+		}
+		throw new \Exception("源不存在或仍为alias类型: $name");
+    }
+	
     /*
      * 生成驱动实例
      */

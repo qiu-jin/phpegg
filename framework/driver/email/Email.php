@@ -9,7 +9,7 @@ abstract class Email
     /*
      * 邮件发送处理
      */
-    abstract public function handle($options);
+    abstract protected function handle($options);
     
     /*
      * 构造函数
@@ -33,13 +33,17 @@ abstract class Email
     /*
      * 简单发送邮件
      */
-    public function send($to, $subject, $content)
+    public function send($to, $subject, $content, array $options = null)
     {
-        return $this->handle([
-            'to'        => is_array($to) ? [$to] : [[$to]],
-            'from'      => $this->from,
-            'subject'   => $subject,
-            'content'   => $content
-        ]);
+		if ($to) {
+			$options['to'] = is_array($to) ? [$to] : [[$to]];
+		}
+		if ($subject) {
+			$options['subject'] = $subject;
+		}
+		if ($content) {
+			$options['content'] = $content;
+		}
+        return $this->handle($options);
     }
 }

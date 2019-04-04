@@ -42,14 +42,13 @@ class Config
      */
     public static function get($name, $default = null)
     {
-        $ns = explode('.', $name);
+        $ns = explode('.', $name, 2);
         $fn = $ns[0];
         if (!self::check($fn)) {
             return $default;
         }
-        unset($ns[0]);
         $value = self::$configs[$fn];
-        return $ns ? Arr::get($value, $ns, $default) : $value;
+        return isset($ns[1]) ? Arr::get($value, $ns[1], $default) : $value;
     }
     
     /*
@@ -62,8 +61,7 @@ class Config
         if (!self::check($fn)) {
             return false;
         }
-        unset($ns[0]);
-        return $ns ? Arr::has(self::$configs[$fn], $ns) : true;
+		return isset($ns[1]) ? Arr::has(self::$configs[$fn], $ns[1]) : true;
     }
     
     /*
@@ -77,8 +75,7 @@ class Config
             if (!self::check($fn)) {
                 self::$configs[$fn] = [];
             }
-            unset($ns[0]);
-            Arr::set(self::$configs[$fn], $ns, $value);
+            Arr::set(self::$configs[$fn], $ns[1], $value);
         } else {
             self::$configs[$name] = $value;
         }

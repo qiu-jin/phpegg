@@ -12,10 +12,10 @@ trait Getter
     {
         $n = \app\env\GETTER_PROVIDERS_NAME;
         if (isset($this->$n) && isset($this->$n[$name])) {
-			return Container::makeCustom($this->$n[$name]);
+			return Container::makeCustomProvider($this->$n[$name]);
         } elseif ($v = Container::getProvider($name)) {
             if ($v[0] !== Container::T_MODEL) {
-				return $this->$name = Container::get($name);
+				return $this->$name = Container::make($name);
             }
 			// 模型名称空间链实例
 			return $this->$name = new class([$name], $v[1] ?? 1) {

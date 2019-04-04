@@ -327,19 +327,16 @@ class Rest extends App
         if ($type = Request::header('Content-Type')) {
             switch (strtolower(trim(strtok($type, ';')))) {
                 case 'application/json':
-                    $value = jsondecode(Request::body());
-                    break;
+                    $_POST = jsondecode(Request::body());
+                    return;
                 case 'application/xml';
-                    $value = Xml::decode(Request::body());
-                    break;
+                    $_POST = Xml::decode(Request::body());
+                    return;
                 case 'multipart/form-data'; 
                 case 'application/x-www-form-urlencoded'; 
                 default:
                     return;
             }
-            Request::apply(function (&$request) use ($value) {
-                $request['param'] = $value;
-            });
         }
     }
 }

@@ -89,36 +89,36 @@ class Query
     public function content($content, $vars = null, $encoding = null)
     {
         $this->options['content'] = $vars ? Str::formatReplace($content, $vars) : $content;
-        if ($encoding) {
-            $this->options['encoding'] = $encoding;
-        }
         return $this;
     }
     
     /*
      * 邮件模版设置
      */
-    public function template($tpl, $vars = null, $encoding = null)
+    public function template($tpl, $vars = null)
     {
         if (!isset($this->options['ishtml'])) {
             $this->options['ishtml'] = true;
         }
         $this->options['content'] = View::render($tpl, $vars);
-        if ($encoding) {
-            $this->options['encoding'] = $encoding;
-        }
+        return $this;
+    }
+	
+    /*
+     * 邮件编码
+     */
+    public function encoding($encoding)
+    {
+        $this->options['encoding'] = $encoding;
         return $this;
     }
     
     /*
      * 邮件附件
      */
-    public function attach($content, $filename = null, $mimetype = null, $is_buffer = false)
+    public function attach($content, $name = null, $mime = null, $is_buffer = false)
     {
-        if (!isset($this->options['attach_is_buffer'])) {
-            $this->options['attach_is_buffer'] = (bool) $is_buffer;
-        }
-        $this->options['attach'][] = [$content, $filename, $mimetype];
+        $this->options['attach'][] = [$content, $name, $mime, $is_buffer];
         return $this;
     }
     
@@ -145,15 +145,6 @@ class Query
      */
     public function send($to = null, $subject = null, $content = null)
     {
-		if ($to) {
-			$this->options['to'] = is_array($to) ? [$to] : [[$to]];
-		}
-		if ($subject) {
-			$this->options['subject'] = $subject;
-		}
-		if ($content) {
-			$this->options['content'] = $content;
-		}
-        return $this->email->handle($this->options);
+		return $this->email->send($to, $subject, $content, $this->options);
     }
 }

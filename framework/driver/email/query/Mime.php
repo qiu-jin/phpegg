@@ -11,30 +11,30 @@ class Mime
     /*
      * 构建邮件
      */
-    public static function build($options, &$addrs = null)
+    public static function make($options, &$addrs = null)
     {
         $data = ["MIME-Version: 1.0", "Date: ".date("D, j M Y G:i:s O")];
         if (isset($options['from'])) {
-            $data[] = 'From: '.self::buildAddr($options['from']);
+            $data[] = 'From: '.self::makeAddr($options['from']);
         }
         foreach ($options['to'] as $to) {
-            $data[] = "To: ".self::buildAddr($to);
+            $data[] = "To: ".self::makeAddr($to);
             $addrs[] = $to[0];
         }
         if (isset($options['cc'])) {
             foreach ($options['cc'] as $cc) {
-                $data[] = "CC: ".self::buildAddr($cc);
+                $data[] = "CC: ".self::makeAddr($cc);
                 $addrs[] = $cc[0];
             }
         }
         if (isset($options['bcc'])) {
             foreach ($options['bcc'] as $bcc) {
-                $data[] = "BCC: ".self::buildAddr($bcc);
+                $data[] = "BCC: ".self::makeAddr($bcc);
                 $addrs[] = $bcc[0];
             }
         }
         if (isset($options['replyto'])) {
-            $data[] = 'Reply-To: '.self::buildAddr($options['replyto']);
+            $data[] = 'Reply-To: '.self::makeAddr($options['replyto']);
         }
         if (isset($options['subject'])) {
             $data[] = "Subject: ".self::encodeHeader($options['subject']);
@@ -51,7 +51,7 @@ class Mime
             $data[] = '';
             $data[] = self::encodeContent($options['content'], $encoding);
             $data[] = '';
-            $data[] = self::buildAttachments($options['attach'], $boundary, $options['attach_is_buffer']);
+            $data[] = self::makeAttachments($options['attach'], $boundary);
             $data[] = '';
         } else {
             $data[] = "Content-Type: $type; charset=utf-8";
@@ -65,7 +65,7 @@ class Mime
     /*
      * 构建地址
      */
-    public static function buildAddr($addr)
+    public static function makeAddr($addr)
     {
         return empty($addr[1]) ? "<$addr[0]>" : self::encodeHeader($addr[1])."<$addr[0]>";
     }
@@ -101,27 +101,27 @@ class Mime
             case 'binary':
                 return $str;
         }
-        throw new \Exception("Encoding invalid: $encoding");
+        throw new \Exception("无效邮件编码: $encoding");
     }
     
     /*
      * 构建附件
      */
-    public static function buildAttachments($attachs, $boundary, $is_buffer)
+    public static function makeAttachments($attachs, $boundary)
     {
-        foreach ($attachs as $attach) {
-            if ($is_buffer) {
+        foreach ($attachs as $i => $attach) {
+            if ($attach[3]) {
                 $content = $attach[0];
-                $filename = isset($attach[1]) ? self::encodeHeader($attach[1]) : 'nonename';
+                $name = isset($attach[1]) ? self::encodeHeader($attach[1]) : 'attach-'.($i + 1);
             } else {
                 $content = file_get_contents($attach[0]);
-                $filename = self::encodeHeader(isset($attach[1]) ? $attach[1] : basename($attach[0]));
+                $name = self::encodeHeader(isset($attach[1]) ? $attach[1] : basename($attach[0]));
             }
-            $type = $attach[2] ?? File::mime($attach[0], $is_buffer);
+            $mime = $attach[2] ?? File::mime($attach[0], $attach[3]);
             $data[] = "--$boundary";
-            $data[] = "Content-Type: $type; name=$filename";
+            $data[] = "Content-Type: $mime; name=$name";
             $data[] = "Content-Transfer-Encoding: base64";
-            $data[] = "Content-Disposition: attachment; name=$filename";
+            $data[] = "Content-Disposition: attachment; name=$name";
             $data[] = '';
             $data[] = self::encodeContent($content);
             $data[] = '';

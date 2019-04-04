@@ -62,13 +62,89 @@ class Image
         $this->image = $image;
         $this->info  = $info;
     }
-    
+	
     /*
-     * 信息
+     * 获取图片类型
      */
-    public function info($name = null)
+    public function getType()
     {
-        return $name ? ($this->info[$name] ?? false) : ($this->info ?? false);
+		return $this->info['type'];
+    }
+	
+    /*
+     * 获取图片mime
+     */
+    public function getMime()
+    {
+		return $this->info['mime'];
+    }
+	
+    /*
+     * 获取图片宽度
+     */
+    public function getWidth()
+    {
+		return $this->info['width'];
+    }
+	
+    /*
+     * 获取图片高度
+     */
+    public function getHeight()
+    {
+		return $this->info['height'];
+    }
+	
+    /*
+     * 获取路径
+     */
+    public function getPath()
+    {
+		return $this->info['path'] ?? null;
+    }
+	
+    /*
+     * 获取文件名
+     */
+    public function getName()
+    {
+		if (isset($this->info['name'])) {
+			return $this->info['name'];
+		} elseif (isset($this->info['path'])) {
+			return pathinfo($this->info['path'], PATHINFO_FILENAME);
+		}
+    }
+	
+    /*
+     * 获取带后缀文件名
+     */
+    public function getFileName()
+    {
+		if ($name = $this->getName()) {
+			return "$name.".$this->info['type'];
+		}
+    }
+	
+    /*
+     * 设置图片类型
+     */
+    public function setType($type)
+    {
+		$this->info['type'] = $type;
+		$this->info['mime'] = "image/$type";
+		return $this;
+    }
+	
+    /*
+     * 设置文件名
+     */
+    public function setName($name = null, $type = null)
+    {
+		$this->info['name'] = $name ?? md5(uniqid());
+		if (isset($type)) {
+			$this->setType($type);
+		}
+		return $this;
     }
     
     /*
@@ -214,26 +290,12 @@ class Image
     }
     
     /*
-     * 保存
-     */
-    public function save($path = null, $type = null, array $options = null)
-    {
-        if ($path == null) {
-            if (empty($this->info['path'])) {
-                throw \InvalidArgumentException('argument path not is null');
-            }
-            $path = $this->info['path'];
-        }
-        return $this->imageFunc($type)($this->image, $path, ...$this->build($options));
-    }
-    
-    /*
      * 数据
      */
-    public function buffer($type = null, array $options = null)
+    public function buffer(array $options = null)
     {
         ob_start();
-        $ret = $this->imageFunc($type)($this->image, null, ...$this->build($options));
+        $ret = $this->create(null, $options);
         $data = ob_get_contents();
         ob_end_clean();
         return $ret === false ? false : $data;
@@ -242,24 +304,76 @@ class Image
     /*
      * 输出
      */
-    public function output($type = null, array $options = null)
+    public function output(array $options = null)
     {
-        if ($data = $this->buffer($type, $options)) {
+        if ($data = $this->buffer($options)) {
             Response::send($data, $this->info['mime']);
         }
-        throw new \Exception("Failed to output image");
+        throw new \Exception("输出图片失败");
     }
-    
+	
     /*
-     * 上传
+     * 保存
      */
-    public function uploadTo($to, $type = null, array $options = null)
+    public function save(array $options = null)
     {
-        return ($data = $this->buffer($type, $options)) && File::upload($data, $to, true);
+		if (isset($this->info['path']) && ($fn = $this->getFileName())) {
+			$path = dirname($this->info['path'])."/$fn";
+			if ($this->create($path, $options)) {
+				if ($path == $this->info['path']) {
+					return true;
+				}
+				unlink($this->info['path']);
+				$this->info['path'] = $path;
+				return $fn;
+			}
+		}
+		return false;
+    }
+	
+    /*
+     * 保存到目录
+     */
+    public function saveTo($dir, array $options = null)
+    {
+		if ($fn = $this->getFileName()) {
+			$dir = Str::lastPad($dir, '/');
+			if (File::makeDir($dir) && $this->create($dir.$fn, $options)) {
+				return $fn;
+			}
+		}
+		return false;
+    }
+	
+    /*
+     * 保存到文件
+     */
+    public function saveAs($path, array $options = null)
+    {
+		return File::makeDir(dirname($path)) && $this->create($path, $options);
+    }
+	
+    /*
+     * 上传到目录
+     */
+    public function uploadto($dir, array $options = null)
+    {
+		if (($fn = $this->getFileName()) && $this->uploadAs(Str::lastPad($dir, '/').$fn, $options)) {
+			return $fn;
+		}
+		return false;
+    }
+	
+    /*
+     * 上传到文件
+     */
+    public function uploadAs($path, array $options = null)
+    {
+		return ($data = $this->buffer($type, $options)) && File::upload($data, $path, true);
     }
     
     /*
-     * reset
+     * 重置图片资源
      */
     private function reset($image)
     {
@@ -292,29 +406,20 @@ class Image
     }
 
     /*
-     * image create function
+     * 生成图片
      */
-    private function imageFunc($type)
+    private function create($path, $options)
     {
-        if ($type == null) {
-            if (empty($this->info['type'])) {
-                throw \InvalidArgumentException('argument type not is null');
-            }
-            $type = $this->info['type'];
-        } elseif (empty($this->info['type']) || $type != $this->info['type']) {
-            $this->info['type'] = $type;
-            $this->info['mime'] = "image/$type";
+        if (function_exists($func = 'image'.$this->info['type'])) {
+			return $func($this->image, $path, ...$this->build($options));
         }
-        if (function_exists($func = "image$type")) {
-            return $func;
-        }
-        throw new \Exception("Failed to create image");
+        throw new \Exception("创建图片失败");
     }
     
     /*
      * parse string color
      */
-    public static function parseStringColor($color)
+    private static function parseStringColor($color)
     {
         if (strpos($color, '#') == 0 && isset($color[6])) {
             $color = array_map('hexdec', str_split(substr($color, 1), 2));

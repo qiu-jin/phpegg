@@ -25,9 +25,9 @@ class Mailgun extends Email
     /*
      * 处理请求
      */
-    public function handle($options)
+    protected function handle($options)
     {
-        $mime = Mime::build($options, $addrs);
+        $mime = Mime::make($options, $addrs);
         $options['options']['to'] = implode(',', $addrs);
         $client = Client::post(self::$endpoint."/$this->domain/messages.mime")
 						->auth('api', $this->acckey)

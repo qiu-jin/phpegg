@@ -200,7 +200,7 @@ class View
      */
     private static function complieTo($content, $file)
     {
-        if (File::makeDir(dirname($file), 0777, true)) {
+        if (File::makeDir(dirname($file))) {
             $result = self::$config['template']['engine']::complie($content);
             if (file_put_contents($file, $result, LOCK_EX)) {
                 if (OPCACHE_LOADED) {

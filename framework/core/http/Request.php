@@ -2,12 +2,14 @@
 namespace framework\core\http;
 
 use framework\core\Event;
+use framework\core\Config;
 
 class Request
 {
     private static $init;
-    private static $request;
-    
+    // 是否代理请求
+	private static $proxy;
+	
     /*
      * 初始化
      */
@@ -17,13 +19,8 @@ class Request
             return;
         }
         self::$init = true;
-        self::$request = [
-            'query'     => $_GET,
-            'param'     => $_POST,
-            'input'     => $_REQUEST,
-            'server'    => $_SERVER,
-        ];
-        Event::trigger('request', self::$request);
+		self::$proxy = Config::env('HTTP_REQUEST_PROXY');
+        Event::trigger('request');
     }
     
     /*
@@ -39,11 +36,11 @@ class Request
      */
     public static function query($name = null, $default = null)
     {
-        return $name === null ? self::$request['query'] : (self::$request['query'][$name] ?? $default);
+        return $name === null ? $_GET : ($_GET[$name] ?? $default);
     }
 	
     /*
-     * 获取GET值
+     * 获取POST值
      */
     public static function post($name = null, $default = null)
     {
@@ -55,7 +52,7 @@ class Request
      */
     public static function param($name = null, $default = null)
     {
-        return $name === null ? self::$request['param'] : (self::$request['param'][$name] ?? $default);
+        return $name === null ? $_POST : ($_POST[$name] ?? $default);
     }
     
     /*
@@ -63,9 +60,25 @@ class Request
      */
     public static function input($name = null, $default = null)
     {
-        return $name === null ? self::$request['input'] : (self::$request['input'][$name] ?? $default);
+        return $name === null ? $_REQUEST : ($_REQUEST[$name] ?? $default);
     }
     
+    /*
+     * 获取SERVER值
+     */
+    public static function server($name = null, $default = null)
+    {
+        return $name === null ? $_SERVER : ($_SERVER[$name] ?? $default);
+    }
+    
+    /*
+     * 获取HEADER值
+     */
+    public static function header($name, $default = null)
+    {
+        return $_SERVER['HTTP_'.strtoupper(strtr($name, '-', '_'))] ?? $default;
+    }
+	
     /*
      * 获取COOKIE值
      */
@@ -81,13 +94,13 @@ class Request
     {
         return $name === null ? Session::all() : Session::get($name, $default);
     }
-    
+	
     /*
      * 获取FILES值
      */
-    public static function file($name = null, $default = null)
+    public static function file($name = null)
     {
-        return $name === null ? $_FILES : $_FILES[$name] ?? $default;
+        return $name === null ? $_FILES : $_FILES[$name] ?? null;
     }
     
     /*
@@ -95,23 +108,18 @@ class Request
      */
     public static function uploaded($name)
     {
-		return new Uploaded($_FILES[$name]);
-    }
-    
-    /*
-     * 获取SERVER值
-     */
-    public static function server($name = null, $default = null)
-    {
-        return $name === null ? self::$request['server'] : self::$request['server'][$name] ?? $default;
-    }
-    
-    /*
-     * 获取HEADER值
-     */
-    public static function header($name, $default = null)
-    {
-        return self::$request['server']['HTTP_'.strtoupper(strtr($name, '-', '_'))] ?? $default;
+        if (isset($_FILES[$name])) {
+            if (is_array($_FILES[$name]['name'])) {
+                $keys = array_keys($_FILES[$name]);
+                $count = count($_FILES[$name]['name']);
+                for ($i = 0; $i < $count; $i++) {
+                    $files[] = new Uploaded(array_combine($keys, array_column($_FILES[$name], $i)));
+                }
+                return $files;
+            } else {
+                return new Uploaded($_FILES[$name]);
+            }
+        }
     }
     
     /*
@@ -119,7 +127,15 @@ class Request
      */
     public static function url()
     {
-        return (self::isHttps() ? 'https' : 'http').'://'.self::host().$_SERVER['REQUEST_URI'];
+        return (self::isHttps() ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+    }
+	
+    /*
+     * 获取当前uri
+     */
+    public static function uri()
+    {
+        return $_SERVER['REQUEST_URI'];
     }
     
     /*
@@ -141,12 +157,12 @@ class Request
     /*
      * 获取ip
      */
-    public static function ip($proxy = false)
+    public static function ip()
     {
-        if (!$proxy) {
+        if (!self::$proxy) {
             return $_SERVER['REMOTE_ADDR'] ?? null;
         }
-        return $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+        return $_SERVER['HTTP_X_FORWARDED_FOR'] ?? null;
     }
     
     /*
@@ -169,19 +185,17 @@ class Request
     /*
      * 获取请求body内容
      */
-    public static function body($cache = false)
+    public static function body()
     {
-        return $cache ? (self::$request['body'] ?? self::$request['body'] = file_get_contents('php://input'))
-                      : file_get_contents('php://input');
+        return file_get_contents('php://input');
     }
     
     /*
      * 获取请求UserAgent实例
      */
-    public static function agent($cache = false)
+    public static function agent()
     {
-        return $cache ? (self::$request['agent'] ?? self::$request['agent'] = new UserAgent($_SERVER['HTTP_USER_AGENT'])
-                      : new UserAgent($_SERVER['HTTP_USER_AGENT'];
+        return new UserAgent($_SERVER['HTTP_USER_AGENT']);
     }
     
     /*
@@ -203,32 +217,12 @@ class Request
     /*
      * 是否为Https请求
      */
-    public static function isHttps($proxy = false)
+    public static function isHttps()
     {
-        if (!$proxy) {
+        if (!self::$proxy) {
             return isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) === 'on';
         }
         return isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https';
-    }
-    
-    /*
-     * 应用匿名函数处理内部数据
-     */
-    public static function apply(callable $call)
-    {
-        return $call(self::$request);
-    }
-    
-    /*
-     * 清理
-     */
-    public static function clean($name = null)
-    {
-        if ($name === null) {
-            self::$request = null;
-        } elseif (isset(self::$request[$name])) {
-            unset(self::$request[$name]);
-        }
-    }
+    }    
 }
 Request::__init();

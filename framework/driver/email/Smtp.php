@@ -16,12 +16,17 @@ class Smtp extends Email
      */
     protected function __init($config)
     {
-        if (isset($config['debug'])) {
-            $this->debug = $config['debug'];
-        }
-        $this->sock = fsockopen($config['host'], $config['port'] ?? 25, $errno, $error, $config['timeout'] ?? 15);
+        $this->sock = fsockopen(
+			$config['host'],
+			$config['port'] ?? 25,
+			$errno, $error,
+			$config['timeout'] ?? 15
+		);
         if (!is_resource($this->sock)) {
             throw new \Exception("Smtp connect error: [$errno] $error");
+        }
+        if (isset($config['debug'])) {
+            $this->debug = $config['debug'];
         }
         $this->read();
         $this->command('EHLO '.$config['host']);
@@ -36,9 +41,9 @@ class Smtp extends Email
     /*
      * 处理请求
      */
-    public function handle($options)
+    protected function handle($options)
     {
-        $mime = Mime::build($options, $addrs);
+        $mime = Mime::make($options, $addrs);
         $res = $this->command("MAIL FROM: <{$options['from'][0]}>");
         if (substr($res, 0, 3) != '250') {
             return warn($res);
@@ -69,13 +74,7 @@ class Smtp extends Email
             if (substr($str, 3, 1) == ' ') break;
         }
         $res = trim($res);
-        if ($this->debug) {
-			if ($this->debug === true) {
-				Logger::write(Logger::DEBUG, $res);
-			} else {
-				Logger::get($this->debug)->debug($res);
-			}
-        }
+        $this->debug && $this->log($res);
         return $res;
     }
     
@@ -86,6 +85,18 @@ class Smtp extends Email
     {
         fputs($this->sock, $cmd.Mime::EOL);
         return $this->read();
+    }
+	
+    /*
+     * log
+     */
+    protected function log($log)
+    {
+		if ($this->debug === true) {
+			Logger::write(Logger::DEBUG, $log);
+		} else {
+			Logger::get($this->debug)->debug($log);
+		}
     }
     
     /*

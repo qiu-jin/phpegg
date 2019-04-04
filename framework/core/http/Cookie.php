@@ -3,7 +3,6 @@ namespace framework\core\http;
 
 use framework\core\Event;
 use framework\core\Config;
-use framework\core\Container;
 
 class Cookie
 {
@@ -16,9 +15,7 @@ class Cookie
         'secure'    => false,
         'httponly'  => false
     ];
-	// 设置值
-    private static $set_cookie;
-    
+	
     /*
      * 初始化
      */
@@ -29,12 +26,9 @@ class Cookie
         }
         self::$init = true;
         if ($config = Config::read('cookie')) {
-            if (isset($config['options'])) {
-                self::$options = $config['options'] + self::$options;
-            }
+			self::$options = $config + self::$options;
         }
-		class_exists(Response::class);
-		Event::on('response', [__CLASS__, 'flush']);
+		Event::trigger('cookie');
     }
     
     /*
@@ -42,7 +36,7 @@ class Cookie
      */
     public static function all()
     {
-		return self::$_COOKIE;
+		return $_COOKIE;
     }
     
     /*
@@ -67,7 +61,7 @@ class Cookie
     public static function set($name, $value, ...$options)
     {
         $_COOKIE[$name] = $value;
-		self::$set_cookie[] = func_get_args();
+		Response::cookie($name, $value, ...$options);
     }
     
     /*
@@ -76,7 +70,7 @@ class Cookie
     public static function forever($name, $value, ...$options)
     {
         $_COOKIE[$name] = $value;
-		self::$set_cookie[] = array_merge([$name, $value, 315360000], $options);
+		Response::cookie($name, $value, 315360000, ...$options);
     }
     
     /*
@@ -85,7 +79,7 @@ class Cookie
     public static function delete($name, ...$options)
     {
         unset(self::$_COOKIE[$name]);
-		self::$set_cookie[] = array_merge([$name, null, null], $options);
+		Response::cookie($name, null, null, ...$options);
     }
     
     /*
@@ -97,8 +91,8 @@ class Cookie
         if ($value === null) { 
             $expire = time() - 3600;
         } else {
-			$lifetime = $lifetime ?? self::$options['lifetime'];
-            $expire = $lifetime ? time() + $lifetime : 0;
+			$lft = $lifetime ?? self::$options['lifetime'];
+            $expire = $lft ? time() + $lft : 0;
         }
         return setcookie(
 			$name, $value, $expire, 
@@ -107,19 +101,6 @@ class Cookie
 			$secure ?? self::$options['secure'], 
 			$httponly ?? self::$options['httponly']
 		);
-    }
-	
-    /*
-     * 刷新输出
-     */
-    public static function flush()
-    {
-		if (self::$set_cookie) {
-			foreach (self::$set_cookie as $v) {
-				self::setCookie(...$v);
-			}
-			self::$set_cookie = null;
-		}
     }
 }
 Cookie::__init();

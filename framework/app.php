@@ -10,7 +10,7 @@ abstract class App
     // 版本号
     const VERSION = '1.0.0';
     // 内核版本号
-    const YOLK_VERSION = '1.0.0';
+    const CORE_VERSION = '1.0.0';
     // 是否命令行环境
     const IS_CLI = PHP_SAPI == 'cli';
     // 应用模式
@@ -88,8 +88,8 @@ abstract class App
                 define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
             }
         }
-        if (extension_loaded('yolk')) {
-            yolk_boot(self::VERSION, self::YOLK_VERSION);
+        if (extension_loaded('eggcore')) {
+            eggcore_boot(self::VERSION, self::CORE_VERSION);
         } else {
             require FW_DIR.'common.php';
             require FW_DIR.'core/Config.php';
@@ -136,7 +136,7 @@ abstract class App
         } else{
             throw new \RuntimeException("Illegal app class: $app");
         }
-		self::$app = new $class(is_array($config) ? $config : Config::get($config));
+		self::$app = new $class(is_array($config) ? $config : Config::read($config));
         Event::trigger('start', self::$app->dispatch = self::$app->dispatch());
         if (self::$app->dispatch) {
             return self::$app;
