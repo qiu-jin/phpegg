@@ -136,7 +136,7 @@ class Uploaded
      */
     public function saveAs($path)
     {
-        return $this->is_valid && File::makeDir(dirname($path)) && move_uploaded_file($this->file['tmp_name'], $path);
+		return $this->is_valid && File::makeDir(dirname($path)) && move_uploaded_file($this->file['tmp_name'], $path);
     }
 	
     /*

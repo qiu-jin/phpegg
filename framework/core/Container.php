@@ -67,22 +67,6 @@ class Container
     }
 	
     /*
-     * 设置实例
-     */
-    public static function set($name, object $instance)
-    {
-        self::$instances[$name] = $instance;
-    }
-	
-    /*
-     * 清除实例
-     */
-    public static function clean()
-    {
-		self::$instances = null;
-    }
-	
-    /*
      * 添加规则
      */
     public static function bind($name, ...$params)
@@ -96,6 +80,22 @@ class Container
     public static function getProvider($name)
     {
 		return self::$providers[$name] ?? null;
+    }
+	
+    /*
+     * 设置实例
+     */
+    public static function setInstance($name, object $instance)
+    {
+        self::$instances[$name] = $instance;
+    }
+	
+    /*
+     * 清除实例
+     */
+    public static function clean()
+    {
+		self::$instances = null;
     }
     
     /*

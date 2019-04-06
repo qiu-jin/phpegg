@@ -130,7 +130,7 @@ class Date extends DateTime
 	 */
     public function getNumOfDays()
     {
-        return parent::format('t');
+        return (int) parent::format('t');
     }
     
 	/*
@@ -368,24 +368,25 @@ class Date extends DateTime
 		$date = $time = null;
 		foreach ($value as $k => $v) {
 			if (isset(self::$datetime_interval_format[$k])) {
-				to:
-				$i = $v.self::$datetime_interval_format[$k];
-				switch ($k) {
-					case 'year':
-					case 'month':
-					case 'week': 
-					case 'day':
-						$date .= $i;
-						break;
-					case 'hour':
-					case 'minute':
-					case 'second':
-						$time .= $i;
-						break;
-				}
+				// 
 			} elseif (isset(self::$datetime_alias[$k])) {
 				$k = self::$datetime_alias[$k];
-				goto to;
+			} else {
+				continue;
+			}
+			$i = $v.self::$datetime_interval_format[$k];
+			switch ($k) {
+				case 'year':
+				case 'month':
+				case 'week': 
+				case 'day':
+					$date .= $i;
+					break;
+				case 'hour':
+				case 'minute':
+				case 'second':
+					$time .= $i;
+					break;
 			}
 		}
 		return new DateInterval("P$date".(isset($time) ? "T$time" : ''));

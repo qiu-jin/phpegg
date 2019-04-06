@@ -203,7 +203,7 @@ class Request
      */
     public static function isPost()
     {
-        return self::method() === 'POST';
+        return self::method() == 'POST';
     }
     
     /*
@@ -211,7 +211,7 @@ class Request
      */
     public static function isAjax()
     {
-        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
     }
 
     /*
@@ -220,9 +220,9 @@ class Request
     public static function isHttps()
     {
         if (!self::$proxy) {
-            return isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) === 'on';
+            return isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on';
         }
-        return isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https';
+        return isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https';
     }    
 }
 Request::__init();

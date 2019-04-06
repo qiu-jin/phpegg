@@ -161,16 +161,14 @@ class File
         $dir = Str::lastPad($dir, '/');
         if ($open = opendir($dir)) {
             while (($item = readdir($open)) !== false) {
-                if (is_dir($file = $dir.$item)) {
-                    if ($item !== '.' && $item !== '..') {
-                        if (self::cleanDir($file, $fitler)) {
-                            rmdir($file);
-                        } else {
-                            $empty = false;
-                        }
+                if ($item !== '.' && $item !== '..' && is_dir($file = $dir.$item)) {
+                    if (self::cleanDir($file, $fitler)) {
+                        rmdir($file);
+                    } else {
+                        $empty = false;
                     }
                 } else {
-                    if ($fitler === null || !$fitler($file)) {
+                    if ($fitler === null || $fitler($file) !== true) {
                         unlink($file);
                     } else {
                         $empty = false;
