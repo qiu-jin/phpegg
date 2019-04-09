@@ -44,12 +44,11 @@ class Uploaded
      */
     public static function file($name, $check = null)
     {
-		if ($file = Request::file($name)) {
-			$uploaded = new self($file);
-			if (!$check || $uploaded->check($check)) {
-				return $uploaded;
-			}
+		$uploaded = new self(Request::file($name));
+		if ($check) {
+			$uploaded->check($check);
 		}
+		return $uploaded;
     }
     
     /*
@@ -159,30 +158,29 @@ class Uploaded
     /*
      * 检查文件
      */
-    public function check($check = true)
+    public function check($check = null)
     {
         if (!$this->is_success) {
             return false;
         }
-        if ($check === true) {
-            return $this->is_valid = true;
-        }
-		if ((isset($check['ext']) && !in_array($this->ext(), $check['ext'])) ||
-			(isset($check['type']) && !in_array($this->type(), $check['type'])) ||
-			(isset($check['mime']) && !in_array($this->mime(), $check['mime'])) ||
-			(!empty($check['image']) && !$this->image($check['image']))	
-		) {
-			return $this->is_valid = false;
-		}
-        if (isset($check['size'])) {
-            $size = $this->size();
-            if (is_array($check['size'])) {
-                if ($size < $check['size'][0] || $size > $check['size'][1]) {
-                    return $this->is_valid = false;
-                }
-            } elseif ($size > $check['size']) {
-                return $this->is_valid = false;
-            }
+        if ($check) {
+			if ((isset($check['ext']) && !in_array($this->ext(), $check['ext'])) ||
+				(isset($check['type']) && !in_array($this->type(), $check['type'])) ||
+				(isset($check['mime']) && !in_array($this->mime(), $check['mime'])) ||
+				(!empty($check['image']) && !$this->image($check['image']))	
+			) {
+				return $this->is_valid = false;
+			}
+	        if (isset($check['size'])) {
+	            $size = $this->size();
+	            if (is_array($check['size'])) {
+	                if ($size < $check['size'][0] || $size > $check['size'][1]) {
+	                    return $this->is_valid = false;
+	                }
+	            } elseif ($size > $check['size']) {
+	                return $this->is_valid = false;
+	            }
+	        }
         }
         return $this->is_valid = true;
     }

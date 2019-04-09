@@ -61,6 +61,9 @@ class Command
     // 短选项别名
     protected $short_option_alias;
     
+    /*
+     * 构造函数
+     */
     public function __construct(array $arguments = null, array $templates = null)
     {
         if (isset($this->title)) {
@@ -85,7 +88,6 @@ class Command
             $this->templates = $templates + $this->templates;
         }
     }
-    
     
     /*
      * 获取进程id
@@ -216,7 +218,7 @@ class Command
      */
     public function json($data)
     {
-        $this->line(json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), true);
+        $this->line(json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
     
     /*

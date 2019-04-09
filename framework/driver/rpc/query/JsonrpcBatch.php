@@ -50,13 +50,18 @@ class JsonrpcBatch
             $this->id = $params[0];
         } else {
             $this->ns[] = $method;
-            $this->queries[] = [
+            $data = [
                 'jsonrpc'   => Jsonrpc::VERSION,
                 'method'    => implode('.', $this->ns),
                 'params'    => $params,
-                'id'        => $this->id ?? count($this->queries)
             ];
-            $this->id = null;
+			if (isset($this->id)) {
+				$data['id'] = $this->id;
+				$this->id = null;
+			} elseif ($this->config['auto_unique_id']) {
+				$data['id'] = uniqid();
+			}
+			$this->queries[] = $data;
             $this->ns = $this->common_ns;
         }
         return $this;

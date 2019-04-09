@@ -123,11 +123,11 @@ class Request
     }
     
     /*
-     * 获取当前url
+     * 获取host
      */
-    public static function url()
+    public static function host()
     {
-        return (self::isHttps() ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+        return $_SERVER['HTTP_HOST'];
     }
 	
     /*
@@ -137,13 +137,13 @@ class Request
     {
         return $_SERVER['REQUEST_URI'];
     }
-    
+	
     /*
-     * 获取host
+     * 获取当前url
      */
-    public static function host()
+    public static function url()
     {
-        return $_SERVER['HTTP_HOST'];
+        return (self::isHttps() ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
     }
     
     /*
@@ -211,7 +211,8 @@ class Request
      */
     public static function isAjax()
     {
-        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+			   strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
     }
 
     /*

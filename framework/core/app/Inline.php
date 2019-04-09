@@ -56,26 +56,12 @@ class Inline extends App
      */
     protected function call()
     {
-        if ($this->config['enable_getter']) {
-            $call = \Closure::bind(function($__file, $_PARAMS, $__extract) {
-                if ($__extract && $_PARAMS) {
-                    extract($_PARAMS, EXTR_SKIP);
-                }
-                return require $__file;
-            }, getter($this->config['getter_providers']));
+		$params = $this->dispatch['params'] ?? null;
+        if (!$this->config['enable_getter']) {
+	        $return = __require_controller($params);
         } else {
-            $call = static function($__file, $_PARAMS, $__extract) {
-                if ($__extract && $_PARAMS) {
-                    extract($_PARAMS, EXTR_SKIP);
-                }
-                return require $__file;
-            };
+	        $return = __require_controller_with_getter($params, $this->config['getter_providers']);
         }
-        $return = $call(
-            $this->dispatch['controller_file'],
-            $this->dispatch['params'] ?? null,
-            $this->config['route_dispatch_extract_params']
-        );
         return $return === 1 && $this->config['return_1_to_null'] ? null : $return;
     }
 
@@ -84,9 +70,7 @@ class Inline extends App
      */
     protected function error($code = null, $message = null)
     {
-        if (isset(Status::CODE[$code])) {
-            Response::status($code);
-        }
+        Response::status(isset(Status::CODE[$code]) ? $code : 500);
         if (empty($this->config['enable_view'])) {
             Response::json(['error' => compact('code', 'message')]);
         } else {
@@ -130,7 +114,7 @@ class Inline extends App
      */
     protected function routeDispatch($path)
     {
-        if (!empty($routes = $this->config['route_dispatch_routes'])) {
+        if ($routes = $this->config['route_dispatch_routes']) {
             $dispatch = Dispatcher::route(
                 empty($path) ? [] : explode('/', $path),
                 is_string($routes) ? Config::read($routes) : $routes,
@@ -176,4 +160,22 @@ class Inline extends App
             return $file;
         }
     }
+}
+
+function __require_controller($_PARAMS)
+{
+	if ($_PARAMS && App::instance()->getConfig('route_dispatch_extract_params')) {
+		extract($_PARAMS, EXTR_SKIP);
+	}
+    return require App::instance()->getDispatch('controller_file');
+}
+
+function __require_controller_with_getter($_PARAMS, $getter)
+{
+    return \Closure::bind(function($_PARAMS) {
+		if ($_PARAMS && App::instance()->getConfig('route_dispatch_extract_params')) {
+			extract($_PARAMS, EXTR_SKIP);
+		}
+	    return require App::instance()->getDispatch('controller_file');
+    }, getter($getter))($_PARAMS);
 }

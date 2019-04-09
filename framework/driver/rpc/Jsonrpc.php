@@ -29,6 +29,8 @@ class Jsonrpc extends Rpc
         // 批请求call方法别名
         'batch_call_method_alias' => 'call',
         */
+        // 自动生成唯一ID
+        'auto_unique_id'   		=> true,
         // 请求内容序列化
         'requset_serialize'     => 'jsonencode',
         // 响应内容反序列化

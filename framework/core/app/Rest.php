@@ -196,7 +196,7 @@ class Rest extends App
      */
     protected function routeDispatch($path)
     {
-        if (!empty($this->config['route_dispatch_routes'])) {
+        if ($this->config['route_dispatch_routes']) {
             $routes = $this->config['route_dispatch_routes'];
             if (is_string($routes) && !($routes = Config::read($routes))) {
                 return;
@@ -219,7 +219,7 @@ class Rest extends App
                         'params'                => $dispatch[1],
                         'param_mode'            => $param_mode
                     ];
-                } elseif (isset($this->config['route_dispatch_action_routes'])) {
+                } elseif ($this->config['route_dispatch_action_routes']) {
                     if ($action_dispatch = $this->actionRouteDispatchHandler($param_mode, $class, ...$dispatch)) {
                         return $action_dispatch;
                     }
@@ -272,7 +272,7 @@ class Rest extends App
                 'param_mode'            => 0
             ];
         }
-        if (isset($this->config['route_dispatch_action_routes'])
+        if ($this->config['route_dispatch_action_routes']
             && !isset($this->dispatch['continue'])
             && ($action_route_dispatch = $this->actionRouteDispatchHandler(0, $class, $controller, $action_path))
         ) {

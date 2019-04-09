@@ -109,9 +109,7 @@ class Standard extends App
      */
     protected function error($code = null, $message = null)
     {
-        if (isset(Status::CODE[$code])) {
-            Response::status($code);
-        }
+        Response::status(isset(Status::CODE[$code]) ? $code : 500);
         if ($this->config['enable_view']) {
             Response::html(View::error($code, $message));
         } else {
@@ -153,7 +151,7 @@ class Standard extends App
                 return;
             }
         } else {
-			if (empty($path)) {
+			if (!$path) {
 	            if (!isset($this->config['default_dispatch_index'])) {
 	                return;
 	            }
@@ -223,7 +221,7 @@ class Standard extends App
      */
     protected function routeDispatch($path) 
     {
-        if (!empty($this->config['route_dispatch_routes'])) {
+        if ($this->config['route_dispatch_routes']) {
             $routes = $this->config['route_dispatch_routes'];
             if (is_string($routes) && !($routes = Config::read($routes))) {
                 return;
@@ -248,7 +246,7 @@ class Standard extends App
                         'param_mode'            => $param_mode
                     ];
                 } else {
-					if (isset($this->config['route_dispatch_action_routes'])) {
+					if ($this->config['route_dispatch_action_routes']) {
 	                    if ($action_route_dispatch = $this->actionRouteDispatchHandler($param_mode, $class, ...$dispatch)) {
 	                        return $action_route_dispatch;
 	                    }

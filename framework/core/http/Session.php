@@ -37,7 +37,7 @@ class Session
      */
     public static function start()
     {
-		return session_status() !== PHP_SESSION_ACTIVE && session_start(self::$options);
+		return session_status() != PHP_SESSION_ACTIVE && session_start(self::$options);
     }
     
     /*

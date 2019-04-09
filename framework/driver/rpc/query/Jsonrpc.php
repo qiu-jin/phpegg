@@ -57,18 +57,24 @@ class Jsonrpc
             'jsonrpc'   => Jrpc::VERSION,
             'method'    => implode('.', $this->ns),
             'params'    => $params,
-            'id'        => $this->id ?? 0
         ];
+		if (isset($this->id)) {
+			$data['id'] = $this->id;
+		} elseif ($this->config['auto_unique_id']) {
+			$data['id'] = uniqid();
+		}
         $result = $this->client->send($data);
-        if (isset($result['result'])) {
-            return $result['result'];
-        } elseif (isset($result['error'])) {
-            if (is_array($result['error'])) {
-                error($result['error']['code'].': '.$result['error']['message']);
-            } else {
-                error('-32000: '.$result['error']);
-            }
-        }
-        error('-32000: Invalid response');
+		if (isset($data['id'])) {
+	        if (isset($result['result'])) {
+	            return $result['result'];
+	        } elseif (isset($result['error'])) {
+	            if (is_array($result['error'])) {
+	                error($result['error']['code'].': '.$result['error']['message']);
+	            } else {
+	                error('-32000: '.$result['error']);
+	            }
+	        }
+	        error('-32000: Invalid response');
+		}
     }
 }

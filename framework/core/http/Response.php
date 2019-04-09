@@ -28,9 +28,7 @@ class Response
      */
     public static function status($code = 200)
     {
-		if (isset(Status::CODE[$code])) {
-			self::$response['status'] = $code;
-		}
+		self::$response['status'] = $code;
     }
     
     /*
