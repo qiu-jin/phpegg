@@ -67,7 +67,7 @@ class Router
     /*
      * 匹配单元
      */
-    private function match($rule, $step)
+    public function match($rule, $step)
     {
         $ret = [];
         // 空匹配

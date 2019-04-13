@@ -6,7 +6,6 @@ use framework\core\Loader;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\core\misc\MethodParameter;
 
 /*
  * https://github.com/google/protobuf
@@ -21,26 +20,26 @@ class Grpc extends App
         'controller_ns'         => 'controller',
         // 控制器类名后缀
         'controller_suffix'     => null,
-        // 控制器别名
-        'controller_alias'      => null,
-        // 允许调度的控制器，为空不限制
-        'dispatch_controllers'  => null,
-        // service前缀
-        'service_prefix'        => null,
-        // 服务定义文件加载规则
-        'service_load_rules'    => null,
-        // 是否启用timeout（只支持时H/分M/秒S）
-        'enable_timeout'        => false,
         /* 参数模式
          * 0 普通参数模式
          * 1 request response 参数模式（默认）
          * 2 request response 参数模式（自定义）
          */
         'param_mode'            => 0,
+        // 允许调度的控制器，为空不限制
+        'default_dispatch_controllers' => null,
+        // 控制器别名
+        'default_dispatch_controller_alias' => null,
         // 是否启用closure getter魔术方法
         'closure_enable_getter' => true,
         // Getter providers
         'closure_getter_providers' => null,
+        // 是否启用timeout（只支持时H/分M/秒S）
+        'enable_timeout'        => false,
+        // service前缀
+        'service_prefix'        => null,
+        // 服务定义文件加载规则
+        'service_load_rules'    => null,
         // 请求解压处理器
         'request_decode'        => ['gzip' => 'gzdecode'],
         // 响应压缩处理器
@@ -51,20 +50,35 @@ class Grpc extends App
         'response_message_format'   => '{service}{method}Response',
     ];
     // 自定义服务集合
-    protected $custom_services;
+    protected $custom_methods;
 	
     /*
      * 自定义服务类或实例
      */
-    public function service($name, $method, $call = null)
+    public function method($name, $method, $call = null)
     {
         if ($call !== null) {
-            $this->custom_services[$name][$method] = $call;
-        } elseif (is_array($method) && isset($this->custom_services[$name])) {
-			$this->custom_services[$name] = $method + $this->custom_services[$name];
+			$this->custom_methods['methods'][$name][$method] = $call;
+        } elseif (isset($this->custom_methods['methods'][$name])) {
+			$this->custom_methods['methods'][$name] = $method + $this->custom_methods['methods'][$name];
         } else {
-			$this->custom_services[$name] = $method;
+        	$this->custom_methods['methods'][$name] = $method;
         }
+        return $this;
+    }
+	
+    /*
+     * 自定义服务类或实例
+     */
+    public function service($name, $class = null)
+    {
+        if ($class !== null) {
+            $this->custom_methods['services'][$name] = $class;
+        } elseif (isset($this->custom_methods['services'])) {
+			$this->custom_methods['services'] = $method + $this->custom_methods['services'];
+		} else {
+			$this->custom_methods['services'] = $method;
+		}
         return $this;
     }
     
@@ -74,24 +88,16 @@ class Grpc extends App
     protected function dispatch()
     {
         if (count($arr = Request::pathArr()) !== 2) {
-            return false;
+            return;
         }
 		list($service, $method) = $arr;
         if ($this->config['service_prefix']) {
             $len = strlen($this->config['service_prefix']);
             if (strncasecmp($this->config['service_prefix'], $service, $len) !== 0) {
-                return false;
+                return;
             }
             $service = substr($service, $len + 1);
         }
-		return compact('method', 'service');
-    }
-	
-    /*
-     * 调用
-     */
-    protected function call()
-    {
         if ($this->config['enable_timeout']) {
             $this->setTimeout();
         }
@@ -100,10 +106,27 @@ class Grpc extends App
                 Loader::add($type, $rules);
             }
         }
-		if (!$call = $this->custom_methods ? $this->getCustomCall() : $this->getDefaultCall()) {
-			self::abort(404);
+		if ($this->custom_methods) {
+			$callable = $this->getCustomCall($method, $service);
+		} else {
+			$callable = $this->getDefaultCall($method, $service);
 		}
-		if ($return = $this->config['param_mode'] ? $this->callWithReqResParams($call) : $this->callWithParams($call)) {
+		if ($callable) {
+			return $this->dispatch = compact('method', 'service', 'callable');
+		}
+    }
+	
+    /*
+     * 调用
+     */
+    protected function call()
+    {
+		if ($this->config['param_mode']) {
+			$return = $this->callWithReqResParams($this->dispatch['callable']);
+		} else {
+			$return = $this->callWithParams($this->dispatch['callable']);
+		}
+		if ($return) {
 			return $return;
 		}
         self::abort(500, 'Illegal message scheme class');
@@ -164,50 +187,51 @@ class Grpc extends App
     /*
      * 默认调用
      */
-    protected function getDefaultCall()
+    protected function getDefaultCall($method, $service)
     {
-		$action = $this->dispatch['method'];
-		$controller = strtr($this->dispatch['service'], '.', '\\');
-        if (isset($this->config['controller_alias'][$controller])) {
-            $controller = $this->config['controller_alias'][$controller];
-        } elseif (!isset($this->config['dispatch_controllers'])) {
+		$controller = strtr($service, '.', '\\');
+        if (isset($this->config['default_dispatch_controller_alias'][$controller])) {
+            $controller = $this->config['default_dispatch_controller_alias'][$controller];
+        } elseif (!isset($this->config['default_dispatch_controllers'])) {
             $check = true;
-        } elseif (!in_array($controller, $this->config['dispatch_controllers'])) {
+        } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
             return;
         }
         if (($class = $this->getControllerClass($controller, isset($check)))
-            && is_callable([$instance = new $class(), $action])
-			&& $action[0] !== '_'
+            && is_callable([$instance = new $class(), $method])
+			&& $method[0] !== '_'
         ) {
-            return [$instance, $action];
+            return [$instance, $method];
         }
     }
     
     /*
      * 自定义调用
      */
-    protected function getCustomCall()
+    protected function getCustomCall($method, $service)
     {
-		extract($this->dispatch);
-		if (isset($this->custom_services[$service])) {
-			if (is_array($this->custom_services[$service])) {
-				if (isset($this->custom_services[$service][$method])) {
-					$call = $this->custom_services[$service][$method];
-					if ($call instanceof \Closure) {
-			            if ($this->config['closure_enable_getter']) {
-			                $call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
-			            }
-						return $call;
-					}
-					throw new \RuntimeException('Invalid call type');
-				}
-			} else {
-                if (is_callable([$instance = is_object($service) ? $service : new $service, $method])
-					&& $method[0] !== '_'
-                ) {
-                    return [$instance, $method];
-                }
+		if (isset($this->custom_methods['methods'][$service][$method])) {
+			$call = $this->custom_methods['methods'][$service][$method];
+			if ($call instanceof \Closure) {
+	            if ($this->config['closure_enable_getter']) {
+	                $call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
+	            }
+				return $call;
 			}
+		}
+		if (isset($this->custom_methods['services'][$service])) {
+			$class = $this->custom_methods['services'][$service];
+			if (!is_object($class)) {
+				if ($this->config['controller_ns']) {
+					$class = $this->getControllerClass($class);
+				}
+				$class = new $class;
+			}
+            if (is_callable([$class, $method])
+				&& $method[0] !== '_'
+            ) {
+                return [$class, $method];
+            }
 		}
     }
 	
@@ -220,7 +244,7 @@ class Grpc extends App
         if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
             $request_message = new $request_class;
             $request_message->mergeFromString($this->readParams());
-            $params = MethodParameter::bindKvParams(
+            $params = $this->bindKvParams(
                 $this->getReflection($call),
                 json_decode($request_message->serializeToJsonString(), true)
             );

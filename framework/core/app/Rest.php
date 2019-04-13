@@ -9,7 +9,6 @@ use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\core\misc\MethodParameter;
 
 class Rest extends App
 {
@@ -18,34 +17,38 @@ class Rest extends App
         'dispatch_mode'     => ['default'],
         // 控制器namespace
         'controller_ns'     => 'controller',
-        // 控制器类namespace深度，0为不确定
-        'controller_depth'  => 1,
         // 控制器类名后缀
         'controller_suffix' => null,
         // 设置request参数
         'set_request_param' => false,
-        /* request参数合并到控制器方法参数
-         * 1 query参数
-         * 2 param参数
-         * 3 input参数
+        /* 请求参数合并到方法参数（param_mode为2时有效）
+         * 支持 query param input
          */
-        // 默认调度的路径转为驼峰风格
-        'default_dispatch_to_camel' => 0,
+		'bind_request_param_type' => null,
         /* 默认调度的参数模式
          * 0 无参数
          * 1 顺序参数
          * 2 键值参数
          */
         'default_dispatch_param_mode' => 1,
+        // 控制器类namespace深度，0为不确定
+        'default_dispatch_depth' => 1,
+        // 默认调度的路径转为驼峰风格
+        'default_dispatch_to_camel' => 0,
         // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
         // 默认调度下允许的HTTP方法
         'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-        /* 路由调度的参数模式
-         * 0 无参数
-         * 1 循序参数
-         * 2 键值参数
-         */
+        // 资源调度的参数模式
+        'resource_dispatch_param_mode' => 1,
+        // 资源调度默认路由表
+        'resource_dispatch_routes' => [
+            '/'     => [':GET' => 'index', ':POST' => 'create'],
+            'create'=> [':GET' => 'new'],
+            '*'     => [':GET' => 'show($1)',  ':PUT'  => 'update($1)', ':DELETE' => 'destroy($1)'],
+            '*/edit'=> [':GET' => 'edit($1)']
+        ],
+        // 路由调度的参数模式
         'route_dispatch_param_mode' => 1,
         // 路由调度的路由表，如果值为字符串则作为配置名引入
         'route_dispatch_routes' => null,
@@ -53,17 +56,6 @@ class Rest extends App
         'route_dispatch_dynamic' => false,
         // 设置动作路由属性名，为null则不启用动作路由
         'route_dispatch_action_routes' => null,
-        // 资源调度的控制器，为空不限制
-        'resource_dispatch_controllers' => null,
-        // 资源调度默认路由表
-        'resource_dispatch_routes' => [
-            '/'     => [':GET' => 'index', ':POST' => 'create'],
-            'create'=> [':GET' => 'new'],
-            '*'     => [':GET' => 'show',  ':PUT'  => 'update', ':DELETE' => 'destroy'],
-            '*/edit'=> [':GET' => 'edit']
-        ],
-        // 资源调度的控制器路径转为驼峰风格
-        'resource_dispatch_controller_to_camel' => null,
     ];
 	// HTTP请求方法
     protected $http_method;
@@ -77,7 +69,7 @@ class Rest extends App
         $this->http_method = Request::method();
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
             if ($dispatch = $this->{$mode.'Dispatch'}($path)) {
-                return $dispatch;
+                return $this->dispatch = $dispatch;
             }
         }
     }
@@ -91,17 +83,11 @@ class Rest extends App
         if ($this->config['set_request_param']) {
             $this->setRequestParam();
         }
-        if ($param_mode) {
-            $mr = new \ReflectionMethod($controller_instance, $action);
-            if ($param_mode === 1) {
-                $params = MethodParameter::bindListParams($mr, $params);
-            } elseif ($param_mode === 2) {
-                $request_param_type = [1 => 'query', 2 => 'param', 3 => 'input'];
-                if (isset($request_param_type[$this->config['bind_request_param']])) {
-                    $params = Request::{$request_param_type[$this->config['bind_request_param']]}() + $params;
-                }
-                $params = MethodParameter::bindKvParams($mr, $params);
-            }
+        if ($param_mode === 2) {
+			if (in_array($this->config['bind_request_param_type'], ['query','param', 'input'])) {
+				$params = Request::{$this->config['bind_request_param_type']}() + $params;
+			}
+            $params = $this->bindKvParams(new \ReflectionMethod($controller_instance, $action), $params);
             if ($params === false) {
                 self::abort(400, 'Missing argument');
             }
@@ -132,7 +118,7 @@ class Rest extends App
     protected function defaultDispatch($path) 
     {
         $count      = count($path);
-        $depth      = $this->config['controller_depth'];
+        $depth      = $this->config['default_dispatch_depth'];
         $param_mode = $this->config['default_dispatch_param_mode'];
         if (isset($this->dispatch['continue'])) {
             $class = $this->dispatch['class'];
@@ -192,6 +178,59 @@ class Rest extends App
     }
 	
     /*
+     * 资源调度
+     */
+    protected function resourceDispatch($path)
+    {
+        if (($depth = $this->config['default_dispatch_depth']) < 1) {
+            throw new \Exception('If use resource dispatch, must controller_depth > 0');
+        }
+        if (isset($this->dispatch['continue'])) {
+            $class = $this->dispatch['class'];
+            list($controller, $action_path) = $this->dispatch['continue'];
+        } elseif (count($path) >= $depth) {
+            if (isset($this->config['default_dispatch_to_camel'])) {
+                $path[$depth] = Str::camelCase(
+                    $path[$depth],
+                    $this->config['default_dispatch_to_camel']
+                );
+            }
+            $controller = implode('\\', array_slice($path, 0, $depth));
+            if (!isset($this->config['default_dispatch_controllers'])) {
+                $check = true;
+            } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
+                return;
+            }
+			if (!$class = $this->getControllerClass($controller, isset($check))) {
+				return;
+			}
+            $action_path = array_slice($path, $depth);
+        } else {
+            return;
+        }
+        $routes  = $this->config['resource_dispatch_routes'];
+		$param_mode = $this->config['resource_dispatch_param_mode'];
+        if (($dispatch = Dispatcher::route($action_path, $routes, $param_mode, false, $this->http_method))
+            && is_callable([$controller_instance = new $class(), $dispatch[0]])
+        ) {
+            return [
+                'controller'            => $controller,
+                'controller_instance'   => $controller_instance ?? new $class,
+                'action'                => $dispatch[0],
+                'params'                => $dispatch[1],
+                'param_mode'            => $param_mode
+            ];
+        }
+        if ($this->config['route_dispatch_action_routes']
+            && !isset($this->dispatch['continue'])
+            && ($action_route_dispatch = $this->actionRouteDispatchHandler(0, $class, $controller, $action_path))
+        ) {
+            return $action_route_dispatch;
+        }
+        $this->dispatch = ['continue' => [$controller, $action_path], 'class' => $class];
+    }
+	
+    /*
      * 路由调度
      */
     protected function routeDispatch($path)
@@ -227,58 +266,6 @@ class Rest extends App
                 $this->dispatch = ['continue' => $dispatch, 'class' => $class];
             }
         }
-    }
-    
-    /*
-     * 资源调度
-     */
-    protected function resourceDispatch($path)
-    {
-        if (($depth = $this->config['controller_depth']) < 1) {
-            throw new \Exception('If use resource dispatch, must controller_depth > 0');
-        }
-        if (isset($this->dispatch['continue'])) {
-            $class = $this->dispatch['class'];
-            list($controller, $action_path) = $this->dispatch['continue'];
-        } elseif (count($path) >= $depth) {
-            if (isset($this->config['resource_dispatch_controller_to_camel'])) {
-                $path[$depth] = Str::camelCase(
-                    $path[$depth],
-                    $this->config['resource_dispatch_controller_to_camel']
-                );
-            }
-            $controller = implode('\\', array_slice($path, 0, $depth));
-            if (!isset($this->config['resource_dispatch_controllers'])) {
-                $check = true;
-            } elseif (!in_array($controller, $this->config['resource_dispatch_controllers'])) {
-                return;
-            }
-			if (!$class = $this->getControllerClass($controller, isset($check))) {
-				return;
-			}
-            $action_path = array_slice($path, $depth);
-        } else {
-            return;
-        }
-        $routes  = $this->config['resource_dispatch_routes'];
-        if (($dispatch = Dispatcher::route($action_path, $routes, 0, false, $this->http_method))
-            && is_callable([$controller_instance = new $class(), $dispatch[0]])
-        ) {
-            return [
-                'controller'            => $controller,
-                'controller_instance'   => $controller_instance ?? new $class,
-                'action'                => $dispatch[0],
-                'params'                => $dispatch[1],
-                'param_mode'            => 0
-            ];
-        }
-        if ($this->config['route_dispatch_action_routes']
-            && !isset($this->dispatch['continue'])
-            && ($action_route_dispatch = $this->actionRouteDispatchHandler(0, $class, $controller, $action_path))
-        ) {
-            return $action_route_dispatch;
-        }
-        $this->dispatch = ['continue' => [$controller, $action_path], 'class' => $class];
     }
     
     /*

@@ -5,22 +5,9 @@ use framework\App;
 
 class Command
 {
-    // 应用实例
-    private $app;
-    // 进程ID
-    private $pid;
-    // 参数
-    private $arguments;
-    // 是否为windows系统
-    private $is_win;
-    // 是否有stty命令工具
-    private $has_stty;
-    // 是否启用readline扩展
-    private $has_readline;
-    // 选项值
-    private $options;
+	private static $init;
     // 终端输出样式
-    private $styles = [
+    private static $styles = [
         'bold'        => ['1', '22'],
         'underscore'  => ['4', '24'],
         'blink'       => ['5', '25'],
@@ -48,7 +35,7 @@ class Command
         ],
     ];
     // 输出样式模版
-    private $templates = [
+    private static $templates = [
         'error'     => ['foreground' => 'white', 'background' => 'red'],
         'info'      => ['foreground' => 'green'],
         'comment'   => ['foreground' => 'yellow'],
@@ -56,15 +43,48 @@ class Command
         'highlight' => ['foreground' => 'red'],
         'warning'   => ['foreground' => 'black', 'background' => 'yellow'],
     ];
+    // 应用实例
+    private $app;
+    // 进程ID
+    private $pid;
+    // 参数
+    private $arguments;
+    // 是否为windows系统
+    private $is_win;
+    // 是否有stty命令工具
+    private $has_stty;
+    // 是否启用readline扩展
+    private $has_readline;
+    // 选项值
+    private $options;
     // 进程标题
     protected $title;
     // 短选项别名
     protected $short_option_alias;
+	
+    /*
+     * 初始化
+     */
+    public static function __init()
+    {
+        if (self::$init) {
+            return;
+        }
+        self::$init = true;
+        if ($config = Config::read('command')) {
+			if (isset($config['styles'])) {
+				self::$styles = $config['styles'] + self::$styles;
+			}
+			if (isset($config['templates'])) {
+				self::$templates = $config['templates'] + self::$templates;
+			}
+        }
+    }
     
     /*
      * 构造函数
      */
-    public function __construct(array $arguments = null, array $templates = null)
+    public function __construct(array $arguments = null)
     {
         if (isset($this->title)) {
             $this->setTitle($this->title);
@@ -83,9 +103,6 @@ class Command
                 }
                 $this->options += $this->arguments['short_options'];
             }
-        }
-        if ($templates) {
-            $this->templates = $templates + $this->templates;
         }
     }
     
@@ -368,12 +385,12 @@ class Command
     {
         foreach ($style as $k => $v) {
             if ($k === 'foreground' || $k === 'background') {
-                if (isset($this->styles[$k][$v])) {
-                    list($start[], $end[]) = $this->styles[$k][$v];
+                if (isset(self::$styles[$k][$v])) {
+                    list($start[], $end[]) = self::$styles[$k][$v];
                 }
-            } elseif (isset($this->styles[$k])) {
-                if ($this->styles[$k]) {
-                    list($start[], $end[]) = $this->styles[$k];
+            } elseif (isset(self::$styles[$k])) {
+                if (self::$styles[$k]) {
+                    list($start[], $end[]) = self::$styles[$k];
                 }
             }
         }
@@ -388,7 +405,7 @@ class Command
      */
     protected function formatTemplate($text)
     {
-        $regex = implode('|', array_keys($this->templates));
+        $regex = implode('|', array_keys(self::$templates));
         if (!preg_match_all("#<(($regex) | /($regex)?)>#isx", $text, $matches, PREG_OFFSET_CAPTURE)) {
             return $text;
         }
@@ -404,8 +421,8 @@ class Command
             } else {
                 if (($last = array_pop($stack)) && $last['tag'] === substr($tag, 2, -1)) {
                     $count = count($stack);
-                    if (isset($this->templates[$last['tag']])) {
-                        $part = $this->formatStyle($last['text'].$part, $this->templates[$last['tag']]);
+                    if (isset(self::$templates[$last['tag']])) {
+                        $part = $this->formatStyle($last['text'].$part, self::$templates[$last['tag']]);
                     } else {
                         $part = $last['text'].$part;
                     }
@@ -462,3 +479,4 @@ class Command
         cli_set_process_title($title);
     }
 }
+Command::__init();

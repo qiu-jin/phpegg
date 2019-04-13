@@ -46,7 +46,7 @@ class Inline extends App
         $path = trim(Request::path(), '/');
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
             if ($dispatch = $this->{$mode.'Dispatch'}($path)) {
-                return $dispatch;
+                return $this->dispatch = $dispatch;
             }
         }
     }

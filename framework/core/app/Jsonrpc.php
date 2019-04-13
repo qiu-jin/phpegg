@@ -8,7 +8,6 @@ use framework\core\Logger;
 use framework\core\Container;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\core\misc\MethodParameter;
 use framework\core\exception\JsonrpcAbortException;
 
 class Jsonrpc extends App
@@ -20,16 +19,16 @@ class Jsonrpc extends App
         'controller_ns'         => 'controller',
         // 控制器类名后缀
         'controller_suffix'     => null,
-        // 控制器别名
-        'controller_alias'      => null,
-        // 允许调度的控制器，为空不限制
-        'dispatch_controllers'  => null,
         /* 参数模式
          * 0 单参数
          * 1 顺序参数
          * 2 键值参数
          */
         'param_mode'            => 1,
+        // 允许调度的控制器，为空不限制
+        'default_dispatch_controllers' => null,
+        // 控制器别名
+        'default_dispatch_controller_alias' => null,
         // 是否启用closure getter魔术方法
         'closure_enable_getter' => true,
         // Getter providers
@@ -69,10 +68,10 @@ class Jsonrpc extends App
     {
         if ($call !== null) {
             $this->custom_methods['methods'][$method] = $call;
-        } elseif (empty($this->custom_methods['methods'])) {
-            $this->custom_methods['methods'] = $method;
+        } elseif (isset($this->custom_methods['methods'])) {
+			$this->custom_methods['methods'] = $method + $this->custom_methods['methods'];
         } else {
-            $this->custom_methods['methods'] = $method + $this->custom_methods['methods'];
+            $this->custom_methods['methods'] = $method;
         }
         return $this;
     }
@@ -84,12 +83,11 @@ class Jsonrpc extends App
     {
         if ($class !== null) {
             $this->custom_methods['services'][$name] = $class;
-        } elseif (is_array($name)) {
-            $this->custom_methods['services'] = isset($this->custom_methods['services']) 
-				                              ? $name + $this->custom_methods['services'] : $name;
-        } else {
-            $this->custom_methods['service'] = $name;
-        }
+        } elseif (isset($this->custom_methods['services'])) {
+			$this->custom_methods['services'] = $name + $this->custom_methods['services'];
+		} else {
+			$this->custom_methods['services'] = $name;
+		}
         return $this;
     }
 
@@ -111,7 +109,7 @@ class Jsonrpc extends App
                 $dispatch[] = $this->parseRequestItem($item);
             }
 			$this->is_batch_call = true;
-            return $dispatch;
+            return $this->$dispatch = $dispatch;
         }
         self::abort(-32700, 'Parse error');
     }
@@ -176,7 +174,7 @@ class Jsonrpc extends App
             if ($this->config['param_mode'] == 1) {
                 return ['result' => $call(...$params)];
             } elseif ($this->config['param_mode'] == 2) {
-                $params = MethodParameter::bindKvParams($this->getMethodReflection($method, $call), $params);
+                $params = $this->bindKvParams($this->getMethodReflection($method, $call), $params);
                 if ($params !== false) {
                     return ['result' => $call(...$params)];
                 }
@@ -199,14 +197,18 @@ class Jsonrpc extends App
                 $message = $error[1];
             }
         }
-		if (!self::isExit()) {
+		if (!App::isExit()) {
 			throw new JsonrpcAbortException($message, $code);
 		}
-        $this->respond([
-            'id'        => $this->dispatch['id'] ?? null,
-            'jsonrpc'   => self::JSONRPC,
-            'error'     => ['code'=> $code, 'message' => $message]
-        ]);
+		if (!$this->is_batch_call && !isset($this->dispatch['id'])) {
+			$this->respond();
+		} else {
+	        $this->respond([
+	            'id'        => $this->dispatch['id'] ?? null,
+	            'jsonrpc'   => self::JSONRPC,
+	            'error'     => ['code'=> $code, 'message' => $message]
+	        ]);
+		}
     }
     
     /*
@@ -224,9 +226,11 @@ class Jsonrpc extends App
     {
         $id = $item['id'] ?? null;
         if (isset($item['method'])) {
-            $method = $item['method'];
-            $params = $item['params'] ?? [];
-            return compact('id', 'method', 'params');
+			return [
+				'id' 	 => $id,
+				'method' => $item['method'],
+				'params' => $item['params'] ?? []
+			];
         }
         return ['id' => $id, 'error' => ['code' => -32600, 'message' => 'Invalid Request']];
     }
@@ -239,11 +243,11 @@ class Jsonrpc extends App
         if (count($method_array = explode('.', $method)) > 1) {
             $action = array_pop($method_array);
             $controller = implode('\\', $method_array);
-            if (($controller_instance = $this->getControllerInstance($controller))
-                && is_callable([$controller_instance, $action])
+            if (($instance = $this->getControllerInstance($controller))
+                && is_callable([$instance, $action])
 				&& $action[0] !== '_'
             ) {
-                return [$controller_instance, $action];
+                return [$instance, $action];
             }
         }
     }
@@ -262,21 +266,19 @@ class Jsonrpc extends App
 				return $call;
 			}
         } else {
-            $pos = strrpos($method, '.');
-            if ($pos !== false) {
-                $class  = substr($method, 0, $pos);
-                $method = substr($method, $pos + 1);
-                if (isset($this->custom_methods['services'][$class])
-                    && is_callable([$instance = $this->getCustomServiceInstance($class), $method])
-					&& $method[0] !== '_'
-                ) {
-                    return [$instance, $method];
-                }
-            } elseif (isset($this->custom_methods['service'])
-                && is_callable([$instance = $this->getCustomServiceInstance(), $method])
-				&& $method[0] !== '_'
+			$pos = strrpos($method, '.');
+			if ($pos === false) {
+				$class  = null;
+				$action = $method;
+			} else {
+	            $class  = substr($method, 0, $pos);
+	            $action = substr($method, $pos + 1);
+			}
+            if (isset($this->custom_methods['services'][$class])
+                && is_callable([$instance = $this->getCustomServiceInstance($class), $action])
+				&& $action[0] !== '_'
             ) {
-                return [$instance, $method];
+                return [$instance, $action];
             }
         }
     }
@@ -286,39 +288,40 @@ class Jsonrpc extends App
      */
     protected function getControllerInstance($controller)
     {
-        if ($this->is_batch_call) {
-			if (isset($this->controller_instances[$controller])) {
-				return $this->controller_instances[$controller];
-			}
-        }
-        if (isset($this->config['controller_alias'][$controller])) {
-            $controller = $this->config['controller_alias'][$controller];
-        } elseif (!isset($this->config['dispatch_controllers'])) {
+		if ($this->is_batch_call && isset($this->controller_instances[$controller])) {
+			return $this->controller_instances[$controller];
+		}
+        if (isset($this->config['default_dispatch_controller_alias'][$controller])) {
+            $controller = $this->config['default_dispatch_controller_alias'][$controller];
+        } elseif (!isset($this->config['default_dispatch_controllers'])) {
             $check = true;
-        } elseif (!in_array($controller, $this->config['dispatch_controllers'])) {
+        } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
             return;
         }
         if ($class = $this->getControllerClass($controller, isset($check))) {
-			$instance = new $class;
-			return $this->is_batch_call ? ($this->controller_instances[$controller] = $instance) : $instance;
+			if (!$this->is_batch_call) {
+				return new $class;
+			}
+			return $this->controller_instances[$controller] = new $class;
         }
     }
     
     /*
      * 生成自定义类实例
      */
-    protected function getCustomServiceInstance($name = null)
+    protected function getCustomServiceInstance($name)
     {
-        if ($name === null) {
-            if (is_object($this->custom_methods['service'])) {
-                return $this->custom_methods['service'];
-            }
-            return $this->custom_methods['service'] = instance($this->custom_methods['service']);
+		$class = $this->custom_methods['services'][$name];
+        if (is_object($class)) {
+            return $class;
         }
-        if (is_object($this->custom_methods['services'][$name])) {
-            return $this->custom_methods['services'][$name];
-        }
-        return $this->custom_methods['services'][$name] = instance($this->custom_methods['services'][$name]);
+		if ($this->config['controller_ns']) {
+			$class = $this->getControllerClass($class);
+		}
+		if (!$this->is_batch_call) {
+			return new $class;
+		}
+        return $this->custom_methods['services'][$name] = new $class;
     }
     
     /*

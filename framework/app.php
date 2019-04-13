@@ -136,12 +136,7 @@ abstract class App
         } else{
             throw new \RuntimeException("Illegal app class: $app");
         }
-		self::$app = new $class(is_array($config) ? $config : Config::read($config));
-        Event::trigger('start', self::$app->dispatch = self::$app->dispatch());
-        if (self::$app->dispatch) {
-            return self::$app;
-        }
-        self::abort(404);
+		return self::$app = new $class(is_array($config) ? $config : Config::read($config));
     }
 	
     /*
@@ -161,6 +156,9 @@ abstract class App
             throw new \RuntimeException('App is runing');
         }
         self::$runing = true;
+		if (!$this->dispatch()) {
+			return self::abort(404);
+		}
         $return = $this->call();
         self::$exit = 2;
         $handler = $return_handler ?? self::$return_handler;
@@ -252,6 +250,27 @@ abstract class App
             __include($file);
             return $class;
         }
+    }
+	
+    /*
+     * 绑定键值参数
+     */
+    protected function bindKvParams($reflection_method, $params, $default_null = false)
+    {
+        if ($reflection_method->getnumberofparameters() > 0) {
+            foreach ($reflection_method->getParameters() as $param) {
+                if (isset($params[$param->name])) {
+                    $new_params[] = $params[$param->name];
+                } elseif($param->isDefaultValueAvailable()) {
+                    $new_params[] = $param->getdefaultvalue();
+                } elseif ($default_null) {
+                    $new_params[] = null;
+                } else {
+                    return false;
+                }
+            }
+        }
+        return $new_params ?? [];
     }
 }
 App::boot();

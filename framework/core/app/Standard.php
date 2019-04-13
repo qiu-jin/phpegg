@@ -9,15 +9,12 @@ use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\core\misc\MethodParameter;
 
 class Standard extends App
 {
     protected $config = [
         // 调度模式，支持default route组合
         'dispatch_mode' => ['default'],
-        // 控制器类namespace深度，0为不确定
-        'controller_depth' => 1,
         // 控制器namespace
         'controller_ns' => 'controller',
         // 控制器类名后缀
@@ -26,20 +23,18 @@ class Standard extends App
         'enable_view' => false,
         // 视图模版路径是否转为下划线风格
         'template_path_to_snake' => false,
-        /* request参数合并到控制器方法参数
-         * 1 query参数
-         * 2 param参数
-         * 3 input参数
+        /* 请求参数合并到方法参数（param_mode为2时有效）
+         * 支持 query param input
          */
-        'bind_request_param_type' => 0,
-        // 缺少的参数设为null值
-        'missing_params_to_null' => false,
+        'bind_request_param_type' => null,
         /* 默认调度的参数模式
          * 0 无参数
          * 1 顺序参数
          * 2 键值参数
          */
         'default_dispatch_param_mode' => 1,
+        // 控制器类namespace深度，0为不确定
+        'default_dispatch_depth' => 1,
         // 默认调度的缺省调度
         'default_dispatch_index' => null,
         // 默认调度的控制器，为空不限制
@@ -48,11 +43,7 @@ class Standard extends App
         'default_dispatch_default_action' => 'index',
         // 默认调度的路径转为驼峰风格
         'default_dispatch_to_camel' => null,
-        /* 路由调度的参数模式
-         * 0 无参数
-         * 1 循序参数
-         * 2 键值参数
-         */
+        // 路由调度的参数模式
         'route_dispatch_param_mode' => 1,
         // 路由调度的路由表，如果值为字符串则作为配置名引入
         'route_dispatch_routes' => null,
@@ -74,7 +65,7 @@ class Standard extends App
         $path = Request::pathArr();
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
 			if (($dispatch = $this->{$mode.'Dispatch'}($path)) !== null) {
-				return $dispatch;
+				return $this->dispatch = $dispatch;
 			}
         }
     }
@@ -85,19 +76,12 @@ class Standard extends App
     protected function call()
     {
         extract($this->dispatch);
-        if ($param_mode) {
-            $mr = $this->method_reflection ?? new \ReflectionMethod($controller_instance, $action);
-            $to_null = $this->config['missing_params_to_null'];
-            if ($param_mode === 1) {
-                $params = MethodParameter::bindListParams($mr, $params, $to_null);
-            } elseif ($param_mode === 2) {
-                $request_param_type = [1 => 'query', 2 => 'param', 3 => 'input'];
-                if (isset($request_param_type[$this->config['bind_request_param']])) {
-                    $params = Request::{$request_param_type[$this->config['bind_request_param']]}() + $params;
-                }
-                $params = MethodParameter::bindKvParams($mr, $params, $to_null);
-            }
-            if ($params === false) {
+		if ($param_mode === 2) {
+			if (in_array($this->config['bind_request_param_type'], ['query','param', 'input'])) {
+				$params = Request::{$this->config['bind_request_param_type']}() + $params;
+			}
+			$mr = $this->method_reflection ?? new \ReflectionMethod($controller_instance, $action);
+            if (($params = $this->bindKvParams($mr, $params)) === false) {
                 self::abort(400, 'Missing argument');
             }
         }
@@ -135,7 +119,7 @@ class Standard extends App
     protected function defaultDispatch($path) 
     {
         $count      = count($path);
-        $depth      = $this->config['controller_depth'];
+        $depth      = $this->config['default_dispatch_depth'];
         $param_mode = $this->config['default_dispatch_param_mode'];
         if (isset($this->dispatch['continue'])) {
             $class = $this->dispatch['class'];
@@ -226,21 +210,22 @@ class Standard extends App
             if (is_string($routes) && !($routes = Config::read($routes))) {
                 return;
             }
-            $param_mode   = $this->config['route_dispatch_param_mode'];
+            $param_mode = $this->config['route_dispatch_param_mode'];
             if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $this->config['route_dispatch_dynamic'])) {
                 $call = explode('::', $dispatch[0]);
                 $class = $this->getControllerClass($call[0], $dispatch[2]);
                 if (isset($call[1])) {
+					$controller_instance = new $class();
                     if ($dispatch[2]) {
-                        if (!is_callable([$controller_instance = new $class(), $call[1]]) || $call[1][0] === '_') {
+                        if (!is_callable([$controller_instance, $call[1]]) || $call[1][0] === '_') {
                             return false;
                         }
-                    } elseif ($this->config['route_dispatch_access_protected']) {
+                    } elseif (!is_callable([$controller_instance, $call[1]]) && $this->config['route_dispatch_access_protected']) {
                         $this->checkMethodAccessible($class, $call[1]);
                     }
                     return [
                         'controller'            => $call[0],
-                        'controller_instance'   => $controller_instance ?? new $class,
+                        'controller_instance'   => $controller_instance,
                         'action'                => $call[1],
                         'params'                => $dispatch[1],
                         'param_mode'            => $param_mode

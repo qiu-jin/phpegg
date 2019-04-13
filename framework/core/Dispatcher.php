@@ -1,6 +1,8 @@
 <?php
 namespace framework\core;
 
+use framework\util\Arr;
+
 class Dispatcher
 {
     /*
@@ -20,11 +22,9 @@ class Dispatcher
     {
         $params = $route['matches'];
         $dispatch = self::parseDispatch($route['dispatch'], $param_names);
-        if ($is_dynamic = $dynamic_dispatch && strpos($dispatch, '$') !== false) {
-            $dispatch = self::dynamicDispatch($dispatch, $params);
-            if ($params) {
-                $params = array_values($params);
-            }
+		$is_dynamic = false;
+        if ($dynamic_dispatch && strpos($dispatch, '$') !== false) {
+            $dispatch = self::dynamicDispatch($dispatch, $params, $is_dynamic);
         }
         if ($param_mode && $params && $param_names) {
             if ($param_mode === 2) {
@@ -51,14 +51,13 @@ class Dispatcher
     /*
      * 获取动态调用
      */
-    public static function dynamicDispatch($dispatch, &$params)
+    public static function dynamicDispatch($dispatch, &$params, &$is_dynamic)
     {
-        return preg_replace_callback('/\$(\d)/', function ($match) use (&$params, $dispatch) {
+        return preg_replace_callback('/\$(\d)/', function ($match) use ($dispatch, &$params, &$is_dynamic) {
             $i = $match[1] - 1;
             if (isset($params[$i])) {
-                $v = $params[$i];
-                unset($params[$i]);
-                return $v;
+				$is_dynamic = true;
+				return Arr::pull($params, $i);
             }
             throw new \Exception("Illegal dynamic Dispatch: $dispatch");
         }, $dispatch);

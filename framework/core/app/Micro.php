@@ -15,6 +15,12 @@ class Micro extends App
         'controller_ns'     => 'controller',
         // 控制器类名后缀
         'controller_suffix' => null,
+        /* 参数模式
+         * 0 单参数
+         * 1 顺序参数
+         * 2 键值参数
+         */
+        'param_mode'		=> 1,
         // 是否启用closure getter魔术方法
         'closure_enable_getter'     => true,
         // Getter providers
@@ -53,7 +59,7 @@ class Micro extends App
      */
     public function __call($method, $params)
     {
-        if(in_array($m = strtoupper($method), ['PUT', 'DELETE', 'PATCH', 'OPTIONS'])) {
+        if (in_array($m = strtoupper($method), ['PUT', 'DELETE', 'PATCH', 'OPTIONS'])) {
             return $this->method($m, ...$params);
         }
         throw new \RuntimeException("Invalid method: $method");
@@ -84,27 +90,37 @@ class Micro extends App
     }
     
     /*
-     * 自定义服务类或实例
-     */
-    public function service($name, $class = null)
-    {
-        if ($class !== null) {
-            $this->dispatch['services'][$name] = $class;
-        } elseif (is_array($name)) {
-            $this->dispatch['services'] = isset($this->dispatch['services'])
-				                        ? $name + $this->dispatch['services'] : $name;
-        } else {
-            $this->dispatch['service'] = $name;
-        }
-        return $this;
-    }
-    
-    /*
      * 调度
      */
     protected function dispatch()
     {
-        return ['routes' => []];
+        $router = new Router(Request::pathArr(), Request::method());
+        if (!$route = $router->route($this->dispatch['routes'])) {
+            return;
+        }
+        if ($route['dispatch'] instanceof \Closure) {
+            $call = $route['dispatch'];
+            if ($this->config['closure_enable_getter']) {
+                $call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
+            }
+			$this->dispatch['callable'] = $call;
+			$this->dispatch['params'] = $route['matches'];
+        } elseif (is_string($route['dispatch'])) {
+			$param_mode = $this->config['param_mode'];
+            $dispatch = Dispatcher::dispatch($route, $param_mode, $this->config['route_dispatch_dynamic']);
+            $arr = explode('::', $dispatch[0]);
+            if (isset($arr[1])) {
+				$call = [$this->getClassInstance($arr[0]), $arr[1]];
+            } else {
+                $call = $this->getClassInstance($arr[0]);
+				$invoke = true;
+            }
+            if (!$dispatch[2] || (is_callable($call) && (isset($invoke) || $call[1][0] !== '_'))) {
+				$params = $param_mode == 2 ? $this->bindKvParams($dispatch[1]) : $dispatch[1];
+				$this->dispatch['callable'] = $call;
+				$this->dispatch['params'] = $params;
+            }
+        }
     }
     
     /*
@@ -112,32 +128,7 @@ class Micro extends App
      */
     protected function call()
     {
-        $router = new Router(Request::pathArr(), Request::method());
-        if (!$route = $router->route($this->dispatch['routes'])) {
-            self::abort(404);
-        }
-        if ($route['dispatch'] instanceof \Closure) {
-            $call = $route['dispatch'];
-            if ($this->config['closure_enable_getter']) {
-                $call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
-            }
-           return $call(...$route['matches']);
-        } elseif (is_string($route['dispatch'])) {
-            $dispatch = Dispatcher::dispatch($route, 1, $this->config['route_dispatch_dynamic']);
-            $arr = explode('::', $dispatch[0]);
-            if (isset($arr[1])) {
-                $call = [$this->getControllerInstance($arr[0], $dispatch[2]), $arr[1]];
-            } elseif (isset($this->dispatch['service'])) {
-                $call = [$this->getClassInstance($this->dispatch['service']), $arr[0]];
-            } else {
-                $call = $this->getControllerInstance($arr[0], $dispatch[2]);
-            }
-            if (!$dispatch[2] || (is_callable($call) && (is_object($call) || $call[1][0] !== '_'))) {
-                return $call(...$dispatch[1]);
-            }
-            self::abort(404);
-        }
-        throw new \RuntimeException('Invalid route call type');
+		return $this->dispatch['callable'](...$this->dispatch['params']);
     }
     
     /*
@@ -156,26 +147,18 @@ class Micro extends App
     {
         Response::json($return);
     }
-    
+	
     /*
-     * 获取定义类实例
+     * 获取类实例
      */
     protected function getClassInstance($class)
     {
-        return is_object($class) ? $class : new $class;
-    }
-	
-    /*
-     * 获取控制器实例
-     */
-    protected function getControllerInstance($name, $is_dynamic)
-    {
-        if ($classes = ($this->dispatch['services'] ?? null)) {
-            if (isset($classes[$name])) {
-                return $this->getClassInstance($classes[$name]);
-            }
-        } elseif ($class = $this->getControllerClass($name, $is_dynamic)) {
-            return new $class;
-        }
+		if (is_object($class)) {
+			return $class;
+		}
+		if ($this->config['controller_ns']) {
+			$class = $this->getControllerClass($class);
+		}
+		return new $class;
     }
 }
