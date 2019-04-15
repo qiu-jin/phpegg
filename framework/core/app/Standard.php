@@ -220,8 +220,8 @@ class Standard extends App
                         if (!is_callable([$controller_instance, $call[1]]) || $call[1][0] === '_') {
                             return false;
                         }
-                    } elseif (!is_callable([$controller_instance, $call[1]]) && $this->config['route_dispatch_access_protected']) {
-                        $this->checkMethodAccessible($class, $call[1]);
+                    } elseif ($this->config['route_dispatch_access_protected']) {
+                        $this->checkMethodAccessible($controller_instance, $call[1]);
                     }
                     return [
                         'controller'            => $call[0],
@@ -258,7 +258,7 @@ class Standard extends App
                     return;
                 }
             } elseif ($this->config['route_dispatch_access_protected']) {
-                $this->checkMethodAccessible($class, $dispatch[0]);
+                $this->checkMethodAccessible($controller_instance, $dispatch[0]);
             }
             return [
                 'controller'            => $controller,
@@ -301,15 +301,13 @@ class Standard extends App
     /*
      * 检查控制器方法访问权限
      */
-    protected function checkMethodAccessible($controller, $action)
+    protected function checkMethodAccessible($instance, $action)
     {
-        $this->method_reflection = new \ReflectionMethod($controller, $action);
-        if (!$this->method_reflection->isPublic()) {
+		if (!is_callable([$instance, $action])) {
+			$this->method_reflection = new \ReflectionMethod($instance, $action);
             if ($this->method_reflection->isProtected()) {
                 $this->method_reflection->setAccessible(true);
-            } else {
-                throw new \Exception("Route action $action() not exists");
             }
-        }
+		}
     }
 }

@@ -13,11 +13,11 @@ class Cli extends App
         // 控制器类名后缀
         'controller_suffix' => null,
         // 默认调用的方法，空则调用__invoke
-        'controller_default_call_method' => null,
+        'default_method' => null,
         // 匿名函数是否启用Getter魔术方法
         'closure_enable_getter' => true,
         // Getter providers
-        'closure_getter_providers'  => null,
+        'closure_getter_providers' => null,
     ];
     // 核心错误
     protected $core_errors = [
@@ -57,14 +57,14 @@ class Cli extends App
         }	
 		$arguments = $this->parseArguments();
 		if ($this->custom_methods) {
-			$call = $this->getCustomCall($arguments);
+			$call = $this->customDispatch($arguments);
 		} else {
-			$call = $this->getDefaultCall($arguments);
+			$call = $this->defaultDispatch($arguments);
 		}
 		if ($call) {
-			$this->dispatch = [
-				'callable'	=> $call,
-				'params'	=> $arguments['params'] ?? [],
+			return $this->dispatch = [
+				'call' => $call,
+				'params' => $arguments['params'] ?? [],
 			];
 		}
     }
@@ -74,13 +74,13 @@ class Cli extends App
      */
     protected function call()
     {
-		return $this->dispatch['callable'](...$this->dispatch['params']);
+		return $this->dispatch['call'](...$this->dispatch['params']);
     }
 	
     /*
-     * 默认调用
+     * 默认调度
      */
-    protected function getDefaultCall(&$arguments)
+    protected function defaultDispatch($arguments)
     {
 		if (empty($arguments['params'])) {
 			return;
@@ -88,17 +88,17 @@ class Cli extends App
 		$controller = strtr(array_shift($arguments['params']), ':', '\\');
 		if ($class = $this->getControllerClass($controller)) {
 			$call = new $class($arguments);
-            if ($this->config['controller_default_call_method']) {
-                $call = [$call, $this->config['controller_default_call_method']];
+            if ($this->config['default_method']) {
+                $call = [$call, $this->config['default_method']];
             }
 			return $call;
 		}
     }
     
     /*
-     * 自定义调用
+     * 自定义调度
      */
-    protected function getCustomCall(&$arguments)
+    protected function customDispatch(&$arguments)
     {
 		if (isset($this->custom_methods['command'])) {
 			$call = $this->custom_methods['command'];
@@ -133,8 +133,8 @@ class Cli extends App
 				$call = $this->getControllerClass($call);
 			}
             $call = new $call($arguments);
-            if ($this->config['controller_default_call_method']) {
-                $call = [$call, $this->config['controller_default_call_method']];
+            if ($this->config['default_method']) {
+                $call = [$call, $this->config['default_method']];
             }
 			return $call;
         }

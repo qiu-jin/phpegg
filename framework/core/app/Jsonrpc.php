@@ -100,7 +100,7 @@ class Jsonrpc extends App
         if ($body && $data = ($this->config['request_unserialize'])($body)) {
             $limit = $this->config['batch_call_limit'];
             if ($limit == 1 || Arr::isAssoc($data)) {
-                return $this->parseRequestItem($data);
+                return $this->$dispatch = $this->parseRequestItem($data);
             }
             if ($limit !== 0 && count($data) > $limit) {
                 self::abort(-32001, "Than batch limit $limit");
@@ -111,7 +111,6 @@ class Jsonrpc extends App
 			$this->is_batch_call = true;
             return $this->$dispatch = $dispatch;
         }
-        self::abort(-32700, 'Parse error');
     }
     
     /*

@@ -103,8 +103,9 @@ class Micro extends App
             if ($this->config['closure_enable_getter']) {
                 $call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
             }
-			$this->dispatch['callable'] = $call;
+			$this->dispatch['call'] = $call;
 			$this->dispatch['params'] = $route['matches'];
+			return true;
         } elseif (is_string($route['dispatch'])) {
 			$param_mode = $this->config['param_mode'];
             $dispatch = Dispatcher::dispatch($route, $param_mode, $this->config['route_dispatch_dynamic']);
@@ -117,8 +118,9 @@ class Micro extends App
             }
             if (!$dispatch[2] || (is_callable($call) && (isset($invoke) || $call[1][0] !== '_'))) {
 				$params = $param_mode == 2 ? $this->bindKvParams($dispatch[1]) : $dispatch[1];
-				$this->dispatch['callable'] = $call;
+				$this->dispatch['call'] = $call;
 				$this->dispatch['params'] = $params;
+				return true;
             }
         }
     }
@@ -128,7 +130,7 @@ class Micro extends App
      */
     protected function call()
     {
-		return $this->dispatch['callable'](...$this->dispatch['params']);
+		return $this->dispatch['call'](...$this->dispatch['params']);
     }
     
     /*

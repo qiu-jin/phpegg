@@ -34,12 +34,10 @@ class Grpc extends App
         'closure_enable_getter' => true,
         // Getter providers
         'closure_getter_providers' => null,
-        // 是否启用timeout（只支持时H/分M/秒S）
-        'enable_timeout'        => false,
         // service前缀
         'service_prefix'        => null,
         // 服务定义文件加载规则
-        'service_load_rules'    => null,
+        'service_loader_rules'	=> null,
         // 请求解压处理器
         'request_decode'        => ['gzip' => 'gzdecode'],
         // 响应压缩处理器
@@ -98,21 +96,18 @@ class Grpc extends App
             }
             $service = substr($service, $len + 1);
         }
-        if ($this->config['enable_timeout']) {
-            $this->setTimeout();
-        }
-        if (isset($this->config['service_load_rules'])) {
-            foreach ($this->config['service_load_rules'] as $type => $rules) {
+        if ($this->config['service_loader_rules']) {
+            foreach ($this->config['service_loader_rules'] as $type => $rules) {
                 Loader::add($type, $rules);
             }
         }
 		if ($this->custom_methods) {
-			$callable = $this->getCustomCall($method, $service);
+			$call = $this->customDispatch($method, $service);
 		} else {
-			$callable = $this->getDefaultCall($method, $service);
+			$call = $this->defaultDispatch($method, $service);
 		}
-		if ($callable) {
-			return $this->dispatch = compact('method', 'service', 'callable');
+		if ($call) {
+			return $this->dispatch = compact('method', 'service', 'call');
 		}
     }
 	
@@ -122,9 +117,9 @@ class Grpc extends App
     protected function call()
     {
 		if ($this->config['param_mode']) {
-			$return = $this->callWithReqResParams($this->dispatch['callable']);
+			$return = $this->callWithReqResParams($this->dispatch['call']);
 		} else {
-			$return = $this->callWithParams($this->dispatch['callable']);
+			$return = $this->callWithParams($this->dispatch['call']);
 		}
 		if ($return) {
 			return $return;
@@ -187,7 +182,7 @@ class Grpc extends App
     /*
      * 默认调用
      */
-    protected function getDefaultCall($method, $service)
+    protected function customDispatch($method, $service)
     {
 		$controller = strtr($service, '.', '\\');
         if (isset($this->config['default_dispatch_controller_alias'][$controller])) {
@@ -208,7 +203,7 @@ class Grpc extends App
     /*
      * 自定义调用
      */
-    protected function getCustomCall($method, $service)
+    protected function defaultDispatch($method, $service)
     {
 		if (isset($this->custom_methods['methods'][$service][$method])) {
 			$call = $this->custom_methods['methods'][$service][$method];
@@ -218,8 +213,7 @@ class Grpc extends App
 	            }
 				return $call;
 			}
-		}
-		if (isset($this->custom_methods['services'][$service])) {
+		} elseif (isset($this->custom_methods['services'][$service])) {
 			$class = $this->custom_methods['services'][$service];
 			if (!is_object($class)) {
 				if ($this->config['controller_ns']) {
@@ -276,28 +270,6 @@ class Grpc extends App
             $request_message->mergeFromString($this->readParams());
             $call($request_message, $response_message = new $response_class);
             return $response_message;
-        }
-    }
-    
-    /*
-     * 设置请求超时
-     */
-    protected function setTimeout()
-    {
-        if (($timeout = Request::header('grpc-timeout'))
-            && ($num = (int) substr($timeout, 0, -1)) > 0
-        ) {
-            switch (substr($timeout, -1)) {
-                case 'S':
-                    set_time_limit($num);
-                    break;
-                case 'M':
-                    set_time_limit($num * 60);
-                    break;
-                case 'H':
-                    set_time_limit($num * 3600);
-                    break;
-            }
         }
     }
     

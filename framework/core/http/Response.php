@@ -97,7 +97,11 @@ class Response
      */
     public static function file($path, $type = null)
     {
-		self::send(file_get_contents($path), $type ?? File::mime($path));
+		self::$response['body'] = null;
+		self::$response['headers']['Content-Type'] = $type ?? File::mime($path);
+		self::flush();
+		readfile($path);
+		App::exit();
     }
     
     /*
