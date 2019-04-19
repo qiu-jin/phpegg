@@ -139,7 +139,8 @@ class Standard extends App
 	            if (!isset($this->config['default_dispatch_index'])) {
 	                return;
 	            }
-	            list($controller, $action) = explode('::', $this->config['default_dispatch_index']);
+				$index = $this->config['default_dispatch_index'];
+	            list($controller, $action) = explode('::', Dispatcher::parseDispatch($index));
 	        } else {
 	            if ($depth > 0) {
 	                if ($count >= $depth) {

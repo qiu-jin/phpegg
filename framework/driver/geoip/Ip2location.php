@@ -10,7 +10,7 @@ class Ip2location extends Geoip
 {
     // 数据库实例
     protected $db;
-    // 数据表名 ip2location
+    // 数据表名
     protected $table = 'ip2location';
     /*
      * 数据表字段名

@@ -3,6 +3,7 @@ namespace framework\core\app;
 
 use framework\App;
 use framework\core\Loader;
+use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
 use framework\core\http\Response;
@@ -30,9 +31,9 @@ class Grpc extends App
         'default_dispatch_controllers' => null,
         // 控制器别名
         'default_dispatch_controller_alias' => null,
-        // 是否启用closure getter魔术方法
-        'closure_enable_getter' => true,
-        // Getter providers
+        // 闭包绑定的类（为true时绑定getter匿名类）
+        'closure_bind_class' => true,
+        // Getter providers（绑定getter匿名类时有效）
         'closure_getter_providers' => null,
         // service前缀
         'service_prefix'        => null,
@@ -158,31 +159,9 @@ class Grpc extends App
     }
     
     /*
-     * 读取请求参数
-     */
-    protected function readParams()
-    {
-        if (($body = Request::body()) && strlen($body) > 5) {
-            extract(unpack('Cencode/Nzise/a*data', $body));
-            if ($zise === strlen($data)) {
-                if ($encode === 1) {
-                    if (($grpc_encoding = strtolower(Request::header('grpc-encoding')))
-                        && isset($this->config['request_decode'][$grpc_encoding])
-                    ) {
-                        return ($this->config['request_decode'][$grpc_encoding])($data);
-                    }
-                    self::abort(400, 'Invalid params grpc encoding');
-                }
-                return $data;
-            }
-        }
-        self::abort(400, 'Invalid params');
-    }
-    
-    /*
      * 默认调用
      */
-    protected function customDispatch($method, $service)
+    protected function defaultDispatch($method, $service)
     {
 		$controller = strtr($service, '.', '\\');
         if (isset($this->config['default_dispatch_controller_alias'][$controller])) {
@@ -203,27 +182,34 @@ class Grpc extends App
     /*
      * 自定义调用
      */
-    protected function defaultDispatch($method, $service)
+    protected function customDispatch($method, $service)
     {
 		if (isset($this->custom_methods['methods'][$service][$method])) {
 			$call = $this->custom_methods['methods'][$service][$method];
 			if ($call instanceof \Closure) {
-	            if ($this->config['closure_enable_getter']) {
-	                $call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
+	            if ($class = $this->config['closure_bind_class']) {
+					if ($class === true) {
+						$call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
+					} else {
+						$call = \Closure::bind($call, new $class, $class);
+					}
 	            }
 				return $call;
+			} else {
+				list($class, $action) = explode('::', Dispatcher::parseDispatch($call));
+				if ($this->config['controller_ns']) {
+					$class = $this->getControllerClass($class);
+				}
+				return [new $class, $action];
 			}
 		} elseif (isset($this->custom_methods['services'][$service])) {
-			$class = $this->custom_methods['services'][$service];
-			if (!is_object($class)) {
+			if (!is_object($class = $this->custom_methods['services'][$service])) {
 				if ($this->config['controller_ns']) {
 					$class = $this->getControllerClass($class);
 				}
 				$class = new $class;
 			}
-            if (is_callable([$class, $method])
-				&& $method[0] !== '_'
-            ) {
+            if (is_callable([$class, $method]) && $method[0] !== '_') {
                 return [$class, $method];
             }
 		}
@@ -271,6 +257,28 @@ class Grpc extends App
             $call($request_message, $response_message = new $response_class);
             return $response_message;
         }
+    }
+	
+    /*
+     * 读取请求参数
+     */
+    protected function readParams()
+    {
+        if (($body = Request::body()) && strlen($body) > 5) {
+            extract(unpack('Cencode/Nzise/a*data', $body));
+            if ($zise === strlen($data)) {
+                if ($encode === 1) {
+                    if (($grpc_encoding = strtolower(Request::header('grpc-encoding')))
+                        && isset($this->config['request_decode'][$grpc_encoding])
+                    ) {
+                        return ($this->config['request_decode'][$grpc_encoding])($data);
+                    }
+                    self::abort(400, 'Invalid params grpc encoding');
+                }
+                return $data;
+            }
+        }
+        self::abort(400, 'Invalid params');
     }
     
     /*

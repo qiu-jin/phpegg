@@ -47,7 +47,12 @@ class Container
 				self::$providers = $config['providers'] + self::$providers;
 	        }
 			if (!empty($config['exit_clean'])) {
-				Event::on('exit', [__CLASS__, 'clean']);
+				Event::on('exit', function () {
+					Container::clean();
+					if (class_exists(Facade::class, false)) {
+						Facade::clean();
+					}
+				});
 			}
 		}
     }
@@ -64,6 +69,7 @@ class Container
 		if (isset(self::$providers[$params[0]])) {
 			return self::$instances[$name] = self::makeProvider($params);
 		}
+		throw new \Exception("容器提供者不存在: $name");
     }
 	
     /*
@@ -103,13 +109,14 @@ class Container
      */
     public static function driver($type, $name = null)
     {
-        if (isset(self::$providers[$type])) {
+        if (isset(self::$providers[$type]) && self::$providers[$type][0] === self::T_DRIVER) {
             if (is_array($name)) {
                 return self::makeDriverInstance($type, $name);
             }
             $key = $name ? "$type.$name" : $type;
             return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($type, $name);
         }
+		throw new \Exception("驱动不存在或非驱动类型: $type");
     }
 	
     /*
@@ -141,7 +148,7 @@ class Container
 				}
 				break;
 			case self::T_MODEL:
-				if ($c - 1 == ($v[1] ?? 1)) {
+				if ($c == ($v[1] ?? 1) + 1) {
 					$params[0] = $v[2] ?? "app\\$params[0]";
 					return instance(implode('\\', $params));
 				}
@@ -164,7 +171,7 @@ class Container
 			default:
 			    throw new \Exception("无效的Provider类型: $v[0]");
 		}
-		throw new \Exception("生成Provider实例失败: $params[0]");
+		throw new \Exception('生成Provider实例失败: '.implode('.', $params));
     }
 	
     /*

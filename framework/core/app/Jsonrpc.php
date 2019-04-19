@@ -6,6 +6,7 @@ use framework\util\Arr;
 use framework\core\Event;
 use framework\core\Logger;
 use framework\core\Container;
+use framework\core\Dispatcher;
 use framework\core\http\Request;
 use framework\core\http\Response;
 use framework\core\exception\JsonrpcAbortException;
@@ -29,9 +30,9 @@ class Jsonrpc extends App
         'default_dispatch_controllers' => null,
         // 控制器别名
         'default_dispatch_controller_alias' => null,
-        // 是否启用closure getter魔术方法
-        'closure_enable_getter' => true,
-        // Getter providers
+        // 闭包绑定的类（为true时绑定getter匿名类）
+        'closure_bind_class' => true,
+        // Getter providers（绑定getter匿名类时有效）
         'closure_getter_providers' => null,
         // 最大批调用数，1不启用批调用，0无限批调用数
         'batch_call_limit'		=> 1,
@@ -96,20 +97,21 @@ class Jsonrpc extends App
      */
     protected function dispatch()
     {
-        $body = Request::body();
-        if ($body && $data = ($this->config['request_unserialize'])($body)) {
+        if (($body = Request::body())
+			&& ($data = $this->config['request_unserialize']($body))
+		) {
             $limit = $this->config['batch_call_limit'];
             if ($limit == 1 || Arr::isAssoc($data)) {
-                return $this->$dispatch = $this->parseRequestItem($data);
+                return $this->dispatch = $this->dispatchItem($data);
             }
             if ($limit !== 0 && count($data) > $limit) {
                 self::abort(-32001, "Than batch limit $limit");
             }
-            foreach ($data as $item) {
-                $dispatch[] = $this->parseRequestItem($item);
-            }
 			$this->is_batch_call = true;
-            return $this->$dispatch = $dispatch;
+            foreach ($data as $item) {
+                $this->dispatch[] = $this->dispatchItem($item);
+            }
+            return true;
         }
     }
     
@@ -118,70 +120,16 @@ class Jsonrpc extends App
      */
     protected function call()
     {
-		if ($this->is_batch_call) {
-	        foreach ($this->dispatch as $dispatch) {
-				$return = $this->callItem($dispatch);
-				if (isset($dispatch['id'])) {
-					$batch_return[] = $return;
-				}
-	        }
-			return $batch_return ?? null;
-		} else {
+		if (!$this->is_batch_call) {
 			return $this->callItem($this->dispatch);
 		}
-    }
-	
-    /*
-     * 调用单元
-     */
-    protected function callItem($dispatch)
-    {
-		if (isset($dispatch['id'])) {
-	        $return = [
-	            'id'        => $dispatch['id'],
-	            'jsonrpc'   => self::JSONRPC
-	        ];
-	        if (isset($dispatch['error'])) {
-	            $return['error'] = $dispatch['error'];
-	        } else {
-	            try {
-	                $return += $this->handle($dispatch);
-	            } catch (JsonrpcAbortException $e) {
-	                $return['error'] = [
-	                	'code' => $e->getCode(),
-						'message' => $e->getMessage()
-	                ];
-	            }
-	        }
-			return $return;
-		} else {
-            try {
-                $this->handle($dispatch);
-            } catch (JsonrpcAbortException $e) {
-				// Pass
-            }
-		}
-    }
-    
-    /*
-     * 处理
-     */
-    protected function handle($dispatch)
-    {
-        extract($dispatch);
-        if ($call = $this->custom_methods ? $this->getCustomCall($method) : $this->getDefaultCall($method)) {
-            if ($this->config['param_mode'] == 1) {
-                return ['result' => $call(...$params)];
-            } elseif ($this->config['param_mode'] == 2) {
-                $params = $this->bindKvParams($this->getMethodReflection($method, $call), $params);
-                if ($params !== false) {
-                    return ['result' => $call(...$params)];
-                }
-                return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
-            }
-            return ['result' => $call($params)];
+        foreach ($this->dispatch as $dispatch) {
+			$return = $this->callItem($dispatch);
+			if (isset($dispatch['id'])) {
+				$batch_return[] = $return;
+			}
         }
-		return ['error' => ['code'=> -32601, 'message' => 'Method not found']];
+		return $batch_return ?? null;
     }
     
     /*
@@ -217,27 +165,86 @@ class Jsonrpc extends App
     {
         Response::send(($this->config['response_serialize'])($return), $this->config['response_content_type']);
     }
+	
+    /*
+     * 调用单元
+     */
+    protected function callItem($dispatch)
+    {
+		if (isset($dispatch['id'])) {
+	        $return = [
+	            'id'		=> $dispatch['id'],
+	            'jsonrpc'   => self::JSONRPC
+	        ];
+	        if (isset($dispatch['error'])) {
+	            $return['error'] = $dispatch['error'];
+	        } else {
+	            try {
+	                $return += $this->handleCallItem($dispatch);
+	            } catch (JsonrpcAbortException $e) {
+	                $return['error'] = [
+	                	'code' => $e->getCode(),
+						'message' => $e->getMessage()
+	                ];
+	            }
+	        }
+			return $return;
+		} else {
+            try {
+                $this->handleCallItem($dispatch);
+            } catch (JsonrpcAbortException $e) {
+				// Pass
+            }
+		}
+    }
+	
+    /*
+     * 处理调用单元
+     */
+    protected function handleCallItem($dispatch)
+    {
+		extract($dispatch);
+        if ($this->config['param_mode'] == 1) {
+            return ['result' => $call(...$params)];
+        } elseif ($this->config['param_mode'] == 2) {
+            $params = $this->bindKvParams($this->getMethodReflection($method, $call), $params);
+            if ($params !== false) {
+                return ['result' => $call(...$params)];
+            }
+            return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
+        }
+        return ['result' => $call($params)];
+    }
     
     /*
-     * 解析请求信息单元
+     * 调度单元
      */
-    protected function parseRequestItem($item)
+    protected function dispatchItem($item)
     {
         $id = $item['id'] ?? null;
         if (isset($item['method'])) {
-			return [
-				'id' 	 => $id,
-				'method' => $item['method'],
-				'params' => $item['params'] ?? []
-			];
+			if ($this->custom_methods) {
+				$call = $this->customDispatch($item['method']);
+			} else {
+				$call = $this->defaultDispatch($item['method']);
+			}
+			if ($call) {
+				return [
+					'id' 	 => $id,
+					'call'	 => $call,
+					'method' => $item['method'],
+					'params' => $item['params'] ?? []
+				];
+			}
+			return ['id' => $id, 'error' => ['code'=> -32601, 'message' => 'Method not found']];
         }
         return ['id' => $id, 'error' => ['code' => -32600, 'message' => 'Invalid Request']];
     }
     
     /*
-     * 默认调用
+     * 默认调度
      */
-    protected function getDefaultCall($method)
+    protected function defaultDispatch($method)
     {
         if (count($method_array = explode('.', $method)) > 1) {
             $action = array_pop($method_array);
@@ -252,17 +259,27 @@ class Jsonrpc extends App
     }
     
     /*
-     * 自定义调用
+     * 自定义调度
      */
-    protected function getCustomCall($method)
+    protected function customDispatch($method)
     {
         if (isset($this->custom_methods['methods'][$method])) {
             $call = $this->custom_methods['methods'][$method];
 			if ($call instanceof \Closure) {
-				if ($this->config['closure_enable_getter']) {
-					$call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
-				}
+	            if ($class = $this->config['closure_bind_class']) {
+					if ($class === true) {
+						$call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
+					} else {
+						$call = \Closure::bind($call, new $class, $class);
+					}
+	            }
 				return $call;
+			} else {
+				list($class, $action) = explode('::', Dispatcher::parseDispatch($call));
+				if ($this->config['controller_ns']) {
+					$class = $this->getControllerClass($class);
+				}
+				return [new $class, $action];
 			}
         } else {
 			$pos = strrpos($method, '.');
@@ -287,7 +304,7 @@ class Jsonrpc extends App
      */
     protected function getControllerInstance($controller)
     {
-		if ($this->is_batch_call && isset($this->controller_instances[$controller])) {
+		if (isset($this->controller_instances[$controller])) {
 			return $this->controller_instances[$controller];
 		}
         if (isset($this->config['default_dispatch_controller_alias'][$controller])) {

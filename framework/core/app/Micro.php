@@ -21,20 +21,22 @@ class Micro extends App
          * 2 键值参数
          */
         'param_mode'		=> 1,
-        // 是否启用closure getter魔术方法
-        'closure_enable_getter'     => true,
-        // Getter providers
+        // 闭包绑定的类（为true时绑定getter匿名类）
+        'closure_bind_class' 		=> true,
+        // Getter providers（绑定getter匿名类时有效）
         'closure_getter_providers'  => null,
         // 是否路由动态调用
         'route_dispatch_dynamic'    => false,
     ];
+    // 路由
+    protected $routes = [];
 
     /*
      * 单个路由
      */
     public function any($role, $call)
     {
-        $this->dispatch['routes'][$role] = $call;
+        $this->routes[$role] = $call;
         return $this;
     }
     
@@ -72,10 +74,10 @@ class Micro extends App
     {
         if (is_array($method)) {
             foreach ($method as $m) {
-                $this->dispatch['routes'][$role][":$m"] = $call;
+                $this->routes[$role][":$m"] = $call;
             }
         } else {
-            $this->dispatch['routes'][$role][":$method"] = $call;
+            $this->routes[$role][":$method"] = $call;
         }
         return $this;
     }
@@ -85,7 +87,7 @@ class Micro extends App
      */
     public function route(array $roles)
     {
-        $this->dispatch['routes'] = array_replace_recursive($this->dispatch['routes'], $roles);
+        $this->routes = array_replace_recursive($this->routes, $roles);
         return $this;
     }
     
@@ -95,32 +97,35 @@ class Micro extends App
     protected function dispatch()
     {
         $router = new Router(Request::pathArr(), Request::method());
-        if (!$route = $router->route($this->dispatch['routes'])) {
+        if (!$route = $router->route($this->routes)) {
             return;
         }
         if ($route['dispatch'] instanceof \Closure) {
             $call = $route['dispatch'];
-            if ($this->config['closure_enable_getter']) {
-                $call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
+            if ($class = $this->config['closure_bind_class']) {
+				if ($class === true) {
+					$call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
+				} else {
+					$call = \Closure::bind($call, new $class, $class);
+				}
             }
-			$this->dispatch['call'] = $call;
-			$this->dispatch['params'] = $route['matches'];
-			return true;
+			return $this->dispatch = ['call' => $call, 'params' => $route['matches']];
         } elseif (is_string($route['dispatch'])) {
 			$param_mode = $this->config['param_mode'];
             $dispatch = Dispatcher::dispatch($route, $param_mode, $this->config['route_dispatch_dynamic']);
             $arr = explode('::', $dispatch[0]);
+			if ($this->config['controller_ns']) {
+				$arr[0] = $this->getControllerClass($arr[0]);
+			}
+			$call = new $arr[0];
             if (isset($arr[1])) {
-				$call = [$this->getClassInstance($arr[0]), $arr[1]];
-            } else {
-                $call = $this->getClassInstance($arr[0]);
-				$invoke = true;
+				$call = [$instance, $arr[1]];
             }
-            if (!$dispatch[2] || (is_callable($call) && (isset($invoke) || $call[1][0] !== '_'))) {
-				$params = $param_mode == 2 ? $this->bindKvParams($dispatch[1]) : $dispatch[1];
-				$this->dispatch['call'] = $call;
-				$this->dispatch['params'] = $params;
-				return true;
+            if (!$dispatch[2] || (is_callable($call) && (!isset($arr[1]) || $arr[1][0] !== '_'))) {
+				return $this->dispatch = [
+					'call' => $call, 
+					'params' => $param_mode == 2 ? $this->bindKvParams($dispatch[1]) : $dispatch[1]
+				];
             }
         }
     }
@@ -148,19 +153,5 @@ class Micro extends App
     protected function respond($return = null)
     {
         Response::json($return);
-    }
-	
-    /*
-     * 获取类实例
-     */
-    protected function getClassInstance($class)
-    {
-		if (is_object($class)) {
-			return $class;
-		}
-		if ($this->config['controller_ns']) {
-			$class = $this->getControllerClass($class);
-		}
-		return new $class;
     }
 }

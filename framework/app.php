@@ -220,17 +220,17 @@ abstract class App
     /*
      * 获取配置值
      */
-    public function getConfig($name = null, $default = null)
+    public static function getConfig($name = null, $default = null)
     {
-		return $name === null ? $this->config : ($this->config[$name] ?? $default);
+		return $name === null ? self::$app->config : (self::$app->config[$name] ?? $default);
     }
 	
     /*
      * 获取调度信息
      */
-    public function getDispatch($name = null, $default = null)
+    public static function getDispatch($name = null, $default = null)
     {
-        return $name === null ? $this->dispatch : ($this->dispatch[$name] ?? $default);
+        return $name === null ? self::$app->dispatch : (self::$app->dispatch[$name] ?? $default);
     }
     
     /*

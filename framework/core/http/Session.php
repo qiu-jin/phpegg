@@ -26,6 +26,9 @@ class Session
             if (isset($config['save_handler']) && is_array($config['save_handler'])) {
                 session_set_save_handler(instance(...Arr::pull($config, 'save_handler')));
             }
+			if (Arr::pull($config, 'exit_close')) {
+				Event::on('exit', 'session_write_close');
+			}
 			self::$options = $config;
         }
 		Event::trigger('session');

@@ -18,9 +18,9 @@ class Inline extends App
         'controller_path'   => 'controller',
         // 是否启用视图
         'enable_view'       => false,
-        // 是否启用Getter魔术方法
-        'enable_getter'     => true,
-        // Getter providers
+        // 绑定类（为true时绑定getter匿名类）
+        'bind_class'		=> true,
+        // Getter providers（getter匿名类时有效）
         'getter_providers'  => null,
         // 是否将返回值1改成null
         'return_1_to_null'  => false,
@@ -57,10 +57,12 @@ class Inline extends App
     protected function call()
     {
 		$params = $this->dispatch['params'] ?? null;
-        if (!$this->config['enable_getter']) {
-	        $return = __require_controller($params);
+		if (!$this->config['bind_class']) {
+			$return = __require_controller($params);
+		} elseif ($this->config['bind_class'] === true) {
+			$return = __require_controller_with_getter($params, $this->config['getter_providers']);
         } else {
-	        $return = __require_controller_with_getter($params, $this->config['getter_providers']);
+	        $return = __require_controller_with_class($params, $this->config['bind_class']);
         }
         return $return === 1 && $this->config['return_1_to_null'] ? null : $return;
     }
@@ -164,18 +166,28 @@ class Inline extends App
 
 function __require_controller($_PARAMS)
 {
-	if ($_PARAMS && App::instance()->getConfig('route_dispatch_extract_params')) {
+	if ($_PARAMS && App::getConfig('route_dispatch_extract_params')) {
 		extract($_PARAMS, EXTR_SKIP);
 	}
-    return require App::instance()->getDispatch('controller_file');
+    return require App::getDispatch('controller_file');
 }
 
 function __require_controller_with_getter($_PARAMS, $getter)
 {
     return \Closure::bind(function($_PARAMS) {
-		if ($_PARAMS && App::instance()->getConfig('route_dispatch_extract_params')) {
+		if ($_PARAMS && App::getConfig('route_dispatch_extract_params')) {
 			extract($_PARAMS, EXTR_SKIP);
 		}
-	    return require App::instance()->getDispatch('controller_file');
+	    return require App::getDispatch('controller_file');
     }, getter($getter))($_PARAMS);
+}
+
+function __require_controller_with_class($_PARAMS, $class)
+{
+    return \Closure::bind(function($_PARAMS) {
+		if ($_PARAMS && App::getConfig('route_dispatch_extract_params')) {
+			extract($_PARAMS, EXTR_SKIP);
+		}
+	    return require App::getDispatch('controller_file');
+    }, new $class, $class)($_PARAMS);
 }
