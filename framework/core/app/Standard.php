@@ -47,12 +47,12 @@ class Standard extends App
         'route_dispatch_param_mode' => 1,
         // 路由调度的路由表，如果值为字符串则作为配置名引入
         'route_dispatch_routes' => null,
-        // 是否路由动态调用
+        // 是否路由动态调度
         'route_dispatch_dynamic' => false,
         // 路由调度是否允许访问受保护的方法
         'route_dispatch_access_protected' => false,
-        // 设置动作路由属性名，为null则不启用动作路由
-        'route_dispatch_action_routes' => null,
+        // 设置动作调度路由属性名，为null则不启用动作路由
+        'action_dispatch_routes_property' => null,
     ];
 	// 方法反射实例
     protected $method_reflection;
@@ -196,8 +196,8 @@ class Standard extends App
                 $params = [];
             }
             return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
-        } elseif (isset($this->config['route_dispatch_action_routes']) && isset($allow_action_route)) {
-            return $this->actionRouteDispatchHandler($param_mode, $class, $controller, array_slice($path, $depth));
+        } elseif (isset($this->config['action_dispatch_routes_property']) && isset($allow_action_route)) {
+            return $this->actionRouteDispatch($param_mode, $class, $controller, array_slice($path, $depth));
         }
     }
     
@@ -222,7 +222,7 @@ class Standard extends App
                             return false;
                         }
                     } elseif ($this->config['route_dispatch_access_protected']) {
-                        $this->checkMethodAccessible($controller_instance, $call[1]);
+                        $this->setMethodAccessible($controller_instance, $call[1]);
                     }
                     return [
                         'controller'            => $call[0],
@@ -232,8 +232,8 @@ class Standard extends App
                         'param_mode'            => $param_mode
                     ];
                 } else {
-					if ($this->config['route_dispatch_action_routes']) {
-	                    if ($action_route_dispatch = $this->actionRouteDispatchHandler($param_mode, $class, ...$dispatch)) {
+					if ($this->config['action_dispatch_routes_property']) {
+	                    if ($action_route_dispatch = $this->actionRouteDispatch($param_mode, $class, ...$dispatch)) {
 	                        return $action_route_dispatch;
 	                    }
 						return false;
@@ -247,9 +247,9 @@ class Standard extends App
     /*
      * Action 路由调度
      */
-    protected function actionRouteDispatchHandler($param_mode, $class, $controller, $path)
+    protected function actionRouteDispatch($param_mode, $class, $controller, $path)
     {
-        $routes = get_class_vars($class)[$this->config['route_dispatch_action_routes']] ?? null;
+        $routes = get_class_vars($class)[$this->config['action_dispatch_routes_property']] ?? null;
         if (empty($routes)) {
             return;
         }
@@ -259,7 +259,7 @@ class Standard extends App
                     return;
                 }
             } elseif ($this->config['route_dispatch_access_protected']) {
-                $this->checkMethodAccessible($controller_instance, $dispatch[0]);
+                $this->setMethodAccessible($controller_instance, $dispatch[0]);
             }
             return [
                 'controller'            => $controller,
@@ -300,9 +300,9 @@ class Standard extends App
     }
     
     /*
-     * 检查控制器方法访问权限
+     * 设置控制器方法访问权限
      */
-    protected function checkMethodAccessible($instance, $action)
+    protected function setMethodAccessible($instance, $action)
     {
 		if (!is_callable([$instance, $action])) {
 			$this->method_reflection = new \ReflectionMethod($instance, $action);

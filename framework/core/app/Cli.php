@@ -4,6 +4,7 @@ namespace framework\core\app;
 use framework\App;
 use framework\core\Getter;
 use framework\core\Command;
+use framework\core\Dispatcher;
 
 class Cli extends App
 {
@@ -18,6 +19,10 @@ class Cli extends App
         'closure_enable_getter' => true,
         // Getter providers
         'closure_getter_providers' => null,
+        // 默认调度的控制器，为空不限制
+        'default_dispatch_controllers' => null,
+        // 默认调度的控制器别名
+        'default_dispatch_controller_alias' => null,
     ];
     // 核心错误
     protected $core_errors = [
@@ -86,7 +91,14 @@ class Cli extends App
 			return;
 		}
 		$controller = strtr(array_shift($arguments['params']), ':', '\\');
-		if ($class = $this->getControllerClass($controller)) {
+        if (isset($this->config['default_dispatch_controller_alias'][$controller])) {
+            $controller = $this->config['default_dispatch_controller_alias'][$controller];
+        } elseif (!isset($this->config['default_dispatch_controllers'])) {
+            $check = true;
+        } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
+            return;
+        }
+		if ($class = $this->getControllerClass($controller, isset($check))) {
 			$call = new $class($arguments);
             if ($this->config['default_method']) {
                 $call = [$call, $this->config['default_method']];
@@ -129,6 +141,7 @@ class Cli extends App
             }
             return \Closure::bind($call, $command, Command::class);
         } elseif (is_string($call)) {
+			$call = Dispatcher::parseDispatch($call);
 			if ($this->config['controller_ns']) {
 				$call = $this->getControllerClass($call);
 			}

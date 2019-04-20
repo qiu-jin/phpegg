@@ -54,8 +54,8 @@ class Rest extends App
         'route_dispatch_routes' => null,
         // 是否路由动态调用
         'route_dispatch_dynamic' => false,
-        // 设置动作路由属性名，为null则不启用动作路由
-        'route_dispatch_action_routes' => null,
+        // 设置动作调度路由属性名，为null则不启用动作路由
+        'action_dispatch_routes_property' => null,
     ];
 	// HTTP请求方法
     protected $http_method;
@@ -168,7 +168,7 @@ class Rest extends App
             }
             return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
         }
-        if (isset($this->config['route_dispatch_action_routes'])
+        if (isset($this->config['route_dispatch_action_routes_property'])
             && !isset($this->dispatch['continue'])
             && ($action_route_dispatch = $this->actionRouteDispatch($param_mode, $class, $controller, $params))
         ) {
@@ -221,9 +221,9 @@ class Rest extends App
                 'param_mode'            => $param_mode
             ];
         }
-        if ($this->config['route_dispatch_action_routes']
+        if ($this->config['action_dispatch_routes_property']
             && !isset($this->dispatch['continue'])
-            && ($action_route_dispatch = $this->actionRouteDispatchHandler(0, $class, $controller, $action_path))
+            && ($action_route_dispatch = $this->actionRouteDispatch(0, $class, $controller, $action_path))
         ) {
             return $action_route_dispatch;
         }
@@ -258,8 +258,8 @@ class Rest extends App
                         'params'                => $dispatch[1],
                         'param_mode'            => $param_mode
                     ];
-                } elseif ($this->config['route_dispatch_action_routes']) {
-                    if ($action_dispatch = $this->actionRouteDispatchHandler($param_mode, $class, ...$dispatch)) {
+                } elseif ($this->config['action_dispatch_routes_property']) {
+                    if ($action_dispatch = $this->actionRouteDispatch($param_mode, $class, ...$dispatch)) {
                         return $action_dispatch;
                     }
                 }
@@ -271,9 +271,9 @@ class Rest extends App
     /*
      * Action 路由调度
      */
-    protected function actionRouteDispatchHandler($param_mode, $class, $controller, $path)
+    protected function actionRouteDispatch($param_mode, $class, $controller, $path)
     {
-        $routes = get_class_vars($class)[$this->config['route_dispatch_action_routes']] ?? null;
+        $routes = get_class_vars($class)[$this->config['action_dispatch_routes_property']] ?? null;
         if (empty($routes)) {
             return;
         }

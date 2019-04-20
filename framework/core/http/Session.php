@@ -10,7 +10,7 @@ class Session
 {
     private static $init;
 	// 设置
-	private static $options = [];
+	private static $start_options = [];
 	
     /*
      * 初始化
@@ -22,17 +22,21 @@ class Session
         }
         self::$init = true;
         if ($config = Config::read('session')) {
-			$start = Arr::pull($config, 'auto_start', true);
-            if (isset($config['save_handler']) && is_array($config['save_handler'])) {
-                session_set_save_handler(instance(...Arr::pull($config, 'save_handler')));
+            if (isset($config['start_options'])) {
+                self::$start_options = $config['start_options'];
             }
-			if (Arr::pull($config, 'exit_close')) {
+            if (isset($config['save_handler'])) {
+                session_set_save_handler(instance(...$config['save_handler']));
+            }
+			if (!empty($config['exit_close'])) {
 				Event::on('exit', 'session_write_close');
 			}
-			self::$options = $config;
+			if (isset($config['auto_start']) && !$config['auto_start']) {
+				return Event::trigger('session');
+			}
         }
 		Event::trigger('session');
-		(!isset($start) || $start) && self::start();
+		self::start();
     }
 	
     /*
@@ -40,7 +44,7 @@ class Session
      */
     public static function start()
     {
-		return session_status() != PHP_SESSION_ACTIVE && session_start(self::$options);
+		return session_status() != PHP_SESSION_ACTIVE && session_start(self::$start_options);
     }
     
     /*

@@ -27,9 +27,9 @@ class Grpc extends App
          * 2 request response 参数模式（自定义）
          */
         'param_mode'            => 0,
-        // 允许调度的控制器，为空不限制
+        // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
-        // 控制器别名
+        // 默认调度的控制器别名
         'default_dispatch_controller_alias' => null,
         // 闭包绑定的类（为true时绑定getter匿名类）
         'closure_bind_class' => true,

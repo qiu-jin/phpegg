@@ -18,10 +18,10 @@ class Dispatcher
     /*
      * 获取调度信息
      */
-    public static function dispatch($route, $param_mode = 0, $dynamic_dispatch = false)
+    public static function dispatch($data, $param_mode = 0, $dynamic_dispatch = false)
     {
-        $params = $route['matches'];
-        $dispatch = self::parseDispatch($route['dispatch'], $param_names);
+        $params = $data['matches'];
+        $dispatch = self::parseDispatch($data['dispatch'], $param_names);
 		$is_dynamic = false;
         if ($dynamic_dispatch && strpos($dispatch, '$') !== false) {
             $dispatch = self::dynamicDispatch($dispatch, $params, $is_dynamic);

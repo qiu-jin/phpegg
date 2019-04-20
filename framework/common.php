@@ -147,17 +147,19 @@ function output($name, $type = null)
 /*
  * 获取或设置COOKIE
  */
-function cookie($name, ...$params)
+function cookie($name = null, ...$params)
 {
-    return $params ? Cookie::set($name, ...$params) : Cookie::get($name); 
+    return $params ? Cookie::set($name, ...$params)
+		           : ($name === null ? Cookie::all() : Cookie::get($name)); 
 }
 
 /*
  * 获取或设置SESSION
  */
-function session($name, $value = null)
+function session($name = null, $value = null)
 {
-	return is_array($name) || $value !== null ? Session::set($name, $value) : Session::get($name);
+	return is_array($name) || $value !== null ? Session::set($name, $value) 
+		                                      : ($name === null ? Session::all() : Session::get($name));
 }
 
 /*

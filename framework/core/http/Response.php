@@ -98,6 +98,7 @@ class Response
     public static function file($path, $type = null)
     {
 		self::$response['body'] = null;
+		self::$response['headers']['Content-Length'] = filesize($file);
 		self::$response['headers']['Content-Type'] = $type ?? File::mime($path);
 		self::flush();
 		readfile($path);
@@ -132,21 +133,16 @@ class Response
      */
     public static function download($file, $name = null, $is_buffer = false)
     {
-		if ($is_buffer) {
-			$size = strlen($file);
-			$body = $file;
+		if (!$is_buffer) {
+			self::$response['headers']['Content-Disposition'] = 'attachment; filename="'.($name ?? basename($file)).'"';
+			return self::file($file);
 		} else {
-			$name = $name ?? basename($file);
-			$size = filesize($file);
-			$body = file_get_contents($file);
+			self::$response['headers']['Content-Type'] = File::mime($file, true) ?: 'application/octet-stream';
+			self::$response['headers']['Content-Length'] = strlen($file);
+			self::$response['headers']['Content-Disposition'] = 'attachment; filename="'.$name.'"';
+			self::$response['body'] = $file;
+			App::exit();
 		}
-		self::$response['headers']['Content-Length'] = $size;
-		self::$response['headers']['Content-Disposition'] = 'attachment; filename="'.$name.'"';
-		if (!isset(self::$response['headers']['Content-Type'])) {
-			self::$response['headers']['Content-Type'] = File::mime($file, $is_buffer) ?: 'application/octet-stream';
-		}
-		self::$response['body'] = $body;
-		App::exit();
     }
     
     /*

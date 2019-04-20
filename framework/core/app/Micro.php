@@ -97,11 +97,11 @@ class Micro extends App
     protected function dispatch()
     {
         $router = new Router(Request::pathArr(), Request::method());
-        if (!$route = $router->route($this->routes)) {
+        if (!$result = $router->route($this->routes)) {
             return;
         }
-        if ($route['dispatch'] instanceof \Closure) {
-            $call = $route['dispatch'];
+        if ($result['dispatch'] instanceof \Closure) {
+            $call = $result['dispatch'];
             if ($class = $this->config['closure_bind_class']) {
 				if ($class === true) {
 					$call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
@@ -109,10 +109,10 @@ class Micro extends App
 					$call = \Closure::bind($call, new $class, $class);
 				}
             }
-			return $this->dispatch = ['call' => $call, 'params' => $route['matches']];
-        } elseif (is_string($route['dispatch'])) {
+			return $this->dispatch = ['call' => $call, 'params' => $result['matches']];
+        } elseif (is_string($result['dispatch'])) {
 			$param_mode = $this->config['param_mode'];
-            $dispatch = Dispatcher::dispatch($route, $param_mode, $this->config['route_dispatch_dynamic']);
+            $dispatch = Dispatcher::dispatch($result, $param_mode, $this->config['route_dispatch_dynamic']);
             $arr = explode('::', $dispatch[0]);
 			if ($this->config['controller_ns']) {
 				$arr[0] = $this->getControllerClass($arr[0]);

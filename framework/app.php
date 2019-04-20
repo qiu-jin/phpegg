@@ -13,11 +13,11 @@ abstract class App
     const CORE_VERSION = '1.0.0';
     // 是否命令行环境
     const IS_CLI = PHP_SAPI == 'cli';
-    // 应用模式
-    const MODES = ['Standard', 'Rest', 'Micro', 'Inline', 'View', 'Jsonrpc', 'Grpc', 'Graphql', 'Cli'];
-    // 应用实例容器
+    // 内置应用模式
+    const MODES = ['Standard', 'Rest', 'Micro', 'Inline'/*, 'View'*/, 'Jsonrpc', 'Grpc'/*, 'Graphql'*/, 'Cli'];
+    // 应用实例
     private static $app;
-    // 标示boot方法是否已执行，防止重复执行
+    // boot标示，防止重复执行
     private static $boot;
     /* 标示退出状态
      * 0 未标识退出
@@ -28,11 +28,11 @@ abstract class App
      * 5 致命错误退出
      */
     private static $exit;
-    // 标示run方法是否在执行，防止重复执行
+    // run标示，防止重复执行
     private static $runing;
-    // 设置错误处理器
+    // 错误处理器
     private static $error_handler;
-    // 设置返回值处理器
+    // 返回值处理器
     private static $return_handler;
     // 应用配置项
     protected $config;

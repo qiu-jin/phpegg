@@ -26,9 +26,9 @@ class Jsonrpc extends App
          * 2 键值参数
          */
         'param_mode'            => 1,
-        // 允许调度的控制器，为空不限制
+        // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
-        // 控制器别名
+        // 默认调度的控制器别名
         'default_dispatch_controller_alias' => null,
         // 闭包绑定的类（为true时绑定getter匿名类）
         'closure_bind_class' => true,
