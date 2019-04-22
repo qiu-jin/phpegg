@@ -10,7 +10,8 @@ class Smtp extends Email
     protected $sock;
 	// 调试模式
     protected $debug = APP_DEBUG;
-    
+    // 日志处理器
+    protected $logger;
     /*
      * 初始化
      */
@@ -92,11 +93,7 @@ class Smtp extends Email
      */
     protected function log($log)
     {
-		if ($this->debug === true) {
-			Logger::write(Logger::DEBUG, $log);
-		} else {
-			Logger::get($this->debug)->debug($log);
-		}
+		($this->logger ?? $this->logger = Logger::channel($this->debug))->debug($sql);
     }
     
     /*

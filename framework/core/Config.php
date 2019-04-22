@@ -9,7 +9,7 @@ class Config
     //配置文件目录
     private static $dir;
     //配置值缓存
-    private static $configs;
+    private static $config;
     //缓存文件检查
     private static $checked;
     
@@ -47,7 +47,7 @@ class Config
         if (!self::check($fn)) {
             return $default;
         }
-        $value = self::$configs[$fn];
+        $value = self::$config[$fn];
         return isset($ns[1]) ? Arr::get($value, $ns[1], $default) : $value;
     }
     
@@ -61,7 +61,7 @@ class Config
         if (!self::check($fn)) {
             return false;
         }
-		return isset($ns[1]) ? Arr::has(self::$configs[$fn], $ns[1]) : true;
+		return isset($ns[1]) ? Arr::has(self::$config[$fn], $ns[1]) : true;
     }
     
     /*
@@ -73,11 +73,11 @@ class Config
         if (isset($ns[1])) {
             $fn = $ns[0];
             if (!self::check($fn)) {
-                self::$configs[$fn] = [];
+                self::$config[$fn] = [];
             }
-            Arr::set(self::$configs[$fn], $ns[1], $value);
+            Arr::set(self::$config[$fn], $ns[1], $value);
         } else {
-            self::$configs[$name] = $value;
+            self::$config[$name] = $value;
         }
     }
     
@@ -86,7 +86,7 @@ class Config
      */
     public static function read($name)
     {
-        return self::$configs[$name] ?? self::load($name);
+        return self::$config[$name] ?? self::load($name);
     }
     
     /*
@@ -95,7 +95,7 @@ class Config
     public static function headKv($name)
     {
         if (self::check($name)) {
-            return Arr::headKv(self::$configs[$name]);
+            return Arr::headKv(self::$config[$name]);
         }
     }
     
@@ -105,7 +105,7 @@ class Config
     public static function randomKv($name)
     {
         if (self::check($name)) {
-            return Arr::randomKv(self::$configs[$name]);
+            return Arr::randomKv(self::$config[$name]);
         }
     }
     
@@ -114,14 +114,14 @@ class Config
      */
     private static function check($name)
     {
-        if (isset(self::$configs[$name])) {
+        if (isset(self::$config[$name])) {
             return true;
         }
         if (isset(self::$checked[$name])) {
             return false;
         }
         self::$checked[$name] = true;
-        return self::$dir && (self::$configs[$name] = self::load($name));
+        return self::$dir && (self::$config[$name] = self::load($name));
     }
     
     /*
@@ -129,8 +129,8 @@ class Config
      */
     private static function load($name)
     {
-        if (is_php_file($file = self::$dir."$name.php") && is_array($config = __include($file))) {
-            return $config;
+        if (is_php_file($file = self::$dir."$name.php") && is_array($return = __include($file))) {
+            return $return;
         }
     }
     
@@ -149,8 +149,8 @@ class Config
      */
     private static function loadFile($file)
     {
-        if (is_array($configs = __include($file))) {
-            self::$configs = $configs;
+        if (is_array($config = __include($file))) {
+            self::$config = $config;
         }
     }
 }

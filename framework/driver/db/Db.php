@@ -11,6 +11,8 @@ abstract class Db
     protected $sql;
     // 调试模式
     protected $debug = APP_DEBUG;
+    // 日志处理器
+    protected $logger;
     // 数据库名
     protected $dbname;
     // 数据库连接
@@ -161,7 +163,7 @@ abstract class Db
      */
     public function debug($bool = true)
     {
-        $this->debug = (bool) $bool;
+        $this->debug = $bool;
     }
     
     /*
@@ -192,10 +194,6 @@ abstract class Db
                 $sql = Str::formatReplace($sql, $params, ':%s');
             }
         }
-		if ($this->debug === true) {
-			Logger::write(Logger::DEBUG, $sql);
-		} else {
-			Logger::get($this->debug)->debug($sql);
-		}
+		($this->logger ?? $this->logger = Logger::channel($this->debug))->debug($sql);
     }
 }

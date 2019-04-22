@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\rpc;
 
+use framework\util\Arr;
 use framework\core\Loader;
 
 class Grpc extends Rpc
@@ -11,19 +12,21 @@ class Grpc extends Rpc
     protected $config = [
         /*
         // 服务主机（GRPC）
-        'host'              => null,
+        'host'
         // 服务端口（GRPC）
-        'port'              => null,
+        'port'
         // 服务端点（HTTP）
-        'endpoint'          => null,
+        'endpoint'
         // 公共headers（HTTP）
-        'http_headers'      => null,
+        'http_headers'
         // CURL设置（HTTP）
-        'http_curlopts'     => null,
+        'http_curlopts'
         // grpc设置（GRPC）
-        'grpc_options'      => null,
+        'grpc_options'
         // service类名前缀
-        'service_prefix'    => null,
+        'service_prefix'
+        // scheme定义文件加载规则
+        'scheme_loader_rules'
         */
         /* 参数模式
          * 0 普通参数模式
@@ -50,9 +53,9 @@ class Grpc extends Rpc
         } else {
             $this->client = new client\Grpc($this->config);
         }
-        if (isset($this->config['service_load_rules'])) {
-            foreach ($this->config['service_load_rules'] as $type => $rules) {
-                Loader::add($type, $rules);
+        if (isset($this->config['scheme_loader_rules'])) {
+            foreach ($this->config['scheme_loader_rules'] as $type => $rule) {
+                Loader::add($type, $rule);
             }
         }
     }

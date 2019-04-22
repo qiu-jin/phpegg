@@ -20,9 +20,12 @@ class Ftp extends Storage
         } else {
             $this->connection  = ftp_ssl_connect($config['host'], $port);
         }
-        if (!$this->connection && !ftp_login($this->connection , $config['username'], $config['password'])) {
+        if (!$this->connection) {
             throw new \Exception('Ftp connect error');
         }
+		if (!ftp_login($this->connection , $config['username'], $config['password'])) {
+			throw new \Exception('Ftp auth error');
+		}
         if ($config['enable_pasv'] ?? true) {
             ftp_pasv($this->connection, true);
         }

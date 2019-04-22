@@ -42,7 +42,7 @@ function app($name = null)
 /*
  * 获取日志实例
  */
-function logger($name = null)
+function logger($name = true)
 {
     return Logger::get($name);
 }

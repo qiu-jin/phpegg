@@ -18,10 +18,11 @@ class Sftp extends Storage
      */
     public function __construct($config)
     {
-        if (!($this->connection = ssh2_connect($config['host'], $config['port'] ?? 22))
-            || !ssh2_auth_password($this->connection, $config['username'], $config['password'])
-        ) {
+        if (!$this->connection = ssh2_connect($config['host'], $config['port'] ?? 22)) {
             throw new \Exception('Sftp connect error');
+        }
+        if (!ssh2_auth_password($this->connection, $config['username'], $config['password'])) {
+            throw new \Exception('Sftp auth error');
         }
         $this->sftp   = ssh2_sftp($this->connection);
         $this->chroot = $config['chroot'] ?? '/home/'.$config['username'];

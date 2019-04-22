@@ -22,6 +22,8 @@ class Logger
     private static $configs;
     // 日志驱动处理器
     private static $handlers;
+	// 空日志处理器
+	private static $null_handler;
     // 分级日志处理器
     private static $level_handler;
     // 分组日志处理器
@@ -60,17 +62,39 @@ class Logger
     /*
      * 获取实例
      */
-    public static function get($name = null)
+    public static function get($name = true)
     {
-		return $name === null ? self::getLevelHandler() : self::getHandler($name);
+		return $name === true ? self::getLevelHandler() : self::getHandler($name);
     }
 
     /*
      * 获取组实例
      */
-    public static function group($name = null)
+    public static function group($name)
     {
 		return is_array($name) ? self::makeGroupHandler($name) : self::getGroupHandler($name);
+    }
+	
+    /*
+     * 频道实例
+     */
+    public static function channel($name = true, $use_null_handler = false)
+    {
+		if ($name === true) {
+			return self::getLevelHandler();
+		}
+		if (is_array($name)) {
+			return self::makeGroupHandler($name);
+		}
+		if (isset(self::$configs[$name])) {
+			return self::getHandler($name);
+		}
+		if (isset(self::$group_handler_names[$name])) {
+			return self::getGroupHandler($name);
+		}
+		if ($use_null_handler) {
+			return self::getNullHandler();
+		}
     }
     
     /*
@@ -104,6 +128,16 @@ class Logger
     {
         return self::$handlers[$name] ?? 
 			   self::$handlers[$name] = Container::driver('logger', self::$configs[$name]);
+    }
+	
+    /*
+     * 空日志实例
+     */
+    public static function getNullHandler()
+    {
+        return self::$null_handler ?? self::$null_handler = new class () extends LoggerDriver {
+            public function write($level, $message, $context = null) {}
+        };
     }
 	
     /*

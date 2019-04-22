@@ -60,8 +60,8 @@ class Jsonrpc
         ];
 		if (isset($this->id)) {
 			$data['id'] = $this->id;
-		} elseif ($this->config['auto_unique_id']) {
-			$data['id'] = uniqid();
+		} elseif ($this->config['id_generator']) {
+			$data['id'] = $this->config['id_generator']();
 		}
         $result = $this->client->send($data);
 		if (isset($data['id'])) {

@@ -34,7 +34,7 @@ class Nexmo extends Sms
         $client = Client::post(self::$endpoint)->json([
             'from'      => $signname ?? $this->signname,
             'text'      => $message,
-            'to'        => is_array($to) ? "$to[0]$to[1]" : $this->area_code.$to,
+            'to'        => is_array($to) ? $to[0].$to[1] : $this->area_code.$to,
             'api_key'   => $this->acckey,
             'api_secret'=> $this->seckey,
             'type'      => strlen($message) === mb_strlen($message) ? 'text' : 'unicode'

@@ -5,21 +5,21 @@ class Jsonrpc extends Rpc
 {
     // 协议版本
     const VERSION = '2.0'; 
-    // 
+    // 客户端实例
     protected $client;
     // 配置项
     protected $config = [
         /*
         // 服务主机（TCP）
-        'host'              => null,
+        'host'
         // 服务端口（TCP）
-        'port'              => null,
+        'port'
         // 服务端点（HTTP）
-        'endpoint'          => null,
+        'endpoint'
         // HTTP请求headers（HTTP）
-        'http_headers'      => null,
+        'http_headers'
         // HTTP请求curl设置（HTTP）
-        'http_curlopts'     => null,
+        'http_curlopts'
         // 持久TCP链接（TCP）
         'tcp_persistent'    => false,
         // TCP连接超时（TCP）
@@ -29,8 +29,8 @@ class Jsonrpc extends Rpc
         // 批请求call方法别名
         'batch_call_method_alias' => 'call',
         */
-        // 自动生成唯一ID
-        'auto_unique_id'   		=> true,
+        // 自动ID生成器
+        'id_generator'			=> 'unique',
         // 请求内容序列化
         'requset_serialize'     => 'jsonencode',
         // 响应内容反序列化

@@ -37,8 +37,8 @@ class Grpc extends App
         'closure_getter_providers' => null,
         // service前缀
         'service_prefix'        => null,
-        // 服务定义文件加载规则
-        'service_loader_rules'	=> null,
+        // scheme定义文件加载规则
+        'scheme_loader_rules'	=> null,
         // 请求解压处理器
         'request_decode'        => ['gzip' => 'gzdecode'],
         // 响应压缩处理器
@@ -97,9 +97,9 @@ class Grpc extends App
             }
             $service = substr($service, $len + 1);
         }
-        if ($this->config['service_loader_rules']) {
-            foreach ($this->config['service_loader_rules'] as $type => $rules) {
-                Loader::add($type, $rules);
+        if ($this->config['scheme_loader_rules']) {
+            foreach ($this->config['scheme_loader_rules'] as $type => $rule) {
+                Loader::add($type, $rule);
             }
         }
 		if ($this->custom_methods) {

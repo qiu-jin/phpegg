@@ -49,7 +49,7 @@ class Aliyun extends Sms
             if ($result['Code'] === 'OK') {
                 return true;
             }
-            // 运营商发送频率限制不触发错误或异常
+            // 运营商发送频率限制返回失败，但不触发错误或异常
             if ($result['Code'] === 'isv.BUSINESS_LIMIT_CONTROL') {
                 return false;
             }

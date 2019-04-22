@@ -59,23 +59,35 @@ class Dropbox extends Storage
         ] : false;
     }
     
+    /* 
+     * 复制
+     */
     public function copy($from, $to)
     {
         $params = ['from_path' => $this->path($from), 'to_path' => $this->path($to)];
         return $this->result($this->send('copy_v2', $params)->json());
     }
     
+    /* 
+     * 移动
+     */
     public function move($from, $to)
     {
         $params = ['from_path' => $this->path($from), 'to_path' => $this->path($to)];
         return $this->result($this->send('move_v2', $params)->json());
     }
     
+    /* 
+     * 删除
+     */
     public function delete($from)
     {
         return $this->result($this->send('delete_v2', ['path' => $this->path($from)])->json());
     }
     
+    /* 
+     * 发送请求
+     */
     protected function send($path, $params, $binary = null)
     {
         $headers[] = "Authorization: Bearer $this->acckey";
@@ -101,6 +113,9 @@ class Dropbox extends Storage
         return error($client->error, 2);
     }
     
+    /* 
+     * 结果处理
+     */
     protected function result($data, $return_bool = null)
     {
         if (empty($data)) {

@@ -58,8 +58,8 @@ class JsonrpcBatch
 			if (isset($this->id)) {
 				$data['id'] = $this->id;
 				$this->id = null;
-			} elseif ($this->config['auto_unique_id']) {
-				$data['id'] = uniqid();
+			} elseif ($this->config['id_generator']) {
+				$data['id'] = $this->config['id_generator']();
 			}
 			$this->queries[] = $data;
             $this->ns = $this->common_ns;
