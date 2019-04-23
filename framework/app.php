@@ -28,7 +28,7 @@ abstract class App
      * 5 致命错误退出
      */
     private static $exit;
-    // run标示，防止重复执行
+    // runing标示，防止重复执行
     private static $runing;
     // 错误处理器
     private static $error_handler;
@@ -193,10 +193,10 @@ abstract class App
     /*
      * 异常退出应用
      */
-    public static function abort($code = null, $message = null)
+    public static function abort(...$params)
     {
-        if (isset(self::$app) && (self::$error_handler === null || self::$error_handler($code, $message) === true)) {
-            self::$app->error($code, $message);
+        if (isset(self::$app) && (self::$error_handler === null || self::$error_handler(...$params) === true)) {
+            self::$app->error(...$params);
         }
         self::exit();
     }

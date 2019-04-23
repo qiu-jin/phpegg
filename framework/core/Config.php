@@ -139,7 +139,7 @@ class Config
      */
     private static function loadEnv()
     {
-        if (is_php_file($file = defined('ENV_FILE') ? ENV_FILE : APP_DIR.'env.php')) {
+        if (is_php_file($file = defined('ENV_FILE') ? ENV_FILE : APP_DIR.'.env')) {
             __include($file);
         }
     }

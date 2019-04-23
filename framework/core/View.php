@@ -74,15 +74,11 @@ class View
     /*
      * 渲染页面
      */
-    public static function render($tpl, array $vars = [], $no_clean = false)
+    public static function render($tpl, array $vars = [], $clean = true)
     {
         ob_start();
-        (static function($__file, $__vars) {
-            extract($__vars, EXTR_SKIP);
-            unset($__vars);
-            return require $__file;
-        })(self::make($tpl), isset(self::$view['vars']) ? $vars + self::$view['vars'] : $vars);
-		if (!$no_clean) {
+		__require_view(self::make($tpl), isset(self::$view['vars']) ? $vars + self::$view['vars'] : $vars);
+		if ($clean) {
 			self::$view = null;
 		}
         return ob_get_clean();
@@ -222,3 +218,10 @@ class View
     }
 }
 View::__init();
+
+function __require_view($__file, $__vars)
+{
+    extract($__vars, EXTR_SKIP);
+    unset($__vars);
+    require $__file;
+}

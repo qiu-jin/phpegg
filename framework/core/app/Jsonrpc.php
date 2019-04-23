@@ -32,7 +32,7 @@ class Jsonrpc extends App
         'default_dispatch_controller_alias' => null,
         // 闭包绑定的类（为true时绑定getter匿名类）
         'closure_bind_class' => true,
-        // Getter providers（绑定getter匿名类时有效）
+        // Getter providers（上个配置为true时有效）
         'closure_getter_providers' => null,
         // 最大批调用数，1不启用批调用，0无限批调用数
         'batch_call_limit'		=> 1,
@@ -135,7 +135,7 @@ class Jsonrpc extends App
     /*
      * 错误
      */
-    protected function error($code = null, $message = null)
+    protected function error($code = null, $message = null, $data = null)
     {
         if (isset($this->core_errors[$code])) {
 			$error = $this->core_errors[$code];
@@ -145,15 +145,19 @@ class Jsonrpc extends App
             }
         }
 		if (!App::isExit()) {
-			throw new JsonrpcAbortException($message, $code);
+			throw new JsonrpcAbortException($code, $message, $data);
 		}
 		if (!$this->is_batch_call && !isset($this->dispatch['id'])) {
 			$this->respond();
 		} else {
+			$error = ['code'=> $code, 'message' => $message];
+			if ($data !== null) {
+				$error['data'] = $data;
+			}
 	        $this->respond([
 	            'id'        => $this->dispatch['id'] ?? null,
 	            'jsonrpc'   => self::JSONRPC,
-	            'error'     => ['code'=> $code, 'message' => $message]
+	            'error'     => $error
 	        ]);
 		}
     }
@@ -186,6 +190,9 @@ class Jsonrpc extends App
 	                	'code' => $e->getCode(),
 						'message' => $e->getMessage()
 	                ];
+					if (($data = $e->getData()) !== null) {
+						$return['error']['data'] = $data;
+					}
 	            }
 	        }
 			return $return;

@@ -15,9 +15,9 @@ class Cli extends App
         'controller_suffix' => null,
         // 默认调用的方法，空则调用__invoke
         'default_method' => null,
-        // 匿名函数是否启用Getter魔术方法
-        'closure_enable_getter' => true,
-        // Getter providers
+        // 闭包绑定的类（为true时绑定匿名类）
+        'closure_bind_class' => true,
+        // Getter providers（上个配置为true时有效）
         'closure_getter_providers' => null,
         // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
@@ -125,21 +125,22 @@ class Cli extends App
 			$call = $this->custom_methods['commands'][$name];
 		}
         if ($call instanceof \Closure) {
-            if (!$this->config['closure_enable_getter']) {
-                $command = new class ($arguments) extends Command {};
+            if ($class = $this->config['closure_bind_class']) {
+				if ($class === true) {
+	                $instance = new class ($this->config['closure_getter_providers'], $arguments) extends Command {
+	                    use Getter;
+	                    public function __construct($providers, $arguments) {
+	                        $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
+	                        parent::__construct($arguments);
+	                    }
+	                };
+				} else {
+					$instance = new $class($arguments);
+				}
             } else {
-                $providers = $this->config['closure_getter_providers'];
-                $command = new class ($providers, $arguments) extends Command {
-                    use Getter;
-                    public function __construct($providers, $arguments) {
-                        if ($providers) {
-                            $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
-                        }
-                        parent::__construct($arguments);
-                    }
-                };
+            	$instance = new class ($arguments) extends Command {};
             }
-            return \Closure::bind($call, $command, Command::class);
+            return \Closure::bind($call, $instance, Command::class);
         } elseif (is_string($call)) {
 			$call = Dispatcher::parseDispatch($call);
 			if ($this->config['controller_ns']) {

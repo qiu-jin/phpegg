@@ -30,7 +30,7 @@ class Jsonrpc extends Rpc
         'batch_call_method_alias' => 'call',
         */
         // 自动ID生成器
-        'id_generator'			=> 'unique',
+        'id_generator'			=> 'uniqid',
         // 请求内容序列化
         'requset_serialize'     => 'jsonencode',
         // 响应内容反序列化

@@ -1169,64 +1169,6 @@ class Template
 		}
         throw new TemplateException("解析错误");
     }
-	
-	
-    protected static function _readFunctionValue($ret, $tmp, $val, $len, &$pos, $strs)
-    {
-        $arr = [];
-        $tmp = null;
-        for ($i = $pos + 1; $i < $len; $i++) {
-            $c = $val[$i];
-            if (self::isVarChar($c)) {
-                $tmp .= $c;
-                continue;
-            }
-            if (!self::isVarChars($tmp)) {
-                break;
-            }
-            $arr[] = $tmp;
-            if ($c == '.') {
-                $tmp = null;
-            } elseif ($c == '(') {
-                $pos  = $i;
-                $args = implode(', ', self::readArguments($val, $len, $pos, $strs));
-                // 函数
-                if (count($arr) == 1) {
-                    if (self::$config['allow_php_functions'] === true
-                        || in_array($tmp, self::$config['allow_php_functions'])
-                    ) {
-                        return "$tmp($args)";
-                    }
-                    throw new TemplateException("不支持的内置函数$tmp");
-                }
-                // 静态方法
-                $tmp = [];
-                while ($v = array_pop($arr)) {
-                    $tmp[] = $v;
-                    $class = implode('\\', $arr);
-                    if (isset(self::$config['allow_static_classes'][$class])) {
-                        $m = array_shift($tmp);
-                        $n = $tmp ? '\\'.implode('\\', array_reverse($tmp)) : '';
-                        return self::$config['allow_static_classes'][$class]."$n::$m($args)";
-                    }
-                }
-                throw new TemplateException("未定义的静态类");
-            } elseif ($c == '-' && substr($val, $i + 1, 1) == '>') {
-                // 容器
-                $provider = implode('.', $arr);
-                if (self::$config['allow_container_providers'] === true
-                    || in_array($provider, self::$config['allow_container_providers'])
-                ) {
-                    $pos = $i - 1;
-                    return self::$config['view_container_macro']($provider);
-                }
-                throw new TemplateException("未开启容器支持");
-            } else {
-                break;
-            }
-        }
-        throw new TemplateException("解析错误");
-    }
     
     /*
      * 参数
@@ -1372,7 +1314,7 @@ class Template
     
     protected static function ContainerMacro($name)
     {
-        return Container::class."::get('$name')";
+        return Container::class."::make('$name')";
     }
     
     protected static function includeMacro($name, $is_var = false)

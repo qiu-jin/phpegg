@@ -6,7 +6,7 @@ namespace framework\driver\rpc\client;
  */
 class JsonrpcTcp
 {
-	换行符
+	// 换行符
     const EOL = "\n";
     // 配置项
     protected $config;
