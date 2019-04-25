@@ -92,12 +92,23 @@ class Maxmind extends Geoip
         }
         return $return;
     }
+	
+    /*
+     * 关闭连接
+     */
+    public function close()
+    {
+		if (isset($this->db)) {
+			$this->db->close();
+			$this->db = null;
+		}
+    }
     
     /* 
      * 析构函数
      */
     public function __destruct()
     {
-        isset($this->db) && $this->db->close();
+        $this->close();
     }
 } 

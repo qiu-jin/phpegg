@@ -14,21 +14,30 @@ class Redis extends Cache
      */
     public function __construct($config)
     {
-        $this->connection = new \Redis();
-        if (!$this->connection->connect($config['host'], $config['port'] ?? 6379, $config['timeout'] ?? 0)) {
+		$this->connection = $this->contect($config);
+    }
+	
+    /*
+     * 连接
+     */
+    protected function contect($config)
+    {
+        $connection = new \Redis();
+        if (!$connection->connect($config['host'], $config['port'] ?? 6379, $config['timeout'] ?? 0)) {
             throw new \Exception('Redis connect error');
         }
         if (isset($config['password'])) {
-            $this->connection->auth($config['password']);
+            $connection->auth($config['password']);
         }
         if (isset($config['database'])) {
-            $this->connection->select($config['database']);
+            $connection->select($config['database']);
         }
         if (isset($config['options'])) {
             foreach ($config['options'] as $k => $v) {
-                $this->connection->setOption($k, $v);
+                $connection->setOption($k, $v);
             }
         }
+		return $connection;
     }
     
     /*
@@ -98,12 +107,20 @@ class Redis extends Cache
     {
         return $this->connection;
     }
+	
+    /*
+     * 关闭连接
+     */
+    public function close()
+    {
+       $this->connection->close();
+    }
     
     /*
      * 析构函数
      */
     public function __destruct()
     {
-        $this->connection->close();
+        $this->close();
     }
 }

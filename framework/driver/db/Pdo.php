@@ -255,4 +255,12 @@ abstract class Pdo extends Db
         $err = $error ?? $this->connection->errorInfo();
         return "DB ERROR: [$err[1]] $err[2]";
     }
+	
+    /*
+     * 关闭连接
+     */
+    public function close()
+    {
+        $this->connection = null;
+    }
 }

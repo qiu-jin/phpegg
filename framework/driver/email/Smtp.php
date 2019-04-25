@@ -8,34 +8,55 @@ class Smtp extends Email
 {
 	// 套接字
     protected $sock;
-	// 调试模式
-    protected $debug = APP_DEBUG;
     // 日志处理器
     protected $logger;
+	// 配置
+	protected $config = [
+		// 主机
+		'host'	=> '127.0.0.1',
+		// 端口
+		'port'	=> 25,
+		// 用户名
+		'username'	=> '',
+		// 密码
+		'password'	=> '',
+		// 超时设置
+		'timeout'	=> 30,
+		// 调试模式
+		'debug'		=> APP_DEBUG,
+		// 发送后是否退出
+		'send_and_close'	=> true,
+	];
+	
     /*
      * 初始化
      */
     protected function __init($config)
     {
+		$this->config = $config + $this->config;
+    }
+	
+    /*
+     * 连接
+     */
+    protected function connect()
+    {
         $this->sock = fsockopen(
-			$config['host'],
-			$config['port'] ?? 25,
+			$this->config['host'],
+			$this->config['port'],
 			$errno, $error,
-			$config['timeout'] ?? 15
+			$this->config['timeout']
 		);
         if (!is_resource($this->sock)) {
             throw new \Exception("Smtp connect error: [$errno] $error");
         }
-        if (isset($config['debug'])) {
-            $this->debug = $config['debug'];
-        }
         $this->read();
-        $this->command('EHLO '.$config['host']);
+        $this->command('EHLO '.$this->config['host']);
         $this->command('AUTH LOGIN');
-        $this->command(base64_encode($config['username']));
-        $res = $this->command(base64_encode($config['password']));
+        $this->command(base64_encode($this->config['username']));
+        $res = $this->command(base64_encode($this->config['password']));
         if (substr($res, 0, 3) !== '235') {
-            throw new \Exception("Smtp auth error: $res");
+			$this->error($res, 2);
         }
     }
     
@@ -44,23 +65,28 @@ class Smtp extends Email
      */
     protected function handle($options)
     {
+		if (!is_resource($this->sock)) {
+			$this->connect();
+		}
         $mime = Mime::make($options, $addrs);
         $res = $this->command("MAIL FROM: <{$options['from'][0]}>");
         if (substr($res, 0, 3) != '250') {
-            return warn($res);
+            return $this->error($res);
         }
         foreach ($addrs as $addr) {
             $res = $this->command("RCPT TO: <$addr>");
             if (substr($res, 0, 3) != '250') {
-                return warn($res);
+                return $this->error($res);
             }
         }
         $this->command('DATA');
         $res = $this->command($mime.Mime::EOL.".");
         if (substr($res, 0, 3) != '250') {
-            return warn($res);
+            return $this->error($res);
         }
-        $this->command('QUIT');
+		if ($this->config['send_and_close']) {
+			$this->close();
+		}
         return true;
     }
     
@@ -72,10 +98,14 @@ class Smtp extends Email
         $res = '';
         while ($str = fgets($this->sock, 1024)) {
             $res .= $str;
-            if (substr($str, 3, 1) == ' ') break;
+            if (substr($str, 3, 1) == ' ') {
+            	break;
+            }
         }
         $res = trim($res);
-        $this->debug && $this->log($res);
+		if ($this->config['debug']) {
+			$this->log($res);
+		}
         return $res;
     }
     
@@ -89,11 +119,31 @@ class Smtp extends Email
     }
 	
     /*
-     * log
+     * 日志处理
      */
     protected function log($log)
     {
-		($this->logger ?? $this->logger = Logger::channel($this->debug))->debug($sql);
+		($this->logger ?? $this->logger = Logger::channel($this->config['debug']))->debug($log);
+    }
+	
+    /*
+     * 错误处理
+     */
+    protected function error($message)
+    {
+		$this->close();
+		return error($message, 2);
+    }
+	
+    /*
+     * 退出
+     */
+    public function close()
+    {
+		if (is_resource($this->sock)) {
+			$this->command('QUIT');
+			fclose($this->sock);
+		}
     }
     
     /*
@@ -101,6 +151,6 @@ class Smtp extends Email
      */
     public function __destruct()
     {
-        empty($this->sock) || fclose($this->sock);
+        $this->close();
     }
 }

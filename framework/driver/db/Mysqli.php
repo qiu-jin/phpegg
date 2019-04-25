@@ -300,12 +300,23 @@ class Mysqli extends Db
     {
         return 'DB ERROR: ['.$this->connection->errno.'] '.$this->connection->error;
     }
+	
+    /*
+     * 关闭连接
+     */
+    public function close()
+    {
+		if (isset($this->connection)) {
+			$this->connection->close();
+			$this->connection = null;
+		}
+    }
 
     /*
      * 析构函数
      */
     public function __destruct()
     {
-        $this->connection->close();
+        $this->close();
     }
 }

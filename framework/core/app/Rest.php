@@ -189,7 +189,7 @@ class Rest extends App
             $class = $this->dispatch['class'];
             list($controller, $action_path) = $this->dispatch['continue'];
         } elseif (count($path) >= $depth) {
-            if (isset($this->config['default_dispatch_to_camel'])) {
+            if ($this->config['default_dispatch_to_camel']) {
                 $path[$depth] = Str::camelCase(
                     $path[$depth],
                     $this->config['default_dispatch_to_camel']

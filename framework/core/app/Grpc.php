@@ -37,8 +37,8 @@ class Grpc extends App
         'closure_getter_providers' => null,
         // service前缀
         'service_prefix'        => null,
-        // scheme定义文件加载规则
-        'scheme_loader_rules'	=> null,
+        // schema定义文件加载规则
+        'schema_loader_rules'	=> null,
         // 请求解压处理器
         'request_decode'        => ['gzip' => 'gzdecode'],
         // 响应压缩处理器
@@ -97,9 +97,9 @@ class Grpc extends App
             }
             $service = substr($service, $len + 1);
         }
-        if ($this->config['scheme_loader_rules']) {
-            foreach ($this->config['scheme_loader_rules'] as $type => $rule) {
-                Loader::add($type, $rule);
+        if ($this->config['schema_loader_rules']) {
+            foreach ($this->config['schema_loader_rules'] as $type => $rules) {
+                Loader::add($type, $rules);
             }
         }
 		if ($this->custom_methods) {
@@ -118,14 +118,10 @@ class Grpc extends App
     protected function call()
     {
 		if ($this->config['param_mode']) {
-			$return = $this->callWithReqResParams($this->dispatch['call']);
+			return $this->callWithReqResParams($this->dispatch['call']);
 		} else {
-			$return = $this->callWithParams($this->dispatch['call']);
+			return $this->callWithParams($this->dispatch['call']);
 		}
-		if ($return) {
-			return $return;
-		}
-        self::abort(500, 'Illegal message scheme class');
     }
 
     /*
@@ -233,6 +229,7 @@ class Grpc extends App
             $response_message->mergeFromJsonString(json_encode($return));
             return $response_message;
         }
+		self::abort(500, 'Illegal message scheme class');
     }
     
     /*
@@ -257,6 +254,7 @@ class Grpc extends App
             $call($request_message, $response_message = new $response_class);
             return $response_message;
         }
+		self::abort(500, 'Illegal message scheme class');
     }
 	
     /*

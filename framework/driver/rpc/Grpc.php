@@ -25,8 +25,8 @@ class Grpc extends Rpc
         'grpc_options'
         // service类名前缀
         'service_prefix'
-        // scheme定义文件加载规则
-        'scheme_loader_rules'
+        // schema定义文件加载规则
+        'schema_loader_rules'
         */
         /* 参数模式
          * 0 普通参数模式
@@ -53,9 +53,9 @@ class Grpc extends Rpc
         } else {
             $this->client = new client\Grpc($this->config);
         }
-        if (isset($this->config['scheme_loader_rules'])) {
-            foreach ($this->config['scheme_loader_rules'] as $type => $rule) {
-                Loader::add($type, $rule);
+        if (isset($this->config['schema_loader_rules'])) {
+            foreach ($this->config['schema_loader_rules'] as $type => $rules) {
+                Loader::add($type, $rules);
             }
         }
     }

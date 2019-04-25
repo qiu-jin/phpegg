@@ -14,10 +14,9 @@ class Query
     /*
      * 构造函数
      */
-    public function __construct($email, $options)
+    public function __construct($email)
     {
         $this->email = $email;
-        $this->options = $options;
     }
     
     /*

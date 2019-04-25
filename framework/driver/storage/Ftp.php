@@ -14,24 +14,33 @@ class Ftp extends Storage
      */
     public function __construct($config)
     {
+        $this->connection = $this->contect($config);
+        $this->domain = $config['domain'] ?? $config['host'];
+    }
+	
+    /*
+     * 连接
+     */
+    protected function connect($config)
+    {
         $port = $config['port'] ?? 21;
         if (empty($config['ssl'])) {
-            $this->connection  = ftp_connect($config['host'], $port);
+            $connection  = ftp_connect($config['host'], $port);
         } else {
-            $this->connection  = ftp_ssl_connect($config['host'], $port);
+            $connection  = ftp_ssl_connect($config['host'], $port);
         }
-        if (!$this->connection) {
+        if (!$connection) {
             throw new \Exception('Ftp connect error');
         }
-		if (!ftp_login($this->connection , $config['username'], $config['password'])) {
+		if (!ftp_login($connection , $config['username'], $config['password'])) {
 			throw new \Exception('Ftp auth error');
 		}
         if ($config['enable_pasv'] ?? true) {
-            ftp_pasv($this->connection, true);
+            ftp_pasv($connection, true);
         }
-        $this->domain = $config['domain'] ?? $config['host'];
+		return $connection;
     }
-    
+	
     /* 
      * 读取
      */
@@ -137,12 +146,20 @@ class Ftp extends Storage
         $dir = dirname($path);
         return @ftp_chdir($this->connection, $dir) || ftp_mkdir($this->connection, $dir);
     }
+	
+    /* 
+     * 关闭连接
+     */
+    public function close()
+    {
+        is_resource($this->connection) && ftp_close($this->connection);
+    }
     
     /* 
      * 析构函数
      */
     public function __destruct()
     {
-        $this->connection && ftp_close($this->connection);
+        $this->close();
     }
 }

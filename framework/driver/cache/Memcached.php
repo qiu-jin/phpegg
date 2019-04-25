@@ -14,6 +14,14 @@ class Memcached extends Cache
      */
     public function __construct($config)
     {
+        $this->connection = $this->contect($config);
+    }
+	
+    /*
+     * 连接
+     */
+    protected function contect($config)
+    {
         $connection = new \Memcached;
         if (isset($config['options'])) {
             $connection->setOptions($config['options']);
@@ -30,7 +38,7 @@ class Memcached extends Cache
             $connection->setOption(\Memcached::OPT_BINARY_PROTOCOL, true);
             $connection->setSaslAuthData($config['username'], $config['password']);
         }
-        $this->connection = $connection;
+        return $connection;
     }
     
     /*
@@ -38,7 +46,10 @@ class Memcached extends Cache
      */
     public function get($key, $default = null)
     {
-        return $this->connection->get($key) ?? $default;
+		if (($ret = $this->connection->get($key)) === false) {
+			return $default;
+		}
+		return $ret ?? $default;
     }
 	
     /*
@@ -86,11 +97,10 @@ class Memcached extends Cache
      */
     public function getMultiple(array $keys, $default = null)
     {
-        if (($caches = $this->connection->getMulti($keys)) && $default !== null) {
-            foreach ($keys as $k) {
-                if (!isset($caches[$k])) {
-                    $caches[$k] = $default;
-                }
+		$caches = $this->connection->getMulti($keys);
+        foreach ($keys as $k) {
+            if (!isset($caches[$k])) {
+                $caches[$k] = $default;
             }
         }
         return $caches;
@@ -127,12 +137,20 @@ class Memcached extends Cache
     {
         return $this->connection;
     }
+	
+    /*
+     * 关闭连接
+     */
+    public function close()
+    {
+       $this->connection->quit();
+    }
     
     /*
      * 析构函数
      */
     public function __destruct()
     {
-        $this->connection->quit();
+        $this->close();
     }
 }

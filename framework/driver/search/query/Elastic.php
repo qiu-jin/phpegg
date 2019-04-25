@@ -90,7 +90,7 @@ class Elastic
      */
     public function raw($bool = true)
     {
-        $this->raw = (bool) $bool;
+        $this->raw = $bool;
         return $this;
     }
 

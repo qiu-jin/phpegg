@@ -18,15 +18,24 @@ class Sftp extends Storage
      */
     public function __construct($config)
     {
-        if (!$this->connection = ssh2_connect($config['host'], $config['port'] ?? 22)) {
-            throw new \Exception('Sftp connect error');
-        }
-        if (!ssh2_auth_password($this->connection, $config['username'], $config['password'])) {
-            throw new \Exception('Sftp auth error');
-        }
-        $this->sftp   = ssh2_sftp($this->connection);
+        $this->connection = $this->contect($config);
+		$this->sftp = ssh2_sftp($this->connection);
         $this->chroot = $config['chroot'] ?? '/home/'.$config['username'];
         $this->domain = $config['domain'] ?? $config['host'];
+    }
+	
+    /*
+     * 连接
+     */
+    protected function connect($config)
+    {
+        if (!$connection = ssh2_connect($config['host'], $config['port'] ?? 22)) {
+            throw new \Exception('Sftp connect error');
+        }
+        if (!ssh2_auth_password($connection, $config['username'], $config['password'])) {
+            throw new \Exception('Sftp auth error');
+        }
+		return $connection;
     }
     
     /* 
@@ -122,5 +131,21 @@ class Sftp extends Storage
     protected function stream($path)
     {
         return "ssh2.sftp://".intval($this->sftp).$path;
+    }
+	
+    /* 
+     * 关闭连接
+     */
+    public function close()
+    {
+        is_resource($this->connection) && ssh2_disconnect($this->connection);
+    }
+	
+    /* 
+     * 析构函数
+     */
+    public function __destruct()
+    {
+        $this->close();
     }
 }

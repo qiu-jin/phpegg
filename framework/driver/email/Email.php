@@ -27,7 +27,7 @@ abstract class Email
      */
     public function __call($method, $params)
     {
-        return (new query\Query($this, ['from' => $this->from]))->$method(...$params);
+        return (new query\Query($this))->$method(...$params);
     }
     
     /*
@@ -43,6 +43,9 @@ abstract class Email
 		}
 		if ($content) {
 			$options['content'] = $content;
+		}
+		if (!isset($options['from']) && isset($this->from)) {
+			$options['from'] = $this->from;
 		}
         return $this->handle($options);
     }

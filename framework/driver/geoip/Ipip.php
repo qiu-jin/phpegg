@@ -77,12 +77,20 @@ class Ipip extends Geoip
             'city'      => $result[2]
         ];
     }
+	
+    /*
+     * 关闭连接
+     */
+    public function close()
+    {
+		is_resource($this->db) && fclose($this->db);
+    }
     
     /* 
      * 析构函数
      */
     public function __destruct()
     {
-        empty($this->db) || fclose($this->db);
+        $this->close();
     }
 } 

@@ -6,8 +6,6 @@ namespace framework\driver\search;
  */
 class Elastic
 {
-	// 类型(7.x版本中去除)
-    protected $type = '_doc';
 	// 服务端点
     protected $endpoint;
     
@@ -16,9 +14,6 @@ class Elastic
      */
     public function __construct($config)
     {
-        if (isset($config['type'])) {
-            $this->type = $config['type'];
-        }
         $this->endpoint = $config['host'].':'.($config['port'] ?? '9200');
     }
 

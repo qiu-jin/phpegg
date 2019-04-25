@@ -126,17 +126,17 @@ class Standard extends App
             list($controller, $params) = $this->dispatch['continue'];
             if ($params) {
 				$action = array_shift($params);
-	            if (isset($this->config['default_dispatch_to_camel'])) {
+	            if ($this->config['default_dispatch_to_camel']) {
 					$action = Str::camelCase($action, $this->config['default_dispatch_to_camel']);
 	            }
-            } elseif (isset($this->config['default_dispatch_default_action'])) {
+            } elseif ($this->config['default_dispatch_default_action']) {
                 $action = $this->config['default_dispatch_default_action'];
             } else {
                 return;
             }
         } else {
 			if (!$path) {
-	            if (!isset($this->config['default_dispatch_index'])) {
+	            if (!$this->config['default_dispatch_index']) {
 	                return;
 	            }
 				$index = $this->config['default_dispatch_index'];
@@ -149,7 +149,7 @@ class Standard extends App
 	                    if ($count == $depth + 1) {
 	                        $action = $path[$depth];
 	                    } elseif ($count === $depth) {
-	                        if (isset($this->config['default_dispatch_default_action'])) {
+	                        if ($this->config['default_dispatch_default_action']) {
 	                            $action = $this->config['default_dispatch_default_action'];
 								$is_default_action = true;
 	                        }
@@ -167,7 +167,7 @@ class Standard extends App
 	            if (!isset($controller_array) || !isset($action)) {
 	                return;
 	            }
-	            if (isset($this->config['default_dispatch_to_camel'])) {
+	            if ($this->config['default_dispatch_to_camel']) {
 	                $controller_array[] = Str::camelCase(
 	                    array_pop($controller_array),
 	                    $this->config['default_dispatch_to_camel']
@@ -196,7 +196,7 @@ class Standard extends App
                 $params = [];
             }
             return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
-        } elseif (isset($this->config['action_dispatch_routes_property']) && isset($allow_action_route)) {
+        } elseif ($this->config['action_dispatch_routes_property'] && isset($allow_action_route)) {
             return $this->actionRouteDispatch($param_mode, $class, $controller, array_slice($path, $depth));
         }
     }

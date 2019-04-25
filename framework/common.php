@@ -258,7 +258,7 @@ function getter($providers = null)
     return new class ($providers) {
         use Getter;
         public function __construct($providers) {
-            $this->{app\env\GETTER_PROVIDERS_NAME} = $providers;
+            $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
         }
     };
 }
