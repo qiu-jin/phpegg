@@ -157,9 +157,9 @@ class Request
     /*
      * 获取ip
      */
-    public static function ip()
+    public static function ip($proxy = null)
     {
-        if (!self::$proxy) {
+        if (!($proxy ?? self::$proxy)) {
             return $_SERVER['REMOTE_ADDR'] ?? null;
         }
         return $_SERVER['HTTP_X_FORWARDED_FOR'] ?? null;
@@ -218,9 +218,9 @@ class Request
     /*
      * 是否为Https请求
      */
-    public static function isHttps()
+    public static function isHttps($proxy = null)
     {
-        if (!self::$proxy) {
+        if (!($proxy ?? self::$proxy)) {
             return isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on';
         }
         return isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https';

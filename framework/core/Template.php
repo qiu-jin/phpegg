@@ -3,7 +3,7 @@ namespace framework\core;
 
 use framework\util\Arr;
 use framework\core\http\Request;
-use framework\core\exception\TemplateException;
+use framework\exception\TemplateException;
 
 class Template
 {
@@ -1319,7 +1319,7 @@ class Template
     
     protected static function includeMacro($name, $is_var = false)
     {
-        return 'include '.View::class.'::make('.($is_var ? $name : "'$name'").');';
+        return 'include '.View::class.'::path('.($is_var ? $name : "'$name'").');';
     }
     
     protected static function checkExpiredMacro($names)

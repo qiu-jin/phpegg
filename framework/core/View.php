@@ -2,8 +2,9 @@
 namespace framework\core;
 
 use framework\util\File;
+use framework\core\http\Response;
 use framework\core\misc\ViewError;
-use framework\core\exception\ViewException;
+use framework\exception\ViewException;
 
 class View
 {    
@@ -25,7 +26,7 @@ class View
             // 模版文件目录，为空则默认为视图文件目录
             'dir'       => null,
             // 调试模式下强制编译模版
-            'debug'     => APP_DEBUG,
+            'force'     => APP_DEBUG,
             // 模版引擎，为空则不启用模版
             'engine'    => Template::class,
         ]
@@ -70,6 +71,14 @@ class View
     {
         self::$view['filters'] = isset(self::$view['filters']) ? $values + self::$view['filters'] : $values;
     }
+	
+    /*
+     * 展示页面
+     */
+    public static function display($tpl, array $vars = [])
+    {
+		Response::html(self::render($tpl, $vars));
+    }
     
     /*
      * 渲染页面
@@ -77,7 +86,10 @@ class View
     public static function render($tpl, array $vars = [], $clean = true)
     {
         ob_start();
-		__require_view(self::make($tpl), isset(self::$view['vars']) ? $vars + self::$view['vars'] : $vars);
+		if (isset(self::$view['vars'])) {
+			$vars = $vars + self::$view['vars'];
+		}
+		__require_view(self::path($tpl), $vars);
 		if ($clean) {
 			self::$view = null;
 		}
@@ -87,29 +99,20 @@ class View
     /*
      * 检查更新视图文件，返回路径
      */
-    public static function make($tpl, $force = false)
+    public static function path($tpl, $force = false)
     {
-        $phpfile = self::getView($tpl);
-        if (!empty(self::$config['template']['engine'])) {
-            if (!is_file($tplfile = self::getTemplateFile($tpl))) {
+        $phpfile = self::getViewFilePath($tpl);
+        if (self::$config['template']) {
+            if (!is_file($tplfile = self::getTemplateFilePath($tpl))) {
                 throw new ViewException("Template file not found: $tplfile");
             }
-            if ($force || self::$config['template']['debug'] || !is_file($phpfile)
+            if ($force || self::$config['template']['force'] || !is_file($phpfile)
                 || filemtime($phpfile) < filemtime($tplfile)
             ) {
-                self::complieTo(self::readTemplateFile($tplfile), $phpfile);
+                self::complieTo($phpfile, file_get_contents($tplfile));
             }
         }
         return $phpfile;
-    }
-    
-    /*
-     * 检查视图文件是否存在
-     */
-    public static function exists($tpl)
-    {
-        return empty(self::$config['template']['engine']) ? is_php_file(self::getView($tpl))
-														  : is_file(self::getTemplateFile($tpl));
     }
     
     /*
@@ -128,8 +131,8 @@ class View
      */
     public static function readTemplate($tpl)
     {
-        if (is_file($file = self::getTemplateFile($tpl))) {
-            return self::readTemplateFile($file);
+		if (($content = File::get(self::getTemplateFilePath($tpl))) !== false) {
+			return $content;
         }
         throw new ViewException("模版文件: $file 不存在");
     }
@@ -139,17 +142,22 @@ class View
      */
     public static function checkExpired($phpfile, ...$tpls)
     {
-        if (empty(self::$config['template']['engine'])) {
-            return;
-        }
-        foreach ($tpls as $tpl) {
-            if (is_file($tplfile = self::getTemplateFile($tpl))) {
-                throw new ViewException("模版文件: $file 不存在");
-            }
-            if (filemtime($phpfile) < filemtime($tplfile)) {
-                $tpl = substr($phpfile, strlen(realpath(self::$config['dir'])) + 1, - strlen(self::$config['ext']));
-                return self::complieTo(self::readTemplate($tpl), $phpfile);
-            }
+        if (self::$config['template']) {
+	        foreach ($tpls as $tpl) {
+	            if (is_file($tplfile = self::getTemplatePath($tpl))) {
+	                throw new ViewException("模版文件: $file 不存在");
+	            }
+	            if (filemtime($phpfile) < filemtime($tplfile)) {
+					$dir = realpath(self::$config['dir']);
+					$len = strlen($dir);
+					if (strncmp($phpfile, $dir, $len) === 0) {
+		                $t = substr($phpfile, $len + 1, - strlen(self::$config['ext']));
+		                self::complieTo($phpfile, self::readTemplate($t));
+						return true;
+					}
+					throw new ViewException("视图文件: $phpfile 与视图目录: $dir 不符");
+	            }
+	        }
         }
     }
     
@@ -163,11 +171,20 @@ class View
         }
         throw new \BadMethodCallException("调用未定义过滤器: $name");
     }
-    
+	
+    /*
+     * 检查视图文件是否存在
+     */
+    public static function exists($tpl)
+    {
+        return self::$config['template'] ? 
+			is_file(self::getTemplateFilePath($tpl)) : is_php_file(self::getViewFilePath($tpl));
+    }
+	
     /*
      * 获取视图文件路径
      */
-    private static function getView($tpl)
+    private static function getViewFilePath($tpl)
     {
         return self::$config['dir'].$tpl.self::$config['ext'];
     }
@@ -175,38 +192,20 @@ class View
     /*
      * 获取模版文件路径
      */
-    private static function getTemplateFile($tpl)
+    private static function getTemplateFilePath($tpl)
     {
         return (self::$config['template']['dir'] ?? self::$config['dir']).$tpl.self::$config['template']['ext'];
-    }
-    
-    /*
-     * 读取模版文件内容
-     */
-    private static function readTemplateFile($file)
-    {
-        if ($result = file_get_contents($file)) {
-            return $result;
-        }
-        throw new ViewException("读取模版文件: $file 失败");
     }
 
     /*
      * 编译模版并保存到视图文件
      */
-    private static function complieTo($content, $file)
+    private static function complieTo($file, $content)
     {
-        if (File::makeDir(dirname($file))) {
-            $result = self::$config['template']['engine']::complie($content);
-            if (file_put_contents($file, $result, LOCK_EX)) {
-                if (OPCACHE_LOADED) {
-                    opcache_compile_file($file);
-                }
-                return true;
-            }
-            throw new ViewException("写入视图文件: $file 失败");
+        if (File::put($file, self::$config['template']['engine']::complie($content))) {
+			return OPCACHE_LOADED && opcache_compile_file($file);
         }
-        throw new ViewException("创建视图文件目录失败");
+        throw new ViewException("写入视图文件: $file 失败");
     }
     
     /*

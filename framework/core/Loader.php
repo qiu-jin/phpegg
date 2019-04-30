@@ -69,18 +69,19 @@ class Loader
      */
     private static function autoload($class)
     {
-        $arr = explode('\\', $class, 2);
-        if (isset($arr[1])) {
-            if (isset(self::$prefix_rules[$arr[0]])) {
-                self::import(self::$prefix_rules[$arr[0]].strtr($arr[1], '\\', '/'));
-            } elseif (isset(self::$psr4_rules[$arr[0]])) {
-                self::loadPsr4($arr[0], $class);
-            }
-        }
         if (isset(self::$map_rules[$class])) {
             self::import(self::$map_rules[$class]);
         } elseif (isset(self::$alias_rules[$class])) {
             class_alias(self::$alias_rules[$class], $class);
+        } else {
+	        $arr = explode('\\', $class, 2);
+	        if (isset($arr[1])) {
+	            if (isset(self::$prefix_rules[$arr[0]])) {
+	               	self::import(self::$prefix_rules[$arr[0]].strtr($arr[1], '\\', '/'));
+	            } elseif (isset(self::$psr4_rules[$arr[0]])) {
+	                self::loadPsr4($arr[0], $class);
+	            }
+	        }
         }
     }
 

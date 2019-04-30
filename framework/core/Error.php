@@ -3,8 +3,8 @@ namespace framework\core;
 
 use framework\App;
 use framework\util\Arr;
-use framework\core\exception\Exception;
-use framework\core\exception\ErrorException;
+use framework\exception\Exception;
+use framework\exception\ErrorException;
 
 class Error
 {

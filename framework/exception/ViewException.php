@@ -1,4 +1,4 @@
 <?php
-namespace framework\core\exception;
+namespace framework\exception;
 
 class ViewException extends \Exception {}

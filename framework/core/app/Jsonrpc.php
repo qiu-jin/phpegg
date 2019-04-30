@@ -9,7 +9,7 @@ use framework\core\Container;
 use framework\core\Dispatcher;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\core\exception\JsonrpcAbortException;
+use framework\exception\JsonrpcAbortException;
 
 class Jsonrpc extends App
 {

@@ -22,9 +22,9 @@ class Config
             return;
         }
         self::$init = true;
-        self::loadEnv();
+        __include(defined('ENV_FILE') ? ENV_FILE : APP_DIR.'.env');
         if ($file = self::env('CONFIG_FILE')) {
-            self::loadFile($file);
+			self::$config = __include($file);
         }
         self::$dir = self::env('CONFIG_DIR');
     }
@@ -43,11 +43,10 @@ class Config
     public static function get($name, $default = null)
     {
         $ns = explode('.', $name, 2);
-        $fn = $ns[0];
-        if (!self::check($fn)) {
+        if (!self::check($ns[0])) {
             return $default;
         }
-        $value = self::$config[$fn];
+        $value = self::$config[$ns[0]];
         return isset($ns[1]) ? Arr::get($value, $ns[1], $default) : $value;
     }
     
@@ -57,11 +56,10 @@ class Config
     public static function has($name)
     {
         $ns = explode('.', $name, 2);
-        $fn = $ns[0];
-        if (!self::check($fn)) {
+        if (!self::check($ns[0])) {
             return false;
         }
-		return isset($ns[1]) ? Arr::has(self::$config[$fn], $ns[1]) : true;
+		return isset($ns[1]) ? Arr::has(self::$config[$ns[0]], $ns[1]) : true;
     }
     
     /*
@@ -71,11 +69,10 @@ class Config
     {
         $ns = explode('.', $name, 2);
         if (isset($ns[1])) {
-            $fn = $ns[0];
-            if (!self::check($fn)) {
-                self::$config[$fn] = [];
+            if (!self::check($ns[0])) {
+                self::$config[$ns[0]] = [];
             }
-            Arr::set(self::$config[$fn], $ns[1], $value);
+            Arr::set(self::$config[$ns[0]], $ns[1], $value);
         } else {
             self::$config[$name] = $value;
         }
@@ -86,7 +83,7 @@ class Config
      */
     public static function read($name)
     {
-        return self::$config[$name] ?? self::load($name);
+        return self::$config[$name] ?? self::include($name);
     }
     
     /*
@@ -121,36 +118,16 @@ class Config
             return false;
         }
         self::$checked[$name] = true;
-        return self::$dir && (self::$config[$name] = self::load($name));
+        return self::$dir && (self::$config[$name] = self::include($name));
     }
-    
+	
     /*
      * 从配置目录中读取子配置文件
      */
-    private static function load($name)
+    private static function include($name)
     {
-        if (is_php_file($file = self::$dir."$name.php") && is_array($return = __include($file))) {
-            return $return;
-        }
-    }
-    
-    /*
-     * 导入环境配置文件
-     */
-    private static function loadEnv()
-    {
-        if (is_php_file($file = defined('ENV_FILE') ? ENV_FILE : APP_DIR.'.env')) {
-            __include($file);
-        }
-    }
-    
-    /*
-     * 导入单文件配置
-     */
-    private static function loadFile($file)
-    {
-        if (is_array($config = __include($file))) {
-            self::$config = $config;
+        if (is_php_file($file = self::$dir."$name.php") && is_array($config = __include($file))) {
+            return $config;
         }
     }
 }

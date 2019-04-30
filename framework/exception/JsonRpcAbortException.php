@@ -1,5 +1,5 @@
 <?php
-namespace framework\core\exception;
+namespace framework\exception;
 
 class JsonRpcAbortException extends \Exception
 {
