@@ -4,6 +4,7 @@ namespace framework;
 use framework\core\Error;
 use framework\core\Event;
 use framework\core\Config;
+use framework\core\http\Request;
 
 abstract class App
 {
@@ -30,6 +31,8 @@ abstract class App
     private static $exit;
     // runing标示，防止重复执行
     private static $runing;
+	// 请求路径
+	private static $path;
     // 错误处理器
     private static $error_handler;
     // 返回值处理器
@@ -215,6 +218,30 @@ abstract class App
     public static function setReturnHandler(callable $handler)
     {
         self::$return_handler = $handler;
+    }
+	
+    /*
+     * 设置路径
+     */
+    public static function setPath($path)
+    {
+		self::$path = trim($path, '/');
+    }
+	
+    /*
+     * 获取路径
+     */
+    public static function getPath()
+    {
+		return self::$path ?? trim(Request::path(), '/');
+    }
+	
+    /*
+     * 获取路径数组
+     */
+    public static function getPathArr()
+    {
+        return ($path = self::path()) ? explode('/', $path) : [];
     }
 	
     /*

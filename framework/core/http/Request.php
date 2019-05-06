@@ -174,15 +174,6 @@ class Request
     }
     
     /*
-     * 获取请求路径数组
-     */
-    public static function pathArr()
-    {
-        $path = trim(self::path(), '/');
-        return $path ? explode('/', $path) : [];
-    }
-    
-    /*
      * 获取请求body内容
      */
     public static function body()

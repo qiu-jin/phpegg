@@ -179,7 +179,7 @@ class Cli extends App
     protected function parseArguments()
     {
         $argv = $_SERVER['argv'];
-        array_shift($argv);
+        App::setPath(array_shift($argv));
 		$count = count($argv);
         $last_option = null;
         for ($i = 0; $i < $count; $i++) {

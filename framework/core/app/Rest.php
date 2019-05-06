@@ -65,7 +65,7 @@ class Rest extends App
      */
     protected function dispatch()
     {
-        $path = Request::pathArr();
+        $path = App::getPathArr();
         $this->http_method = Request::method();
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
             if ($dispatch = $this->{$mode.'Dispatch'}($path)) {

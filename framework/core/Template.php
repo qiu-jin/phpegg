@@ -47,9 +47,7 @@ class Template
         // 文本转义符号与反转义符号
         'text_escape_sign'      => [':', '!'],
         // 不输出标识符
-        'not_echo_text_sign'    => '%',
-        // 注释符号
-        'note_text_sign'        => '#',
+        'not_echo_text_sign'    => '#',
         // 允许的函数
         'allow_php_functions'   => false,
         // 允许的静态类
@@ -449,23 +447,19 @@ class Template
         $r = preg_quote(self::$config['text_delimiter_sign'][1]);
         return preg_replace_callback("/$l(.*?)$r/", function ($matches) use ($str) {
             $val = $matches[1];
-            switch ($val[0]) {
-                // 忽略注释
-                case self::$config['note_text_sign']:
-                    return '';
-                // 不输出
-                case self::$config['not_echo_text_sign']:
-                    return self::wrapCode(self::readValue(substr($val, 1)).';');
-                default:
-                    // 是否转义
-                    $escape = self::$config['auto_escape_text'];
-                    if (in_array($val[0], self::$config['text_escape_sign'])) {
-                        $escape = !array_search($val[0], self::$config['text_escape_sign']);
-                        $val = substr($val, 1);
-                    }
-                    $code = self::readValue($val);
-                    return self::wrapCode($escape ? "echo htmlspecialchars($code);" : "echo $code;");
-            }
+			if ($val[0] == self::$config['not_echo_text_sign']) {
+				// 不输出
+				return self::wrapCode(self::readValue(substr($val, 1)).';');
+			} else {
+                // 是否转义
+                $escape = self::$config['auto_escape_text'];
+                if (in_array($val[0], self::$config['text_escape_sign'])) {
+                    $escape = !array_search($val[0], self::$config['text_escape_sign']);
+                    $val = substr($val, 1);
+                }
+                $code = self::readValue($val);
+                return self::wrapCode($escape ? "echo htmlspecialchars($code);" : "echo $code;");
+			}
         }, self::readInclude(self::readStructTag($str, $end)));
     }
     

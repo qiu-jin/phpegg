@@ -96,7 +96,7 @@ class Micro extends App
      */
     protected function dispatch()
     {
-        $router = new Router(Request::pathArr(), Request::method());
+        $router = new Router(App::getPathArr(), Request::method());
         if (!$result = $router->route($this->routes)) {
             return;
         }

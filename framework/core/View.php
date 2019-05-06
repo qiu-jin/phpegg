@@ -144,7 +144,7 @@ class View
     {
         if (self::$config['template']) {
 	        foreach ($tpls as $tpl) {
-	            if (is_file($tplfile = self::getTemplatePath($tpl))) {
+	            if (!is_file($tplfile = self::getTemplatePath($tpl))) {
 	                throw new ViewException("模版文件: $file 不存在");
 	            }
 	            if (filemtime($phpfile) < filemtime($tplfile)) {

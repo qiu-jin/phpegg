@@ -6,7 +6,6 @@ use framework\core\View;
 use framework\core\Config;
 use framework\core\Dispatcher;
 use framework\core\http\Status;
-use framework\core\http\Request;
 use framework\core\http\Response;
 
 class Inline extends App
@@ -43,9 +42,8 @@ class Inline extends App
      */
     protected function dispatch()
     {
-        $path = trim(Request::path(), '/');
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
-            if ($dispatch = $this->{$mode.'Dispatch'}($path)) {
+            if ($dispatch = $this->{$mode.'Dispatch'}()) {
                 return $this->dispatch = $dispatch;
             }
         }
@@ -95,9 +93,9 @@ class Inline extends App
     /*
      * 默认调度
      */
-    protected function defaultDispatch($path) 
+    protected function defaultDispatch() 
     {
-        if ($path) {
+        if ($path = App::getPath()) {
             $controller = $this->config['default_dispatch_hyphen_to_underscore'] ? strtr($path, '-', '_') : $path;
             if (!isset($this->config['default_dispatch_controllers'])) {
                 if ($controller_file = $this->getAndCheckControllerFile($controller)) {
@@ -114,11 +112,11 @@ class Inline extends App
     /*
      * 路由调度
      */
-    protected function routeDispatch($path)
+    protected function routeDispatch()
     {
         if ($routes = $this->config['route_dispatch_routes']) {
             $dispatch = Dispatcher::route(
-                empty($path) ? [] : explode('/', $path),
+                App::getPathArr(),
                 is_string($routes) ? Config::read($routes) : $routes,
                 2,
                 $this->config['route_dispatch_dynamic']

@@ -62,7 +62,7 @@ class Standard extends App
      */
     protected function dispatch()
     {
-        $path = Request::pathArr();
+        $path = App::getPathArr();
         foreach ((array) $this->config['dispatch_mode'] as $mode) {
 			if (($dispatch = $this->{$mode.'Dispatch'}($path)) !== null) {
 				return $this->dispatch = $dispatch;

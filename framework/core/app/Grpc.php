@@ -86,7 +86,7 @@ class Grpc extends App
      */
     protected function dispatch()
     {
-        if (count($arr = Request::pathArr()) !== 2) {
+        if (count($arr = App::getPathArr()) !== 2) {
             return;
         }
 		list($service, $method) = $arr;
