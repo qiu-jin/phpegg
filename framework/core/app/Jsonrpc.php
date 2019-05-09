@@ -53,13 +53,13 @@ class Jsonrpc extends App
         404 => [-32601, 'Method not found'],
         500 => [-32000, 'Server error']
     ];
-    // 当前请求是否为批请求
+    // 是否为批请求
     protected $is_batch_call;
-    // 自定义方法集合
+    // 自定义方法
     protected $custom_methods;
-    // 批请求控制器方法反射实例缓存
+    // 控制器方法反射实例
     protected $method_reflections;
-    // 批请求控制器实例缓存
+    // 控制器实例
     protected $controller_instances;
 
     /*
@@ -184,7 +184,7 @@ class Jsonrpc extends App
 	            $return['error'] = $dispatch['error'];
 	        } else {
 	            try {
-	                $return += $this->handleCallItem($dispatch);
+	                $return += $this->handleItem($dispatch);
 	            } catch (JsonrpcAbortException $e) {
 	                $return['error'] = [
 	                	'code' => $e->getCode(),
@@ -198,7 +198,7 @@ class Jsonrpc extends App
 			return $return;
 		} else {
             try {
-                $this->handleCallItem($dispatch);
+                $this->handleItem($dispatch);
             } catch (JsonrpcAbortException $e) {
 				// Pass
             }
@@ -208,7 +208,7 @@ class Jsonrpc extends App
     /*
      * 处理调用单元
      */
-    protected function handleCallItem($dispatch)
+    protected function handleItem($dispatch)
     {
 		extract($dispatch);
         if ($this->config['param_mode'] == 1) {

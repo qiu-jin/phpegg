@@ -74,9 +74,9 @@ class Grpc extends App
         if ($class !== null) {
             $this->custom_methods['services'][$name] = $class;
         } elseif (isset($this->custom_methods['services'])) {
-			$this->custom_methods['services'] = $method + $this->custom_methods['services'];
+			$this->custom_methods['services'] = $name + $this->custom_methods['services'];
 		} else {
-			$this->custom_methods['services'] = $method;
+			$this->custom_methods['services'] = $name;
 		}
         return $this;
     }

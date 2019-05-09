@@ -241,7 +241,7 @@ abstract class App
      */
     public static function getPathArr()
     {
-        return ($path = self::path()) ? explode('/', $path) : [];
+        return ($path = self::getPath()) ? explode('/', $path) : [];
     }
 	
     /*

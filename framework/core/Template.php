@@ -54,6 +54,8 @@ class Template
         'allow_static_classes'  => false,
         // 允许的容器
         'allow_container_providers' => false,
+        // 是否去除原生HTML注释
+        'remove_html_note' 			=> false,
         // filter宏
         'view_filter_macro'         => __CLASS__.'::filterMacro',
         // include宏
@@ -232,7 +234,12 @@ class Template
      */
     protected static function removeNote($str)
     {
-        $ret = '';
+		// 去除原生注释
+		if (self::$config['remove_html_note']) {
+			$str = preg_replace('/\<\!--[\w\W]*?--\>/', '', $str);
+		}
+		// 去除模版注释
+		$ret = '';
         if ($res = self::parseTagWithText($str, self::$config['note_tag'], null, false, true)) {
             $pos = 0;
             foreach ($res as $v) {

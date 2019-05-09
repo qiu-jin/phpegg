@@ -27,6 +27,8 @@ class Micro extends App
         'closure_getter_providers'  => null,
         // 是否路由动态调用
         'route_dispatch_dynamic'    => false,
+        // 设置动作调度路由属性名，为null则不启用动作路由
+        'action_dispatch_routes_property' => 'routes',
     ];
     // 路由
     protected $routes = [];
@@ -100,8 +102,8 @@ class Micro extends App
         if (!$result = $router->route($this->routes)) {
             return;
         }
-        if ($result['dispatch'] instanceof \Closure) {
-            $call = $result['dispatch'];
+		$call = $result['dispatch'];
+        if ($call instanceof \Closure) {
             if ($class = $this->config['closure_bind_class']) {
 				if ($class === true) {
 					$call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
@@ -110,23 +112,33 @@ class Micro extends App
 				}
             }
 			return $this->dispatch = ['call' => $call, 'params' => $result['matches']];
-        } elseif (is_string($result['dispatch'])) {
-			$param_mode = $this->config['param_mode'];
-            $dispatch = Dispatcher::dispatch($result, $param_mode, $this->config['route_dispatch_dynamic']);
+        }
+		if (is_string($call)) {
+			$dispatch = Dispatcher::dispatch(
+				$result,
+				$this->config['param_mode'],
+				$this->config['route_dispatch_dynamic']
+			);
             $arr = explode('::', $dispatch[0]);
 			if ($this->config['controller_ns']) {
 				$arr[0] = $this->getControllerClass($arr[0]);
 			}
 			$call = new $arr[0];
             if (isset($arr[1])) {
-				$call = [$instance, $arr[1]];
+				$call = [$call, $arr[1]];
+            } elseif ($this->config['action_dispatch_routes_property'] && isset($result['next'])) {
+		        return $this->actionRouteDispatch($call, $result['next']);
             }
-            if (!$dispatch[2] || (is_callable($call) && (!isset($arr[1]) || $arr[1][0] !== '_'))) {
-				return $this->dispatch = [
-					'call' => $call, 
-					'params' => $param_mode == 2 ? $this->bindKvParams($dispatch[1]) : $dispatch[1]
-				];
+            if (!$dispatch[2] || (is_callable($call) && (!isset($arr[1]) || $call[1][0] !== '_'))) {
+				return $this->dispatch = $this->getDispatchResult($call, $dispatch[1]);
             }
+        } elseif (is_object($call)) {
+			if ($this->config['action_dispatch_routes_property'] && isset($result['next'])) {
+				return $this->actionRouteDispatch($call, $result['next']);
+			}
+	        if (is_callable($call)) {
+				return $this->dispatch = $this->getDispatchResult($call, $dispatch[1]);
+	        }
         }
     }
     
@@ -153,5 +165,46 @@ class Micro extends App
     protected function respond($return = null)
     {
         Response::json($return);
+    }
+	
+    /*
+     * Action 路由调度
+     */
+    protected function actionRouteDispatch($instance, $path)
+    {
+		$property = $this->config['action_dispatch_routes_property'];
+		if (!isset($instance->$property)) {
+			if (count($path) == 1 && is_callable([$instance, $path[0]]) && $path[0][0] !== '_') {
+				return $this->dispatch = ['call' => [$instance, $path[0]], 'params' => []];
+			}
+			return;
+		}
+        if ($dispatch = Dispatcher::route(
+			$path,
+			$instance->$property,
+			$this->config['param_mode'],
+			$this->config['route_dispatch_dynamic']
+		)) {
+            if (!$dispatch[2] || is_callable([$instance, $dispatch[0]]) || $dispatch[0][0] === '_') {
+	            return $this->dispatch = $this->getDispatchResult([$instance, $dispatch[0]], $dispatch[1]);
+            }
+        }
+    }
+	
+    /*
+     * 获取dispatch结果
+     */
+    protected function getDispatchResult($call, $params)
+    {
+		if ($this->config['param_mode'] == 2) {
+			if (is_array($call)) {
+				list($instance, $action) = $call;
+			} else {
+				$instance = $call;
+				$action = '__invoke';
+			}
+			$params = $this->bindKvParams(new \ReflectionMethod($instance, $action), $params);
+		}
+		return ['call' => $call, 'params' => $params];
     }
 }

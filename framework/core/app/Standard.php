@@ -231,12 +231,11 @@ class Standard extends App
                         'params'                => $dispatch[1],
                         'param_mode'            => $param_mode
                     ];
-                } else {
-					if ($this->config['action_dispatch_routes_property']) {
-	                    if ($action_route_dispatch = $this->actionRouteDispatch($param_mode, $class, ...$dispatch)) {
-	                        return $action_route_dispatch;
-	                    }
-						return false;
+                } elseif(isset($dispatch[3]))  {
+					if ($this->config['action_dispatch_routes_property']
+						&& isset($action_route_dispatch = $this->actionRouteDispatch($param_mode, $class, $call[0], $dispatch[3]))
+					) {
+						return $action_route_dispatch;
 					}
 					$this->dispatch = ['continue' => $dispatch, 'class' => $class];
                 }
@@ -250,13 +249,13 @@ class Standard extends App
     protected function actionRouteDispatch($param_mode, $class, $controller, $path)
     {
         $routes = get_class_vars($class)[$this->config['action_dispatch_routes_property']] ?? null;
-        if (empty($routes)) {
+        if (!isset($routes)) {
             return;
         }
         if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $this->config['route_dispatch_dynamic'])) {
             if ($dispatch[2]) {
                 if (!is_callable([$controller_instance = new $class(), $dispatch[0]]) || $dispatch[0][0] === '_') {
-                    return;
+                    return false;
                 }
             } elseif ($this->config['route_dispatch_access_protected']) {
                 $this->setMethodAccessible($controller_instance, $dispatch[0]);
@@ -269,6 +268,7 @@ class Standard extends App
                 'param_mode'            => $param_mode
             ];
         }
+		return false;
     }
     
     /*

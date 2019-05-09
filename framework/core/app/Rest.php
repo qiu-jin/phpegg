@@ -170,7 +170,7 @@ class Rest extends App
         }
         if (isset($this->config['route_dispatch_action_routes_property'])
             && !isset($this->dispatch['continue'])
-            && ($action_route_dispatch = $this->actionRouteDispatch($param_mode, $class, $controller, $params))
+            && isset($action_route_dispatch = $this->actionRouteDispatch($param_mode, $class, $controller, $params))
         ) {
             return $action_route_dispatch;
         }
@@ -223,7 +223,7 @@ class Rest extends App
         }
         if ($this->config['action_dispatch_routes_property']
             && !isset($this->dispatch['continue'])
-            && ($action_route_dispatch = $this->actionRouteDispatch(0, $class, $controller, $action_path))
+            && isset($action_route_dispatch = $this->actionRouteDispatch(0, $class, $controller, $action_path))
         ) {
             return $action_route_dispatch;
         }
@@ -258,12 +258,14 @@ class Rest extends App
                         'params'                => $dispatch[1],
                         'param_mode'            => $param_mode
                     ];
-                } elseif ($this->config['action_dispatch_routes_property']) {
-                    if ($action_dispatch = $this->actionRouteDispatch($param_mode, $class, ...$dispatch)) {
-                        return $action_dispatch;
-                    }
+                } elseif (isset($dispatch[3])) {
+					if ($this->config['action_dispatch_routes_property']
+						&& isset(($action_route_dispatch = $this->actionRouteDispatch($param_mode, $class, $call[0], $dispatch[3])))
+					) {
+						return $action_route_dispatch;
+					}
+					$this->dispatch = ['continue' => $dispatch, 'class' => $class];
                 }
-                $this->dispatch = ['continue' => $dispatch, 'class' => $class];
             }
         }
     }
@@ -274,7 +276,7 @@ class Rest extends App
     protected function actionRouteDispatch($param_mode, $class, $controller, $path)
     {
         $routes = get_class_vars($class)[$this->config['action_dispatch_routes_property']] ?? null;
-        if (empty($routes)) {
+        if (!isset($routes)) {
             return;
         }
         $dynamic = $this->config['route_dispatch_dynamic'];
@@ -282,7 +284,7 @@ class Rest extends App
             if ($dispatch[2]
                 && ($dispatch[0][0] === '_' || !is_callable([$controller_instance = new $class(), $dispatch[0]]))
             ) {
-                return;
+                return false;
             }
             return [
                 'controller'            => $controller,
@@ -292,6 +294,7 @@ class Rest extends App
                 'param_mode'            => $param_mode
             ];
         }
+		return false;
     }
 
     /*

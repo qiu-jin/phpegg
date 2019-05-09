@@ -58,6 +58,9 @@ class Router
                 } elseif ($matches[0]) {
                     $route['matches'] = array_merge($matches[0], $route['matches']);
                 }
+				if (isset($matches[2])) {
+					$route['next'] = $matches[2];
+				}
                 return $route;
             }
         }
@@ -86,6 +89,8 @@ class Router
             } else{
                 if ($c === '?') {
                     return [$ret, $step];
+				} elseif ($c === '~') {
+					return [$ret, $step, []];
                 } elseif ($c !== ':') {
                     return false;
                 }
@@ -140,10 +145,7 @@ class Router
                 // 余部匹配
                 case '~':
                     if ($v === '~') {
-                        return [
-                            array_merge($ret, array_slice($this->path, $step)),
-                            $this->count
-                        ];
+                        return [$ret, $this->count, array_slice($this->path, $step)];
                     }
                     return false;
                 // HTTP方法匹配

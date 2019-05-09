@@ -33,7 +33,7 @@ class Dispatcher
                 $params = self::bindListParams($param_names, $params);
             }
         } 
-        return [$dispatch, $params, $is_dynamic];
+        return [$dispatch, $params, $is_dynamic, $data['next'] ?? null];
     }
     
     /*
