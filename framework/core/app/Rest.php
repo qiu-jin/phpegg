@@ -55,7 +55,7 @@ class Rest extends App
         // 是否路由动态调用
         'route_dispatch_dynamic' => false,
         // 设置动作调度路由属性名，为null则不启用动作路由
-        'action_dispatch_routes_property' => null,
+        'action_dispatch_routes_property' => 'routes',
     ];
 	// HTTP请求方法
     protected $http_method;
@@ -156,8 +156,9 @@ class Rest extends App
 				return;
 			}
         }
+		$controller_instance = new $class();
         if (in_array($action = $this->http_method, $this->config['default_dispatch_http_methods'])
-            && is_callable([$controller_instance = new $class(), $action])
+            && is_callable([$controller_instance, $action])
         ) {
             if (isset($params)) {
                 if ($param_mode === 2) {
@@ -168,11 +169,11 @@ class Rest extends App
             }
             return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
         }
-        if (isset($this->config['route_dispatch_action_routes_property'])
-            && !isset($this->dispatch['continue'])
-            && isset($action_route_dispatch = $this->actionRouteDispatch($param_mode, $class, $controller, $params))
-        ) {
-            return $action_route_dispatch;
+        if ($this->config['route_dispatch_action_routes_property'] && !isset($this->dispatch['continue'])) {
+			$action_route_dispatch = $this->actionRouteDispatch($param_mode, $controller_instance, $controller, $params);
+            if (isset($action_route_dispatch)) {
+            	return $action_route_dispatch;
+            }
         }
         $this->dispatch = ['continue' => [$controller, $params ?? []], 'class' => $class];
     }
@@ -210,22 +211,23 @@ class Rest extends App
         }
         $routes  = $this->config['resource_dispatch_routes'];
 		$param_mode = $this->config['resource_dispatch_param_mode'];
+		$controller_instance = new $class();
         if (($dispatch = Dispatcher::route($action_path, $routes, $param_mode, false, $this->http_method))
-            && is_callable([$controller_instance = new $class(), $dispatch[0]])
+            && is_callable([$controller_instance, $dispatch[0]])
         ) {
             return [
                 'controller'            => $controller,
-                'controller_instance'   => $controller_instance ?? new $class,
+                'controller_instance'   => $controller_instance,
                 'action'                => $dispatch[0],
                 'params'                => $dispatch[1],
                 'param_mode'            => $param_mode
             ];
         }
-        if ($this->config['action_dispatch_routes_property']
-            && !isset($this->dispatch['continue'])
-            && isset($action_route_dispatch = $this->actionRouteDispatch(0, $class, $controller, $action_path))
-        ) {
-            return $action_route_dispatch;
+        if ($this->config['action_dispatch_routes_property'] && !isset($this->dispatch['continue'])) {
+			$action_route_dispatch = $this->actionRouteDispatch(0, $controller_instance, $controller, $action_path);
+			if (isset($action_route_dispatch)) {
+				return $action_route_dispatch;
+			}
         }
         $this->dispatch = ['continue' => [$controller, $action_path], 'class' => $class];
     }
@@ -245,24 +247,28 @@ class Rest extends App
             if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic, $this->http_method)) {
                 $call = explode('::', $dispatch[0]);
                 $class = $this->getControllerClass($call[0], $dispatch[2]);
+				$controller_instance = new $class();
                 if (isset($call[1])) {
                     if ($dispatch[2]
-                        && ($call[1][0] === '_' || !is_callable([$controller_instance = new $class(), $call[1]]))
+                        && ($call[1][0] === '_' || !is_callable([$controller_instance, $call[1]]))
                     ) {
                         return;
                     }
                     return [
                         'controller'            => $call[0],
-                        'controller_instance'   => $controller_instance ?? new $class,
+                        'controller_instance'   => $controller_instance,
                         'action'                => $call[1],
                         'params'                => $dispatch[1],
                         'param_mode'            => $param_mode
                     ];
                 } elseif (isset($dispatch[3])) {
-					if ($this->config['action_dispatch_routes_property']
-						&& isset(($action_route_dispatch = $this->actionRouteDispatch($param_mode, $class, $call[0], $dispatch[3])))
-					) {
-						return $action_route_dispatch;
+					if ($this->config['action_dispatch_routes_property']) {
+						$action_route_dispatch = $this->actionRouteDispatch(
+							$param_mode, $controller_instance, $call[0], $dispatch[3]
+						);
+						if (isset($action_route_dispatch)) {
+							return $action_route_dispatch;
+						}
 					}
 					$this->dispatch = ['continue' => $dispatch, 'class' => $class];
                 }
@@ -273,22 +279,27 @@ class Rest extends App
     /*
      * Action 路由调度
      */
-    protected function actionRouteDispatch($param_mode, $class, $controller, $path)
+    protected function actionRouteDispatch($param_mode, $instance, $controller, $path)
     {
-        $routes = get_class_vars($class)[$this->config['action_dispatch_routes_property']] ?? null;
-        if (!isset($routes)) {
+		$property = $this->config['action_dispatch_routes_property'];
+        if (!isset($instance->$property)) {
             return;
         }
-        $dynamic = $this->config['route_dispatch_dynamic'];
-        if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic, $this->http_method)) {
+        if ($dispatch = Dispatcher::route(
+			$path,
+			$instance->$property,
+			$param_mode,
+			$this->config['route_dispatch_dynamic'],
+			$this->http_method
+		)) {
             if ($dispatch[2]
-                && ($dispatch[0][0] === '_' || !is_callable([$controller_instance = new $class(), $dispatch[0]]))
+                && ($dispatch[0][0] === '_' || !is_callable([$instance, $dispatch[0]]))
             ) {
                 return false;
             }
             return [
                 'controller'            => $controller,
-                'controller_instance'   => $controller_instance ?? new $class,
+                'controller_instance'   => $instance,
                 'action'                => $dispatch[0],
                 'params'                => $dispatch[1],
                 'param_mode'            => $param_mode

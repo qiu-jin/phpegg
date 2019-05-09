@@ -52,7 +52,7 @@ class Standard extends App
         // 路由调度是否允许访问受保护的方法
         'route_dispatch_access_protected' => false,
         // 设置动作调度路由属性名，为null则不启用动作路由
-        'action_dispatch_routes_property' => null,
+        'action_dispatch_routes_property' => 'routes',
     ];
 	// 方法反射实例
     protected $method_reflection;
@@ -187,7 +187,8 @@ class Standard extends App
 				return;
 			}
         }
-        if (is_callable([$controller_instance = new $class(), $action]) && $action[0] !== '_') {
+		$controller_instance = new $class();
+        if (is_callable([$controller_instance, $action]) && $action[0] !== '_') {
             if (isset($params)) {
                 if ($param_mode === 2) {
                     $params = $this->getKvParams($params);
@@ -197,7 +198,7 @@ class Standard extends App
             }
             return compact('action', 'controller', 'controller_instance', 'params', 'param_mode');
         } elseif ($this->config['action_dispatch_routes_property'] && isset($allow_action_route)) {
-            return $this->actionRouteDispatch($param_mode, $class, $controller, array_slice($path, $depth));
+            return $this->actionRouteDispatch($param_mode, $controller_instance, $controller, array_slice($path, $depth));
         }
     }
     
@@ -215,8 +216,8 @@ class Standard extends App
             if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $this->config['route_dispatch_dynamic'])) {
                 $call = explode('::', $dispatch[0]);
                 $class = $this->getControllerClass($call[0], $dispatch[2]);
+				$controller_instance = new $class();
                 if (isset($call[1])) {
-					$controller_instance = new $class();
                     if ($dispatch[2]) {
                         if (!is_callable([$controller_instance, $call[1]]) || $call[1][0] === '_') {
                             return false;
@@ -232,10 +233,16 @@ class Standard extends App
                         'param_mode'            => $param_mode
                     ];
                 } elseif(isset($dispatch[3]))  {
-					if ($this->config['action_dispatch_routes_property']
-						&& isset($action_route_dispatch = $this->actionRouteDispatch($param_mode, $class, $call[0], $dispatch[3]))
-					) {
-						return $action_route_dispatch;
+					if ($this->config['action_dispatch_routes_property']) {
+						$action_route_dispatch = $this->actionRouteDispatch(
+							$param_mode, 
+							$controller_instance,
+							$call[0],
+							$dispatch[3]
+						);
+						if (isset($action_route_dispatch)) {
+							return $action_route_dispatch;
+						}
 					}
 					$this->dispatch = ['continue' => $dispatch, 'class' => $class];
                 }
@@ -246,23 +253,28 @@ class Standard extends App
     /*
      * Action 路由调度
      */
-    protected function actionRouteDispatch($param_mode, $class, $controller, $path)
+    protected function actionRouteDispatch($param_mode, $instance, $controller, $path)
     {
-        $routes = get_class_vars($class)[$this->config['action_dispatch_routes_property']] ?? null;
-        if (!isset($routes)) {
+		$property = $this->config['action_dispatch_routes_property'];
+        if (!isset($instance->$property)) {
             return;
         }
-        if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $this->config['route_dispatch_dynamic'])) {
+        if ($dispatch = Dispatcher::route(
+			$path,
+			$instance->$property,
+			$param_mode,
+			$this->config['route_dispatch_dynamic']
+		)) {
             if ($dispatch[2]) {
-                if (!is_callable([$controller_instance = new $class(), $dispatch[0]]) || $dispatch[0][0] === '_') {
+                if (!is_callable([$instance, $dispatch[0]]) || $dispatch[0][0] === '_') {
                     return false;
                 }
             } elseif ($this->config['route_dispatch_access_protected']) {
-                $this->setMethodAccessible($controller_instance, $dispatch[0]);
+                $this->setMethodAccessible($instance, $dispatch[0]);
             }
             return [
                 'controller'            => $controller,
-                'controller_instance'   => $controller_instance ?? new $class,
+                'controller_instance'   => $instance,
                 'action'                => $dispatch[0],
                 'params'                => $dispatch[1],
                 'param_mode'            => $param_mode

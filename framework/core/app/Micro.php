@@ -130,14 +130,14 @@ class Micro extends App
 		        return $this->actionRouteDispatch($call, $result['next']);
             }
             if (!$dispatch[2] || (is_callable($call) && (!isset($arr[1]) || $call[1][0] !== '_'))) {
-				return $this->dispatch = $this->getDispatchResult($call, $dispatch[1]);
+				return $this->getDispatchResult($call, $dispatch[1]);
             }
         } elseif (is_object($call)) {
 			if ($this->config['action_dispatch_routes_property'] && isset($result['next'])) {
 				return $this->actionRouteDispatch($call, $result['next']);
 			}
 	        if (is_callable($call)) {
-				return $this->dispatch = $this->getDispatchResult($call, $dispatch[1]);
+				return $this->getDispatchResult($call, $dispatch[1]);
 	        }
         }
     }
@@ -186,7 +186,7 @@ class Micro extends App
 			$this->config['route_dispatch_dynamic']
 		)) {
             if (!$dispatch[2] || is_callable([$instance, $dispatch[0]]) || $dispatch[0][0] === '_') {
-	            return $this->dispatch = $this->getDispatchResult([$instance, $dispatch[0]], $dispatch[1]);
+	            return $this->getDispatchResult([$instance, $dispatch[0]], $dispatch[1]);
             }
         }
     }
@@ -205,6 +205,6 @@ class Micro extends App
 			}
 			$params = $this->bindKvParams(new \ReflectionMethod($instance, $action), $params);
 		}
-		return ['call' => $call, 'params' => $params];
+		return $this->dispatch = ['call' => $call, 'params' => $params];
     }
 }
