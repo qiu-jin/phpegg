@@ -112,8 +112,7 @@ class Micro extends App
 				}
             }
 			return $this->dispatch = ['call' => $call, 'params' => $result['matches']];
-        }
-		if (is_string($call)) {
+        } elseif (is_string($call)) {
 			$dispatch = Dispatcher::dispatch(
 				$result,
 				$this->config['param_mode'],
@@ -126,20 +125,19 @@ class Micro extends App
 			$call = new $arr[0];
             if (isset($arr[1])) {
 				$call = [$call, $arr[1]];
+	            if (!$dispatch[2] || (is_callable($call) && $arr[1][0] !== '_')) {
+					return $this->getDispatchResult($call, $dispatch[1]);
+	            }
+				return;
             } elseif ($this->config['action_dispatch_routes_property'] && isset($result['next'])) {
 		        return $this->actionRouteDispatch($call, $result['next']);
-            }
-            if (!$dispatch[2] || (is_callable($call) && (!isset($arr[1]) || $call[1][0] !== '_'))) {
-				return $this->getDispatchResult($call, $dispatch[1]);
             }
         } elseif (is_object($call)) {
 			if ($this->config['action_dispatch_routes_property'] && isset($result['next'])) {
 				return $this->actionRouteDispatch($call, $result['next']);
 			}
-	        if (is_callable($call)) {
-				return $this->getDispatchResult($call, $dispatch[1]);
-	        }
         }
+		throw new \Exception("无效的路由dispatch规则或类型");
     }
     
     /*
@@ -197,13 +195,7 @@ class Micro extends App
     protected function getDispatchResult($call, $params)
     {
 		if ($this->config['param_mode'] == 2) {
-			if (is_array($call)) {
-				list($instance, $action) = $call;
-			} else {
-				$instance = $call;
-				$action = '__invoke';
-			}
-			$params = $this->bindKvParams(new \ReflectionMethod($instance, $action), $params);
+			$params = $this->bindKvParams(new \ReflectionMethod(...$call), $params);
 		}
 		return $this->dispatch = ['call' => $call, 'params' => $params];
     }

@@ -13,8 +13,6 @@ class Cli extends App
         'controller_ns' => 'command',
         // 控制器类名后缀
         'controller_suffix' => null,
-        // 默认调用的方法，空则调用__invoke
-        'default_method' => null,
         // 闭包绑定的类（为true时绑定匿名类）
         'closure_bind_class' => true,
         // Getter providers（上个配置为true时有效）
@@ -23,6 +21,8 @@ class Cli extends App
         'default_dispatch_controllers' => null,
         // 默认调度的控制器别名
         'default_dispatch_controller_alias' => null,
+        // 默认调用的方法，空则调用__invoke
+        'default_dispatch_method' => null,
     ];
     // 核心错误
     protected $core_errors = [
@@ -99,11 +99,7 @@ class Cli extends App
             return;
         }
 		if ($class = $this->getControllerClass($controller, isset($check))) {
-			$call = new $class($arguments);
-            if ($this->config['default_method']) {
-                $call = [$call, $this->config['default_method']];
-            }
-			return $call;
+			return $this->getDispatchCall(new $class($arguments));
 		}
     }
     
@@ -146,11 +142,7 @@ class Cli extends App
 			if ($this->config['controller_ns']) {
 				$call = $this->getControllerClass($call);
 			}
-            $call = new $call($arguments);
-            if ($this->config['default_method']) {
-                $call = [$call, $this->config['default_method']];
-            }
-			return $call;
+			return $this->getDispatchCall(new $call($arguments));
         }
     }
     
@@ -215,6 +207,14 @@ class Cli extends App
             }
         }
 		return $arguments ?? [];
+    }
+	
+    /*
+     * 获取 call
+     */
+    protected function getDispatchCall($call)
+    {
+        return $this->config['default_dispatch_method'] ? [$call, $this->config['default_dispatch_method']] : $call;
     }
 }
 

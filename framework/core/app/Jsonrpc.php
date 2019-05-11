@@ -30,6 +30,8 @@ class Jsonrpc extends App
         'default_dispatch_controllers' => null,
         // 默认调度的控制器别名
         'default_dispatch_controller_alias' => null,
+        // 设置动作调度别名属性名，为null则不启用
+        'action_dispatch_alias_property' => 'alias',
         // 闭包绑定的类（为true时绑定getter匿名类）
         'closure_bind_class' => true,
         // Getter providers（上个配置为true时有效）
@@ -256,12 +258,13 @@ class Jsonrpc extends App
         if (count($method_array = explode('.', $method)) > 1) {
             $action = array_pop($method_array);
             $controller = implode('\\', $method_array);
-            if (($instance = $this->getControllerInstance($controller))
-                && is_callable([$instance, $action])
-				&& $action[0] !== '_'
-            ) {
-                return [$instance, $action];
-            }
+			if ($instance = $this->getControllerInstance($controller)) {
+				if (is_callable([$instance, $action]) && $action[0] != '_') {
+					return [$instance, $action];
+				} elseif ($this->config['action_dispatch_alias_property']) {
+					return $this->actionAliasDispatch($instance, $method);
+				}
+			}
         }
     }
     
@@ -297,13 +300,26 @@ class Jsonrpc extends App
 	            $class  = substr($method, 0, $pos);
 	            $action = substr($method, $pos + 1);
 			}
-            if (isset($this->custom_methods['services'][$class])
-                && is_callable([$instance = $this->getCustomServiceInstance($class), $action])
-				&& $action[0] !== '_'
-            ) {
-                return [$instance, $action];
+            if (isset($this->custom_methods['services'][$class])) {
+				$instance = $this->getCustomServiceInstance($class);
+				if (is_callable([$instance, $action]) && $action[0] !== '_') {
+					return [$instance, $action];
+				} elseif ($this->config['action_dispatch_alias_property']) {
+					return $this->actionAliasDispatch($instance, $method);
+				}
             }
         }
+    }
+	
+    /*
+     * Action 别名调度
+     */
+    protected function actionAliasDispatch($instance, $method)
+    {
+		$property = $this->config['action_dispatch_alias_property'];
+		if (isset($instance->$property[$method])) {
+			return [$instance, $instance->$property[$method]];
+		}
     }
     
     /*
@@ -322,9 +338,6 @@ class Jsonrpc extends App
             return;
         }
         if ($class = $this->getControllerClass($controller, isset($check))) {
-			if (!$this->is_batch_call) {
-				return new $class;
-			}
 			return $this->controller_instances[$controller] = new $class;
         }
     }
@@ -341,20 +354,18 @@ class Jsonrpc extends App
 		if ($this->config['controller_ns']) {
 			$class = $this->getControllerClass($class);
 		}
-		if (!$this->is_batch_call) {
-			return new $class;
-		}
         return $this->custom_methods['services'][$name] = new $class;
     }
     
     /*
      * 获取方法反射实例
      */
-    protected function getMethodReflection($name, $method)
+    protected function getMethodReflection($method, $call)
     {
-        if (isset($this->method_reflections[$name])) {
-            return $this->method_reflections[$name];
+        if (isset($this->method_reflections[$method])) {
+            return $this->method_reflections[$method];
         }
-        return $this->method_reflections[$name] = new \ReflectionMethod($method[0], $method[1]);
+		$ref = $call instanceof \Closure ? new \ReflectionFunction($call) : new \ReflectionMethod(...$call);
+        return $this->method_reflections[$method] = $ref;
     }
 }

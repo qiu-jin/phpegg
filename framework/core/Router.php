@@ -74,38 +74,38 @@ class Router
     {
         $ret = [];
         // 空匹配
-        if ($rule === '/') {
-            return $step === $this->count ? [$ret, $step] : false;
+        if ($rule == '/') {
+            return $step == $this->count ? [$ret, $step] : false;
         }
         foreach (explode('/', $rule) as $v) {
             $c = $v[0];
-            $s = $this->path[$step] ?? null;
-            if ($s) {
+			if (isset($this->path[$step])) {
+				$s = $this->path[$step];
 				// 可选匹配
-                if ($c === '?') {
+                if ($c == '?') {
                     $v = substr($v, 1);
                     $c = $v[0];
                 }
             } else{
-                if ($c === '?') {
+                if ($c == '?') {
                     return [$ret, $step];
-				} elseif ($c === '~') {
+				} elseif ($c == '~') {
 					return [$ret, $step, []];
-                } elseif ($c !== ':') {
+                } elseif ($c != ':') {
                     return false;
                 }
             }
             switch ($c) {
                 // 通配
                 case '*':
-                    if ($v === '*') {
+                    if ($v == '*') {
                         $ret[] = $s;
                         break;
                     }
                     return false;
                 // 用户正则匹配
                 case '(':
-                    if (substr($v, -1) === ')'
+                    if (substr($v, -1) == ')'
                         && ($n = substr($v, 1, -1))
                         && preg_match("/^$n$/", $s, $m)
                     ) {
@@ -119,7 +119,7 @@ class Router
                     return false;
                 // 内置正则匹配
                 case '[':
-                    if (substr($v, -1) === ']'
+                    if (substr($v, -1) == ']'
                         && ($n = substr($v, 1, -1))
                         && isset(self::$patterns[$n])
                         && preg_match('/^'.self::$patterns[$n].'$/', $s, $m)
@@ -134,7 +134,7 @@ class Router
                     return false;
                 // 验证器匹配
                 case '{':
-                    if (substr($v, -1) === '}'
+                    if (substr($v, -1) == '}'
                         && ($n = substr($v, 1, -1))
                         && Validator::{$n}($s)
                     ) {
@@ -151,20 +151,20 @@ class Router
                 // HTTP方法匹配
                 case ':':
                     foreach (explode(' ', substr($v, 1)) as $n) {
-                        if (trim($n) === $this->method) {
+                        if (trim($n) == $this->method) {
                             return [$ret, $step];
                         }
                     }
                     return false;
                 // 原义匹配
                 case '!':
-                    if ($s === substr($v, 1)) {
+                    if ($s == substr($v, 1)) {
                         break;
                     }
                     return false;
                 // 原义匹配
                 default:
-                    if ($s === $v) {
+                    if ($s == $v) {
                         break;
                     }
                     return false;

@@ -31,6 +31,8 @@ class Grpc extends App
         'default_dispatch_controllers' => null,
         // 默认调度的控制器别名
         'default_dispatch_controller_alias' => null,
+        // 设置动作调度别名属性名，为null则不启用
+        'action_dispatch_alias_property' => 'alias',
         // 闭包绑定的类（为true时绑定getter匿名类）
         'closure_bind_class' => true,
         // Getter providers（上个配置为true时有效）
@@ -167,11 +169,13 @@ class Grpc extends App
         } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
             return;
         }
-        if (($class = $this->getControllerClass($controller, isset($check)))
-            && is_callable([$instance = new $class(), $method])
-			&& $method[0] !== '_'
-        ) {
-            return [$instance, $method];
+        if (($class = $this->getControllerClass($controller, isset($check)))) {
+			$instance = new $class();
+			if (is_callable([$instance, $method]) && $method[0] !== '_') {
+				return [$instance, $method];
+			} elseif ($this->config['action_dispatch_alias_property']) {
+				return $this->actionAliasDispatch($instance, $method);
+			}
         }
     }
     
@@ -207,7 +211,20 @@ class Grpc extends App
 			}
             if (is_callable([$class, $method]) && $method[0] !== '_') {
                 return [$class, $method];
-            }
+            } elseif ($this->config['action_dispatch_alias_property']) {
+				return $this->actionAliasDispatch($class, $method);
+			}
+		}
+    }
+	
+    /*
+     * Action 别名调度
+     */
+    protected function actionAliasDispatch($instance, $method)
+    {
+		$property = $this->config['action_dispatch_alias_property'];
+		if (isset($instance->$property[$method])) {
+			return [$instance, $instance->$property[$method]];
 		}
     }
 	
