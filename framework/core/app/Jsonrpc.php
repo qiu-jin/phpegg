@@ -217,10 +217,7 @@ class Jsonrpc extends App
             return ['result' => $call(...$params)];
         } elseif ($this->config['param_mode'] == 2) {
             $params = $this->bindKvParams($this->getMethodReflection($method, $call), $params);
-            if ($params !== false) {
-                return ['result' => $call(...$params)];
-            }
-            return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
+			return ['result' => $call(...$params)];
         }
         return ['result' => $call($params)];
     }

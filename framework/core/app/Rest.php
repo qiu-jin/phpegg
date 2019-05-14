@@ -38,7 +38,7 @@ class Rest extends App
         // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
         // 默认调度下允许的HTTP方法
-        'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH', 'OPTIONS'],
         // 资源调度的参数模式
         'resource_dispatch_param_mode' => 1,
         // 资源调度默认路由表
@@ -88,9 +88,6 @@ class Rest extends App
 				$params = Request::{$this->config['bind_request_param_type']}() + $params;
 			}
             $params = $this->bindKvParams(new \ReflectionMethod($instance, $action), $params);
-            if ($params === false) {
-                self::abort(400, 'Missing argument');
-            }
         }
         return $instance->$action(...$params);
     }
@@ -125,26 +122,22 @@ class Rest extends App
             list($controller, $params) = $this->dispatch['continue'];
         } else {
             if ($depth > 0) {
-                if ($count < $depth) {
-                    return;
-                }
-                if ($count === $depth) {
+                if ($count == $depth) {
                     $controller_array = $path;
-                } else {
+                } elseif ($count > $depth) {
                     if ($param_mode < 1) {
                         return;
                     }
                     $controller_array = array_slice($path, 0, $depth);
                     $params = array_slice($path, $depth);
+                } else {
+                	return;
                 }
-            } elseif ($param_mode === 0) {
+            } elseif ($path && $param_mode == 0) {
                 $controller_array = $path;
             }
-            if (isset($this->config['default_dispatch_to_camel'])) {
-                $controller_array[] = Str::camelCase(
-                    array_pop($controller_array),
-                    $this->config['default_dispatch_to_camel']
-                );
+            if ($this->config['default_dispatch_to_camel']) {
+				$controller_array[] = Str::camelCase(array_pop($controller_array), $this->config['default_dispatch_to_camel']);
             }
             $controller = implode('\\', $controller_array);
             if (!isset($this->config['default_dispatch_controllers'])) {
@@ -157,25 +150,18 @@ class Rest extends App
 			}
 			$instance = new $class();
         }
-        if (in_array($action = $this->http_method, $this->config['default_dispatch_http_methods'])
-            && is_callable([$instance, $action])
-        ) {
-            if (isset($params)) {
-                if ($param_mode === 2) {
-                    $params = $this->getKvParams($params);
-                }
-            } else {
-                $params = [];
+		$action = $this->http_method;
+        if (in_array($action, $this->config['default_dispatch_http_methods']) && is_callable([$instance, $action])) {
+            if (!isset($params)) {
+				$params = [];
+            } elseif ($param_mode === 2) {
+				$params = $this->getKvParams($params);
             }
             return compact('action', 'controller', 'instance', 'params', 'param_mode');
         }
-        if ($this->config['route_dispatch_action_routes_property'] && !isset($this->dispatch['continue'])) {
-			$action_route_dispatch = $this->actionRouteDispatch($param_mode, $instance, $controller, $params);
-            if (isset($action_route_dispatch)) {
-            	return $action_route_dispatch;
-            }
-        }
-        $this->dispatch = ['continue' => [$controller, $params ?? []], 'instance' => $instance];
+		if (!isset($this->dispatch['continue'])) {
+			$this->dispatch = ['continue' => [$controller, $params ?? []], 'instance' => $instance];
+		}
     }
 	
     /*
@@ -191,10 +177,7 @@ class Rest extends App
             list($controller, $action_path) = $this->dispatch['continue'];
         } elseif (count($path) >= $depth) {
             if ($this->config['default_dispatch_to_camel']) {
-                $path[$depth] = Str::camelCase(
-                    $path[$depth],
-                    $this->config['default_dispatch_to_camel']
-                );
+				$path[$depth] = Str::camelCase($path[$depth], $this->config['default_dispatch_to_camel']);
             }
             $controller = implode('\\', array_slice($path, 0, $depth));
             if (!isset($this->config['default_dispatch_controllers'])) {
@@ -223,13 +206,9 @@ class Rest extends App
                 'param_mode' 	=> $param_mode
             ];
         }
-        if ($this->config['action_dispatch_routes_property'] && !isset($this->dispatch['continue'])) {
-			$action_route_dispatch = $this->actionRouteDispatch(0, $instance, $controller, $action_path);
-			if (isset($action_route_dispatch)) {
-				return $action_route_dispatch;
-			}
-        }
-        $this->dispatch = ['continue' => [$controller, $action_path], 'instance' => $instance];
+		if (!isset($this->dispatch['continue'])) {
+			$this->dispatch = ['continue' => [$controller, $action_path], 'instance' => $instance];
+		}
     }
 	
     /*
@@ -237,13 +216,24 @@ class Rest extends App
      */
     protected function routeDispatch($path)
     {
+		$param_mode = $this->config['route_dispatch_param_mode'];
+		if (isset($this->dispatch['continue']) && $this->config['action_dispatch_routes_property']) {
+			$action_route_dispatch = $this->actionRouteDispatch(
+				$param_mode, 
+				$this->dispatch['instance'],
+				$this->dispatch['continue'][0],
+				$this->dispatch['continue'][1]
+			);
+			if (isset($action_route_dispatch)) {
+				return $action_route_dispatch;
+			}
+		}
         if ($this->config['route_dispatch_routes']) {
             $routes = $this->config['route_dispatch_routes'];
             if (is_string($routes) && !($routes = Config::read($routes))) {
                 return;
             }
             $dynamic = $this->config['route_dispatch_dynamic'];
-            $param_mode = $this->config['route_dispatch_param_mode'];
             if ($dispatch = Dispatcher::route($path, $routes, $param_mode, $dynamic, $this->http_method)) {
                 $call = explode('::', $dispatch[0]);
                 $class = $this->getControllerClass($call[0], $dispatch[2]);

@@ -63,7 +63,7 @@ class Micro extends App
      */
     public function __call($method, $params)
     {
-        if (in_array($m = strtoupper($method), ['PUT', 'DELETE', 'PATCH', 'OPTIONS'])) {
+        if (in_array($m = strtoupper($method), ['PUT', 'DELETE', 'HEAD', 'PATCH', 'OPTIONS'])) {
             return $this->method($m, ...$params);
         }
         throw new \RuntimeException("Invalid method: $method");

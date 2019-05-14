@@ -30,6 +30,8 @@ class Cli extends App
         404 => 'Method not found',
         500 => 'Internal Server Error',
     ];
+	// 控制器实例
+	protected $instance;
     // 自定义方法集合
     protected $custom_methods;
     
@@ -151,7 +153,7 @@ class Cli extends App
      */
     protected function error($code = null, $message = null)
     {
-        $command = $this->dispatch['instance'] ?? new Command;
+        $command = $this->instance ?? new Command;
         $command->error("[$code]");
         $command->highlight(is_array($message) ? var_export($message, true) : $message);
     }
@@ -214,6 +216,7 @@ class Cli extends App
      */
     protected function getDispatchCall($call)
     {
+		$this->instance = $call;
         return $this->config['default_dispatch_method'] ? [$call, $this->config['default_dispatch_method']] : $call;
     }
 }

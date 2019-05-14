@@ -293,7 +293,7 @@ abstract class App
                 } elseif ($default_null) {
                     $new_params[] = null;
                 } else {
-                    return false;
+                    break;
                 }
             }
         }
