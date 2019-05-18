@@ -21,6 +21,10 @@ class Grpc extends Rpc
         'http_headers'
         // CURL设置（HTTP）
         'http_curlopts'
+        // HTTP 请求编码
+        'http_request_encode'	=> ['gzip' => 'gzencode'],
+        // HTTP 响应解码
+        'http_response_decode'	=> ['gzip' => 'gzdecode'],
         // grpc设置（GRPC）
         'grpc_options'
         // service类名前缀

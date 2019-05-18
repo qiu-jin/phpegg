@@ -80,8 +80,7 @@ class Sftp extends Storage
      */
     public function copy($from, $to)
     {
-        return $this->ckdir($to = $this->path($to)) ? copy($this->stream($this->path($from)), $this->stream($to))
-                                                    : false;
+        return $this->ckdir($to = $this->path($to)) ? copy($this->stream($this->path($from)), $this->stream($to)) : false;
     }
     
     /* 

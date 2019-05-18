@@ -299,7 +299,7 @@ class Client
     /*
      * 将请求的获得的body数据直接写入到本地文件，在body内容过大时可节约内存
      */
-    public function save($file)
+    public function saveAs($file)
     {
         if (isset($this->response)) {
             throw new \Exception("已完成的请求实例");
@@ -389,15 +389,25 @@ class Client
         	$headers = $this->getResponseHeadersFromResult($body);
         }
         $this->response = new class ($status, $body, $headers ?? null) {
+			public $status;
+			public $body;
+			public $headers;
+			
             public function __construct($status, $body, $headers) {
                 $this->status	= $status;
                 $this->body 	= $body;
                 $this->headers	= $headers;
             }
+			
+            public function header($name, $default = null) {
+				return $this->headers[$name] ?? $default;
+            }
+			
             public function json($name = null, $default = null) {
 				$data = jsondecode($this->body);
 				return $name === null ? $data : Arr::get($data, $name, $default);
             }
+			
             public function __toString() {
                 return $this->body;
             }
@@ -417,11 +427,15 @@ class Client
         }
         $this->error = new class ($code, $message, $this->request) {
             private $request;
+			public $code;
+			public $message;
+			
             public function __construct($code, $message, $request) {
                 $this->code    = $code;
                 $this->message = $message;
                 $this->request = $request;
             }
+			
             public function __toString() {
                 return ($this->code ? "[$this->code]$this->message" : 'Unknown HTTP Error')
                        .": {$this->request->method} {$this->request->url}";

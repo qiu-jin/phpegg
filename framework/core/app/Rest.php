@@ -40,13 +40,13 @@ class Rest extends App
         // 默认调度下允许的HTTP方法
         'default_dispatch_http_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH', 'OPTIONS'],
         // 资源调度的参数模式
-        'resource_dispatch_param_mode' => 1,
+        'resource_dispatch_param_mode' => 0,
         // 资源调度默认路由表
         'resource_dispatch_routes' => [
-            '/'     => [':GET' => 'index', ':POST' => 'create'],
+            '/'		=> [':GET' => 'index', ':POST' => 'create'],
             'create'=> [':GET' => 'new'],
-            '*'     => [':GET' => 'show($1)',  ':PUT'  => 'update($1)', ':DELETE' => 'destroy($1)'],
-            '*/edit'=> [':GET' => 'edit($1)']
+            '*'     => [':GET' => 'show()', ':PUT' => 'update()', ':DELETE' => 'destroy()'],
+            '*/edit'=> [':GET' => 'edit()']
         ],
         // 路由调度的参数模式
         'route_dispatch_param_mode' => 1,

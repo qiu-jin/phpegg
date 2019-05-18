@@ -233,7 +233,7 @@ abstract class App
      */
     public static function getPath()
     {
-		return self::$path ?? trim(Request::path(), '/');
+		return self::$path ?? trim(rawurldecode(Request::path()), '/');
     }
 	
     /*

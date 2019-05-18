@@ -246,7 +246,7 @@ class Grpc extends App
             $response_message->mergeFromJsonString(json_encode($return));
             return $response_message;
         }
-		self::abort(500, 'Illegal message scheme class');
+		self::abort(500, 'Illegal message schema class');
     }
     
     /*
@@ -271,7 +271,7 @@ class Grpc extends App
             $call($request_message, $response_message = new $response_class);
             return $response_message;
         }
-		self::abort(500, 'Illegal message scheme class');
+		self::abort(500, 'Illegal message schema class');
     }
 	
     /*
@@ -302,8 +302,8 @@ class Grpc extends App
     protected function getDefaultReqResClass()
     {
         $replace = [
-            '{service}' => $this->dispatch['controller'],
-            '{method}'  => ucfirst($this->dispatch['action'])
+            '{service}' => $this->dispatch['service'],
+            '{method}'  => ucfirst($this->dispatch['method'])
         ];
         $request_class  = strtr($this->config['request_message_format'], $replace);
         $response_class = strtr($this->config['response_message_format'], $replace);

@@ -4,9 +4,6 @@ namespace framework\driver\storage;
 use framework\core\http\Client;
 
 /*
- * Apache:  https://httpd.apache.org/docs/2.4/mod/mod_dav.html
- * Ngnix:   https://nginx.org/en/docs/http/ngx_http_dav_module.html
- * IIS:     https://www.iis.net/learn/install/installing-publishing-technologies/installing-and-configuring-webdav-on-iis
  * Box:     https://www.box.com/dav
  * OneDrive:https://d.docs.live.net
  * Pcloud:  https://webdav.pcloud.com
@@ -89,14 +86,15 @@ class Webdav extends Storage
      */
     public function stat($from)
     {
-        $stat = $this->send('HEAD', $this->uri($from), null, [
-            'returnHeaders' => [true], 'curlopt' => [CURLOPT_NOBODY, true]
-        ], !$this->public_read);
-        return $stat ? [
-            'type'  => $stat['Content-Type'],
-            'size'  => (int) $stat['Content-Length'],
-            'mtime' => strtotime($stat['Last-Modified']),
-        ] : false;
+		$methods = ['returnHeaders' => [true], 'curlopt' => [CURLOPT_NOBODY, true]];
+        if ($stat = $this->send('HEAD', $this->uri($from), null, $methods, !$this->public_read)) {
+	        return [
+	            'type'  => $stat['Content-Type'],
+	            'size'  => (int) $stat['Content-Length'],
+	            'mtime' => strtotime($stat['Last-Modified']),
+	        ];
+        }
+        return false;
     }
     
     /* 

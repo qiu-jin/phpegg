@@ -259,7 +259,7 @@ class Jsonrpc extends App
 				if (is_callable([$instance, $action]) && $action[0] != '_') {
 					return [$instance, $action];
 				} elseif ($this->config['action_dispatch_alias_property']) {
-					return $this->actionAliasDispatch($instance, $method);
+					return $this->actionAliasDispatch($instance, $action);
 				}
 			}
         }
@@ -302,7 +302,7 @@ class Jsonrpc extends App
 				if (is_callable([$instance, $action]) && $action[0] !== '_') {
 					return [$instance, $action];
 				} elseif ($this->config['action_dispatch_alias_property']) {
-					return $this->actionAliasDispatch($instance, $method);
+					return $this->actionAliasDispatch($instance, $action);
 				}
             }
         }
@@ -311,11 +311,11 @@ class Jsonrpc extends App
     /*
      * Action 别名调度
      */
-    protected function actionAliasDispatch($instance, $method)
+    protected function actionAliasDispatch($instance, $action)
     {
 		$property = $this->config['action_dispatch_alias_property'];
-		if (isset($instance->$property[$method])) {
-			return [$instance, $instance->$property[$method]];
+		if (isset($instance->$property[$action])) {
+			return [$instance, $instance->$property[$action]];
 		}
     }
     

@@ -44,11 +44,11 @@ class Uploaded
      */
     public static function file($name, $check = null)
     {
-		$uploaded = new self(Request::file($name));
+		$instance = new self(Request::file($name));
 		if ($check) {
-			$uploaded->check($check);
+			$instance->check($check);
 		}
-		return $uploaded;
+		return $instance;
     }
     
     /*

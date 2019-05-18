@@ -53,10 +53,8 @@ class Dropbox extends Storage
      */
     public function stat($from)
     {
-        return ($stat = $this->result($this->send('get_metadata', ['path' => $this->path($from)])->json(), false)) ? [
-            'size'  => (int) $stat['size'],
-            'mtime' => strtotime($stat['server_modified']),
-        ] : false;
+		$result = $this->result($this->send('get_metadata', ['path' => $this->path($from)])->json(), false);
+        return $result ? ['size'  => (int) $result['size'], 'mtime' => strtotime($result['server_modified'])] : false;
     }
     
     /* 
