@@ -48,14 +48,14 @@ class Template
         'text_escape_sign'      => [':', '!'],
         // 不输出标识符
         'not_echo_text_sign'    => '#',
+        // 是否去除原生HTML注释
+        'remove_html_note'		=> false,
         // 允许的函数
         'allow_php_functions'   => false,
         // 允许的静态类
         'allow_static_classes'  => false,
         // 允许的容器
         'allow_container_providers' => false,
-        // 是否去除原生HTML注释
-        'remove_html_note' 			=> false,
         // filter宏
         'view_filter_macro'         => __CLASS__.'::filterMacro',
         // include宏
@@ -215,7 +215,7 @@ class Template
         if ($ck) {
             $ret = self::wrapCode(self::$config['view_check_expired_macro'](array_unique($ck))).PHP_EOL;
         }
-        return $ret.self::readRawAndPHPCode($str);
+        return $ret.self::readRawNextPHPCode($str);
     }
     
     /*
@@ -374,21 +374,21 @@ class Template
     /*
      * 读取解析原生语句
      */
-    protected static function readRawAndPHPCode($str)
+    protected static function readRawNextPHPCode($str)
     {
         $ret = '';
         $end = [];
         if ($res = self::parseTagWithText($str, self::$config['raw_tag'], null, false, true)) {
             $pos = 0;
             foreach ($res as $v) {
-                $ret .= self::readPHPCodeAndHeredoc(substr($str, $pos, $v['pos'][0] - $pos), $end);
+                $ret .= self::readPHPCodeNextHeredoc(substr($str, $pos, $v['pos'][0] - $pos), $end);
                 $ret .= $v['text'];
                 $pos  = $v['pos'][1];
             }
             $str = substr($str, $pos);
         }
         if ($str) {
-            $ret .= self::readPHPCodeAndHeredoc($str, $end);
+            $ret .= self::readPHPCodeNextHeredoc($str, $end);
         }
         if (!$end) {
             return $ret;
@@ -399,23 +399,23 @@ class Template
     /*
      * 读取解析php代码
      */
-    protected static function readPHPCodeAndHeredoc($str, &$end)
+    protected static function readPHPCodeNextHeredoc($str, &$end)
     {
         if (!self::$config['php_tag']) {
-            return self::readHeredocAndMore($str, $end);
+            return self::readHeredocNextStruct($str, $end);
         }
         $ret = '';
         if ($res = self::parseTagWithText($str, self::$config['php_tag'])) {
             $pos = 0;
             foreach ($res as $v) {
-                $ret .= self::readHeredocAndMore(substr($str, $pos, $v['pos'][0] - $pos), $end);
+                $ret .= self::readHeredocNextStruct(substr($str, $pos, $v['pos'][0] - $pos), $end);
                 $ret .= self::wrapCode(PHP_EOL.$v['text'].PHP_EOL);
                 $pos  = $v['pos'][1];
             }
             $str = substr($str, $pos);
         }
         if ($str) {
-            $ret.= self::readHeredocAndMore($str, $end);
+            $ret.= self::readHeredocNextStruct($str, $end);
         }
         return $ret;
     }
@@ -423,7 +423,7 @@ class Template
     /*
      * 读取解析heredoc
      */
-    protected static function readHeredocAndMore($str, &$end)
+    protected static function readHeredocNextStruct($str, &$end)
     {
         if (!self::$config['heredoc_tag']) {
             return self::readStructAndText($str, $end);
@@ -545,7 +545,7 @@ class Template
             // 重设文本处理位置
             $pos = strlen($match[0]) + $match[1];
         }
-        // 处理最后部分
+        // 处理最后剩余部分
         if ($tmp = substr($str, $pos)) {
             $ret.= $end ? self::completeStructTag($tmp, $end) : $tmp;
         }
@@ -951,9 +951,7 @@ class Template
                     }
                     throw new TemplateException("非法 $c 语法 $val");
                 default:
-                    if (in_array($c, ['+', '-', '*', '/', '%'])
-                        || in_array($c, ['!', '&', '|', '=', '>', '<'])
-                    ) {
+                    if (in_array($c, ['+', '-', '*', '/', '%']) || in_array($c, ['!', '&', '|', '=', '>', '<'])) {
                         // 对象操作符
                         if ($c == '-' && substr($val, $i + 1, 1) == '>') {
                             $ret = self::readObjectValue($ret, $tmp, $val, $len, $i, $strs);
@@ -986,7 +984,7 @@ class Template
     protected static function readInitValue($ret, $tmp)
     {
         if (isset($ret) && isset($tmp)) {
-            throw new TemplateException("readInitValue error: $tmp");
+            throw new TemplateException("无效初始值: $tmp");
         }
         return isset($tmp) ? self::readVarValue($tmp) : $ret;
     }
@@ -996,7 +994,12 @@ class Template
      */
     protected static function readArrayValue($val, $strs)
     {
-        return "json_decode('".self::injectString($val, $strs)."', true)";
+		// return "json_decode('".self::injectString($val, $strs)."', true)";
+		$arr = json_decode($ret = self::injectString($val, $strs), true);
+		if ($arr !== null) {
+			return var_export($arr, true);
+		}
+		throw new TemplateException("无效的数组: $val");
     }
     
     /*

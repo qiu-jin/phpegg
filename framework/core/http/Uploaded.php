@@ -29,17 +29,6 @@ class Uploaded
     ];
     
     /*
-     * 构造函数
-     */
-    public function __construct(array $file)
-    {
-        $this->file = $file;
-		$this->is_valid = $this->is_success = 
-			isset($file['error']) && $file['error'] === UPLOAD_ERR_OK && 
-			isset($file['tmp_name']) && is_uploaded_file($file['tmp_name']);
-    }
-
-    /*
      * 文件实例，如设置验证规则验证失败返回false
      */
     public static function file($name, $check = null)
@@ -49,6 +38,17 @@ class Uploaded
 			$instance->check($check);
 		}
 		return $instance;
+    }
+	
+    /*
+     * 构造函数
+     */
+    public function __construct(array $file)
+    {
+        $this->file = $file;
+		$this->is_valid = $this->is_success = 
+			isset($file['error']) && $file['error'] === UPLOAD_ERR_OK && 
+			isset($file['tmp_name']) && is_uploaded_file($file['tmp_name']);
     }
     
     /*
@@ -122,7 +122,7 @@ class Uploaded
     }
     
     /*
-     * 移动文件
+     * 保存文件
      */
     public function saveTo($dir)
     {
@@ -131,7 +131,7 @@ class Uploaded
     }
 	
     /*
-     * 移动文件
+     * 保存文件
      */
     public function saveAs($path)
     {

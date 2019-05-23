@@ -48,6 +48,9 @@ class Url
         return self::parse(Request::server('HTTP_REFERER'));
     }
 	
+    /*
+     * 构造函数
+     */
     public function __construct(array $url = [])
     {
         $this->url = $url;

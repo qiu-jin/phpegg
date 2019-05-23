@@ -36,7 +36,7 @@ class Jsonrpc extends App
         'closure_bind_class' => true,
         // Getter providers（上个配置为true时有效）
         'closure_getter_providers' => null,
-        // 最大批调用数，1不启用批调用，0无限批调用数
+        // 最大批调用数（1不启用批调用，0无限批调用数）
         'batch_call_limit'		=> 1,
         // Response content type header
         'response_content_type' => null,
@@ -44,7 +44,6 @@ class Jsonrpc extends App
          * serialize 原生方法 'unserialize' 'serialize'
          * msgpack https://pecl.php.net/package/msgpack 'msgpack_unserialize' 'msgpack_serialize'
          * igbinary https://pecl.php.net/package/igbinary 'igbinary_unserialize' 'igbinary_serialize'
-         * bson http://php.net/manual/zh/book.bson.php 'MongoDB\BSON\toPHP' 'MongoDB\BSON\fromPHP'
          */
         'request_unserialize'   => 'jsondecode',
         'response_serialize'    => 'jsonencode',
@@ -102,6 +101,7 @@ class Jsonrpc extends App
         if (($body = Request::body())
 			&& ($data = $this->config['request_unserialize']($body))
 		) {
+			logger('debug')->debug(var_export($data, true));
             $limit = $this->config['batch_call_limit'];
             if ($limit == 1 || Arr::isAssoc($data)) {
                 return $this->dispatch = $this->dispatchItem($data);

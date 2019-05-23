@@ -254,16 +254,15 @@ class Grpc extends App
      */
     protected function callWithReqResParams($call)
     {
+		list($request_class, $response_class) = $this->getDefaultReqResClass();
         if ($this->config['param_mode'] == '2') {
-			$reflection = $this->getReflection($call);
-            if ($reflection->getnumberofparameters() !== 2) {
-                return;
-            }
-            list($request_param, $response_param) = $reflection->getParameters();
-            $request_class = (string) $request_param->getType();
-            $response_class = (string) $response_param->getType();
-        } else {
-            list($request_class, $response_class) = $this->getDefaultReqResClass();
+			$parameters = $this->getReflection($call)->getParameters();
+			if (isset($parameters[0]) && $parameters[0]->hasType()) {
+				$request_class = (string) $parameters[0]->getType();
+			}
+			if (isset($parameters[1]) && $parameters[1]->hasType()) {
+				$response_class = (string) $parameters[1]->getType();
+			}
         }
         if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
             $request_message = new $request_class;

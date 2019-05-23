@@ -88,7 +88,7 @@ abstract class Storage
     {
         if (strpos($from, '://')) {
             list($scheme, $uri) = explode('://', $from, 2);
-            if ($scheme === 'http' || $scheme === 'https') {
+            if (in_array(strtolower($scheme), ['http', 'https'])) {
                 $data = Client::get($from);
             } else {
                 $data = Container::driver('storage', $scheme)->get($uri);

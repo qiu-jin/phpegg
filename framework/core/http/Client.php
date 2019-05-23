@@ -15,12 +15,6 @@ class Client
     private $request;
     // 响应内容
     private $response;
-    
-    public function __construct($method, $url)
-    {
-        $this->request = (object) compact('url', 'method');
-		$this->request->debug = APP_DEBUG;
-    }
 
     /*
      * GET实例
@@ -73,6 +67,15 @@ class Client
         } while ($active > 0);
         curl_multi_close($mh);
         return $return ?? null;
+    }
+	
+    /*
+     * 构造函数
+     */
+    public function __construct($method, $url)
+    {
+        $this->request = (object) compact('url', 'method');
+		$this->request->debug = APP_DEBUG;
     }
 
     /*

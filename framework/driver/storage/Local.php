@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\storage;
 
+use framework\util\Str;
 use framework\util\Arr;
 use framework\util\File;
 
@@ -14,12 +15,12 @@ class Local extends Storage
      */
     public function __construct($config)
     {
-        $this->dir = $config['dir'];
+        $this->dir = Str::lastTrim($config['dir'], '/');
         if (isset($config['domain'])) {
             $this->domain = $config['domain'];
         }
         if (!File::isWritableDir($this->dir)) {
-            throw new \Exception("Storage dir $this->dir is not writable");
+            throw new \Exception("Local storage dir $this->dir is not writable");
         }
     }
     
@@ -55,8 +56,7 @@ class Local extends Storage
      */
     public function stat($from)
     {
-        $stat = stat($this->path($from));
-        return $stat ? Arr::fitlerKeys($stat, ['size', 'mtime', 'ctime']) : false;
+        return ($stat = stat($this->path($from))) ? Arr::fitlerKeys($stat, ['size', 'mtime', 'ctime']) : false;
     }
     
     /* 

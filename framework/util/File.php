@@ -30,7 +30,7 @@ class File
     }
     
     /*
-     * 文件
+     * 文件复制
      */
     public static function copy($file, $to)
     {
@@ -38,7 +38,7 @@ class File
     }
     
     /*
-     * 文件复制
+     * 文件删除
      */
     public static function delete($file)
     {

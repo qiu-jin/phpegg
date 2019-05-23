@@ -24,7 +24,6 @@ class GrpcHttp
     {
         $url    = $this->config['endpoint'].'/'.strtr($service, '\\', '.').'/'.$method;
 		$client = Client::post($url);
-		$encode = 0;
         $data   = $message->serializeToString();
 		if (isset($this->config['http_request_encode'])) {
 			list($encode_name, $encode_function) = Arr::randomKv($this->config['http_request_encode']);
@@ -42,15 +41,15 @@ class GrpcHttp
             $client->curlopts($this->config['http_curlopts']);
         }
         $size = strlen($data);
-        $client->body(pack('C1N1a'.$size, $encode, $size, $data));
+        $client->body(pack('C1N1a'.$size, $encode ?? 0, $size, $data));
         $response = $client->response();
         if (isset($response->headers['grpc-status'])) {
             if ($response->headers['grpc-status'] === '0') {
                 $result = unpack('Cencode/Nsize/a*data', $response->body);
-                if ($result['size'] !== strlen($result['data'])) {
+                if ($result['size'] != strlen($result['data'])) {
                     error('Invalid input: size error');
                 }
-                if ($result['encode'] === 1) {
+                if ($result['encode'] == 1) {
                     if (($decode_name = strtolower($response->headers['grpc-encoding'] ?? null))
                         && isset($this->config['http_response_decode'][$decode_name])
                     ) {

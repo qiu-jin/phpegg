@@ -90,6 +90,9 @@ class Date extends DateTime
 		}
     }
 	
+    /*
+     * 构造函数
+     */
     public function __construct($time, $tz = null)
     {
 		parent::__construct($time, self::makeTimeZone($tz));
