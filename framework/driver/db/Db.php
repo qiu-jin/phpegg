@@ -67,7 +67,7 @@ abstract class Db
     /*
      * 开始事务
      */
-    abstract public function begin();
+    abstract public function beginTransaction();
     
     /*
      * 回滚事务
@@ -126,10 +126,10 @@ abstract class Db
     public function transaction(callable $call)
     {
         try {
-            $this->begin();
+            $this->beginTransaction();
             ($return = $call($this)) === false ? $this->commit() : $this->rollback();
             return $return;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->rollback();
             throw $e;
         }

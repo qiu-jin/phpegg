@@ -172,7 +172,7 @@ abstract class Pdo extends Db
     /*
      * 开始事务
      */
-    public function begin()
+    public function beginTransaction()
     {
 		return $this->connection->beginTransaction();
     }

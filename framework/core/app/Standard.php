@@ -40,7 +40,7 @@ class Standard extends App
         // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
         // 默认调度的控制器缺省方法
-        'default_dispatch_default_action' => 'index',
+        'default_dispatch_default_action' => null,
         // 默认调度的路径转为驼峰风格
         'default_dispatch_to_camel' => null,
         // 路由调度的参数模式
@@ -247,7 +247,7 @@ class Standard extends App
 							return $action_route_dispatch;
 						}
 					}
-					$this->dispatch = ['continue' => $dispatch, 'instance' => $instance];
+					$this->dispatch = ['continue' => [$dispatch[0], $dispatch[3]], 'instance' => $instance];
 					return;
                 }
 				throw new \Exception("无效的路由dispatch规则: $call");

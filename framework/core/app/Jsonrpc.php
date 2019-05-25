@@ -29,17 +29,15 @@ class Jsonrpc extends App
         // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
         // 默认调度的控制器别名
-        'default_dispatch_controller_alias' => null,
+        'default_dispatch_controller_aliases' => null,
         // 设置动作调度别名属性名，为null则不启用
-        'action_dispatch_alias_property' => 'alias',
+        'action_dispatch_aliases_property' => 'aliases',
         // 闭包绑定的类（为true时绑定getter匿名类）
         'closure_bind_class' => true,
         // Getter providers（上个配置为true时有效）
         'closure_getter_providers' => null,
         // 最大批调用数（1不启用批调用，0无限批调用数）
         'batch_call_limit'		=> 1,
-        // Response content type header
-        'response_content_type' => null,
         /* 请求反序列化与响应序列化，支持设置除默认json外多种序列化方法
          * serialize 原生方法 'unserialize' 'serialize'
          * msgpack https://pecl.php.net/package/msgpack 'msgpack_unserialize' 'msgpack_serialize'
@@ -47,6 +45,8 @@ class Jsonrpc extends App
          */
         'request_unserialize'   => 'jsondecode',
         'response_serialize'    => 'jsonencode',
+        // Response content type header
+        'response_content_type' => null,
     ];
     // 核心错误
     protected $core_errors = [
@@ -98,10 +98,7 @@ class Jsonrpc extends App
      */
     protected function dispatch()
     {
-        if (($body = Request::body())
-			&& ($data = $this->config['request_unserialize']($body))
-		) {
-			logger('debug')->debug(var_export($data, true));
+        if (($body = Request::body()) && ($data = $this->config['request_unserialize']($body))) {
             $limit = $this->config['batch_call_limit'];
             if ($limit == 1 || Arr::isAssoc($data)) {
                 return $this->dispatch = $this->dispatchItem($data);
@@ -258,7 +255,7 @@ class Jsonrpc extends App
 			if ($instance = $this->getControllerInstance($controller)) {
 				if (is_callable([$instance, $action]) && $action[0] != '_') {
 					return [$instance, $action];
-				} elseif ($this->config['action_dispatch_alias_property']) {
+				} elseif ($this->config['action_dispatch_aliases_property']) {
 					return $this->actionAliasDispatch($instance, $action);
 				}
 			}
@@ -301,7 +298,7 @@ class Jsonrpc extends App
 				$instance = $this->getCustomServiceInstance($class);
 				if (is_callable([$instance, $action]) && $action[0] !== '_') {
 					return [$instance, $action];
-				} elseif ($this->config['action_dispatch_alias_property']) {
+				} elseif ($this->config['action_dispatch_aliases_property']) {
 					return $this->actionAliasDispatch($instance, $action);
 				}
             }
@@ -313,7 +310,7 @@ class Jsonrpc extends App
      */
     protected function actionAliasDispatch($instance, $action)
     {
-		$property = $this->config['action_dispatch_alias_property'];
+		$property = $this->config['action_dispatch_aliases_property'];
 		if (isset($instance->$property[$action])) {
 			return [$instance, $instance->$property[$action]];
 		}
@@ -327,8 +324,8 @@ class Jsonrpc extends App
 		if (isset($this->controller_instances[$controller])) {
 			return $this->controller_instances[$controller];
 		}
-        if (isset($this->config['default_dispatch_controller_alias'][$controller])) {
-            $controller = $this->config['default_dispatch_controller_alias'][$controller];
+        if (isset($this->config['default_dispatch_controller_aliases'][$controller])) {
+            $controller = $this->config['default_dispatch_controller_aliases'][$controller];
         } elseif (!isset($this->config['default_dispatch_controllers'])) {
             $check = true;
         } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {

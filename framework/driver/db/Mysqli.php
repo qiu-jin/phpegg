@@ -206,7 +206,7 @@ class Mysqli extends Db
     /*
      * 开始事务
      */
-    public function begin()
+    public function beginTransaction()
     {
 		return $this->connection->autocommit(false) && $this->connection->begin_transaction();
     }

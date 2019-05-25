@@ -260,7 +260,7 @@ class Rest extends App
 							return $action_route_dispatch;
 						}
 					}
-					$this->dispatch = ['continue' => $dispatch, 'instance' => $instance];
+					$this->dispatch = ['continue' => [$dispatch[0], $dispatch[3]], 'instance' => $instance];
 					return;
                 }
 				throw new \Exception("无效的路由dispatch规则: $call");

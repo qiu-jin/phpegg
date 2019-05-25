@@ -150,7 +150,7 @@ class Query extends QueryChain
     public function replace(array $data)
     {
         $set = $this->builder::setData($data);
-        $sql = "REPLACE INTO ".$this->builder::keywordEscape($this->table)." SET $set[0]";
+        $sql = 'REPLACE INTO '.$this->builder::keywordEscape($this->table)." SET $set[0]";
         return $this->db->affectedRows($this->db->prepareExecute($sql, $set[1]));
     }
     

@@ -195,7 +195,7 @@ class Micro extends App
     protected function getDispatchResult($call, $params)
     {
 		if ($this->config['param_mode'] == 2) {
-			$params = $this->bindKvParams(new \ReflectionMethod(...$call), $params);
+			$params = $this->bindKvParams(new \ReflectionMethod($call[0], $call[1]), $params);
 		}
 		return $this->dispatch = ['call' => $call, 'params' => $params];
     }

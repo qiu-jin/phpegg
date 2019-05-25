@@ -30,9 +30,9 @@ class Grpc extends App
         // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
         // 默认调度的控制器别名
-        'default_dispatch_controller_alias' => null,
+        'default_dispatch_controller_aliases' => null,
         // 设置动作调度别名属性名，为null则不启用
-        'action_dispatch_alias_property' => 'alias',
+        'action_dispatch_aliases_property' => 'aliases',
         // 闭包绑定的类（为true时绑定getter匿名类）
         'closure_bind_class' => true,
         // Getter providers（上个配置为true时有效）
@@ -140,7 +140,6 @@ class Grpc extends App
     protected function respond($return)
     {
         $data = $return->serializeToString();
-        $encode = 0;
         if ($grpc_accept_encoding = Request::header('grpc-accept-encoding')) {
             foreach (explode(',', strtolower($grpc_accept_encoding)) as $encoding) {
                 if (isset($this->config['response_encode'][$encoding])) {
@@ -153,7 +152,7 @@ class Grpc extends App
         }
         $size = strlen($data);
         Response::header('grpc-status', '0');
-        Response::send(pack('C1N1a'.$size, $encode, $size, $data), 'application/grpc+proto');
+        Response::send(pack('C1N1a'.$size, $encode ?? 0, $size, $data), 'application/grpc+proto');
     }
     
     /*
@@ -162,8 +161,8 @@ class Grpc extends App
     protected function defaultDispatch($method, $service)
     {
 		$controller = strtr($service, '.', '\\');
-        if (isset($this->config['default_dispatch_controller_alias'][$controller])) {
-            $controller = $this->config['default_dispatch_controller_alias'][$controller];
+        if (isset($this->config['default_dispatch_controller_aliases'][$controller])) {
+            $controller = $this->config['default_dispatch_controller_aliases'][$controller];
         } elseif (!isset($this->config['default_dispatch_controllers'])) {
             $check = true;
         } elseif (!in_array($controller, $this->config['default_dispatch_controllers'])) {
@@ -173,7 +172,7 @@ class Grpc extends App
 			$instance = new $class();
 			if (is_callable([$instance, $method]) && $method[0] !== '_') {
 				return [$instance, $method];
-			} elseif ($this->config['action_dispatch_alias_property']) {
+			} elseif ($this->config['action_dispatch_aliases_property']) {
 				return $this->actionAliasDispatch($instance, $method);
 			}
         }
@@ -211,7 +210,7 @@ class Grpc extends App
 			}
             if (is_callable([$class, $method]) && $method[0] !== '_') {
                 return [$class, $method];
-            } elseif ($this->config['action_dispatch_alias_property']) {
+            } elseif ($this->config['action_dispatch_aliases_property']) {
 				return $this->actionAliasDispatch($class, $method);
 			}
 		}
@@ -222,7 +221,7 @@ class Grpc extends App
      */
     protected function actionAliasDispatch($instance, $method)
     {
-		$property = $this->config['action_dispatch_alias_property'];
+		$property = $this->config['action_dispatch_aliases_property'];
 		if (isset($instance->$property[$method])) {
 			return [$instance, $instance->$property[$method]];
 		}
