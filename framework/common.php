@@ -268,9 +268,16 @@ function getter($providers = null)
  */
 define('OPCACHE_LOADED', extension_loaded('opcache'));
 
-function is_php_file($file)
-{
-    return (OPCACHE_LOADED && opcache_is_script_cached($file)) || is_file($file);
+if (OPCACHE_LOADED) {
+	function is_php_file($file)
+	{
+	    return opcache_is_script_cached($file) || is_file($file);
+	}
+} else {
+	function is_php_file($file)
+	{
+	    return is_file($file);
+	}
 }
 
 /*

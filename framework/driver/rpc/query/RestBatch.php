@@ -75,8 +75,8 @@ class RestBatch
      */
     public function __call($method, $params)
     {
-        if (in_array($method, Restrpc::ALLOW_HTTP_METHODS, true)) {
-            $this->queries[] = $this->buildQuery($method, $params);
+        if (in_array($m = strtoupper($method), Restrpc::ALLOW_HTTP_METHODS)) {
+            $this->queries[] = $this->buildQuery($m, $params);
             return $this;
         }
         throw new \Exception('Call to undefined method '.__CLASS__."::$method");
@@ -87,7 +87,7 @@ class RestBatch
      */
     public function call(callable $handler = null)
     {
-        return Client::multi(
+        return Client::batch(
             $this->queries,
             $handler ?? [$this->client, 'response'],
             $this->config['batch_select_timeout'] ?? 0.1

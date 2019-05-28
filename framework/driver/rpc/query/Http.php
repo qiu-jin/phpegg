@@ -42,7 +42,7 @@ class Http
      */
     public function __call($method, $params)
     {
-        switch ($method) {
+        switch ($m = strtolower($method)) {
             case $this->config['filter_method_alias']   ?? 'filter':
                 $this->filters[] = $params;
                 return $this;
@@ -56,7 +56,7 @@ class Http
                 $this->build_handler = $params[0];
                 return $this;
             default:
-                $this->ns[] = $method;
+                $this->ns[] = $m;
                 return $this->call($params);
         }
     }

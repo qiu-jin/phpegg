@@ -20,7 +20,7 @@ class Rest extends App
         // 控制器类名后缀
         'controller_suffix' => null,
         // 设置request参数
-        'set_request_param' => false,
+        'set_request_param' => true,
         /* 请求参数合并到方法参数（param_mode为2时有效）
          * 支持 query param input
          */
@@ -324,10 +324,6 @@ class Rest extends App
                     return;
                 case 'application/xml';
                     $_POST = Xml::decode(Request::body());
-                    return;
-                case 'multipart/form-data'; 
-                case 'application/x-www-form-urlencoded'; 
-                default:
                     return;
             }
         }

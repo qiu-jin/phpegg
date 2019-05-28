@@ -100,6 +100,9 @@ class With extends QueryChain
         }
     }
 
+    /*
+     * 获取关联字段
+     */
     protected function getOnFields()
     {
         return $this->options['on'] ?? ['id', $this->table.'_id'];

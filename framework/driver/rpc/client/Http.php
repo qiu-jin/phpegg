@@ -27,15 +27,15 @@ class Http
             list($ns, $body) = $this->parseParams($ns, $params);
         }
         $path = implode('/', $ns);
-        if (isset($this->config['url_style'])) {
-            $path = $this->convertUrlStyle($path);
+        if (isset($this->config['convert_path_style'])) {
+            $path = $this->convertPathStyle($path);
         }
         $url = $this->config['endpoint'].'/'.$path;
         if (isset($this->config['url_suffix'])) {
             $url .= $this->config['url_suffix'];
         }
         if ($filters) {
-            $url .= (strpos($url, '?') ? '&' : '?').$this->setFilter($filters);
+            $url .= '?'.$this->setFilter($filters);
         }
         $client = new Client($method, $url);
         if (isset($this->config['http_headers'])) {
@@ -65,7 +65,7 @@ class Http
                 $result = $this->config['response_decode']($result);
             }
             if (isset($this->config['response_result_field'])) {
-                if (($result = Arr::field($result, $this->config['response_result_field'])) !== null) {
+                if (($result = Arr::get($result, $this->config['response_result_field'])) !== null) {
                     return $result;
                 }
             } else {
@@ -76,10 +76,10 @@ class Http
             return false;
         }
         if (isset($this->config['error_code_field'])) {
-            $error_code = Arr::field($result, $this->config['error_code_field']);
+            $error_code = Arr::get($result, $this->config['error_code_field']);
         }
         if (isset($this->config['error_message_field'])) {
-            $error_message = Arr::field($result, $this->config['error_message_field']);
+            $error_message = Arr::get($result, $this->config['error_message_field']);
         }
         return error(isset($error_code) ? "[$error_code]".($error_message ?? '')  : $client->error, 2);
     }
@@ -89,15 +89,16 @@ class Http
      */
     protected function setFilter($filters)
     {
+		$arr = [];
         foreach ($filters as $filter) {
             $count = count($filter);
-            if ($count === 1) {
-                $arr = array_merge($arr, $filter[0]);
-            } elseif ($count === 2) {
+            if ($count == 1) {
+                $arr = $filter[0] + $arr;
+            } elseif ($count >= 2) {
                 $arr[$filter[0]] = $filter[1];
             }
         }
-        return isset($arr) ? http_build_query($arr) : '';
+        return http_build_query($arr);
     }
     
     /*
@@ -115,9 +116,9 @@ class Http
     /*
      * 转换url风格
      */
-    protected function convertUrlStyle($path)
+    protected function convertPathStyle($path)
     {
-        switch ($this->config['url_style']) {
+        switch (strtolower($this->config['convert_path_style'])) {
             case 'snake_to_spinal':
                 return strtr($path, '_', '-');
             case 'camel_to_spinal':
@@ -127,6 +128,6 @@ class Http
             case 'camel_to_snake':
                 return Str::snakeCase($path);
         }
-        throw new Exception("Illegal url style: $this->config['url_style']");
+        throw new Exception("Illegal path style: $this->config['convert_path_style']");
     }
 }

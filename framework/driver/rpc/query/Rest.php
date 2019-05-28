@@ -76,8 +76,8 @@ class Rest
      */
     public function __call($method, $params)
     {
-        if (in_array($method, Restrpc::ALLOW_HTTP_METHODS, true)) {
-            return $this->call($method, $params);
+        if (in_array($m = strtoupper($method), Restrpc::ALLOW_HTTP_METHODS)) {
+            return $this->call($m, $params);
         }
         throw new \Exception('Call to undefined method '.__CLASS__."::$method");
     }

@@ -194,12 +194,19 @@ abstract class Pdo extends Db
     }
     
     /*
+     * 获取错误代码
+     */
+    public function errno($query = null)
+    {   
+		return ($query ? $query->errorInfo() : $this->connection->errorInfo())[1] ?? null;
+    }
+	
+    /*
      * 获取错误信息
      */
     public function error($query = null)
     {   
-        $error = $query ? $query->errorInfo() : $this->connection->errorInfo();
-        return array($error[1], $error[2]);
+		return ($query ? $query->errorInfo() : $this->connection->errorInfo())[2] ?? null;
     }
     
     /*

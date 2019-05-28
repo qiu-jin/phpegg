@@ -85,6 +85,11 @@ abstract class Db
     abstract public function quote($str);
     
     /*
+     * 获取错误代码
+     */
+    abstract public function errno();
+	
+    /*
      * 获取错误信息
      */
     abstract public function error();

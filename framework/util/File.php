@@ -109,7 +109,7 @@ class File
      */
     public static function isWritableDir($dir)
     {
-        return is_dir($dir) && is_writable($dir);
+        return is_dir($dir) && is_writable($dir) && is_executable($dir);
     }
     
     /*

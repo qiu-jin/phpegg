@@ -12,8 +12,12 @@ class Http extends Rpc
         'endpoint'
         // URL后缀名
         'url_suffix'
-        // URL风格转换
-        'url_style'
+        // URL路径转换类型
+		// 下划线转中划线 snake_to_spinal
+		// 驼峰转中划线 camel_to_spinal
+		// 下划线转驼峰 snake_to_camel
+		// 驼峰转下划线 camel_to_snake
+        'convert_path_style'
         // 请求公共headers
         'http_headers'
         // 请求公共curlopts
@@ -41,7 +45,7 @@ class Http extends Rpc
         // 批请求call方法别名
         'batch_call_method_alias' => 'call',
         // 批请求select超时
-        'batch_select_timeout'  => 0.1,
+        'batch_select_timeout'    => 0.1,
         */
     ];
 

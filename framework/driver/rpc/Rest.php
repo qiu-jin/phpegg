@@ -4,9 +4,7 @@ namespace framework\driver\rpc;
 class Rest extends Http
 {
     // 允许的HTTP请求方法
-    const ALLOW_HTTP_METHODS = [
-        'get', 'put', 'post', 'delete', 'patch', 'options', 'head'
-    ];
+    const ALLOW_HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH', 'OPTIONS'];
     
     /*
      * query实例

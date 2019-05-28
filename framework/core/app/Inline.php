@@ -98,7 +98,7 @@ class Inline extends App
         if ($path = App::getPath()) {
             $controller = $this->config['default_dispatch_hyphen_to_underscore'] ? strtr($path, '-', '_') : $path;
             if (!isset($this->config['default_dispatch_controllers'])) {
-                if ($controller_file = $this->getAndCheckControllerFile($controller)) {
+                if ($controller_file = $this->checkAndGetControllerFile($controller)) {
                     return compact('controller', 'controller_file');
                 }
             } elseif (in_array($controller, $this->config['default_dispatch_controllers'])) {
@@ -122,7 +122,7 @@ class Inline extends App
                 $this->config['route_dispatch_dynamic']
             );
             if ($dispatch) {
-                if (!$dispatch[2] || ($controller_file = $this->getAndCheckControllerFile($dispatch[0]))) {
+                if (!$dispatch[2] || ($controller_file = $this->checkAndGetControllerFile($dispatch[0]))) {
                     return [
                         'controller'        => $dispatch[0],
                         'controller_file'   => $controller_file ?? $this->getControllerFile($dispatch[0]),
@@ -152,12 +152,10 @@ class Inline extends App
     /*
      * 获取并验证控制器文件
      */
-    protected function getAndCheckControllerFile($controller)
+    protected function checkAndGetControllerFile($controller)
     {
-        if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller)
-            && is_php_file($file = $this->getControllerFile($controller))
-        ) {
-            return $file;
+        if (preg_match('/^[\w\-]+(\/[\w\-]+)*$/', $controller) && is_php_file($f = $this->getControllerFile($controller))) {
+            return $f;
         }
     }
 }

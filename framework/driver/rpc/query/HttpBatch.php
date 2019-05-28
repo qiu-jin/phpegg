@@ -49,7 +49,7 @@ class HttpBatch
      */
     public function __call($method, $params)
     {
-        switch ($method) {
+        switch ($m = strtolower($method)) {
             case $this->config['batch_call_method_alias'] ?? 'call':
                 return $this->call(...$params);
             case $this->config['filter_method_alias'] ?? 'filter':
@@ -62,7 +62,7 @@ class HttpBatch
                 $this->build_handler = $params[0];
                 return $this;
             default:
-                $this->ns[] = $method;
+                $this->ns[] = $m;
                 $this->queries[] = $this->buildQuery($params);
                 return $this;
         }
@@ -73,7 +73,7 @@ class HttpBatch
      */
     protected function call(callable $handler = null)
     {
-        return Client::multi(
+        return Client::batch(
             $this->queries,
             $handler ?? [$this->client, 'response'],
             $this->config['batch_select_timeout'] ?? 0.1

@@ -226,14 +226,21 @@ class Mysqli extends Db
     {
 		return $this->connection->commit() && $this->connection->autocommit(true);
     }
+	
+    /*
+     * 获取错误代码
+     */
+    public function errno($query = null)
+    {   
+		return ($query ?? $this->connection)->errno;
+    }
     
     /*
      * 获取错误信息
      */
     public function error($query = null)
     {
-        $q = $query ?? $this->connection;
-        return array($q->errno, $q->error);
+		return ($query ?? $this->connection)->error;
     }
     
     /*

@@ -35,7 +35,7 @@ class Client
     /*
      * 多进程批量请求
      */
-    public static function batch(array $queries, callable $handle = null, $select_timeout = 0.1)
+    public static function batch(array $queries, callable $handler = null, $select_timeout = 0.1)
     {
         $mh = curl_multi_init();
         foreach ($queries as $i => $query) {
@@ -53,8 +53,8 @@ class Client
                     $index = $indices[strval($ch)];
                     $query = $queries[$index];
                     $query->setResponse(curl_multi_getcontent($ch));
-                    if (isset($handle)) {
-                        $return[$index] = $handle($query, $index);
+                    if (isset($handler)) {
+                        $return[$index] = $handler($query, $index);
                     } else {
                         $return[$index] = $query;
                     }
