@@ -2,6 +2,7 @@
 namespace framework\core\http;
 
 use framework\util\Str;
+use framework\util\Hash;
 use framework\util\File;
 use framework\util\Image;
 
@@ -203,6 +204,6 @@ class Uploaded
      */
     protected function randName()
     {
-        return md5(uniqid().$this->path()).'.'.$this->ext();
+        return Hash::hmac(Hash::random(16, true), $this->path()).'.'.$this->ext();
     }
 }

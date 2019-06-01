@@ -395,22 +395,20 @@ class Client
 			public $status;
 			public $body;
 			public $headers;
-			
             public function __construct($status, $body, $headers) {
                 $this->status	= $status;
                 $this->body 	= $body;
                 $this->headers	= $headers;
             }
-			
+			// 获取header
             public function header($name, $default = null) {
 				return $this->headers[$name] ?? $default;
             }
-			
+			// 获取json解码数据
             public function json($name = null, $default = null) {
 				$data = jsondecode($this->body);
 				return $name === null ? $data : Arr::get($data, $name, $default);
             }
-			
             public function __toString() {
                 return $this->body;
             }
@@ -432,13 +430,11 @@ class Client
             private $request;
 			public $code;
 			public $message;
-			
             public function __construct($code, $message, $request) {
                 $this->code    = $code;
                 $this->message = $message;
                 $this->request = $request;
             }
-			
             public function __toString() {
                 return ($this->code ? "[$this->code]$this->message" : 'Unknown HTTP Error')
                        .": {$this->request->method} {$this->request->url}";
@@ -486,6 +482,6 @@ class Client
      */
     public function __destruct()
     {
-        empty($this->ch) || curl_close($this->ch);
+        is_resource($this->ch) && curl_close($this->ch);
     }
 }

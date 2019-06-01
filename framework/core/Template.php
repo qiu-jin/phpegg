@@ -957,7 +957,7 @@ class Template
                             $ret = self::readObjectValue($ret, $tmp, $val, $len, $i, $strs);
                         } else {
                             $ret = self::readInitValue($ret, $tmp);
-                            return "$ret $c ".self::readValue(substr($val, $i + 1), $strs);
+                            return "$ret$c".self::readValue(substr($val, $i + 1), $strs);
                         }
                         break;
                     } elseif ($end === $c) {

@@ -21,12 +21,11 @@ trait Getter
 			return $this->$name = new class([$name], $v[1] ?? 1) {
 	            private $_ns;
 	            private $_depth;
-				
 	            public function __construct($ns, $depth) {
 	                $this->_ns = $ns;
 	                $this->_depth = $depth - 1;
 	            }
-				
+				// 魔术方法，获取空间链实例或容器实例
 	            public function __get($name) {
 	                $this->_ns[] = $name;
 	                if ($name[0] != '_') {

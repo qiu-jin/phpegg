@@ -328,4 +328,12 @@ class Standard extends App
             }
 		}
     }
+	
+    /*
+     * 获取方法反射实例
+     */
+    protected function getMethodReflection($instance, $action)
+    {
+		return $this->method_reflection ?? $this->method_reflection = new \ReflectionMethod($instance, $action);
+    }
 }
