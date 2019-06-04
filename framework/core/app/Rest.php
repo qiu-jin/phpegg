@@ -21,10 +21,6 @@ class Rest extends App
         'controller_suffix' => null,
         // 设置request参数
         'set_request_param' => true,
-        /* 请求参数合并到方法参数（param_mode为2时有效）
-         * 支持 query param input
-         */
-		'bind_request_param_type' => null,
         /* 默认调度的参数模式
          * 0 无参数
          * 1 顺序参数
@@ -79,17 +75,7 @@ class Rest extends App
      */
     protected function call()
     {
-        extract($this->dispatch);
-        if ($this->config['set_request_param']) {
-            $this->setRequestParam();
-        }
-        if ($param_mode === 2) {
-			if (in_array($this->config['bind_request_param_type'], ['query','param', 'input'])) {
-				$params = Request::{$this->config['bind_request_param_type']}() + $params;
-			}
-            $params = $this->bindKvParams(new \ReflectionMethod($instance, $action), $params);
-        }
-        return $instance->$action(...$params);
+		return ($this->dispatch['instance'])->{$this->dispatch['action']}(...$this->dispatch['params']);
     }
     
     /*
@@ -120,21 +106,22 @@ class Rest extends App
         if (isset($this->dispatch['continue'])) {
             $instance = $this->dispatch['instance'];
             list($controller, $params) = $this->dispatch['continue'];
+			if ($params && $param_mode == 0) {
+				return;
+			}
         } else {
             if ($depth > 0) {
                 if ($count == $depth) {
                     $controller_array = $path;
-                } elseif ($count > $depth) {
-                    if ($param_mode < 1) {
-                        return;
-                    }
+                } elseif ($count > $depth && $param_mode > 0) {
                     $controller_array = array_slice($path, 0, $depth);
                     $params = array_slice($path, $depth);
-                } else {
-                	return;
                 }
             } elseif ($path && $param_mode == 0) {
                 $controller_array = $path;
+            }
+            if (!isset($controller_array)) {
+                return;
             }
             if ($this->config['default_dispatch_to_camel']) {
 				$controller_array[] = Str::camelCase(array_pop($controller_array), $this->config['default_dispatch_to_camel']);
@@ -154,10 +141,19 @@ class Rest extends App
         if (in_array($action, $this->config['default_dispatch_http_methods']) && is_callable([$instance, $action])) {
             if (!isset($params)) {
 				$params = [];
-            } elseif ($param_mode === 2) {
-				$params = $this->getKvParams($params);
             }
-            return compact('action', 'controller', 'instance', 'params', 'param_mode');
+			$reflection = new \ReflectionMethod($instance, $action);
+			if ($param_mode == 1 && !$this->checkMethodParamsNumber($reflection, count($params))) {
+				return;
+			}
+			if ($param_mode == 2) {
+				if (($params = $this->getMethodKvParams($params)) === false || 
+					($params = $this->bindMethodKvParams($reflection, $params, true)) === false
+				) {
+					return;
+				}
+			}
+            return compact('action', 'controller', 'instance', 'params');
         }
 		if (!isset($this->dispatch['continue'])) {
 			$this->dispatch = ['continue' => [$controller, $params ?? []], 'instance' => $instance];
@@ -198,12 +194,14 @@ class Rest extends App
         if (($dispatch = Dispatcher::route($action_path, $routes, $param_mode, false, $this->http_method))
             && is_callable([$instance, $dispatch[0]])
         ) {
+			if ($param_mode == 2) {
+				$dispatch[1] = $this->bindMethodKvParams(new \ReflectionMethod($instance, $dispatch[0]), $dispatch[1]);
+			}
             return [
                 'controller'	=> $controller,
                 'instance'   	=> $instance,
                 'action'       	=> $dispatch[0],
                 'params'      	=> $dispatch[1],
-                'param_mode' 	=> $param_mode
             ];
         }
 		if (!isset($this->dispatch['continue'])) {
@@ -244,12 +242,14 @@ class Rest extends App
                     ) {
                         return;
                     }
+					if ($param_mode == 2) {
+						$dispatch[1] = $this->bindMethodKvParams(new \ReflectionMethod($instance, $call[1]), $dispatch[1]);
+					}
                     return [
                         'controller'	=> $call[0],
                         'instance'		=> $instance,
                         'action'		=> $call[1],
                         'params'		=> $dispatch[1],
-                        'param_mode'	=> $param_mode
                     ];
                 } elseif (isset($dispatch[3])) {
 					if ($this->config['action_dispatch_routes_property']) {
@@ -289,12 +289,14 @@ class Rest extends App
             ) {
                 return false;
             }
+			if ($param_mode == 2) {
+				$dispatch[1] = $this->bindMethodKvParams(new \ReflectionMethod($instance, $dispatch[0]), $dispatch[1]);
+			}
             return [
                 'controller'	=> $controller,
                 'instance'   	=> $instance,
                 'action'		=> $dispatch[0],
                 'params'		=> $dispatch[1],
-                'param_mode'	=> $param_mode
             ];
         }
 		return false;
@@ -303,11 +305,14 @@ class Rest extends App
     /*
      * 获取键值参数
      */
-    protected function getKvParams(array $path)
+    protected function getMethodKvParams(array $arr)
     {
-        $len = count($path);
-        for ($i = 1; $i < $len; $i = $i+2) {
-            $params[$path[$i-1]] = $path[$i];
+        $len = count($arr);
+		if ($len % 2 != 0) {
+			return false;
+		}
+        for ($i = 1; $i < $len; $i = $i + 2) {
+            $params[$arr[$i-1]] = $arr[$i];
         }
         return $params ?? [];
     }
@@ -327,5 +332,13 @@ class Rest extends App
                     return;
             }
         }
+    }
+	
+    /*
+     * 检查方法参数数
+     */
+    protected function checkMethodParamsNumber($reflection, $number)
+    {
+		return $number >= $reflection->getNumberOfRequiredParameters() && $number <= $reflection->getNumberOfParameters();
     }
 }

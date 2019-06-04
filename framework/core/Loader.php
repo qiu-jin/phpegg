@@ -2,6 +2,7 @@
 namespace framework\core;
 
 use framework\App;
+use framework\util\Str;
 
 class Loader
 {
@@ -34,7 +35,7 @@ class Loader
                 self::add($type, $rules);
             }
         }
-        // composer vendor目录
+        // 注册composer加载规则
         if ($dir = Config::env('VENDOR_DIR')) {
             self::import($dir.'autoload', false);
         }
@@ -121,7 +122,7 @@ class Loader
             }
         }
         if ($i > 0) {
-            self::import($d.strtr(substr($class, $i), '\\', '/'));
+            self::import(Str::lastPad($d, '/').strtr(substr($class, $i), '\\', '/'));
         }
     }
 }

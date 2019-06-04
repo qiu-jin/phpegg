@@ -38,6 +38,8 @@ class Jsonrpc extends App
         'closure_getter_providers' => null,
         // 最大批调用数（1不启用批调用，0无限批调用数）
         'batch_call_limit'		=> 1,
+        // 是否检查方法参数
+        'check_method_params'	=> false,
         /* 请求反序列化与响应序列化，支持设置除默认json外多种序列化方法
          * serialize 原生方法 'unserialize' 'serialize'
          * msgpack https://pecl.php.net/package/msgpack 'msgpack_unserialize' 'msgpack_serialize'
@@ -211,9 +213,21 @@ class Jsonrpc extends App
     {
 		extract($dispatch);
         if ($this->config['param_mode'] == 1) {
+			if ($this->config['check_method_params'] && 
+				!$this->checkMethodParamsNumber($this->getMethodReflection($method, $call), count($params))
+			) {
+				return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
+			}
             return ['result' => $call(...$params)];
         } elseif ($this->config['param_mode'] == 2) {
-            $params = $this->bindKvParams($this->getMethodReflection($method, $call), $params);
+			$reflection = $this->getMethodReflection($method, $call);
+			if ($this->config['check_method_params']) {
+				if (($params = $this->bindMethodKvParams($reflection, $params, true)) === false) {
+					return ['error' => ['code'=> -32602, 'message' => 'Invalid params']];
+				}
+			} else {
+				$params = $this->bindMethodKvParams($reflection, $params);
+			}
 			return ['result' => $call(...$params)];
         }
         return ['result' => $call($params)];
@@ -361,5 +375,13 @@ class Jsonrpc extends App
         }
 		$ref = $call instanceof \Closure ? new \ReflectionFunction($call) : new \ReflectionMethod(...$call);
         return $this->method_reflections[$method] = $ref;
+    }
+	
+    /*
+     * 检查方法参数数
+     */
+    protected function checkMethodParamsNumber($reflection, $number)
+    {
+		return $number >= $reflection->getNumberOfRequiredParameters() && $number <= $reflection->getNumberOfParameters();
     }
 }

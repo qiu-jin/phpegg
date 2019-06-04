@@ -236,7 +236,7 @@ class Grpc extends App
         if (is_subclass_of($request_class, Message::class) && is_subclass_of($response_class, Message::class)) {
             $request_message = new $request_class;
             $request_message->mergeFromString($this->readParams());
-            $params = $this->bindKvParams(
+            $params = $this->bindMethodKvParams(
                 $this->getReflection($call),
                 json_decode($request_message->serializeToJsonString(), true)
             );

@@ -23,10 +23,6 @@ class Standard extends App
         'enable_view' => false,
         // 视图模版路径是否转为下划线风格
         'template_path_to_snake' => false,
-        /* 请求参数合并到方法参数（param_mode为2时有效）
-         * 支持 query param input
-         */
-        'bind_request_param_type' => null,
         /* 默认调度的参数模式
          * 0 无参数
          * 1 顺序参数
@@ -54,8 +50,6 @@ class Standard extends App
         // 设置动作调度路由属性名，为null则不启用动作路由
         'action_dispatch_routes_property' => 'routes',
     ];
-	// 方法反射实例
-    protected $method_reflection;
     
     /*
      * 调度
@@ -75,15 +69,7 @@ class Standard extends App
      */
     protected function call()
     {
-        extract($this->dispatch);
-		if ($param_mode === 2) {
-			if (in_array($this->config['bind_request_param_type'], ['query','param', 'input'])) {
-				$params = Request::{$this->config['bind_request_param_type']}() + $params;
-			}
-			$mr = $this->method_reflection ?? new \ReflectionMethod($instance, $action);
-            $params = $this->bindKvParams($mr, $params);
-        }
-        return $instance->$action(...$params);
+		return ($this->dispatch['instance'])->{$this->dispatch['action']}(...$this->dispatch['params']);
     }
     
     /*
@@ -125,9 +111,13 @@ class Standard extends App
             list($controller, $params) = $this->dispatch['continue'];
             if ($params) {
 				$action = array_shift($params);
+				if ($params && $param_mode == 0) {
+					return;
+				}
 	            if ($to_came) {
 					$action = Str::camelCase($action, $to_came);
 	            }
+				$check_params = true;
             } elseif ($this->config['default_dispatch_default_action']) {
                 $action = $this->config['default_dispatch_default_action'];
             } else {
@@ -145,17 +135,20 @@ class Standard extends App
 	                if ($count >= $depth) {
 	                    $allow_action_route = true;
 	                    $controller_array = array_slice($path, 0, $depth);
-	                    if ($count == $depth + 1) {
-	                        $action = $path[$depth];
-	                    } elseif ($count == $depth) {
+						if ($count == $depth) {
 	                        if ($this->config['default_dispatch_default_action']) {
 	                            $action = $this->config['default_dispatch_default_action'];
 								$is_default_action = true;
 	                        }
-	                    } elseif ($param_mode > 0) {
-                            $action = $path[$depth];
-                            $params = array_slice($path, $depth + 1);
-	                    }
+						} else {
+							$check_params = true;
+		                    if ($count == $depth + 1) {
+		                        $action = $path[$depth];
+		                    } elseif ($param_mode > 0) {
+	                            $action = $path[$depth];
+	                            $params = array_slice($path, $depth + 1);
+		                    }
+						}
 	                }
 	            } elseif ($count > 1 && $param_mode == 0) {
 	                $action = array_pop($path);
@@ -185,10 +178,21 @@ class Standard extends App
         if (is_callable([$instance, $action]) && $action[0] !== '_') {
             if (!isset($params)) {
 				$params = [];
-            } elseif ($param_mode === 2) {
-				$params = $this->getKvParams($params);
+            }
+			if (isset($check_params)) {
+				$reflection = new \ReflectionMethod($instance, $action);
+				if ($param_mode == 1 && !$this->checkMethodParamsNumber($reflection, count($params))) {
+					return;
+				}
+				if ($param_mode == 2) {
+					if (($params = $this->getMethodKvParams($params)) === false || 
+						($params = $this->bindMethodKvParams($reflection, $params, true)) === false
+					) {
+						return;
+					}
+				}
 			}
-            return compact('action', 'controller', 'instance', 'params', 'param_mode');
+            return compact('action', 'controller', 'instance', 'params');
         } elseif (isset($allow_action_route)) {
 			$this->dispatch = ['continue' => [$controller, array_slice($path, $depth)], 'instance' => $instance];
         }
@@ -226,14 +230,16 @@ class Standard extends App
                             return false;
                         }
                     } elseif ($this->config['route_dispatch_access_protected']) {
-                        $this->setMethodAccessible($instance, $call[1]);
+                        $reflection = $this->setMethodAccessible($instance, $call[1]);
                     }
+					if ($param_mode == 2) {
+						$dispatch[1] = $this->bindMethodKvParams($reflection ?? new \ReflectionMethod($instance, $call[1]), $dispatch[1]);
+					}
                     return [
                         'controller'	=> $call[0],
                         'instance'   	=> $instance,
                         'action'		=> $call[1],
                         'params' 		=> $dispatch[1],
-                        'param_mode'	=> $param_mode
                     ];
                 } elseif(isset($dispatch[3]))  {
 					if ($this->config['action_dispatch_routes_property']) {
@@ -275,14 +281,16 @@ class Standard extends App
                     return false;
                 }
             } elseif ($this->config['route_dispatch_access_protected']) {
-                $this->setMethodAccessible($instance, $dispatch[0]);
+                $reflection = $this->setMethodAccessible($instance, $dispatch[0]);
             }
+			if ($param_mode == 2) {
+				$dispatch[1] = $this->bindMethodKvParams($reflection ?? new \ReflectionMethod($instance, $dispatch[0]), $dispatch[1]);
+			}
             return [
                 'controller'	=> $controller,
                 'instance'   	=> $instance,
                 'action'     	=> $dispatch[0],
                 'params'      	=> $dispatch[1],
-                'param_mode'	=> $param_mode
             ];
         }
 		return false;
@@ -307,11 +315,14 @@ class Standard extends App
     /*
      * 获取键值参数
      */
-    protected function getKvParams(array $path)
+    protected function getMethodKvParams(array $arr)
     {
-        $len = count($path);
+        $len = count($arr);
+		if ($len % 2 != 0) {
+			return false;
+		}
         for ($i = 1; $i < $len; $i = $i + 2) {
-            $params[$path[$i-1]] = $path[$i];
+            $params[$arr[$i-1]] = $arr[$i];
         }
         return $params ?? [];
     }
@@ -322,18 +333,19 @@ class Standard extends App
     protected function setMethodAccessible($instance, $action)
     {
 		if (!is_callable([$instance, $action])) {
-			$this->method_reflection = new \ReflectionMethod($instance, $action);
-            if ($this->method_reflection->isProtected()) {
-                $this->method_reflection->setAccessible(true);
+			$reflection = new \ReflectionMethod($instance, $action);
+            if ($reflection->isProtected()) {
+                $reflection->setAccessible(true);
             }
+			return $reflection;
 		}
     }
 	
     /*
-     * 获取方法反射实例
+     * 检查方法参数数
      */
-    protected function getMethodReflection($instance, $action)
+    protected function checkMethodParamsNumber($reflection, $number)
     {
-		return $this->method_reflection ?? $this->method_reflection = new \ReflectionMethod($instance, $action);
+		return $number >= $reflection->getNumberOfRequiredParameters() && $number <= $reflection->getNumberOfParameters();
     }
 }

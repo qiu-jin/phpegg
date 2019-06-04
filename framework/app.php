@@ -282,16 +282,16 @@ abstract class App
     /*
      * 绑定键值参数
      */
-    protected function bindKvParams($reflection_method, $params, $default_null = false)
+    protected function bindMethodKvParams($reflection, $params, $check = false)
     {
-        if ($reflection_method->getnumberofparameters() > 0) {
-            foreach ($reflection_method->getParameters() as $param) {
+        if ($reflection->getnumberofparameters() > 0) {
+            foreach ($reflection->getParameters() as $param) {
                 if (isset($params[$param->name])) {
                     $new_params[] = $params[$param->name];
                 } elseif($param->isDefaultValueAvailable()) {
                     $new_params[] = $param->getdefaultvalue();
-                } elseif ($default_null) {
-                    $new_params[] = null;
+                } elseif ($check) {
+                    return false;
                 } else {
                     break;
                 }
