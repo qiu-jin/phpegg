@@ -9,7 +9,7 @@ use framework\core\Container;
 use framework\core\Dispatcher;
 use framework\core\http\Request;
 use framework\core\http\Response;
-use framework\exception\JsonrpcAbortException;
+use framework\exception\JsonrpcAppAbortException;
 
 class Jsonrpc extends App
 {
@@ -146,7 +146,7 @@ class Jsonrpc extends App
             }
         }
 		if (!App::isExit()) {
-			throw new JsonrpcAbortException($code, $message, $data);
+			throw new JsonrpcAppAbortException($code, $message, $data);
 		}
 		if (!$this->is_batch_call && !isset($this->dispatch['id'])) {
 			$this->respond();
@@ -186,7 +186,7 @@ class Jsonrpc extends App
 	        } else {
 	            try {
 	                $return += $this->handleItem($dispatch);
-	            } catch (JsonrpcAbortException $e) {
+	            } catch (JsonrpcAppAbortException $e) {
 	                $return['error'] = [
 	                	'code' => $e->getCode(),
 						'message' => $e->getMessage()
@@ -200,7 +200,7 @@ class Jsonrpc extends App
 		} else {
             try {
                 $this->handleItem($dispatch);
-            } catch (JsonrpcAbortException $e) {
+            } catch (JsonrpcAppAbortException $e) {
 				// Pass
             }
 		}

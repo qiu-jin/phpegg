@@ -24,7 +24,7 @@ class Grpc extends App
         /* 参数模式
          * 0 普通参数模式
          * 1 request response 参数模式（默认）
-         * 2 request response 参数模式（自定义）
+         * 2 request response 参数模式（自定义/默认）
          */
         'param_mode'            => 0,
         // 默认调度的控制器，为空不限制
@@ -306,8 +306,8 @@ class Grpc extends App
         $request_class  = strtr($this->config['request_message_format'], $replace);
         $response_class = strtr($this->config['response_message_format'], $replace);
         if ($this->config['service_prefix']) {
-            $request_class = $this->config['service_prefix']."\\$request_class";
-            $response_class = $this->config['service_prefix']."\\$response_class";
+            $request_class = $this->config['service_prefix'].'\\'.$request_class;
+            $response_class = $this->config['service_prefix'].'\\'.$response_class;
         }
         return [$request_class, $response_class];
     }

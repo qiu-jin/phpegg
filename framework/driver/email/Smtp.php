@@ -8,8 +8,6 @@ class Smtp extends Email
 {
 	// 套接字
     protected $sock;
-    // 日志处理器
-    protected $logger;
 	// 配置
 	protected $config = [
 		// 主机
@@ -123,7 +121,7 @@ class Smtp extends Email
      */
     protected function log($log)
     {
-		($this->logger ?? $this->logger = Logger::channel($this->config['debug']))->debug($log);
+		Logger::channel($this->config['debug'])->debug($log);
     }
 	
     /*

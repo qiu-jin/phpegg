@@ -11,8 +11,6 @@ abstract class Db
     protected $sql;
     // 调试模式
     protected $debug = APP_DEBUG;
-    // 日志处理器
-    protected $logger;
     // 数据库名
     protected $dbname;
     // 数据库连接
@@ -199,6 +197,6 @@ abstract class Db
                 $sql = Str::formatReplace($sql, $params, ':%s');
             }
         }
-		($this->logger ?? $this->logger = Logger::channel($this->debug))->debug($sql);
+		Logger::channel($this->debug)->debug($sql);
     }
 }

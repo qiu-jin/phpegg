@@ -1,7 +1,7 @@
 <?php
 namespace framework\exception;
 
-class JsonRpcAbortException extends \Exception
+class JsonrpcAppAbortException extends \Exception
 {
     protected $data;
     

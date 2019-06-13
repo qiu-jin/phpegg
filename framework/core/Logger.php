@@ -83,14 +83,14 @@ class Logger
 		if ($name === true) {
 			return self::getLevelHandler();
 		}
-		if (is_array($name)) {
-			return self::makeGroupHandler($name);
-		}
 		if (isset(self::$configs[$name])) {
 			return self::getHandler($name);
 		}
 		if (isset(self::$group_handler_names[$name])) {
 			return self::getGroupHandler($name);
+		}
+		if (is_array($name)) {
+			return self::makeGroupHandler($name);
 		}
 		if ($use_null_handler) {
 			return self::getNullHandler();

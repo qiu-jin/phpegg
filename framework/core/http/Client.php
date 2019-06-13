@@ -11,6 +11,8 @@ class Client
     private $ch;
     // 错误信息
     private $error;
+    // 调试设置
+    private $debug;
     // 请求设置
     private $request;
     // 响应内容
@@ -74,8 +76,8 @@ class Client
      */
     public function __construct($method, $url)
     {
+		$this->debug = APP_DEBUG;
         $this->request = (object) compact('url', 'method');
-		$this->request->debug = APP_DEBUG;
     }
 
     /*
@@ -266,9 +268,9 @@ class Client
     /*
      * 设置debug模式
      */
-    public function debug($bool = true)
+    public function debug($debug = true)
     {
-        $this->request->debug = $bool;
+        $this->debug = $debug;
         return $this;
     }
 	
@@ -365,7 +367,7 @@ class Client
         if (isset($this->request->cookies)) {
 			curl_setopt($ch, CURLOPT_COOKIE, http_build_query($this->request->cookies, '', ';'));
         }
-        if (!empty($this->request->debug)) {
+        if ($this->debug) {
             $this->request->return_headers = true;
             $this->request->curlopts[CURLINFO_HEADER_OUT] = true;
         }
@@ -472,9 +474,9 @@ class Client
     /*
      * 日志
      */
-    protected static function log()
+    protected static function log($log)
     {
-        //Logger::write(Logger::DEBUG, $log);
+        Logger::channel($this->debug)->debug($log);
     }
     
     /*
