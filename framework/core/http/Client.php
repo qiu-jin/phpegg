@@ -247,7 +247,7 @@ class Client
     /*
      * 设置请求超时时间
      */
-    public function allowRedirects($bool = true, int $max = 3)
+    public function allowRedirect($bool = true, int $max = 3)
     {
         $this->request->curlopts[CURLOPT_FOLLOWLOCATION] = $bool;
 		if ($bool && $max > 0) {
@@ -259,9 +259,9 @@ class Client
     /*
      * 设置是否获取并解析请求响应的headers数据
      */
-    public function returnHeaders($bool = true)
+    public function returnHeader($bool = true)
     {
-		$this->request->return_headers = $bool;
+		$this->request->return_header = $bool;
         return $this;
     }
     
@@ -368,10 +368,10 @@ class Client
 			curl_setopt($ch, CURLOPT_COOKIE, http_build_query($this->request->cookies, '', ';'));
         }
         if ($this->debug) {
-            $this->request->return_headers = true;
+            $this->request->return_header = true;
             $this->request->curlopts[CURLINFO_HEADER_OUT] = true;
         }
-        if (!empty($this->request->return_headers)) {
+        if (!empty($this->request->return_header)) {
 			$this->request->curlopts[CURLOPT_HEADER] = true;
         }
         if (isset($this->request->curlopts)) {
@@ -390,7 +390,7 @@ class Client
         if (!($status >= 200 && $status < 300)) {
             $this->setError($status);
         }
-        if (!empty($this->request->return_headers)) {
+        if (!empty($this->request->return_header)) {
         	$headers = $this->getResponseHeadersFromResult($body);
         }
         $this->response = new class ($status, $body, $headers ?? null) {

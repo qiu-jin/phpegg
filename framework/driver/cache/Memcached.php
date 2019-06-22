@@ -97,13 +97,13 @@ class Memcached extends Cache
      */
     public function getMultiple(array $keys, $default = null)
     {
-		$caches = $this->connection->getMulti($keys);
+		$values = $this->connection->getMulti($keys);
         foreach ($keys as $k) {
-            if (!isset($caches[$k])) {
-                $caches[$k] = $default;
+            if (!isset($values[$k])) {
+                $values[$k] = $default;
             }
         }
-        return $caches;
+        return $values;
     }
     
     /*

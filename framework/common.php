@@ -149,8 +149,7 @@ function output($name, $type = null)
  */
 function cookie($name = null, ...$params)
 {
-    return $params ? Cookie::set($name, ...$params)
-		           : ($name === null ? Cookie::all() : Cookie::get($name)); 
+    return $params ? Cookie::set($name, ...$params) : ($name === null ? Cookie::all() : Cookie::get($name)); 
 }
 
 /*
@@ -158,8 +157,7 @@ function cookie($name = null, ...$params)
  */
 function session($name = null, $value = null)
 {
-	return is_array($name) || $value !== null ? Session::set($name, $value) 
-		                                      : ($name === null ? Session::all() : Session::get($name));
+	return $value !== null ? Session::set($name, $value) : ($name === null ? Session::all() : Session::get($name));
 }
 
 /*

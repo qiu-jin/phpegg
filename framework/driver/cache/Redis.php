@@ -45,7 +45,8 @@ class Redis extends Cache
      */
     public function get($key, $default = null)
     {
-        return $this->connection->get($key) ?? $default;
+		$value = $this->connection->get($key);
+        return $value === false ? $default : $value;
     }
 	
     /*
@@ -64,7 +65,7 @@ class Redis extends Cache
         if (($t = $ttl ?? $this->ttl) == 0) {
             return $this->connection->set($key, $value);
         } else {
-			return $this->connection->setex($key, $t, $value);
+			return $this->connection->set($key, $value, $t);
         }
     }
 
@@ -90,6 +91,42 @@ class Redis extends Cache
     public function decrement($key, $value = 1)
     {
         return $value > 1 ? $this->connection->decrBy($key, $value) : $this->connection->decr($key);
+    }
+	
+    /*
+     * 获取多个
+     */
+    public function getMultiple(array $keys, $default = null)
+    {
+		$values = $this->connection->mGet($keys);
+		if ($default !== false) {
+			foreach ($keys as $k) {
+	            if (!isset($values[$k]) || $values[$k] === false) {
+	                $values[$k] = $default;
+	            }
+			}
+		}
+		return $values;
+    }
+    
+    /*
+     * 设置多个
+     */
+    public function setMultiple(array $values, $ttl = null)
+    {
+        if (($t = $ttl ?? $this->ttl) == 0) {
+            return $this->connection->mSet($values);
+        } else {
+			return $this->connection->mSet($values, $t);
+        }
+    }
+    
+    /*
+     * 删除多个
+     */
+    public function deleteMultiple(array $keys)
+    {
+        return $this->connection->del($keys);
     }
     
     /*

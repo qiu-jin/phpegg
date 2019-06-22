@@ -20,6 +20,7 @@ class Response
             return;
         }
         self::$init = true;
+		self::$response = new \stdClass();
         Event::on('flush', [__CLASS__, 'flush']);
     }
     
@@ -28,7 +29,7 @@ class Response
      */
     public static function status($code = 200)
     {
-		self::$response['status'] = $code;
+		self::$response->status = $code;
     }
     
     /*
@@ -36,7 +37,7 @@ class Response
      */
     public static function header($name, $value)
     {
-        self::$response['headers'][$name] = $value;
+        self::$response->headers[$name] = $value;
     }
     
     /*
@@ -44,10 +45,10 @@ class Response
      */
     public static function headers(array $headers)
     {
-        if (isset(self::$response['headers'])) {
-            self::$response['headers'] = $headers + self::$response['headers'];
+        if (isset(self::$response->headers)) {
+            self::$response->headers = $headers + self::$response->headers;
         } else {
-            self::$response['headers'] = $headers;
+            self::$response->headers = $headers;
         }
     }
     
@@ -57,7 +58,7 @@ class Response
     public static function cookie(
     	$name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null
     ) {
-        self::$response['cookies'][] = func_get_args();
+        self::$response->cookies[] = func_get_args();
     }
     
     /*
@@ -65,7 +66,7 @@ class Response
      */
     public static function wirte($body)
     {
-        self::$response['body'] = isset(self::$response['body']) ? self::$response['body'].$body : $body;
+        self::$response->body = isset(self::$response->body) ? self::$response->body.$body : $body;
     }
     
     /*
@@ -97,9 +98,9 @@ class Response
      */
     public static function file($path, $type = null)
     {
-		self::$response['body'] = null;
-		self::$response['headers']['Content-Length'] = filesize($file);
-		self::$response['headers']['Content-Type'] = $type ?? File::mime($path);
+		self::$response->body = null;
+		self::$response->headers['Content-Length'] = filesize($file);
+		self::$response->headers['Content-Type'] = $type ?? File::mime($path);
 		self::flush();
 		readfile($path);
 		App::exit();
@@ -110,9 +111,9 @@ class Response
      */
     public static function send($body, $type = null)
     {
-        self::$response['body'] = $body;
+        self::$response->body = $body;
         if ($type) {
-            self::$response['headers']['Content-Type'] = $type;
+            self::$response->headers['Content-Type'] = $type;
         }
         App::exit();
     }
@@ -122,9 +123,9 @@ class Response
      */
     public static function redirect($url, $permanently = false)
     {
-        self::$response['status'] = $permanently ? 301 : 302;
-        self::$response['headers']['Location'] = $url;
-        self::$response['body'] = null;
+        self::$response->status = $permanently ? 301 : 302;
+        self::$response->headers['Location'] = $url;
+        self::$response->body = null;
         App::exit();
     }
 	
@@ -134,13 +135,13 @@ class Response
     public static function download($file, $name = null, $is_buffer = false)
     {
 		if (!$is_buffer) {
-			self::$response['headers']['Content-Disposition'] = 'attachment; filename="'.($name ?? basename($file)).'"';
+			self::$response->headers['Content-Disposition'] = 'attachment; filename="'.($name ?? basename($file)).'"';
 			return self::file($file);
 		} else {
-			self::$response['headers']['Content-Type'] = File::mime($file, true) ?: 'application/octet-stream';
-			self::$response['headers']['Content-Length'] = strlen($file);
-			self::$response['headers']['Content-Disposition'] = 'attachment; filename="'.$name.'"';
-			self::$response['body'] = $file;
+			self::$response->headers['Content-Type'] = File::mime($file, true) ?: 'application/octet-stream';
+			self::$response->headers['Content-Length'] = strlen($file);
+			self::$response->headers['Content-Disposition'] = 'attachment; filename="'.$name.'"';
+			self::$response->body = $file;
 			App::exit();
 		}
     }
@@ -162,21 +163,21 @@ class Response
             throw new \Exception('Response headers sent failure');
         }
         Event::trigger('response', self::$response);
-        if (isset(self::$response['status'])) {
-            http_response_code(self::$response['status']);
+        if (isset(self::$response->status)) {
+            http_response_code(self::$response->status);
         }
-        if (isset(self::$response['headers'])) {
-            foreach (self::$response['headers'] as $k => $v) {
+        if (isset(self::$response->headers)) {
+            foreach (self::$response->headers as $k => $v) {
                 header("$k: $v");
             }
         }
-		if (isset(self::$response['cookies'])) {
-			foreach (self::$response['cookies'] as $v) {
+		if (isset(self::$response->cookies)) {
+			foreach (self::$response->cookies as $v) {
 				Cookie::setCookie(...$v);
 			}
 		}
-        if (isset(self::$response['body'])) {
-            echo self::$response['body'];
+        if (isset(self::$response->body)) {
+            echo self::$response->body;
         }
         self::$response = null;
     }

@@ -431,8 +431,11 @@ class Image
         throw new \Exception("Illegal color: $color");
     }
     
+    /* 
+     * 析构函数
+     */
     public function __destruct()
     {
-        empty($this->image) || imagedestroy($this->image);
+        is_resource($this->image) && imagedestroy($this->image);
     }
 }

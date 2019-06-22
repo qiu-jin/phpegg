@@ -2,7 +2,6 @@
 namespace framework\core\http;
 
 use framework\util\Arr;
-use framework\util\Str;
 use framework\core\Event;
 use framework\core\Config;
 
@@ -32,10 +31,9 @@ class Session
 				Event::on('exit', 'session_write_close');
 			}
 			if (isset($config['auto_start']) && !$config['auto_start']) {
-				return Event::trigger('session');
+				return;
 			}
         }
-		Event::trigger('session');
 		self::start();
     }
 	
@@ -44,7 +42,10 @@ class Session
      */
     public static function start()
     {
-		return session_status() != PHP_SESSION_ACTIVE && session_start(self::$start_options);
+		if (session_status() != PHP_SESSION_ACTIVE) {
+			session_start(self::$start_options);
+			Event::trigger('session');
+		}
     }
     
     /*
@@ -111,8 +112,8 @@ class Session
         session_unset();
         session_destroy();
 		if ($delete_cookie) {
-		    extract(session_get_cookie_params());
-		    Cookie::delete(session_name(), $path, $domain, $secure, $httponly);
+		    $params = session_get_cookie_params();
+		    Cookie::delete(session_name(), $params['path'], $params['domain'], $params['secure'], $params['httponly']);
 		}
     }
     
@@ -121,8 +122,7 @@ class Session
      */
     public static function __callStatic($method, $params)
     {
-		$func = 'session_'.Str::snakeCase($method);
-        if (function_exists($func)) {
+        if (function_exists($func = "session_$method")) {
             return $func(...$params);
         }
         throw new \BadMethodCallException('Call to undefined method '.__CLASS__."::$method");
