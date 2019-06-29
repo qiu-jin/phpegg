@@ -33,7 +33,7 @@ abstract class Pdo extends Db
 	 */
     public function select($sql, $params = null)
     {
-        $query = $params ? $this->prepareExecute($sql, $params) : $this->connection->query($sql);
+        $query = $params ? $this->prepareExecute($sql, $params) : $this->realQuery($sql);
         return $query->fetchAll(\PDO::FETCH_ASSOC);
     }
     
@@ -42,7 +42,7 @@ abstract class Pdo extends Db
 	 */
     public function insert($sql, $params = null, $return_id = false)
     {
-        $params ? $this->prepareExecute($sql, $params) : $this->connection->exec($sql);
+        $params ? $this->prepareExecute($sql, $params) : $this->realExec($sql);
         if ($return_id) {
             return $this->connection->lastInsertId();
         }
@@ -54,9 +54,9 @@ abstract class Pdo extends Db
     public function update($sql, $params = null)
     {
         if ($params) {
-            $this->prepareExecute($sql, $params)->rowCount();
+            return $this->prepareExecute($sql, $params)->rowCount();
         } else {
-            return $this->connection->exec($sql);
+            return $this->realExec($sql);
         }
     }
     
@@ -93,12 +93,12 @@ abstract class Pdo extends Db
                 case 'SELECT':
                     return $this->realQuery($sql)->fetchAll(\PDO::FETCH_ASSOC);
                 case 'INSERT':
-                    $this->connection->exec($sql);
+                    $this->realExec($sql);
                     return $this->connection->lastInsertId();
                 case 'UPDATE':
                 case 'REPLACE':
                 case 'DELETE':
-                    return $this->connection->exec($sql);
+                    return $this->realExec($sql);
                 default:
                     return (bool) $this->realQuery($sql);
             }

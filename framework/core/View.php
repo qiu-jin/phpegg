@@ -75,7 +75,7 @@ class View
     /*
      * 展示页面
      */
-    public static function display($tpl, array $vars = [])
+    public static function display($tpl, array $vars = null)
     {
 		Response::html(self::render($tpl, $vars));
     }
@@ -83,11 +83,11 @@ class View
     /*
      * 渲染页面
      */
-    public static function render($tpl, array $vars = [], $clean = true)
+    public static function render($tpl, array $vars = null, $clean = true)
     {
         ob_start();
 		if (isset(self::$view['vars'])) {
-			$vars = $vars + self::$view['vars'];
+			$vars = $vars ? $vars + self::$view['vars'] : self::$view['vars'];
 		}
 		__require_view(self::path($tpl), $vars);
 		if ($clean) {
@@ -101,18 +101,18 @@ class View
      */
     public static function path($tpl, $force = false)
     {
-        $phpfile = self::getViewFilePath($tpl);
+        $vfile = self::getViewFilePath($tpl);
         if (self::$config['template']) {
-            if (!is_file($tplfile = self::getTemplateFilePath($tpl))) {
-                throw new ViewException("Template file not found: $tplfile");
+            if (!is_file($tfile = self::getTemplateFilePath($tpl))) {
+                throw new ViewException("Template file not found: $tfile");
             }
-            if ($force || self::$config['template']['force'] || !is_file($phpfile)
-                || filemtime($phpfile) < filemtime($tplfile)
+            if ($force || self::$config['template']['force'] || !is_file($vfile)
+                || filemtime($vfile) < filemtime($tfile)
             ) {
-                self::complieTo($phpfile, file_get_contents($tplfile));
+                self::complieTo($vfile, file_get_contents($tfile));
             }
         }
-        return $phpfile;
+        return $vfile;
     }
     
     /*
@@ -140,22 +140,22 @@ class View
     /*
      * 检查视图文件是否过期
      */
-    public static function checkExpired($phpfile, ...$tpls)
+    public static function checkExpired($vfile, ...$tpls)
     {
         if (self::$config['template']) {
 	        foreach ($tpls as $tpl) {
-	            if (!is_file($tplfile = self::getTemplatePath($tpl))) {
-	                throw new ViewException("模版文件: $file 不存在");
+	            if (!is_file($tfile = self::getTemplatePath($tpl))) {
+	                throw new ViewException("模版文件: $tfile 不存在");
 	            }
-	            if (filemtime($phpfile) < filemtime($tplfile)) {
+	            if (filemtime($vfile) < filemtime($tfile)) {
 					$dir = realpath(self::$config['dir']);
 					$len = strlen($dir);
-					if (strncmp($phpfile, $dir, $len) === 0) {
-		                $t = substr($phpfile, $len + 1, - strlen(self::$config['ext']));
-		                self::complieTo($phpfile, self::readTemplate($t));
+					if (strncmp($vfile, $dir, $len) === 0) {
+		                $t = substr($vfile, $len + 1, - strlen(self::$config['ext']));
+		                self::complieTo($vfile, self::readTemplate($t));
 						return true;
 					}
-					throw new ViewException("视图文件: $phpfile 与视图目录: $dir 不符");
+					throw new ViewException("视图文件: $vfile 与视图目录: $dir 不符");
 	            }
 	        }
         }

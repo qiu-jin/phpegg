@@ -138,11 +138,9 @@ class Response
 			self::$response->headers['Content-Disposition'] = 'attachment; filename="'.($name ?? basename($file)).'"';
 			return self::file($file);
 		} else {
-			self::$response->headers['Content-Type'] = File::mime($file, true) ?: 'application/octet-stream';
 			self::$response->headers['Content-Length'] = strlen($file);
 			self::$response->headers['Content-Disposition'] = 'attachment; filename="'.$name.'"';
-			self::$response->body = $file;
-			App::exit();
+			return self::send($file, File::mime($file, true) ?: 'application/octet-stream');
 		}
     }
     

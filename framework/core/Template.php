@@ -260,7 +260,7 @@ class Template
         $blocks = [];
         while (true) {
             if ($i > 9) {
-                throw new TemplateException('嵌套不能大于9层，防止死循环');
+                throw new TemplateException('Extends嵌套不能大于9层，防止死循环');
             }
             $str = self::readInsert($str, $ck);
             if (!preg_match_all(self::tagRegex(self::$config['extends_tag']), $str, $matches, PREG_OFFSET_CAPTURE)) {
@@ -310,7 +310,7 @@ class Template
         $i = 0;
         while (true) {
             if ($i > 9) {
-                throw new TemplateException('嵌套不能大于9层，防止死循环');
+                throw new TemplateException('Insert嵌套不能大于9层，防止死循环');
             }
             if (!$res = self::parseTagWithText($str, self::$config['insert_tag'], 'name', null)) {
                 break;

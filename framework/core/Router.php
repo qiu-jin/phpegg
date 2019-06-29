@@ -26,6 +26,9 @@ class Router
         self::$patterns = Config::get('router.patterns');
     }
 
+    /*
+     * 构造函数
+     */
     public function __construct(array $path, $method = null)
     {
         $this->path   = $path;
@@ -162,7 +165,7 @@ class Router
                         break;
                     }
                     return false;
-                // 原义匹配
+                // 默认匹配
                 default:
                     if ($s == $v) {
                         break;

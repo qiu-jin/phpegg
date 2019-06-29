@@ -38,7 +38,7 @@ class Mysqli extends Db
 	 */
     public function select($sql, $params = null)
     {
-        $query = $params ? $this->prepareExecute($sql, $params)->get_result() : $this->connection->query($sql);
+        $query = $params ? $this->prepareExecute($sql, $params)->get_result() : $this->realQuery($sql);
         return $query->fetch_all(MYSQLI_ASSOC);
     }
     
@@ -53,7 +53,7 @@ class Mysqli extends Db
                 return $query->insert_id; 
             }
         } else {
-            $this->connection->query($sql);
+            $this->realQuery($sql);
             if ($return_id) {
                 return $this->connection->insert_id; 
             }
@@ -68,8 +68,8 @@ class Mysqli extends Db
         if ($params) {
             return $this->prepareExecute($sql, $params)->affected_rows;
         } else {
-            $this->connection->query($sql);
-            $this->connection->affected_rows; 
+            $this->realQuery($sql);
+            return $this->connection->affected_rows; 
         }
     }
     

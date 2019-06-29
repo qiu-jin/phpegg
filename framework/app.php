@@ -131,15 +131,12 @@ abstract class App
         if (self::$app) {
             return;
         }
-        define('APP_MODE', $app);
         if (in_array($app, self::MODES)) {
-            $class = "framework\core\app\\$app";
-        } elseif (is_subclass_of($app, __CLASS__)) {
-            $class = $app;
-        } else{
+            $app = "framework\core\app\\$app";
+        } elseif (!is_subclass_of($app, __CLASS__)) {
             throw new \RuntimeException("Illegal app class: $app");
         }
-		return self::$app = new $class(is_array($config) ? $config : Config::read($config));
+		return self::$app = new $app(is_array($config) ? $config : Config::read($config));
     }
 	
     /*

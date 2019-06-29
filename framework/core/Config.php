@@ -10,7 +10,7 @@ class Config
     private static $dir;
     //配置值缓存
     private static $config;
-    //缓存文件检查
+    //文件检查缓存
     private static $checked;
     
     /*

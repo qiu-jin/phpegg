@@ -9,10 +9,10 @@ class Client
     const EOL = "\r\n";
     // cURL句柄
     private $ch;
+    // 调试设置
+    private $debug = APP_DEBUG;
     // 错误信息
     private $error;
-    // 调试设置
-    private $debug;
     // 请求设置
     private $request;
     // 响应内容
@@ -76,7 +76,6 @@ class Client
      */
     public function __construct($method, $url)
     {
-		$this->debug = APP_DEBUG;
         $this->request = (object) compact('url', 'method');
     }
 
@@ -119,9 +118,9 @@ class Client
     /*
      * 文件上传
      */
-    public function file($name, $content, $filename = null, $mimetype = null)
+    public function file($name, $file, $filename = null, $mimetype = null)
     {
-		$this->request->body[$name] = new \CURLFile(realpath($file), $mimetype, $filename);
+		$this->request->body[$name] = new \CURLFile($file, $mimetype, $filename);
         return $this;
     }
     
@@ -307,12 +306,12 @@ class Client
     public function saveAs($file)
     {
         if (isset($this->response)) {
-            throw new \Exception("已完成的请求实例");
+            throw new \Exception("不能使用已完成的请求实例");
         }
         if ($fp = fopen($file, 'w+')) {
             $this->request->curlopts[CURLOPT_FILE] = $fp;
             $this->setResponse($this->exec());
-            $return = $this->response->status === 200 && $this->response->body === true;
+            $return = $this->response->status == 200 && $this->response->body === true;
             if ($return) {
                 fclose($fp);
             } else {
