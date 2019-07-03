@@ -7,7 +7,7 @@ use framework\driver\email\query\Mime;
 class Smtp extends Email
 {
 	// 套接字
-    protected $sock;
+    protected $socket;
 	// 配置
 	protected $config = [
 		// 主机
@@ -39,13 +39,13 @@ class Smtp extends Email
      */
     protected function connect()
     {
-        $this->sock = fsockopen(
+        $this->socket = fsockopen(
 			$this->config['host'],
 			$this->config['port'],
 			$errno, $error,
 			$this->config['timeout']
 		);
-        if (!is_resource($this->sock)) {
+        if (!is_resource($this->socket)) {
             throw new \Exception("Smtp connect error: [$errno] $error");
         }
         $this->read();
@@ -63,7 +63,7 @@ class Smtp extends Email
      */
     protected function handle($options)
     {
-		if (!is_resource($this->sock)) {
+		if (!is_resource($this->socket)) {
 			$this->connect();
 		}
         $mime = Mime::make($options, $addrs);
@@ -94,7 +94,7 @@ class Smtp extends Email
     protected function read()
     {
         $res = '';
-        while ($str = fgets($this->sock, 1024)) {
+        while ($str = fgets($this->socket, 1024)) {
             $res .= $str;
             if (substr($str, 3, 1) == ' ') {
             	break;
@@ -112,7 +112,7 @@ class Smtp extends Email
      */
     protected function command($cmd)
     {
-        fputs($this->sock, $cmd.Mime::EOL);
+        fputs($this->socket, $cmd.Mime::EOL);
         return $this->read();
     }
 	
@@ -138,9 +138,9 @@ class Smtp extends Email
      */
     public function close()
     {
-		if (is_resource($this->sock)) {
+		if (is_resource($this->socket)) {
 			$this->command('QUIT');
-			fclose($this->sock);
+			fclose($this->socket);
 		}
     }
     

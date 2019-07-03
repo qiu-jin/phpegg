@@ -8,10 +8,10 @@ class JsonrpcTcp
 {
 	// 换行符
     const EOL = "\n";
-    // 配置项
-    protected $config;
 	// 套接字
     protected $socket;
+    // 配置项
+    protected $config;
     
     /*
      * 构造函数
@@ -30,7 +30,7 @@ class JsonrpcTcp
             $this->config['host'],
             $this->config['port'],
             $errno, $errstr,
-            $this->config['tcp_timeout'] ?? ini_get("default_socket_timeout")
+            $this->config['timeout'] ?? ini_get("default_socket_timeout")
         );
         if (!is_resource($this->socket)) {
             error("-32000: Internet error $errstr[$errno]");
@@ -49,7 +49,7 @@ class JsonrpcTcp
         if (fwrite($this->socket, $data) === strlen($data)) {
             $str = '';
             $len = strlen(self::EOL);
-            while (!empty($res = fgets($this->socket))) {
+            while (($res = fgets($this->socket)) !== false) {
                 $str .= $res;
                 if (substr($res, - $len) === self::EOL) {
 					if (!empty($this->config['send_and_close'])) {

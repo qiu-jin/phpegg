@@ -1,5 +1,5 @@
 <?php
-namespace framework\driver\search\query;
+namespace framework\driver\data\query;
 
 use framework\core\http\Client;
 

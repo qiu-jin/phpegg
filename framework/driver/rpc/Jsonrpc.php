@@ -20,10 +20,10 @@ class Jsonrpc extends Rpc
         'http_headers'
         // HTTP请求curl设置（HTTP）
         'http_curlopts'
-        // 持久TCP链接（TCP）
-        'tcp_persistent'    => false,
-        // TCP连接超时（TCP）
-        'tcp_timeout'       => 3,
+		// TCP发送后是否退出
+		'send_and_close'
+        // 连接超时
+        'timeout'
         // id方法别名
         'id_method_alias'   => 'id',
         // 批请求call方法别名
