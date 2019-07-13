@@ -67,10 +67,10 @@ class Graphql
 				if ($field instanceof \Closure) {
 					$field = $field(new self($this->config, $indent));
 				}
-				$fields .= $indent.$field."\r\n";
+				$fields .= $indent.$field.PHP_EOL;
 			}
 		}
-		$gql .= "{\r\n$fields$this->indent}";
+		$gql .= '{'.PHP_EOL."$fields$this->indent}";
 		return $this->client ? $this->client->exec($gql) : $gql;
     }
 }

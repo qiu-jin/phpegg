@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\rpc;
 
+use framework\core\Logger;
 use framework\core\http\Client;
 
 class Graphql
@@ -14,6 +15,7 @@ class Graphql
         // 请求公共curlopts
         'http_curlopts'
 		*/
+		'debug'	=> APP_DEBUG,
         // field方法别名
         'field_method_alias'    => 'field',
         // exec方法别名
@@ -56,8 +58,11 @@ class Graphql
         if (isset($this->config['http_curlopts'])) {
             $client->curlopts($this->config['http_curlopts']);
         }
-        $client->json(['query' => $gql]);
-		if ($result = $client->response()->json()) {
+		$response = $client->json(['query' => $gql])->response();
+		if ($this->config['debug']) {
+			$this->log($gql.PHP_EOL.$response->body);
+		}
+		if ($result = $response->json()) {
 			if (isset($result['data'])) {
 				return $result['data'];
 			}
@@ -67,5 +72,13 @@ class Graphql
 			error("无效响应: $result");
 		}
         error($client->error);
+    }
+	
+    /*
+     * 日志处理
+     */
+    protected function log($log)
+    {
+		Logger::channel($this->config['debug'])->debug($log);
     }
 }
