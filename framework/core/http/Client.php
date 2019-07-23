@@ -10,7 +10,7 @@ class Client
     // cURL句柄
     private $ch;
     // 调试设置
-    private $debug = APP_DEBUG;
+    private $debug = \app\env\APP_DEBUG;
     // 错误信息
     private $error;
     // 请求设置

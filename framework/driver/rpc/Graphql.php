@@ -15,7 +15,7 @@ class Graphql
         // 请求公共curlopts
         'http_curlopts'
 		*/
-		'debug'	=> APP_DEBUG,
+		'debug'	=> \app\env\APP_DEBUG,
         // field方法别名
         'field_method_alias'    => 'field',
         // exec方法别名

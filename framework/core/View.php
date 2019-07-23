@@ -26,7 +26,7 @@ class View
             // 模版文件目录（为空则默认使用视图文件目录）
             'dir'       => null,
             // 是否强制编译模版
-            'force'     => APP_DEBUG,
+            'force'     => \app\env\APP_DEBUG,
             // 模版引擎类名
             'engine'    => Template::class,
         ]

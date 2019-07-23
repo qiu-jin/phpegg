@@ -10,7 +10,7 @@ abstract class Db
     // SQL纪录
     protected $sql;
     // 调试模式
-    protected $debug = APP_DEBUG;
+    protected $debug = \app\env\APP_DEBUG;
     // 数据库名
     protected $dbname;
     // 数据库连接

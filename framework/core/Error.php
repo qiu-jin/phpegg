@@ -54,7 +54,7 @@ class Error
             $type = $class = $function = '';
             extract($traces[$limit]);
             $message = "$class$type$function() $message";
-            if (APP_DEBUG) {
+            if (\app\env\APP_DEBUG) {
                 $trace = array_slice($traces, $limit);
             }
         }
@@ -96,7 +96,7 @@ class Error
             sprintf('Uncaught %s: %s', get_class($e), $e->getMessage()),
             $e->getFile(),
             $e->getLine(),
-            APP_DEBUG ? ($e instanceof ErrorException ? $e->getUserTrace() : $e->getTrace()) : null
+            \app\env\APP_DEBUG ? ($e instanceof ErrorException ? $e->getUserTrace() : $e->getTrace()) : null
         );
         self::respond();
     }
@@ -136,7 +136,7 @@ class Error
      */
     private static function respond()
     {
-        App::abort(500, APP_DEBUG ? self::$errors : null);
+        App::abort(500, \app\env\APP_DEBUG ? self::$errors : null);
     }
     
     /*

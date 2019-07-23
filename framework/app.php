@@ -82,7 +82,6 @@ abstract class App
         }
         self::$boot = true;
         define('FW_DIR', __DIR__.'/');
-        defined('APP_DEBUG') || define('APP_DEBUG', false);
         defined('ROOT_DIR')  || define('ROOT_DIR', dirname(__DIR__).'/');
         if (!defined('APP_DIR')) {
             if (self::IS_CLI) {

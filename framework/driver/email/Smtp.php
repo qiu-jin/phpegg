@@ -21,7 +21,7 @@ class Smtp extends Email
 		// 超时设置
 		'timeout'	=> 30,
 		// 调试模式
-		'debug'		=> APP_DEBUG,
+		'debug'		=> \app\env\APP_DEBUG,
 		// 发送后是否退出
 		'send_and_close'	=> true,
 	];
