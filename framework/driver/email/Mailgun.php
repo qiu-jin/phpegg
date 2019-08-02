@@ -31,7 +31,7 @@ class Mailgun extends Email
         $options['options']['to'] = implode(',', $addrs);
         $client = Client::post(self::$endpoint."/$this->domain/messages.mime")
 						->auth('api', $this->acckey)
-                        ->form($options['options'])
+                        ->form($options['options'], true)
                         ->buffer('message', $mime);
         $result = $client->response()->json();
         return isset($result['id']) ? true : warn($result['message'] ?? $client->error);

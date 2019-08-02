@@ -76,7 +76,7 @@ class Client
      */
     public function __construct($method, $url)
     {
-        $this->request = (object) compact('url', 'method');
+        $this->request = (object) ['url' => $url, 'method' => $method];
     }
 
     /*
@@ -120,6 +120,9 @@ class Client
      */
     public function file($name, $file, $filename = null, $mimetype = null)
     {
+		if (isset($this->request->body) && !is_array($this->request->body)) {
+			throw new \Exception("仅允许与multipart类型form方法合用");
+		}
 		$this->request->body[$name] = new \CURLFile($file, $mimetype, $filename);
         return $this;
     }
@@ -134,18 +137,22 @@ class Client
         } else {
             $this->request->boundary = uniqid();
             $this->request->headers['Content-Type'] = 'multipart/form-data; boundary='.$this->request->boundary;
-            if (isset($this->request->body) && is_array($this->request->body)) {
-                foreach ($this->request->body as $k => $v) {
-                    $body[] = '--'.$this->request->boundary;
-                    $body[] = "Content-Disposition: form-data; name=\"$k\"";
-                    $body[] = '';
-                    $body[] = $v;
-                }
-                $body[] = '';
-                $this->request->body = implode(self::EOL, $body);
-            } else {
-                $this->request->body = null;
-            }
+			if (isset($this->request->body)) {
+				if (is_array($this->request->body)) {
+	                foreach ($this->request->body as $k => $v) {
+	                    $body[] = '--'.$this->request->boundary;
+	                    $body[] = "Content-Disposition: form-data; name=\"$k\"";
+	                    $body[] = '';
+	                    $body[] = $v;
+	                }
+	                $body[] = '';
+	                $this->request->body = implode(self::EOL, $body);
+				} else {
+					throw new \Exception("仅允许与multipart类型form方法合用");
+				}
+			} else {
+				$this->request->body = null;
+			}
         }
         $this->request->body .= implode(self::EOL, [
             '--'.$this->request->boundary,

@@ -103,25 +103,31 @@ class Mime
         }
         throw new \Exception("无效邮件编码: $encoding");
     }
-    
+	
     /*
      * 构建附件
      */
     public static function makeAttachments($attachs, $boundary)
     {
-        foreach ($attachs as $i => $attach) {
-            if ($attach[3]) {
+        foreach ($attachs as $attach) {
+            if ($attach[2]) {
                 $content = $attach[0];
-                $name = isset($attach[1]) ? self::encodeHeader($attach[1]) : 'attach-'.($i + 1);
+                $name = $attach[1] ?? 'attach';
             } else {
                 $content = file_get_contents($attach[0]);
-                $name = self::encodeHeader(isset($attach[1]) ? $attach[1] : basename($attach[0]));
+                $name = $attach[1] ?? basename($attach[0]);
             }
-            $mime = $attach[2] ?? File::mime($attach[0], $attach[3]);
+			$encode_name = self::encodeHeader($name);
+            $mime = $attach[3] ?? File::mime($attach[0], $attach[2]);
             $data[] = "--$boundary";
-            $data[] = "Content-Type: $mime; name=$name";
+            $data[] = "Content-Type: $mime; name=$encode_name";
             $data[] = "Content-Transfer-Encoding: base64";
-            $data[] = "Content-Disposition: attachment; name=$name";
+			if (isset($attach[4])) {
+				$data[] = "Content-Id: <$name>";
+				$data[] = "Content-Disposition: inline; filename=$encode_name";
+			} else {
+				$data[] = "Content-Disposition: attachment; filename=$encode_name";
+			}
             $data[] = '';
             $data[] = self::encodeContent($content);
             $data[] = '';

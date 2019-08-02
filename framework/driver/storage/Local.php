@@ -15,7 +15,7 @@ class Local extends Storage
      */
     public function __construct($config)
     {
-        $this->dir = Str::lastTrim($config['dir'], '/');
+        $this->dir = rtrim($config['dir'], '/');
         if (isset($config['domain'])) {
             $this->domain = $config['domain'];
         }

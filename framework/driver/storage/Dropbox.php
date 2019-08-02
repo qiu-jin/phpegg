@@ -88,10 +88,10 @@ class Dropbox extends Storage
      */
     protected function send($path, $params, $binary = null)
     {
-        $headers[] = "Authorization: Bearer $this->acckey";
+        $headers['Authorization'] = "Bearer $this->acckey";
         if ($path === 'upload' || $path === 'download') {
             $type = 'content';
-            $headers[] = 'Dropbox-API-Arg: '.json_encode($params);
+            $headers['Dropbox-API-Arg'] = json_encode($params);
         } else {
             $type = 'api';
         }

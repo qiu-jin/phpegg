@@ -76,29 +76,36 @@ class Query
     /*
      * 邮件主题
      */
-    public function subject($subject, $vars = null)
+    public function subject($subject, array $vars = null)
     {
         $this->options['subject'] = $vars ? Str::formatReplace($subject, $vars) : $subject;
         return $this;
     }
     
     /*
-     * 邮件内容
+     * 文本邮件内容
      */
-    public function content($content, $vars = null, $encoding = null)
+    public function text($content, array $vars = null)
     {
         $this->options['content'] = $vars ? Str::formatReplace($content, $vars) : $content;
         return $this;
+    }
+	
+    /*
+     * html邮件内容
+     */
+    public function html($content, array $vars = null)
+    {
+		$this->options['ishtml'] = true;
+		return $this->text($content, $vars);
     }
     
     /*
      * 邮件模版设置
      */
-    public function template($tpl, $vars = null)
+    public function template($tpl, array $vars = null)
     {
-        if (!isset($this->options['ishtml'])) {
-            $this->options['ishtml'] = true;
-        }
+        $this->options['ishtml'] = true;
         $this->options['content'] = View::render($tpl, $vars);
         return $this;
     }
@@ -115,9 +122,18 @@ class Query
     /*
      * 邮件附件
      */
-    public function attach($content, $name = null, $mime = null, $is_buffer = false)
+    public function attach($content, $name = null, $is_buffer = false, $mime = null)
     {
-        $this->options['attach'][] = [$content, $name, $mime, $is_buffer];
+        $this->options['attach'][] = [$content, $name, $is_buffer, $mime];
+        return $this;
+    }
+	
+    /*
+     * 内联邮件附件
+     */
+    public function inline($content, $name = null, $is_buffer = false, $mime = null)
+    {
+        $this->options['attach'][] = [$content, $name, $is_buffer, $mime, true];
         return $this;
     }
     
@@ -142,8 +158,8 @@ class Query
     /*
      * 发送邮件
      */
-    public function send($to = null, $subject = null, $content = null)
+    public function send()
     {
-		return $this->email->send($to, $subject, $content, $this->options);
+		return $this->email->send(null, null, null, $this->options);
     }
 }

@@ -67,7 +67,7 @@ class File
     /*
      * 文件hash
      */
-    public static function hash($file, $algo = 'md5', $raw = false)
+    public static function hash($algo, $file, $raw = false)
     {
         return hash_file($algo, $file, $raw);
     }

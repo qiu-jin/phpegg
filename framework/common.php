@@ -198,6 +198,7 @@ function abort($code = null, $message = null)
 function warn($message, $limit = 1)
 {
     Error::trigger($message, E_USER_WARNING, $limit + 1);
+	return false;
 }
 
 /*
@@ -206,6 +207,7 @@ function warn($message, $limit = 1)
 function error($message, $limit = 1)
 {
     Error::trigger($message, E_USER_ERROR, $limit + 1);
+	return false;
 }
 
 /*

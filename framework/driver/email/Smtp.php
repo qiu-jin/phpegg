@@ -52,10 +52,7 @@ class Smtp extends Email
         $this->command('EHLO '.$this->config['host']);
         $this->command('AUTH LOGIN');
         $this->command(base64_encode($this->config['username']));
-        $res = $this->command(base64_encode($this->config['password']));
-        if (substr($res, 0, 3) !== '235') {
-			$this->error($res, 2);
-        }
+		$this->commandCheck(base64_encode($this->config['password']), '235');
     }
     
     /*
@@ -66,22 +63,13 @@ class Smtp extends Email
 		if (!is_resource($this->socket)) {
 			$this->connect();
 		}
-        $mime = Mime::make($options, $addrs);
-        $res = $this->command("MAIL FROM: <{$options['from'][0]}>");
-        if (substr($res, 0, 3) != '250') {
-            return $this->error($res);
-        }
+        $this->commandCheck("MAIL FROM: <{$options['from'][0]}>");
+		$mime = Mime::make($options, $addrs);
         foreach ($addrs as $addr) {
-            $res = $this->command("RCPT TO: <$addr>");
-            if (substr($res, 0, 3) != '250') {
-                return $this->error($res);
-            }
+			$this->commandCheck("RCPT TO: <$addr>");
         }
         $this->command('DATA');
-        $res = $this->command($mime.Mime::EOL.".");
-        if (substr($res, 0, 3) != '250') {
-            return $this->error($res);
-        }
+		$this->commandCheck($mime.Mime::EOL.'.');
 		if ($this->config['send_and_close']) {
 			$this->close();
 		}
@@ -93,18 +81,17 @@ class Smtp extends Email
      */
     protected function read()
     {
-        $res = '';
+        $result = '';
         while ($str = fgets($this->socket, 1024)) {
-            $res .= $str;
+            $result .= $str;
             if (substr($str, 3, 1) == ' ') {
             	break;
             }
         }
-        $res = trim($res);
 		if ($this->config['debug']) {
-			$this->log($res);
+			$this->log($result);
 		}
-        return $res;
+        return trim($result);
     }
     
     /*
@@ -117,20 +104,15 @@ class Smtp extends Email
     }
 	
     /*
-     * 日志处理
+     * 执行命令检查错误
      */
-    protected function log($log)
+    protected function commandCheck($cmd, $check = '250')
     {
-		Logger::channel($this->config['debug'])->debug($log);
-    }
-	
-    /*
-     * 错误处理
-     */
-    protected function error($message)
-    {
-		$this->close();
-		return error($message, 2);
+		$result = $this->command($cmd);
+        if (substr($result, 0, 3) != $check) {
+			$this->close();
+            throw new \Exception("SMTP Email Exception: [$cmd] $result");
+        }
     }
 	
     /*
@@ -142,6 +124,14 @@ class Smtp extends Email
 			$this->command('QUIT');
 			fclose($this->socket);
 		}
+    }
+	
+    /*
+     * 日志处理
+     */
+    protected function log($log)
+    {
+		Logger::channel($this->config['debug'])->debug($log);
     }
     
     /*
