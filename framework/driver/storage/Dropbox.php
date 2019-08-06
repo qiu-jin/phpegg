@@ -8,7 +8,7 @@ class Dropbox extends Storage
 	// 访问key
     protected $acckey;
 	// 服务端点
-    protected static $endpoint = 'https://%s.dropboxapi.com/2/files/';
+    protected static $endpoint = 'https://%s.dropboxapi.com/2/files';
     
     /*
      * 构造函数

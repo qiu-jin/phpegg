@@ -140,10 +140,9 @@ class S3 extends Storage
             switch ($method) {
                 case 'GET':
                     return $response->body;
-                case 'PUT':
-                    return true;
                 case 'HEAD':
                     return isset($client_methods['returnHeaders']) ? $response->headers : true;
+				case 'PUT':	
                 case 'DELETE':
                     return true;
             }
@@ -169,7 +168,6 @@ class S3 extends Storage
         ksort($headers);
         $canonicalheaders = '';
         foreach ($headers as $k => $v) {
-            $setheaders[] = "$k: $v";
             $k = strtolower($k);
             $v = trim($v);
             $headerkeys[] = $k;

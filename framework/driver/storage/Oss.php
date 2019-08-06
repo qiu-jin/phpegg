@@ -136,10 +136,9 @@ class Oss extends Storage
             switch ($method) {
                 case 'GET':
                     return $response->body;
-                case 'PUT':
-                    return true;
                 case 'HEAD':
                     return isset($client_methods['returnHeaders']) ? $response->headers : true;
+				case 'PUT':	
                 case 'DELETE':
                     return true;
             }

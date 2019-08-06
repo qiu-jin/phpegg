@@ -37,7 +37,7 @@ abstract class Sms
         if (isset($this->template[$template])) {
             return $this->handle($to, $template, $data, $signname);
         }
-        return error('Template not exists');
+        return warn('Template not exists');
     }
     
     /* 
