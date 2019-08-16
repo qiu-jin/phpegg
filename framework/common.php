@@ -47,7 +47,6 @@ function logger($name = true)
     return Logger::get($name);
 }
 
-
 /*
  * 获取驱动实例
  */

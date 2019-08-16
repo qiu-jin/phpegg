@@ -9,11 +9,11 @@ class Str
     public static function random(int $length = 32, $type = null)
     {
         static $string = '0123456789abcdefghijklmnopqrstuvwxyz';
-        $ret = '';
+        $str = '';
         for ($i = 0; $i < $length; $i++) {
-            $ret .= $string[mt_rand(0, 33)];
+            $str .= $string[mt_rand(0, 33)];
         }
-        return $ret;
+        return $str;
     }
     
     /*
@@ -71,7 +71,7 @@ class Str
     /*
      * 格式替换
      */
-    public static function formatReplace(string $str, array $data, string $format = '{%s}')
+    public static function format(string $str, array $data, string $format = '{%s}')
     {
         $replace = [];
         foreach ($data as $k => $v) {

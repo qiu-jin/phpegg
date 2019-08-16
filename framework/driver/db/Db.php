@@ -194,7 +194,7 @@ abstract class Db
             if (isset($params[0])) {
                 $sql = vsprintf(str_replace("?", "'%s'", $sql), $params);
             } else {
-                $sql = Str::formatReplace($sql, $params, ':%s');
+                $sql = Str::format($sql, $params, ':%s');
             }
         }
 		Logger::channel($this->debug)->debug($sql);

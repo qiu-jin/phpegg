@@ -173,18 +173,19 @@ class S3 extends Storage
             $headerkeys[] = $k;
             $canonicalheaders .= "$k:$v\n";
         }
+		$algo 			= 'AWS4-HMAC-SHA256';
         $signedheaders  = implode(';', $headerkeys);
         $str            = "$method\n/$this->bucket$path\n\n$canonicalheaders\n$signedheaders\n"
                         . $headers['X-Amz-Content-Sha256'];
         $date           = substr($headers['X-Amz-Date'], 0, 8);
         $scope          = "$date/$this->region/s3/aws4_request";
-        $signstr        = "AWS4-HMAC-SHA256\n{$headers['X-Amz-Date']}\n$scope\n".hash('sha256', $str);
+        $signstr        = "$algo\n{$headers['X-Amz-Date']}\n$scope\n".hash('sha256', $str);
         $datekey        = hash_hmac('sha256', $date, "AWS4$this->seckey", true);
         $regionkey      = hash_hmac('sha256', $this->region, $datekey, true);
         $servicekey     = hash_hmac('sha256', 's3', $regionkey, true);
         $signkey        = hash_hmac('sha256', 'aws4_request', $servicekey, true);
         $signature      = hash_hmac('sha256', $signstr, $signkey);
-		$headers['Authorization'] = "AWS4-HMAC-SHA256 Credential=$this->acckey/$scope,SignedHeaders=$signedheaders,Signature=$signature";
+		$headers['Authorization'] = "$algo Credential=$this->acckey/$scope,SignedHeaders=$signedheaders,Signature=$signature";
         return $headers;
     }
 }

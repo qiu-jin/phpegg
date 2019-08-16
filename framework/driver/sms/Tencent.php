@@ -19,7 +19,7 @@ class Tencent extends Sms
         $signname = '【'.($signname ?? $this->signname).'】';
         $message = $this->template[$template];
         if ($data) {
-            $message = Str::formatReplace($message, $data);
+            $message = Str::format($message, $data);
         }
         if (is_array($to)) {
             list($nationcode, $to) = $to;

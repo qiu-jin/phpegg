@@ -29,7 +29,7 @@ class Nexmo extends Sms
     {
         $message = $this->template[$template];
         if ($data) {
-            $message = Str::formatReplace($message, $data);
+            $message = Str::format($message, $data);
         }
         $client = Client::post(self::$endpoint)->json([
             'from'      => $signname ?? $this->signname,

@@ -78,7 +78,7 @@ class Query
      */
     public function subject($subject, array $vars = null)
     {
-        $this->options['subject'] = $vars ? Str::formatReplace($subject, $vars) : $subject;
+        $this->options['subject'] = $vars ? Str::format($subject, $vars) : $subject;
         return $this;
     }
     
@@ -87,7 +87,7 @@ class Query
      */
     public function text($content, array $vars = null)
     {
-        $this->options['content'] = $vars ? Str::formatReplace($content, $vars) : $content;
+        $this->options['content'] = $vars ? Str::format($content, $vars) : $content;
         return $this;
     }
 	
