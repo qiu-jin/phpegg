@@ -25,7 +25,7 @@ class Dropbox extends Storage
     public function get($from, $to = null)
     {
         $response = $this->send('download', ['path' => $this->path($from)]);
-        if (!$this->result(jsondecode($response->headers['dropbox-api-result']))) {
+        if (!$this->result(json_decode($response->headers['dropbox-api-result'], true))) {
             return false;
         }
         return $to === null ? $response->body : (bool) file_put_contents($to, $response->body);

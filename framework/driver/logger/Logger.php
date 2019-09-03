@@ -85,4 +85,12 @@ abstract class Logger
     {
         $this->write(__FUNCTION__, $message, $context);
     }
+	
+    /*
+     * 清理日志
+     */
+    public function clean()
+    {
+        $this->logs = null;
+    }
 }

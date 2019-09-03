@@ -43,15 +43,15 @@ class WebConsole extends Logger
         if (isset($config['allow_ips']) && !in_array(Request::ip(), $config['allow_ips'])) {
             return;
         }
-        if (isset($config['check_header_accept'])
-             && $config['check_header_accept'] != Request::server('HTTP_ACCEPT_LOGGER_DATA')
+        if (isset($config['check_header_accept']) &&
+			$config['check_header_accept'] != Request::server('HTTP_ACCEPT_LOGGER_DATA')
         ) {
             return;
         }
-        $this->flush = true;
         if (isset($config['message_size_limit'])) {
             $this->message_size_limit = $config['message_size_limit'];
         }
+		$this->flush = true;
         Event::on('exit', [$this, 'flush']);
     }
     
@@ -117,24 +117,16 @@ class WebConsole extends Logger
                     'columns' => ['label', 'log', 'backtrace', 'type'],
                     'rows'    => $rows
                 ];
-                $data = $this->encode($format);
+                $data = base64_encode(json_encode($format));
                 if (($size = strlen($data)) > $this->message_size_limit) {
                     $format['rows'] = [[
                         "Message size($size) than message_size_limit($this->message_size_limit)", '', 'warn'
                     ]];
-                    $data = $this->encode($format);
+                    $data = base64_encode(json_encode($format));
                 }
                 Response::header('X-ChromeLogger-Data', $data);
             }
             $this->logs = null;
         }
-    }
-    
-    /*
-     * 编码
-     */
-    protected function encode ($data)
-    {
-        return base64_encode(json_encode($data));
     }
 }

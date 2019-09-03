@@ -96,7 +96,7 @@ class Client
      */
     public function json(array $data)
     {
-        $this->request->body = jsonencode($data);
+        $this->request->body = json_encode($data, JSON_UNESCAPED_UNICODE);
         $this->request->headers['Content-Type'] = 'application/json; charset=UTF-8';
         return $this;
     }
@@ -400,12 +400,13 @@ class Client
         	$headers = $this->getResponseHeadersFromResult($body);
         }
         $this->response = new class ($status, $body, $headers ?? null) {
-			public $status;
 			public $body;
+			public $status;
 			public $headers;
+			private $data;
             public function __construct($status, $body, $headers) {
+				$this->body 	= $body;
                 $this->status	= $status;
-                $this->body 	= $body;
                 $this->headers	= $headers;
             }
 			// 获取header
@@ -414,7 +415,7 @@ class Client
             }
 			// 获取json解码数据
             public function json($name = null, $default = null) {
-				$data = jsondecode($this->body);
+				$data = $this->data ?? $this->data = json_decode($this->body, true);
 				return $name === null ? $data : Arr::get($data, $name, $default);
             }
             public function __toString() {

@@ -69,8 +69,7 @@ class Cookie
      */
     public static function forever($name, $value, ...$options)
     {
-        $_COOKIE[$name] = $value;
-		Response::cookie($name, $value, 315360000, ...$options);
+		self::set($name, $value, 315360000, ...$options);
     }
     
     /*
@@ -83,7 +82,7 @@ class Cookie
     }
     
     /*
-     * 底层设置
+     * 高级设置
      */
     public static function setCookie(
         $name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null

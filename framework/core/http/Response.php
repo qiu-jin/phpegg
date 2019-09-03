@@ -90,7 +90,7 @@ class Response
      */
     public static function json($data)
     {
-        self::send(jsonencode($data), 'application/json; charset=UTF-8');
+        self::send(json_encode($data, JSON_UNESCAPED_UNICODE), 'application/json; charset=UTF-8');
     }
 	
     /*

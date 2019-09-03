@@ -8,7 +8,7 @@ use framework\core\Config;
 class Session
 {
     private static $init;
-	// 设置
+	// 会话启动设置
 	private static $start_options = [];
 	
     /*

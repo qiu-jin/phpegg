@@ -325,7 +325,7 @@ class Rest extends App
         if ($type = Request::header('Content-Type')) {
             switch (strtolower(trim(strtok($type, ';')))) {
                 case 'application/json':
-                    $_POST = jsondecode(Request::body());
+                    $_POST = json_decode(Request::body(), true);
                     return;
                 case 'application/xml';
                     $_POST = Xml::decode(Request::body());

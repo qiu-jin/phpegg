@@ -45,12 +45,12 @@ class Logger
         if ($configs = Config::read('logger')) {
             foreach ($configs as $name => $config) {
                 if (isset($config['level'])) {
-                    foreach (array_unique((array) $config['level']) as $lv) {
+                    foreach ((array) $config['level'] as $lv) {
                         self::$level_handler_names[$lv][] = $name;
                     }
                 }
                 if (isset($config['group'])) {
-                    foreach (array_unique((array) $config['group']) as $gp) {
+                    foreach ((array) $config['group'] as $gp) {
                         self::$group_handler_names[$gp][] = $name;
                     }
                 }
@@ -114,8 +114,9 @@ class Logger
      */
     public static function groupWrite($group, $level, $message, $context = null)
     {
-        if (isset(self::$group_handler_names[$group])) {
-            foreach (self::$group_handler_names[$group] as $n) {
+		$names = is_array($group) ? $group : (self::$group_handler_names[$group] ?? null);
+        if ($names) {
+            foreach ($names as $n) {
                 self::getHandler($n)->write($level, $message, $context);
             }
         }
@@ -124,7 +125,7 @@ class Logger
     /*
      * 日志实例
      */
-    public static function getHandler($name)
+    private static function getHandler($name)
     {
         return self::$handlers[$name] ?? 
 			   self::$handlers[$name] = Container::driver('logger', self::$configs[$name]);
@@ -133,7 +134,7 @@ class Logger
     /*
      * 空日志实例
      */
-    public static function getNullHandler()
+    private static function getNullHandler()
     {
         return self::$null_handler ?? self::$null_handler = new class () extends LoggerDriver {
             public function write($level, $message, $context = null) {}
@@ -143,7 +144,7 @@ class Logger
     /*
      * 分组日志实例
      */
-    public static function getGroupHandler($name)
+    private static function getGroupHandler($name)
     {
         return self::$group_handlers[$name] ?? 
 			   self::$group_handlers[$name] = self::makeGroupHandler(self::$group_handler_names[$name]);
@@ -152,7 +153,7 @@ class Logger
     /*
      * 分级日志实例
      */
-    public static function getLevelHandler()
+    private static function getLevelHandler()
     {
         return self::$level_handler ?? self::$level_handler = new class () extends LoggerDriver {
             public function write($level, $message, $context = null) {
@@ -164,7 +165,7 @@ class Logger
     /*
      * 组实例
      */
-    public static function makeGroupHandler($names)
+    private static function makeGroupHandler($names)
     {
         return new class ($names) extends LoggerDriver {
             private $names;

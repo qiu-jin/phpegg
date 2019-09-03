@@ -132,9 +132,9 @@ class Template
         // 字符串URL反转义
         'urldecode'     => 'urldecode($0)',
         // 数组转为JSON
-        'jsonencode'    => 'json_encode($0, true)',
+        'jsonencode'    => 'json_encode($0, JSON_UNESCAPED_UNICODE)',
         // JSON转为数组
-        'jsondenode'    => 'json_denode($0, JSON_UNESCAPED_UNICODE)',
+        'jsondenode'    => 'json_denode($0, true)',
         // 元素是否存在于数组作用
         'in'            => 'in_array($0, $1, true)',
         // 数组长度

@@ -86,7 +86,7 @@ class Qiniu extends Storage
     public function stat($from)
     {
         if ($stat = $this->send(self::$endpoint, '/stat/'.$this->encode($from), null, 'GET')) {
-            $stat = jsondecode($stat);
+            $stat = json_decode($stat, true);
             return [
                 'type'  => $stat['mimeType'],
                 'size'  => $stat['fsize'],
