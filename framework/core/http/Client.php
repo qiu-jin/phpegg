@@ -46,8 +46,8 @@ class Client
             curl_multi_add_handle($mh, $ch);
         }
         do{
-            if (($status = curl_multi_exec($mh, $active)) !== CURLM_CALL_MULTI_PERFORM) {
-                if ($status !== CURLM_OK) {
+            if (($status = curl_multi_exec($mh, $active)) != CURLM_CALL_MULTI_PERFORM) {
+                if ($status != CURLM_OK) {
                     break;
                 }
                 while ($done = curl_multi_info_read($mh)) {
@@ -138,20 +138,12 @@ class Client
             $this->request->boundary = uniqid();
             $this->request->headers['Content-Type'] = 'multipart/form-data; boundary='.$this->request->boundary;
 			if (isset($this->request->body)) {
-				if (is_array($this->request->body)) {
-	                foreach ($this->request->body as $k => $v) {
-	                    $body[] = '--'.$this->request->boundary;
-	                    $body[] = "Content-Disposition: form-data; name=\"$k\"";
-	                    $body[] = '';
-	                    $body[] = $v;
-	                }
-	                $body[] = '';
-	                $this->request->body = implode(self::EOL, $body);
-				} else {
+				if (!is_array($this->request->body)) {
 					throw new \Exception("仅允许与multipart类型form方法合用");
 				}
+				$this->request->body = $this->setMultipartFormData($this->request->body, $this->request->boundary).self::EOL;
 			} else {
-				$this->request->body = null;
+				$this->request->body = '';
 			}
         }
         $this->request->body .= implode(self::EOL, [
@@ -449,6 +441,25 @@ class Client
                        .": {$this->request->method} {$this->request->url}";
             }
         };
+    }
+	
+    /*
+     * 设置multipart类型数据
+     */
+    protected function setMultipartFormData($data, $boundary, $parent = null)
+    {
+		$body = [];
+        foreach ($data as $k => $v) {
+			if (is_array($v)) {
+				$body = array_merge($body, $this->setMultipartFormData($v, $boundary, $parent ? $parent.'['.$k.']' : $k));
+			} else {
+	            $body[] = "--$boundary";
+	            $body[] = "Content-Disposition: form-data; name=\"$k\"";
+	            $body[] = '';
+	            $body[] = $v;
+			}
+        }
+		return implode(self::EOL, $body);
     }
     
     /*
