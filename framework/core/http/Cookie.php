@@ -9,10 +9,15 @@ class Cookie
     private static $init;
     // cookie设置项
     private static $options = [
+		// 有效期
         'lifetime'  => 0,
+		// 有效路径
         'path'      => '',
+		// 有效域名
         'domain'    => '',
+		// 启用安全传输
         'secure'    => false,
+		// httponly设置
         'httponly'  => false
     ];
 	
@@ -65,7 +70,7 @@ class Cookie
     }
     
     /*
-     * 设置永久
+     * 永久设置
      */
     public static function forever($name, $value, ...$options)
     {

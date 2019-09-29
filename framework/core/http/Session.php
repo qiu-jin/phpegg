@@ -8,7 +8,7 @@ use framework\core\Config;
 class Session
 {
     private static $init;
-	// 会话启动设置
+	// 会话启动设置，参考 https://www.php.net/manual/en/function.session-start.php
 	private static $start_options = [];
 	
     /*

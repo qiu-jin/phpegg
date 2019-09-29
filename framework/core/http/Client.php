@@ -96,9 +96,7 @@ class Client
      */
     public function json(array $data)
     {
-        $this->request->body = json_encode($data, JSON_UNESCAPED_UNICODE);
-        $this->request->headers['Content-Type'] = 'application/json; charset=UTF-8';
-        return $this;
+		return $this->body(json_encode($data, JSON_UNESCAPED_UNICODE), 'application/json; charset=UTF-8');
     }
 
     /*
@@ -108,11 +106,9 @@ class Client
     {
         if ($multipart) {
 			$this->request->body = $data;
-        } else {
-            $this->request->body = http_build_query($data);
-            $this->request->headers['Content-Type'] = 'application/x-www-form-urlencoded';
+			return $this;
         }
-        return $this;
+		return $this->body(http_build_query($data), 'application/x-www-form-urlencoded');
     }
 
     /*
@@ -133,7 +129,7 @@ class Client
     public function buffer($name, $content, $filename = null, $mimetype = null)
     {
         if (isset($this->request->boundary)) {
-			$this->request->body = substr($this->request->body, 0, -19);
+			$this->request->body = substr($this->request->body, 0, - strlen($this->request->boundary) - 6);
         } else {
             $this->request->boundary = uniqid();
             $this->request->headers['Content-Type'] = 'multipart/form-data; boundary='.$this->request->boundary;
@@ -141,13 +137,13 @@ class Client
 				if (!is_array($this->request->body)) {
 					throw new \Exception("仅允许与multipart类型form方法合用");
 				}
-				$this->request->body = $this->setMultipartFormData($this->request->body, $this->request->boundary).self::EOL;
+				$this->request->body = $this->setMultipartFormData($this->request->body).self::EOL;
 			} else {
 				$this->request->body = '';
 			}
         }
         $this->request->body .= implode(self::EOL, [
-            '--'.$this->request->boundary,
+            "--{$this->request->boundary}",
             'Content-Disposition: form-data; name="'.$name.'"; filename="'.($filename ?? $name).'"',
             'Content-Type: '.($mimetype ?? 'application/octet-stream'),
             'Content-Transfer-Encoding: binary',
@@ -245,11 +241,11 @@ class Client
     /*
      * 设置请求超时时间
      */
-    public function allowRedirect($bool = true, int $max = 3)
+    public function allowRedirect($max = 1)
     {
-        $this->request->curlopts[CURLOPT_FOLLOWLOCATION] = $bool;
-		if ($bool && $max > 0) {
-			$this->request->curlopts[CURLOPT_MAXREDIRS] = $max;
+        $this->request->curlopts[CURLOPT_FOLLOWLOCATION] = (bool) $max;
+		if ($max > 1) {
+			$this->request->curlopts[CURLOPT_MAXREDIRS] = (int) $max;
 		}
         return $this;
     }
@@ -348,33 +344,34 @@ class Client
      */
     protected function build()
     {
-        $ch = curl_init($this->request->url);
+		$request = $this->request;
+        $ch = curl_init($request->url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        if (isset($this->request->method)){
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $this->request->method);
+        if (isset($request->method)){
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $request->method);
         }
-        if (isset($this->request->body)){
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $this->request->body);
+        if (isset($request->body)){
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $request->body);
         }
-        if (isset($this->request->headers)) {
-			foreach ($this->request->headers as $name => $value) {
+        if (isset($request->headers)) {
+			foreach ($request->headers as $name => $value) {
 				$headers[] = "$name: $value";
 			}
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         }
-        if (isset($this->request->cookies)) {
-			curl_setopt($ch, CURLOPT_COOKIE, http_build_query($this->request->cookies, '', ';'));
+        if (isset($request->cookies)) {
+			curl_setopt($ch, CURLOPT_COOKIE, http_build_query($request->cookies, '', ';'));
         }
         if ($this->debug) {
-            $this->request->return_header = true;
-            $this->request->curlopts[CURLINFO_HEADER_OUT] = true;
+            $request->return_header = true;
+            $request->curlopts[CURLINFO_HEADER_OUT] = true;
         }
-        if (!empty($this->request->return_header)) {
-			$this->request->curlopts[CURLOPT_HEADER] = true;
+        if (!empty($request->return_header)) {
+			$request->curlopts[CURLOPT_HEADER] = true;
         }
-        if (isset($this->request->curlopts)) {
-            ksort($this->request->curlopts);
-            curl_setopt_array($ch, $this->request->curlopts);
+        if (isset($request->curlopts)) {
+            ksort($request->curlopts);
+            curl_setopt_array($ch, $request->curlopts);
         }
         return $this->ch = $ch;
     }
@@ -446,20 +443,23 @@ class Client
     /*
      * 设置multipart类型数据
      */
-    protected function setMultipartFormData($data, $boundary, $parent = null)
+    protected function setMultipartFormData($data, $parent = null)
     {
-		$body = [];
+		$parts = [];
         foreach ($data as $k => $v) {
+			if ($parent) {
+				$k = $parent."[$k]";
+			}
 			if (is_array($v)) {
-				$body = array_merge($body, $this->setMultipartFormData($v, $boundary, $parent ? $parent.'['.$k.']' : $k));
+				$parts = array_merge($arr, $this->setMultipartFormData($v, $k));
 			} else {
-	            $body[] = "--$boundary";
-	            $body[] = "Content-Disposition: form-data; name=\"$k\"";
-	            $body[] = '';
-	            $body[] = $v;
+	            $parts[] = "--{$this->request->boundary}";
+	            $parts[] = "Content-Disposition: form-data; name=\"$k\"";
+	            $parts[] = '';
+	            $parts[] = $v;
 			}
         }
-		return implode(self::EOL, $body);
+		return implode(self::EOL, $parts);
     }
     
     /*
