@@ -96,13 +96,13 @@ class Response
     /*
      * 设置文件输出
      */
-    public static function file($path, $type = null)
+    public static function file($file, $type = null)
     {
 		self::$response->body = null;
 		self::$response->headers['Content-Length'] = filesize($file);
-		self::$response->headers['Content-Type'] = $type ?? File::mime($path);
+		self::$response->headers['Content-Type'] = $type ?? File::mime($file);
 		self::flush();
-		readfile($path);
+		readfile($file);
 		App::exit();
     }
     

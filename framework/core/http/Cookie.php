@@ -82,8 +82,10 @@ class Cookie
      */
     public static function delete($name, ...$options)
     {
-        unset(self::$_COOKIE[$name]);
-		Response::cookie($name, null, null, ...$options);
+		if (isset(self::$_COOKIE[$name])) {
+	        unset(self::$_COOKIE[$name]);
+			Response::cookie($name, null, null, ...$options);
+		}
     }
     
     /*

@@ -10,7 +10,14 @@ class Url
     // url数据
     private $url;
     // url元素类型
-    private static $types = ['scheme', 'host', 'port', 'path', 'query', 'fragment'];
+    private static $types = [
+    	'scheme',
+		'host',
+		'port',
+		'path',
+		'query',
+		'fragment'
+    ];
 	
     /*
      * 解析url字符串返回实例

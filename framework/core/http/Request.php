@@ -164,6 +164,14 @@ class Request
         }
         return $_SERVER['HTTP_X_FORWARDED_FOR'] ?? null;
     }
+	
+    /*
+     * 获取port
+     */
+    public static function port()
+    {
+        return $_SERVER['REMOTE_PORT'];
+    }
     
     /*
      * 获取请求路径

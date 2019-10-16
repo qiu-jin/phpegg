@@ -451,7 +451,7 @@ class Client
 				$k = $parent."[$k]";
 			}
 			if (is_array($v)) {
-				$parts = array_merge($arr, $this->setMultipartFormData($v, $k));
+				$parts = array_merge($parts, $this->setMultipartFormData($v, $k));
 			} else {
 	            $parts[] = "--{$this->request->boundary}";
 	            $parts[] = "Content-Disposition: form-data; name=\"$k\"";
@@ -468,11 +468,12 @@ class Client
     protected function getResponseHeadersFromResult(&$body)
     {
         if (is_string($body) && ($size = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE))) {
-	        foreach (explode(self::EOL, substr($body, 0, $size)) as $v) {
-	            $l = explode(":", $v, 2);
-	            if(isset($l[1])) {
-	                $k = trim($l[0]);
-	                $v = trim($l[1]);
+			$body = substr($body, $size);
+	        foreach (explode(self::EOL, substr($body, 0, $size)) as $line) {
+	            $kv = explode(':', $line, 2);
+	            if(isset($kv[1])) {
+	                $k = trim($kv[0]);
+	                $v = trim($kv[1]);
 	                if (isset($headers[$k])) {
 	                    if (count($headers[$k]) === 1) {
 	                        $headers[$k] = [$headers[$k], $v];
@@ -484,7 +485,6 @@ class Client
 	                }
 	            }
 	        }
-			$body = substr($body, $size);
 	        return $headers ?? null;
         }
     }
