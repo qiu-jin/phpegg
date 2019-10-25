@@ -101,7 +101,9 @@ class Cookie
             $expire = $lft ? time() + $lft : 0;
         }
         return setcookie(
-			$name, $value, $expire, 
+			$name,
+			$value,
+			$expire, 
 			$path ?? self::$options['path'], 
 			$domain ?? self::$options['domain'], 
 			$secure ?? self::$options['secure'], 

@@ -30,7 +30,7 @@ class Session
 			if (!empty($config['exit_close'])) {
 				Event::on('exit', 'session_write_close');
 			}
-			if (isset($config['auto_start']) && !$config['auto_start']) {
+			if (!($config['auto_start'] ?? true)) {
 				return;
 			}
         }
@@ -40,10 +40,10 @@ class Session
     /*
      * 开始
      */
-    public static function start()
+    public static function start(array $start_options = null)
     {
 		if (session_status() != PHP_SESSION_ACTIVE) {
-			session_start(self::$start_options);
+			session_start($start_options ?? self::$start_options);
 			Event::trigger('session');
 		}
     }

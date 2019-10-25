@@ -5,7 +5,7 @@ class Router
 {
     private static $init;
     // 内置正则规则
-    private static $patterns;
+    private static $patterns = [];
     
     // 路径数组
     private $path;
@@ -13,7 +13,7 @@ class Router
     private $count;
     // HTTP方法
     private $method;
-
+	
     /*
      * 初始化
      */
@@ -23,7 +23,11 @@ class Router
             return;
         }
         self::$init = true;
-        self::$patterns = Config::get('router.patterns');
+		if ($config = Config::get('router')) {
+			if (isset($config['patterns'])) {
+				self::$patterns = $config['patterns'];
+			}
+		}
     }
 
     /*
@@ -35,6 +39,18 @@ class Router
         $this->count  = count($path);
         $this->method = $method;
     }
+	
+    /*
+     * 设置内置正则规则
+     */
+	public static function pattern($name, $value = null)
+	{
+		if (isset($value)) {
+			self::$patterns[$name] = $value;
+		} else {
+			self::$patterns = $name + self::$patterns;
+		}
+	}
 
     /*
      * 路由匹配
@@ -154,7 +170,7 @@ class Router
                 // HTTP方法匹配
                 case ':':
                     foreach (explode(' ', substr($v, 1)) as $n) {
-                        if (trim($n) == $this->method) {
+                        if (strtoupper(trim($n)) == $this->method) {
                             return [$ret, $step];
                         }
                     }
