@@ -47,9 +47,9 @@ class Uploaded
     public function __construct(array $file)
     {
         $this->file = $file;
-		$this->is_valid = $this->is_success = 
-			isset($file['error']) && $file['error'] === UPLOAD_ERR_OK && 
-			isset($file['tmp_name']) && is_uploaded_file($file['tmp_name']);
+		$this->is_valid = 
+		$this->is_success = isset($file['error']) && $file['error'] === UPLOAD_ERR_OK && 
+			                isset($file['tmp_name']) && is_uploaded_file($file['tmp_name']);
     }
     
     /*
@@ -142,9 +142,9 @@ class Uploaded
     /*
      * 上传到储存器
      */
-    public function uploadTo($dir)
+    public function uploadTo($dir, $ext = null)
     {
-		$name = $this->randName();
+		$name = $this->randName($ext);
         return $this->uploadAs(Str::lastPad($dir, '/').$name) ? $name : false;
     }
     
@@ -202,8 +202,15 @@ class Uploaded
     /*
      * 随机名
      */
-    protected function randName()
+    protected function randName($ext = null)
     {
-        return Hash::hmac(Hash::random(16, true), $this->path()).'.'.$this->ext();
-    }
+		$name = Hash::hmac(Hash::random(16, true), $this->path());
+		if (isset($ext)) {
+			if ($ext === false) {
+				return $name;
+			}
+			return "$name.$ext";
+		}
+		return $name.'.'.$this->ext();
+	}
 }
