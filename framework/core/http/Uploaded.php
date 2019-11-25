@@ -16,8 +16,6 @@ class Uploaded
     private $is_valid;
     // 是否成功
     private $is_success;
-    // 验证
-    private $check;
     // 错误信息
     private static $error = [
         UPLOAD_ERR_OK           => 'UPLOAD_ERR_OK',
