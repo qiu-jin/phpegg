@@ -32,6 +32,25 @@ class UserAgent
         'safari'    => 'Version\/.+ Safari',
         'opera'     => 'Opera|OPR',
     ];
+	
+    /*
+     * 初始化
+     */
+    public static function __init()
+    {
+        if (self::$init) {
+            return;
+        }
+        self::$init = true;
+        if ($config = Config::read('useragent')) {
+			if (isset($config['macths'])) {
+				self::$macths = $config['macths'] + self::$macths;
+			}
+			if (isset($config['regex_macths'])) {
+				self::$regex_macths = $config['regex_macths'] + self::$regex_macths;
+			}
+        }
+    }
     
     /*
      * 构造函数
@@ -88,3 +107,4 @@ class UserAgent
         return $this->agent;
     }
 }
+UserAgent::__init();
