@@ -14,6 +14,8 @@ class Smtp extends Email
 		'host'	=> '127.0.0.1',
 		// 端口
 		'port'	=> 25,
+		// 加密
+		'secure'	=> '',
 		// 用户名
 		'username'	=> '',
 		// 密码
@@ -40,7 +42,7 @@ class Smtp extends Email
     protected function connect()
     {
         $this->socket = fsockopen(
-			$this->config['host'],
+			($this->config['secure'] ? $this->config['secure'].'://' : '').$this->config['host'],
 			$this->config['port'],
 			$errno, $error,
 			$this->config['timeout']
