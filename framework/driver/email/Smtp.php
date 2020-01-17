@@ -83,17 +83,17 @@ class Smtp extends Email
      */
     protected function read()
     {
-        $result = '';
-        while ($str = fgets($this->socket, 1024)) {
-            $result .= $str;
-            if (substr($str, 3, 1) == ' ') {
+        $str = '';
+        while ($s = fgets($this->socket, 1024)) {
+            $str .= $s;
+            if (substr($s, 3, 1) == ' ') {
             	break;
             }
         }
 		if ($this->config['debug']) {
-			$this->log($result);
+			$this->log($str);
 		}
-        return trim($result);
+        return trim($str);
     }
     
     /*

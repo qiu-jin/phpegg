@@ -5,10 +5,13 @@ use DateTime;
 use DatePeriod;
 use DateInterval;
 use DateTimeZone;
+use DateTimeImmutable;
 use framework\core\Config;
 
 class Date extends DateTime
 {
+	use DateBase;
+	
 	// 周常量
     const SUNDAY	= 0;
     const MONDAY 	= 1;
@@ -18,10 +21,27 @@ class Date extends DateTime
     const FRIDAY 	= 5;
     const SATURDAY 	= 6;
 	
+    /*
+     * immutable
+     */
+    public static function immutable(...$params)
+    {
+		return $params ? new DateImmutable(...$params) : DateImmutable::class;
+    }
+}
+
+class DateImmutable extends DateTimeImmutable
+{
+	use DateBase;
+}
+
+trait DateBase
+{
+	
     private static $init;
     // 配置
-    private static $config = [];
-	// datetime格式
+    public static $config = [];
+	// datetime简名
     private static $datetime_alias = [
         'y' => 'year', 'n' => 'month', 'w' => 'week', 'd' => 'day', 'h' => 'hour', 'i' => 'minute', 's' => 'second'
     ];
@@ -85,7 +105,7 @@ class Date extends DateTime
 	 */
     public static function createFromFormat($format, $time, $tz = null)
     {
-		if ($datetime = DateTime::createFromFormat($format, $time, $tz = self::makeTimeZone($tz))) {
+		if ($datetime = parent::createFromFormat($format, $time, $tz = self::makeTimeZone($tz))) {
 			return new self('@'.$datetime->getTimestamp(), $tz);
 		}
     }
@@ -347,7 +367,7 @@ class Date extends DateTime
 	 */
 	private static function makeTimeZone($tz)
 	{
-		if ($tz = $tz ?? self::$config['timezone'] ?? null) {
+		if ($tz = $tz ?? DateBase::$config['timezone'] ?? null) {
 			return $tz instanceof DateTimeZone ? $tz : new DateTimeZone($tz);
 		}
 	}
@@ -395,4 +415,4 @@ class Date extends DateTime
 		return new DateInterval("P$date".(isset($time) ? "T$time" : ''));
     }
 }
-Date::__init();
+DateBase::__init();

@@ -92,6 +92,7 @@ abstract class App
                 define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
             }
         }
+		// 检测是否安装eggcore扩展
         if (extension_loaded('eggcore')) {
             eggcore_boot(self::VERSION, self::CORE_VERSION);
         } else {
