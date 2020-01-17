@@ -40,7 +40,7 @@ trait DateBase
 	
     private static $init;
     // 配置
-    public static $config = [];
+    private static $config = [];
 	// datetime简名
     private static $datetime_alias = [
         'y' => 'year', 'n' => 'month', 'w' => 'week', 'd' => 'day', 'h' => 'hour', 'i' => 'minute', 's' => 'second'
@@ -67,7 +67,7 @@ trait DateBase
             self::$config = $config + self::$config;
         }
     }
-	
+
 	/*
 	 * 时间实例
 	 */
@@ -367,7 +367,7 @@ trait DateBase
 	 */
 	private static function makeTimeZone($tz)
 	{
-		if ($tz = $tz ?? DateBase::$config['timezone'] ?? null) {
+		if ($tz = $tz ?? DateBase::config('timezone')) {
 			return $tz instanceof DateTimeZone ? $tz : new DateTimeZone($tz);
 		}
 	}
@@ -413,6 +413,14 @@ trait DateBase
 			}
 		}
 		return new DateInterval("P$date".(isset($time) ? "T$time" : ''));
+    }
+	
+	/*
+	 * 获取配置
+	 */
+    final public static function config($name, $default = null)
+    {
+        return DateBase::$config[$name] ?? $default;
     }
 }
 DateBase::__init();
