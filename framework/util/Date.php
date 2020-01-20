@@ -10,7 +10,7 @@ use framework\core\Config;
 
 class Date extends DateTime
 {
-	use DateBase;
+	use DateBase { config as private; }
 	
 	// 周常量
     const SUNDAY	= 0;
@@ -30,11 +30,17 @@ class Date extends DateTime
     }
 }
 
+/*
+ * immutable class
+ */
 class DateImmutable extends DateTimeImmutable
 {
-	use DateBase;
+	use DateBase { config as private; }
 }
 
+/*
+ * base class
+ */
 trait DateBase
 {
 	
@@ -66,6 +72,14 @@ trait DateBase
         if ($config = Config::read('date')) {
             self::$config = $config + self::$config;
         }
+    }
+	
+	/*
+	 * 获取配置
+	 */
+    public static function config($name, $default = null)
+    {
+        return DateBase::$config[$name] ?? $default;
     }
 
 	/*
@@ -413,14 +427,6 @@ trait DateBase
 			}
 		}
 		return new DateInterval("P$date".(isset($time) ? "T$time" : ''));
-    }
-	
-	/*
-	 * 获取配置
-	 */
-    final public static function config($name, $default = null)
-    {
-        return DateBase::$config[$name] ?? $default;
     }
 }
 DateBase::__init();
