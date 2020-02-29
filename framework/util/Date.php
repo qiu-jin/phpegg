@@ -28,6 +28,14 @@ class Date extends DateTime
     {
 		return $params ? new DateImmutable(...$params) : DateImmutable::class;
     }
+	
+	/*
+	 * DateTime实例
+	 */
+	protected static function makeDateTime($time)
+	{
+		return $time instanceof DateTime ? $time : new DateTime($time);
+	}
 }
 
 /*
@@ -36,6 +44,14 @@ class Date extends DateTime
 class DateImmutable extends DateTimeImmutable
 {
 	use DateBase { config as private; }
+	
+	/*
+	 * DateTimeImmutable实例
+	 */
+	protected static function makeDateTime($time)
+	{
+		return $time instanceof DateTimeImmutable ? $time : new DateTimeImmutable($time);
+	}
 }
 
 /*
@@ -369,14 +385,6 @@ trait DateBase
 	}
 	
 	/*
-	 * DateTime实例
-	 */
-	private static function makeDateTime($time)
-	{
-		return $time instanceof DateTime ? $time : new DateTime($time);
-	}
-	
-	/*
 	 * TimeZone实例
 	 */
 	private static function makeTimeZone($tz)
@@ -405,7 +413,7 @@ trait DateBase
 		$date = $time = null;
 		foreach ($value as $k => $v) {
 			if (isset(self::$datetime_interval_format[$k])) {
-				// 
+				//
 			} elseif (isset(self::$datetime_alias[$k])) {
 				$k = self::$datetime_alias[$k];
 			} else {
