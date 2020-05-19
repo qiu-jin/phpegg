@@ -282,14 +282,6 @@ if (OPCACHE_LOADED) {
 /*
  * 安全引用文件
  */
-function __include($file)
-{
-    return include $file;
-}
-
-/*
- * 安全引用文件
- */
 function __require($file)
 {
     return require $file;

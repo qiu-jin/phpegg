@@ -273,7 +273,7 @@ abstract class App
         }
         $file = APP_DIR.strtr($this->config['controller_ns'], '\\', '/')."/$controller.php";
         if (!$check || (preg_match('/^\w+(\\\\\w+)*$/', $controller) && is_php_file($file))) {
-            __include($file);
+            __require($file);
             return $class;
         }
     }

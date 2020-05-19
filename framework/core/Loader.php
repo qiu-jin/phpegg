@@ -93,7 +93,7 @@ class Loader
     {
         $file = "$name.php";
         if (!$check || is_php_file($file)) {
-            __include($file);
+            __require($file);
         }
     }
     

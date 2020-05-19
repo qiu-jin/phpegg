@@ -22,9 +22,9 @@ class Config
             return;
         }
         self::$init = true;
-        __include(defined('ENV_FILE') ? ENV_FILE : APP_DIR.'.env');
+        __require(defined('ENV_FILE') ? ENV_FILE : APP_DIR.'.env');
         if ($file = self::env('CONFIG_FILE')) {
-			self::$config = __include($file);
+			self::$config = __require($file);
         }
         self::$dir = self::env('CONFIG_DIR');
     }
