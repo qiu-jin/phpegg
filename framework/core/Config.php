@@ -126,7 +126,7 @@ class Config
      */
     private static function include($name)
     {
-        if (is_php_file($file = self::$dir."$name.php") && is_array($config = __include($file))) {
+        if (is_php_file($file = self::$dir."$name.php") && is_array($config = __require($file))) {
             return $config;
         }
     }
