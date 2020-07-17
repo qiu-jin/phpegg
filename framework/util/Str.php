@@ -2,20 +2,7 @@
 namespace framework\util;
 
 class Str
-{
-    /*
-     * 随机串
-     */
-    public static function random(int $length = 32, $type = null)
-    {
-        static $string = '0123456789abcdefghijklmnopqrstuvwxyz';
-        $str = '';
-        for ($i = 0; $i < $length; $i++) {
-            $str .= $string[mt_rand(0, 33)];
-        }
-        return $str;
-    }
-    
+{    
     /*
      * 下划线转驼峰
      */
@@ -78,5 +65,32 @@ class Str
             $replace[sprintf($format, $k)] = $v;
         }
         return strtr($str, $replace);
+    }
+	
+    /*
+     * 随机串
+     */
+    public static function random(int $length = 32, int $mode = 3)
+    {
+        static $strs = [
+			//[位码, 长度, 字符集]
+			[1, 10, '1234567890'],
+			[2, 26, 'abcdefghijklmnopqrstuvwxyz'],
+			[4, 26, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'],
+			[8, 28, '!@#$?|{/:;%^&*()-_[]}<>~+=,.']
+        ];
+		$l = 0;
+		$str = '';
+		foreach ($strs as $s) {
+			if ($mode & $s[0]) {
+				$l += $s[1];
+				$str .= $s[2];
+			}
+		}
+        $ret = '';
+        for ($i = 0; $i < $length; $i++) {
+            $ret .= $str[mt_rand(0, $l - 1)];
+        }
+        return $ret;
     }
 }

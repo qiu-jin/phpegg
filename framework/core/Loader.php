@@ -35,7 +35,7 @@ class Loader
                 self::add($type, $rules);
             }
         }
-        // 注册composer加载规则
+        // 注册composer
         if ($dir = Config::env('VENDOR_DIR')) {
             self::import($dir.'autoload', false);
         }

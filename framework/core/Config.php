@@ -22,7 +22,7 @@ class Config
             return;
         }
         self::$init = true;
-        __require(defined('ENV_FILE') ? ENV_FILE : APP_DIR.'.env');
+        __require(defined('ENV_FILE') ? ENV_FILE : APP_DIR.'env.php');
         if ($file = self::env('CONFIG_FILE')) {
 			self::$config = __require($file);
         }
