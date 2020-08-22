@@ -2,7 +2,7 @@
 namespace framework\util;
 
 class Str
-{    
+{
     /*
      * 下划线转驼峰
      */

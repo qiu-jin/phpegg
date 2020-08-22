@@ -1,6 +1,7 @@
 <?php
 namespace framework\driver\db;
 
+use framework\util\Arr;
 use framework\core\Container;
 
 class Cluster
@@ -130,7 +131,7 @@ class Cluster
             return $this->work = $this->write;
         }
         return $this->work = $this->$type ?? (
-			$this->$type = Container::driver('db', ['driver' => $this->config['dbtype']] + $this->config[$type])
+			$this->$type = Container::driver('db', ['driver' => $this->config['dbtype']] + Arr::random($this->config[$type]))
         );
     }
     
