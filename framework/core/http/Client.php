@@ -194,6 +194,22 @@ class Client
     }
 	
     /*
+     * 设置ssl
+     */
+    public function ssl($value = null)
+    {
+		if ($value) {
+			$this->request->curlopts[CURLOPT_SSL_VERIFYPEER] = true;
+			$this->request->curlopts[is_dir($value) ? CURLOPT_CAPATH : CURLOPT_CAINFO] = $value;
+		} else {
+			$this->request->curlopts[CURLOPT_SSL_VERIFYPEER] = false;
+			$this->request->curlopts[CURLOPT_SSL_VERIFYHOST] = false;
+		}
+        return $this;
+    }
+	
+	
+    /*
      * 设置单个cookie
      */
     public function cookie($name, $value)
