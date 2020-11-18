@@ -28,9 +28,9 @@ class Container
         'logger'    => [self::T_DRIVER],
         'captcha'   => [self::T_DRIVER],
         'storage'   => [self::T_DRIVER],
-        'model'     => [self::T_MODEL],
-        'logic'     => [self::T_MODEL],
-        'service'   => [self::T_MODEL],
+        'model'     => [self::T_MODEL, 1],
+        'logic'     => [self::T_MODEL, 1],
+        'service'   => [self::T_MODEL, 1],
     ];
 	
     /*

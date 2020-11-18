@@ -187,9 +187,9 @@ class Client
     /*
      * 认证
      */
-    public function auth($user, $pass)
+    public function auth($user, $pass = null)
     {
-        $this->request->headers['Authorization'] = 'Basic '.base64_encode("$user:$pass");
+        $this->request->headers['Authorization'] = 'Basic '.base64_encode(isset($pass) ? "$user:$pass" : $user);
         return $this;
     }
 	
@@ -255,7 +255,7 @@ class Client
     }
 	
     /*
-     * 设置请求超时时间
+     * 设置重定向
      */
     public function allowRedirect($max = 1)
     {
