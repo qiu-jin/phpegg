@@ -1,7 +1,7 @@
 <?php
 namespace framework\core;
 
-defined('app\env\GETTER_PROVIDERS_NAME') || define('app\env\GETTER_PROVIDERS_NAME', 'providers');
+if (!defined('app\env\GETTER_PROVIDERS_NAME')) define('app\env\GETTER_PROVIDERS_NAME', 'providers');
 
 trait Getter
 {
@@ -32,7 +32,7 @@ trait Getter
 		                if ($this->_depth > 0) {
 							return $this->$name = new self($this->_ns, $this->_depth);
 		                } else {
-							return $this->$name = Container::get(implode('.', $this->_ns));
+							return $this->$name = Container::make(implode('.', $this->_ns));
 		                }
 	                }
 					throw new \Exception('Undefined property: $'.implode('->', $this->_ns));

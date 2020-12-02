@@ -5,17 +5,17 @@ class Container
 {
 	// Provider类型常量
 	const T_CLASS 	= 1;
-	const T_DRIVER	= 2;
-	const T_MODEL 	= 3;
-	const T_CLOSURE	= 4;
-	const T_ALIAS 	= 5;
+	const T_DRIVER	= 1 << 1;
+	const T_MODEL 	= 1 << 2;
+	const T_CLOSURE	= 1 << 3;
+	const T_ALIAS 	= 1 << 4;
 
     protected static $init;
     // 容器实例
     protected static $instances;
     // 容器提供者设置
     protected static $providers = [
-        'db'        => [self::T_DRIVER],
+        'db'        => [self::T_DRIVER/*，驱动类名称空间（可选） */],
         'sms'       => [self::T_DRIVER],
         'rpc'       => [self::T_DRIVER],
         'data'      => [self::T_DRIVER],
@@ -28,9 +28,14 @@ class Container
         'logger'    => [self::T_DRIVER],
         'captcha'   => [self::T_DRIVER],
         'storage'   => [self::T_DRIVER],
-        'model'     => [self::T_MODEL, 1],
+        'model'     => [self::T_MODEL, 1/* 模型层数，模型类名称空间（可选） */],
         'logic'     => [self::T_MODEL, 1],
         'service'   => [self::T_MODEL, 1],
+		/*
+		'class_provider' 	=> [self::T_CLASS, [类全名, ...类初始化参数（可选）]],
+		'closure_provider' 	=> [self::T_CLOSURE, 匿名函数（函数执行返回实例）],
+		'alias_provider' 	=> [self::T_ALIAS, 真实provider名],
+		*/
     ];
 	
     /*
@@ -109,14 +114,17 @@ class Container
      */
     public static function driver($type, $name = null)
     {
-        if (isset(self::$providers[$type]) && self::$providers[$type][0] === self::T_DRIVER) {
+        if (isset(self::$providers[$type])) {
+			if (self::$providers[$type][0] !== self::T_DRIVER) {
+				throw new \Exception("容器非驱动类型: $type");
+			}
             if (is_array($name)) {
                 return self::makeDriverInstance($type, $name);
             }
             $key = $name ? "$type.$name" : $type;
             return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($type, $name);
         }
-		throw new \Exception("驱动不存在或非驱动类型: $type");
+		throw new \Exception("容器驱动不存: $type");
     }
 	
     /*
@@ -183,10 +191,13 @@ class Container
 			return self::$instances[$name];
 		}
 		$p = explode('.', $name);
-		if (isset(self::$providers[$p[0]]) && self::$providers[$p[0]][0] != self::T_ALIAS) {
+		if (isset(self::$providers[$p[0]])) {
+			if (self::$providers[$p[0]][0] == self::T_ALIAS) {
+				throw new \Exception("别名实例源不能仍为alias类型: $name");
+			}
 			return self::$instances[$name] = self::makeProvider($p);
 		}
-		throw new \Exception("源不存在或仍为alias类型: $name");
+		throw new \Exception("别名实例源不存在: $name");
     }
 	
     /*
@@ -207,11 +218,7 @@ class Container
      */
     protected static function makeDriverInstance($type, $config)
     {
-		if (isset($config['class'])) {
-			$class = $config['class'];
-		} else {
-			$class = (self::$providers[$type][1] ?? "framework\driver\\$type").'\\'.ucfirst($config['driver']);
-		}
+		$class = $config['class'] ?? (self::$providers[$type][1] ?? "framework\driver\\$type").'\\'.ucfirst($config['driver']);
 		return new $class($config);
     }
 }
