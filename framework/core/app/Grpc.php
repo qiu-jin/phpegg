@@ -188,7 +188,8 @@ class Grpc extends App
 			if ($call instanceof \Closure) {
 	            if ($class = $this->config['closure_bind_class']) {
 					if ($class === true) {
-						$call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
+						$getter = getter($this->config['closure_getter_providers']);
+						$call = \Closure::bind($call, $getter, $getter);
 					} else {
 						$call = \Closure::bind($call, new $class, $class);
 					}

@@ -56,12 +56,28 @@ class Inline extends App
     {
 		$params = $this->dispatch['params'] ?? null;
 		if (!$this->config['bind_class']) {
-			$return = __require_controller($params);
-		} elseif ($this->config['bind_class'] === true) {
-			$return = __require_controller_with_getter($params, $this->config['getter_providers']);
-        } else {
-	        $return = __require_controller_with_class($params, $this->config['bind_class']);
-        }
+			$call = static function($_PARAMS) {
+				if ($_PARAMS && func_get_arg(1)) {
+					extract($_PARAMS, EXTR_SKIP);
+				}
+				return require func_get_arg(2);
+			};
+		} else {
+			$function = function($_PARAMS) {
+				if ($_PARAMS && func_get_arg(1)) {
+					extract($_PARAMS, EXTR_SKIP);
+				}
+				return require func_get_arg(2);
+			};
+			if ($this->config['bind_class'] === true) {
+				$getter = getter($this->config['getter_providers']);
+				$call = \Closure::bind($function, $getter, $getter));
+	        } else {
+				$class = $this->config['bind_class'];
+				$call = \Closure::bind($function, new $class, $class);
+			}
+		}
+		$return = $call($params, $this->config['route_dispatch_extract_params'], $this->dispatch['controller_file']);
         return $return === 1 && $this->config['return_1_to_null'] ? null : $return;
     }
 
@@ -158,32 +174,4 @@ class Inline extends App
             return $f;
         }
     }
-}
-
-function __require_controller($_PARAMS)
-{
-	if ($_PARAMS && App::getConfig('route_dispatch_extract_params')) {
-		extract($_PARAMS, EXTR_SKIP);
-	}
-    return require App::getDispatch('controller_file');
-}
-
-function __require_controller_with_getter($_PARAMS, $getter)
-{
-    return \Closure::bind(function($_PARAMS) {
-		if ($_PARAMS && App::getConfig('route_dispatch_extract_params')) {
-			extract($_PARAMS, EXTR_SKIP);
-		}
-	    return require App::getDispatch('controller_file');
-    }, getter($getter))($_PARAMS);
-}
-
-function __require_controller_with_class($_PARAMS, $class)
-{
-    return \Closure::bind(function($_PARAMS) {
-		if ($_PARAMS && App::getConfig('route_dispatch_extract_params')) {
-			extract($_PARAMS, EXTR_SKIP);
-		}
-	    return require App::getDispatch('controller_file');
-    }, new $class, $class)($_PARAMS);
 }

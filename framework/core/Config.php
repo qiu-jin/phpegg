@@ -83,7 +83,7 @@ class Config
      */
     public static function read($name)
     {
-        return self::$config[$name] ?? self::include($name);
+        return self::$config[$name] ?? self::require($name);
     }
     
     /*
@@ -118,13 +118,13 @@ class Config
             return false;
         }
         self::$checked[$name] = true;
-        return self::$dir && (self::$config[$name] = self::include($name));
+        return self::$dir && (self::$config[$name] = self::require($name));
     }
 	
     /*
      * 从配置目录中读取子配置文件
      */
-    private static function include($name)
+    private static function require($name)
     {
         if (is_php_file($file = self::$dir."$name.php") && is_array($config = __require($file))) {
             return $config;

@@ -89,7 +89,10 @@ class View
 		if (isset(self::$view['vars'])) {
 			$vars = $vars ? $vars + self::$view['vars'] : self::$view['vars'];
 		}
-		__require_view(self::path($tpl), $vars);
+		(static function() {
+			extract(func_get_arg(0), EXTR_SKIP);
+			require func_get_arg(1);
+		}) ($vars, self::path($tpl));
 		if ($clean) {
 			self::$view = null;
 		}
@@ -217,10 +220,3 @@ class View
     }
 }
 View::__init();
-
-function __require_view($__file, $__vars)
-{
-    extract($__vars, EXTR_SKIP);
-    unset($__vars);
-    require $__file;
-}

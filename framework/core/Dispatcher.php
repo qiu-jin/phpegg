@@ -11,18 +11,17 @@ class Dispatcher
     public static function route($path, $rules, $param_mode, $dynamic_dispatch = false, $method = null)
     {
         if ($route = (new Router($path, $method))->route($rules)) {
-            return self::dispatch($route, $param_mode, $dynamic_dispatch);
+            return self::dispatch($route['dispatch'], $route['matches'], $param_mode, $dynamic_dispatch);
         }
     }
     
     /*
      * 获取调度信息
      */
-    public static function dispatch($data, $param_mode = 0, $dynamic_dispatch = false)
+    public static function dispatch($dispatch, $params, $param_mode = 0, $dynamic_dispatch = false)
     {
-        $params = $data['matches'];
-        $dispatch = self::parseDispatch($data['dispatch'], $param_names);
 		$is_dynamic = false;
+        $dispatch = self::parseDispatch($dispatch, $param_names);
         if ($dynamic_dispatch && strpos($dispatch, '$') !== false) {
             $dispatch = self::dynamicDispatch($dispatch, $params, $is_dynamic);
         }
@@ -30,7 +29,7 @@ class Dispatcher
             if ($param_mode === 2) {
                 $params = self::bindKvParams($param_names, $params);
             } else {
-                $params = self::bindListParams($param_names, $params);
+                $params = self::bindLsParams($param_names, $params);
             }
         } 
         return [$dispatch, $params, $is_dynamic, $data['next'] ?? null];
@@ -89,7 +88,7 @@ class Dispatcher
     /*
      * 解析list参数
      */
-    protected static function bindListParams($rules, $params)
+    protected static function bindLsParams($rules, $params)
     {
         foreach (explode(',', $rules) as $rule) {
             $rule = trim($rule);

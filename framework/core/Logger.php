@@ -62,9 +62,9 @@ class Logger
     /*
      * 获取实例
      */
-    public static function get($name = true)
+    public static function get($name = null)
     {
-		return $name === true ? self::getLevelHandler() : self::getHandler($name);
+		return isset($name) ? self::getHandler($name) : self::getLevelHandler();
     }
 
     /*
@@ -78,9 +78,9 @@ class Logger
     /*
      * 频道实例
      */
-    public static function channel($name = true, $use_null_handler = false)
+    public static function channel($name = null, $use_null_handler = false)
     {
-		if ($name === true) {
+		if (!isset($name)) {
 			return self::getLevelHandler();
 		}
 		if (isset(self::$configs[$name])) {

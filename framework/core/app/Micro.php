@@ -106,7 +106,8 @@ class Micro extends App
         if ($call instanceof \Closure) {
             if ($class = $this->config['closure_bind_class']) {
 				if ($class === true) {
-					$call = \Closure::bind($call, getter($this->config['closure_getter_providers']));
+					$getter = getter($this->config['closure_getter_providers']);
+					$call = \Closure::bind($call, $getter, $getter);
 				} else {
 					$call = \Closure::bind($call, new $class, $class);
 				}
@@ -114,7 +115,8 @@ class Micro extends App
 			return $this->dispatch = ['call' => $call, 'params' => $result['matches']];
         } elseif (is_string($call)) {
 			$dispatch = Dispatcher::dispatch(
-				$result,
+				$result['dispatch'],
+				$result['matches'],
 				$this->config['param_mode'],
 				$this->config['route_dispatch_dynamic']
 			);

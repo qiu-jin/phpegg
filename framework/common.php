@@ -36,15 +36,15 @@ function config($name, $default = null)
  */
 function app($name = null)
 {
-    return $name === null ? App::instance() : Container::make($name);
+    return isset($name) ? Container::make($name) : App::instance();
 }
 
 /*
  * 获取日志实例
  */
-function logger($name = true)
+function logger($name = null, $use_null_handler = false)
 {
-    return Logger::get($name);
+    return Logger::channel($name, $use_null_handler);
 }
 
 /*
@@ -85,14 +85,6 @@ function cache($name = null)
 function storage($name = null)
 {
     return Container::driver('storage', $name);
-}
-
-/*
- * 发送短信或获取短信实例
- */
-function sms(...$params)
-{
-    return isset($params[1]) ? Container::driver('sms')->send(...$params) : Container::driver('sms', ...$params);
 }
 
 /*
@@ -267,16 +259,9 @@ function getter($providers = null)
  */
 define('OPCACHE_LOADED', extension_loaded('opcache'));
 
-if (OPCACHE_LOADED) {
-	function is_php_file($file)
-	{
-	    return opcache_is_script_cached($file) || is_file($file);
-	}
-} else {
-	function is_php_file($file)
-	{
-	    return is_file($file);
-	}
+function is_php_file($file)
+{
+    return (OPCACHE_LOADED && opcache_is_script_cached($file)) || is_file($file);
 }
 
 /*
