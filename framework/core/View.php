@@ -10,7 +10,9 @@ class View
 {    
     private static $init;
     // 数据
-    private static $view;
+    private static $vars = [];
+    // 过滤器
+    private static $filters = [];
     // 配置
     private static $config = [
         // 视图文件扩展名
@@ -22,13 +24,13 @@ class View
         // 模版配置（为空则不启用模版）
         'template'  => [
             // 模版文件扩展名
-            'ext'       => '.html',
+            'ext'	=> '.html',
             // 模版文件目录（为空则默认使用视图文件目录）
-            'dir'       => null,
-            // 是否强制编译模版
-            'force'     => \app\env\APP_DEBUG,
+            'dir'	=> null,
             // 模版引擎类名
-            'engine'    => Template::class,
+            'engine'	=> Template::class,
+            // 是否强制编译模版
+            'force_compile'	=> \app\env\APP_DEBUG,
         ]
     ];
 
@@ -51,12 +53,12 @@ class View
      */
     public static function var($name, $value)
     {
-        self::$view['vars'][$name] = $value;
+        self::$vars[$name] = $value;
     }
     
     public static function vars(array $values)
     {
-        self::$view['vars'] = isset(self::$view['vars']) ? $values + self::$view['vars'] : $values;
+        self::$vars = self::$vars ? $values + self::$vars : $values;
     }
     
     /*
@@ -64,12 +66,12 @@ class View
      */
     public static function filter($name, $value)
     {
-        self::$view['filters'][$name] = $value;
+        self::$filters[$name] = $value;
     }
     
     public static function filters(array $values)
     {
-        self::$view['filters'] = isset(self::$view['filters']) ? $values + self::$view['filters'] : $values;
+        self::$filters = self::$filters ? $values + self::$filters : $values;
     }
 	
     /*
@@ -86,15 +88,15 @@ class View
     public static function render($tpl, array $vars = null, $clean = true)
     {
         ob_start();
-		if (isset(self::$view['vars'])) {
-			$vars = $vars ? $vars + self::$view['vars'] : self::$view['vars'];
+		if (self::$vars) {
+			$vars = $vars ? $vars + self::$vars : self::$vars;
 		}
 		(static function() {
 			extract(func_get_arg(0), EXTR_SKIP);
 			require func_get_arg(1);
 		}) ($vars, self::path($tpl));
 		if ($clean) {
-			self::$view = null;
+			self::clean();
 		}
         return ob_get_clean();
     }
@@ -102,14 +104,14 @@ class View
     /*
      * 检查更新视图文件，返回路径
      */
-    public static function path($tpl, $force = false)
+    public static function path($tpl, $force_compile = false)
     {
         $vfile = self::getViewFilePath($tpl);
         if (self::$config['template']) {
             if (!is_file($tfile = self::getTemplateFilePath($tpl))) {
                 throw new ViewException("Template file not found: $tfile");
             }
-            if ($force || self::$config['template']['force'] || !is_file($vfile)
+            if ($force_compile || self::$config['template']['force_compile'] || !is_file($vfile)
                 || filemtime($vfile) < filemtime($tfile)
             ) {
                 self::complieTo($vfile, file_get_contents($tfile));
@@ -137,7 +139,7 @@ class View
 		if (($content = File::get(self::getTemplateFilePath($tpl))) !== false) {
 			return $content;
         }
-        throw new ViewException("模版文件: $file 不存在");
+        throw new ViewException("Template file not found: $file");
     }
     
     /*
@@ -169,8 +171,8 @@ class View
      */
     public static function callFilter($name, ...$params)
     {
-        if (isset(self::$view['filters'][$name])) {
-            return self::$view['filters'][$name](...$params);
+        if (isset(self::$filters[$name])) {
+            return self::$filters[$name](...$params);
         }
         throw new \BadMethodCallException("调用未定义过滤器: $name");
     }
@@ -216,7 +218,7 @@ class View
      */
     public static function clean()
     {
-		self::$view = null;
+		self::$vars = self::$filters = [];
     }
 }
 View::__init();

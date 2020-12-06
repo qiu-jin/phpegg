@@ -6,6 +6,8 @@ class Event
     private static $init;
     // 事件容器
     private static $events;
+    // 计数器
+    private static $counter = PHP_INT_MAX;
     
     /*
      * 初始化
@@ -30,7 +32,8 @@ class Event
      */
     public static function on($name, callable $call, $priority = 0)
     {
-		(self::$events[$name] ?? self::$events[$name] = new \SplPriorityQueue())->insert($call, $priority);
+		$event = self::$events[$name] ?? self::$events[$name] = new \SplPriorityQueue();
+		$event->insert($call, [$priority, self::$counter--]);
     }
 
     /*
@@ -50,6 +53,14 @@ class Event
     public static function has($name)
     {
         return isset(self::$events[$name]);
+    }
+	
+    /*
+     * 注册事件数量
+     */
+    public static function count($name)
+    {
+        return isset(self::$events[$name]) ? self::$events[$name]->count() : 0;
     }
 	
     /*
