@@ -28,7 +28,7 @@ class Container
         'logger'    => [self::T_DRIVER],
         'captcha'   => [self::T_DRIVER],
         'storage'   => [self::T_DRIVER],
-        'model'     => [self::T_MODEL, 1/* 模型层数，模型类名称空间（可选） */],
+        'model'     => [self::T_MODEL, 1/* 模型层数, 模型类名称空间（可选） */],
         'logic'     => [self::T_MODEL, 1],
         'service'   => [self::T_MODEL, 1],
 		/*
@@ -51,7 +51,7 @@ class Container
 	        if (isset($config['providers'])) {
 				self::$providers = $config['providers'] + self::$providers;
 	        }
-			if (!empty($config['exit_clean'])) {
+			if (!empty($config['exit_event_clean'])) {
 				Event::on('exit', function () {
 					Container::clean();
 					if (class_exists(Facade::class, false)) {

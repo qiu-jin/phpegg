@@ -2,6 +2,7 @@
 namespace framework\core\http;
 
 use framework\util\Arr;
+use framework\util\Str;
 use framework\core\Event;
 use framework\core\Config;
 
@@ -27,7 +28,7 @@ class Session
             if (isset($config['save_handler'])) {
                 session_set_save_handler(instance(...$config['save_handler']));
             }
-			if (!empty($config['exit_close'])) {
+			if (!empty($config['exit_event_close_write'])) {
 				Event::on('exit', 'session_write_close');
 			}
 			if (!($config['auto_start'] ?? true)) {
@@ -112,17 +113,16 @@ class Session
         session_unset();
         session_destroy();
 		if ($delete_cookie) {
-		    $params = session_get_cookie_params();
-		    Cookie::delete(session_name(), $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+		    Cookie::delete(session_name(), ...array_values(session_get_cookie_params()));
 		}
     }
     
     /*
-     * 原生session函数魔术方法
+     * 原生session函数魔术方法 Session::setCookieParams
      */
     public static function __callStatic($method, $params)
     {
-        if (function_exists($func = "session_$method")) {
+        if (function_exists($func = 'session_'.Str::snakeCase($method))) {
             return $func(...$params);
         }
         throw new \BadMethodCallException('Call to undefined method '.__CLASS__."::$method");

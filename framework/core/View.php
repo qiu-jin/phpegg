@@ -85,7 +85,7 @@ class View
     /*
      * 渲染页面
      */
-    public static function render($tpl, array $vars = null, $clean = true)
+    public static function render($tpl, array $vars = [], $clean = true)
     {
         ob_start();
 		if (self::$vars) {

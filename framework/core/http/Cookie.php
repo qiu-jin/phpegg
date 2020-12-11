@@ -19,6 +19,8 @@ class Cookie
         'secure'    => false,
 		// httponly设置
         'httponly'  => false
+		// samesite设置
+		'samesite'	=> null	
     ];
 	
     /*
@@ -92,7 +94,7 @@ class Cookie
      * 高级设置
      */
     public static function setCookie(
-        $name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null
+        $name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null, $samesite = null
     ) {
         if ($value === null) { 
             $expire = time() - 3600;
@@ -100,15 +102,22 @@ class Cookie
 			$lft = $lifetime ?? self::$options['lifetime'];
             $expire = $lft ? time() + $lft : 0;
         }
-        return setcookie(
-			$name,
-			$value,
-			$expire, 
-			$path ?? self::$options['path'], 
-			$domain ?? self::$options['domain'], 
-			$secure ?? self::$options['secure'], 
-			$httponly ?? self::$options['httponly']
-		);
+		if (version_compare(PHP_VERSION, '7.3.0', '<')) {
+	        return setcookie($name, $value, $expire, 
+				$path ?? self::$options['path'], 
+				$domain ?? self::$options['domain'], 
+				$secure ?? self::$options['secure'], 
+				$httponly ?? self::$options['httponly']
+			);
+		}
+        return setcookie($name, $value, [
+			'expire'	=> $expire, 
+			'path' 		=> $path ?? self::$options['path'], 
+			'domain' 	=> $domain ?? self::$options['domain'], 
+			'secure' 	=> $secure ?? self::$options['secure'], 
+			'httponly' 	=> $httponly ?? self::$options['httponly'],
+			'samesite'	=> $samesite ?? self::$options['samesite'],
+        ]);
     }
 }
 Cookie::__init();

@@ -13,7 +13,7 @@ abstract class App
     // 内核版本号
     const CORE_VERSION = '1.0.0';
     // 是否命令行环境
-    const IS_CLI = PHP_SAPI == 'cli';
+    const IS_CLI = PHP_SAPI === 'cli';
     // 内置应用模式
     const MODES = ['Standard', 'Rest', 'Micro', 'Inline'/*, 'View'*/, 'Jsonrpc', 'Grpc'/*, 'Graphql'*/, 'Cli'];
     // 应用实例

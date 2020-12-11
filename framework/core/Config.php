@@ -83,7 +83,9 @@ class Config
      */
     public static function read($name)
     {
-        return self::$config[$name] ?? self::require($name);
+		if (strpos($name, '.') === false) {
+			return self::loadFile($name);
+		}
     }
     
     /*
@@ -118,13 +120,13 @@ class Config
             return false;
         }
         self::$checked[$name] = true;
-        return self::$dir && (self::$config[$name] = self::require($name));
+        return self::$dir && (self::$config[$name] = self::loadFile($name));
     }
 	
     /*
      * 从配置目录中读取子配置文件
      */
-    private static function require($name)
+    private static function loadFile($name)
     {
         if (is_php_file($file = self::$dir."$name.php") && is_array($config = __require($file))) {
             return $config;

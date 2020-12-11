@@ -159,18 +159,21 @@ class Request
      */
     public static function ip($proxy = null)
     {
-        if (!($proxy ?? self::$proxy)) {
-            return $_SERVER['REMOTE_ADDR'] ?? null;
+        if ($proxy ?? self::$proxy) {
+	        return $_SERVER['HTTP_X_FORWARDED_FOR'] ?? null;
         }
-        return $_SERVER['HTTP_X_FORWARDED_FOR'] ?? null;
+		return $_SERVER['REMOTE_ADDR'] ?? null;
     }
 	
     /*
      * 获取port
      */
-    public static function port()
+    public static function port($proxy = null)
     {
-        return $_SERVER['REMOTE_PORT'];
+        if ($proxy ?? self::$proxy) {
+	        return $_SERVER['HTTP_X_FORWARDED_PORT'] ?? null;
+        }
+		return $_SERVER['REMOTE_PORT'] ?? null;
     }
     
     /*
@@ -192,11 +195,13 @@ class Request
     /*
      * 获取请求UserAgent实例
      */
+	/*
     public static function agent()
     {
         return new UserAgent($_SERVER['HTTP_USER_AGENT']);
     }
-    
+    */
+	
     /*
      * 是否为POST请求
      */
@@ -219,10 +224,10 @@ class Request
      */
     public static function isHttps($proxy = null)
     {
-        if (!($proxy ?? self::$proxy)) {
-            return isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on';
+        if ($proxy ?? self::$proxy) {
+	        return isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https';
         }
-        return isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https';
+		return isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on';
     }    
 }
 Request::__init();

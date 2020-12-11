@@ -17,7 +17,9 @@ class Join extends QueryChain
      */
     protected function __init($table, $options, $join, $type = 'LEFT', $prefix = true)
     {
-		$this->checkJoinType($type);
+        if (!in_array($type, self::$join_type)) {
+            throw new \Exception("Join Type Error: $type");
+        }
         $this->cur = $join;
         $this->table = $table;
         $this->join[$join] = ['type' => $type];
@@ -34,7 +36,9 @@ class Join extends QueryChain
      */
     public function join($join, $type = 'LEFT', $prefix = true)
     {
-        $this->checkJoinType($type);
+        if (!in_array($type, self::$join_type)) {
+            throw new \Exception("Join Type Error: $type");
+        }
         $this->table_options[$this->cur] = $this->options;
         $this->cur = $join;
         $this->options = ['prefix' => $prefix, 'fields' => null];
@@ -199,15 +203,5 @@ class Join extends QueryChain
             return "$field[0](".$this->builder::keywordEscape($table).".$field1) AS ".$this->builder::keywordEscape($field[2]);
         }
         throw new \Exception('Join Field ERROR: '.var_export($field, true));
-    }
-	
-    /*
-     * 检查join类型
-     */
-    protected function checkJoinType($type)
-    {
-        if (!in_array($type, self::$join_type)) {
-            throw new \Exception('Join Type Error: '.var_export($type, true));
-        }
     }
 }

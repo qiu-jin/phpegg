@@ -51,7 +51,7 @@ class Cluster
 	 */
     public function select($sql, $params = null)
     {
-		return $this->selectDatabase('read')->select($sql, $params);
+		return $this->selectDatabase()->select($sql, $params);
     }
     
 	/*
@@ -59,7 +59,7 @@ class Cluster
 	 */
     public function insert($sql, $params = null, $return_id = false)
     {
-		return $this->selectDatabase('write')->insert($sql, $params, $return_id);
+		return $this->selectDatabase(true)->insert($sql, $params, $return_id);
     }
     
 	/*
@@ -67,7 +67,7 @@ class Cluster
 	 */
     public function update($sql, $params = null)
     {
-		return $this->selectDatabase('write')->update($sql, $params);
+		return $this->selectDatabase(true)->update($sql, $params);
     }
     
 	/*
@@ -75,7 +75,7 @@ class Cluster
 	 */
     public function delete($sql, $params = null)
     {
-		return $this->selectDatabase('write')->delete($sql, $params);
+		return $this->selectDatabase(true)->delete($sql, $params);
     }
     
     /*
@@ -83,7 +83,7 @@ class Cluster
      */
     public function exec($sql, $params = null)
     {
-        return $this->selectDatabase($this->sqlType($sql))->exec($sql, $params);
+        return $this->selectDatabase($this->isWrite($sql))->exec($sql, $params);
     }
     
     /*
@@ -91,7 +91,7 @@ class Cluster
      */
     public function query($sql, $params = null)
     {
-        return $this->selectDatabase($this->sqlType($sql))->query($sql, $params);
+        return $this->selectDatabase($this->isWrite($sql))->query($sql, $params);
     }
 	
     /*
@@ -99,8 +99,7 @@ class Cluster
      */
     public function __call($method, $params)
     {
-        $m = strtolower($method);
-        return $this->getDatabase(in_array($m, self::$write_methods) ? 'write' : null)->$method(...$params);
+        return $this->selectDatabase(in_array(strtolower($method), self::$write_methods))->$method(...$params);
     }
     
     /*
@@ -114,32 +113,54 @@ class Cluster
     /*
      * 获取数据库实例
      */
-    public function getDatabase($type = null, $sticky = true)
+    public function getDatabase($is_write = null, $sticky = false)
     {
-        if ($type == 'write' || $type == 'read') {
-            return $this->selectDatabase($type, $sticky);
-        }
-        return $this->work ?? $this->selectDatabase('read', $sticky);
+		if ($is_write === null && $sticky && $this->write) {
+			return $this->work = $this->write;
+		}
+		return $this->makeDatabase($is_write);
     }
-    
+	
     /*
      * 选择数据库实例
      */
-    protected function selectDatabase($type, $sticky = true)
+    protected function selectDatabase($is_write)
     {
-        if (!empty($this->config['sticky']) && $sticky && $this->write) {
-            return $this->work = $this->write;
-        }
-        return $this->work = $this->$type ?? (
-			$this->$type = Container::driver('db', ['driver' => $this->config['dbtype']] + Arr::random($this->config[$type]))
-        );
+        return $this->makeStickyDatabase($is_write, !empty($this->config['sticky']));
     }
-    
+	
+    /*
+     * 加载数据库实例
+     */
+    protected function makeDatabase($is_write)
+    {
+		$type = $is_write ? 'write' : 'read';
+        return $this->work = $this->$type ?? ($this->$type = makeDatabaseInstance($type));
+    }
+	
+    /*
+     * 选择数据库实例
+     */
+    protected function makeStickyDatabase($is_write, $sticky)
+    {
+		return $sticky && $this->write ? ($this->work = $this->write) : $this->makeDatabase($is_write);
+    }
+	
+    /*
+     * 生成数据库实例
+     */
+    protected function makeDatabaseInstance($type)
+    {
+		$config = Arr::random($this->config[$type]);
+		$config['driver'] = $this->config['dbtype'];
+        return Container::driver('db', $config + $this->config);
+    }
+
     /*
      * sql读写类型
      */
-    protected function sqlType($sql)
+    protected function isWrite($sql)
     {
-        return strtoupper(substr(ltrim($sql), 0, 6)) == 'SELECT' ? 'read' : 'write';
+        return strtoupper(substr(ltrim($sql), 0, 6)) !== 'SELECT';
     }
 }

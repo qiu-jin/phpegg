@@ -9,6 +9,7 @@ use framework\core\Event;
 class Response
 {
     private static $init;
+	// 响应内容
     private static $response;
     
     /*
@@ -56,7 +57,7 @@ class Response
      * 设置响应cookie
      */
     public static function cookie(
-    	$name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null
+    	$name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null, $samesite = null
     ) {
         self::$response->cookies[] = func_get_args();
     }

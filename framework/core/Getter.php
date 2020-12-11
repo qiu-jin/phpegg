@@ -18,7 +18,7 @@ trait Getter
 				return $this->$name = Container::make($name);
             }
 			// 模型名称空间链实例
-			return $this->$name = new class([$name], $v[1] ?? 1) {
+			return $this->$name = new class($name, $v[1] ?? 1) {
 	            private $_ns;
 	            private $_depth;
 	            public function __construct($ns, $depth) {
@@ -27,15 +27,15 @@ trait Getter
 	            }
 				// 魔术方法，获取空间链实例或容器实例
 	            public function __get($name) {
-	                $this->_ns[] = $name;
+	                $this->_ns .= ".$name";
 	                if ($name[0] != '_') {
 		                if ($this->_depth > 0) {
 							return $this->$name = new self($this->_ns, $this->_depth);
 		                } else {
-							return $this->$name = Container::make(implode('.', $this->_ns));
+							return $this->$name = Container::make($this->_ns);
 		                }
 	                }
-					throw new \Exception('Undefined property: $'.implode('->', $this->_ns));
+					throw new \Exception("模型属性命名不允许以下划线开头: $this->_ns");
 	            }
 			};
         }

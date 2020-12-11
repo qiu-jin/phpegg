@@ -21,8 +21,8 @@ abstract class Facade
      */
     public static function clean($class = null)
     {
-		if (static::class != __CLASS__) {
-			return static::__callStatic('clean', ...func_get_args());
+		if (static::class !== __CLASS__) {
+			return static::__callStatic('clean', func_get_args());
 		}
 		if ($class === null) {
 			self::$instances = null;

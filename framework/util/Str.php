@@ -22,7 +22,7 @@ class Str
     {
         $ret = '';
         $len = strlen($str);
-        $value = lcfirst($str);
+        $str = lcfirst($str);
         for ($i = 0; $i < $len; $i++) {
             $c = $str[$i];
             $l = strtolower($c);

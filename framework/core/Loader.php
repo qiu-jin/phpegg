@@ -114,9 +114,10 @@ class Loader
     private static function loadPsr4($prefix, $class)
     {
         $i = 0;
+		$m = strlen($class);
         foreach (self::$psr4_rules[$prefix] as $k => $v) {
             $l = strlen($k);
-            if ($l > $i && strncmp($k, $class, $l) === 0) {
+            if ($m > $l && $l > $i && strncmp($k, $class, $l) === 0) {
                 $i = $l;
                 $d = $v;
             }
