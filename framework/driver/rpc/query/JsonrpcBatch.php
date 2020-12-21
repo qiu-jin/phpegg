@@ -44,9 +44,9 @@ class JsonrpcBatch
      */
     public function __call($method, $params)
     {
-        if ($method === ($this->config['batch_call_method_alias'] ?? 'call')) {
+        if ($method === $this->config['batch_call_method_alias']) {
             return $this->call(...$params);
-        } elseif ($method === ($this->config['id_method_alias'] ?? 'id')) {
+        } elseif ($method === $this->config['id_method_alias']) {
             $this->id = $params[0];
         } else {
             $this->ns[] = $method;

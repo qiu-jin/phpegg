@@ -5,8 +5,6 @@ class Http
 {
 	// namespace
     protected $ns;
-	// 配置项
-    protected $config;
 	// client实例
     protected $client;
 	// filter设置
@@ -15,6 +13,17 @@ class Http
     protected $build_handler;
 	// 响应处理器
     protected $response_handler;
+	// 配置项
+    protected $config = [
+        // ns方法别名
+        'ns_method_alias'       => 'ns',
+        // filter方法别名
+        'filter_method_alias'   => 'filter',
+        // build方法别名
+        'build_method_alias'    => 'build',
+        // then方法别名
+        'then_method_alias'		=> 'then',
+    ];
     
     /*
      * 构造函数
@@ -25,7 +34,7 @@ class Http
             $this->ns[] = $name;
         }
         $this->client = $client;
-        $this->config = $config;
+		$this->config = $config + $this->config;
     }
 
     /*
@@ -43,16 +52,16 @@ class Http
     public function __call($method, $params)
     {
         switch ($m = strtolower($method)) {
-            case $this->config['filter_method_alias']   ?? 'filter':
+            case $this->config['filter_method_alias']:
                 $this->filters[] = $params;
                 return $this;
-            case $this->config['ns_method_alias']       ?? 'ns':
+            case $this->config['ns_method_alias']:
                 $this->ns[] = $params[0];
                 return $this;
-            case $this->config['then_method_alias']     ?? 'then':
+            case $this->config['then_method_alias']
                 $this->response_handler = $params[0];
                 return $this;
-            case $this->config['build_method_alias']    ?? 'build':
+            case $this->config['build_method_alias']:
                 $this->build_handler = $params[0];
                 return $this;
             default:

@@ -1,6 +1,8 @@
 <?php
 namespace framework\core;
 
+use framework\util\Arr;
+
 class Container
 {
 	// Provider类型常量
@@ -208,7 +210,7 @@ class Container
         if ($index) {
             return self::makeDriverInstance($type, Config::get("$type.$index"));
         }
-        list($index, $config) = Config::headKv($type);
+        list($index, $config) = Arr::headKv(Config::get($type));
         $key = "$type.$index";
 		return self::$instances[$key] ?? self::$instances[$key] = self::makeDriverInstance($type, $config);
     }

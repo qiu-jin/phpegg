@@ -40,7 +40,7 @@ class Jsonrpc
      */
     public function __call($method, $params)
     {
-        if ($method === ($this->config['id_method_alias'] ?? 'id')) {
+        if ($method === $this->config['id_method_alias'])) {
             $this->id = $params[0];
             return $this;
         }

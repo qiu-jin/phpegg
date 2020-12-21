@@ -8,8 +8,6 @@ class RestBatch
 {
 	// namespace
     protected $ns;
-	// 配置项
-    protected $config;
 	// client实例
     protected $client;
 	// 请求集合
@@ -22,6 +20,8 @@ class RestBatch
     protected $build_handler;
 	// 公共构建处理器
     protected $common_build_handler;
+	// 批请求select超时
+	protected $batch_select_timeout = 0.1;
     
     /*
      * 构造函数
@@ -29,10 +29,12 @@ class RestBatch
     public function __construct($client, $common_ns, $config, $common_build_handler)
     {
         $this->client = $client;
-        $this->config = $config;
         if (isset($common_ns)) {
             $this->ns[] = $this->common_ns[] = $common_ns;
         }
+		if (isset($config['batch_select_timeout'])) {
+			$this->batch_select_timeout = $config['batch_select_timeout'];
+		}
         $this->common_build_handler = $common_build_handler;
     }
 
@@ -87,11 +89,7 @@ class RestBatch
      */
     public function call(callable $handler = null)
     {
-        return Client::batch(
-            $this->queries,
-            $handler ?? [$this->client, 'response'],
-            $this->config['batch_select_timeout'] ?? 0.1
-        );
+        return Client::batch($this->queries, $handler ?? [$this->client, 'response'], $this->batch_select_timeout);
     }
     
     /*

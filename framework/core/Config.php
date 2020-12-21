@@ -79,35 +79,15 @@ class Config
     }
     
     /*
-     * 读取配置项值，不缓存（仅支持顶级配置项）
+     * 读取配置项值，不缓存值（仅支持顶级配置项）
      */
-    public static function read($name)
+    public static function read($name, $use_cache = true)
     {
 		if (strpos($name, '.') === false) {
-			return self::loadFile($name);
+			return $use_cache ? (self::$config[$name] ?? self::loadFile($name)) : self::loadFile($name);
 		}
     }
-    
-    /*
-     * 获取配置项首个键值对（仅支持顶级配置项）
-     */
-    public static function headKv($name)
-    {
-        if (self::check($name)) {
-            return Arr::headKv(self::$config[$name]);
-        }
-    }
-    
-    /*
-     * 获取配置项随机键值对（仅支持顶级配置项）
-     */
-    public static function randomKv($name)
-    {
-        if (self::check($name)) {
-            return Arr::randomKv(self::$config[$name]);
-        }
-    }
-    
+
     /*
      * 检查配置是否导入
      */

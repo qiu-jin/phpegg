@@ -30,7 +30,7 @@ class JsonrpcTcp
             $this->config['host'],
             $this->config['port'],
             $errno, $errstr,
-            $this->config['timeout'] ?? ini_get("default_socket_timeout")
+            $this->config['tcp_timeout'] ?? ini_get("default_socket_timeout")
         );
         if (!is_resource($this->socket)) {
             error("-32000: Internet error $errstr[$errno]");

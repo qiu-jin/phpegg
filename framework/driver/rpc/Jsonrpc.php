@@ -20,21 +20,21 @@ class Jsonrpc extends Rpc
         'http_headers'
         // HTTP请求curl设置（HTTP）
         'http_curlopts'
-		// TCP发送后是否退出
+        // 连接超时（TCP）
+        'tcp_timeout'
+		// TCP发送后是否退出（TCP）
 		'send_and_close'
-        // 连接超时
-        'timeout'
+		 */
         // id方法别名
-        'id_method_alias'   => 'id',
+        'id_method_alias'   		=> 'id',
         // 批请求call方法别名
-        'batch_call_method_alias' => 'call',
-        */
+        'batch_call_method_alias'	=> 'call',
         // 自动ID生成器
-        'id_generator'			=> 'uniqid',
+        'id_generator'				=> 'uniqid',
         // 请求内容序列化
-        'requset_serialize'     => 'jsonencode',
+        'requset_serialize'     	=> 'jsonencode',
         // 响应内容反序列化
-        'response_unserialize'  => 'jsondecode',
+        'response_unserialize'  	=> 'jsondecode',
     ];
     
     /*

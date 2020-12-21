@@ -7,8 +7,6 @@ class HttpBatch
 {
 	// namespace
     protected $ns;
-	// 配置项
-    protected $config;
 	// client实例
     protected $client;
 	// filter设置
@@ -21,6 +19,21 @@ class HttpBatch
     protected $build_handler;
 	// 公共构建处理器
     protected $common_build_handler;
+	// 配置项
+    protected $config = [
+        // ns方法别名
+        'ns_method_alias'       => 'ns',
+        // filter方法别名
+        'filter_method_alias'   => 'filter',
+        // build方法别名
+        'build_method_alias'    => 'build',
+        // then方法别名
+        'then_method_alias'		=> 'then',
+        // 批请求call方法别名
+        'batch_call_method_alias'	=> 'call',
+        // 批请求select超时
+        'batch_select_timeout'    	=> 0.1,
+    ];
     
     /*
      * 构造函数
@@ -28,7 +41,7 @@ class HttpBatch
     public function __construct($client, $common_ns, $config, $common_build_handler)
     {
         $this->client = $client;
-        $this->config = $config;
+       	$this->config = $config + $this->config;
         if (isset($common_ns)) {
             $this->ns[] = $this->common_ns[] = $common_ns;
         }
@@ -50,15 +63,15 @@ class HttpBatch
     public function __call($method, $params)
     {
         switch ($m = strtolower($method)) {
-            case $this->config['batch_call_method_alias'] ?? 'call':
+            case $this->config['batch_call_method_alias']:
                 return $this->call(...$params);
-            case $this->config['filter_method_alias'] ?? 'filter':
+            case $this->config['filter_method_alias']:
                 $this->filters[] = $params;
                 return $this;
-            case $this->config['ns_method_alias'] ?? 'ns':
+            case $this->config['ns_method_alias']:
                 $this->ns[] = $params[0];
                 return $this;
-            case $this->config['build_method_alias'] ?? 'build':
+            case $this->config['build_method_alias']:
                 $this->build_handler = $params[0];
                 return $this;
             default:
@@ -73,11 +86,7 @@ class HttpBatch
      */
     protected function call(callable $handler = null)
     {
-        return Client::batch(
-            $this->queries,
-            $handler ?? [$this->client, 'response'],
-            $this->config['batch_select_timeout'] ?? 0.1
-        );
+        return Client::batch($this->queries, $handler ?? [$this->client, 'response'], $this->config['batch_select_timeout']);
     }
     
     /*

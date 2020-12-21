@@ -72,10 +72,12 @@ class Jsonrpc extends App
     {
         if ($call !== null) {
             $this->custom_methods['methods'][$method] = $call;
-        } elseif (isset($this->custom_methods['methods'])) {
-			$this->custom_methods['methods'] = $method + $this->custom_methods['methods'];
         } else {
-            $this->custom_methods['methods'] = $method;
+			if (isset($this->custom_methods['methods'])) {
+				$this->custom_methods['methods'] = $method + $this->custom_methods['methods'];
+	        } else {
+	            $this->custom_methods['methods'] = $method;
+	        }
         }
         return $this;
     }
@@ -87,11 +89,13 @@ class Jsonrpc extends App
     {
         if ($class !== null) {
             $this->custom_methods['services'][$name] = $class;
-        } elseif (isset($this->custom_methods['services'])) {
-			$this->custom_methods['services'] = $name + $this->custom_methods['services'];
-		} else {
-			$this->custom_methods['services'] = $name;
-		}
+        } else {
+			if (isset($this->custom_methods['services'])) {
+				$this->custom_methods['services'] = $name + $this->custom_methods['services'];
+			} else {
+				$this->custom_methods['services'] = $name;
+			}
+        }
         return $this;
     }
 

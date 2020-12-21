@@ -41,12 +41,12 @@ class Http extends Rpc
         // build方法别名
         'build_method_alias'    => 'build',
         // then方法别名
-        'then_method_alias'     => 'then',
+        'then_method_alias'		=> 'then',
         // 批请求call方法别名
-        'batch_call_method_alias' => 'call',
+        'batch_call_method_alias'	=> 'call',
         // 批请求select超时
-        'batch_select_timeout'    => 0.1,
-        */
+        'batch_select_timeout'    	=> 0.1,
+		*/
     ];
 
     /*
@@ -54,7 +54,7 @@ class Http extends Rpc
      */
     public function __construct($config)
     {
-        $this->config = $config + $this->config;
+        $this->config = $config;
         $this->client = new client\Http($this->config);
     }
     

@@ -15,7 +15,7 @@ abstract class App
     // 是否命令行环境
     const IS_CLI = PHP_SAPI === 'cli';
     // 内置应用模式
-    const MODES = ['Standard', 'Rest', 'Micro', 'Inline'/*, 'View'*/, 'Jsonrpc', 'Grpc'/*, 'Graphql'*/, 'Cli'];
+    const MODES = ['Standard', 'Rest', 'Micro', 'Inline', 'Jsonrpc', 'Grpc', 'Cli'];
     // 应用实例
     private static $app;
     // boot标示，防止重复执行
