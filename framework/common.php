@@ -90,9 +90,9 @@ function storage($name = null)
 /*
  * 发送EMAIL或获取EMAIL实例
  */
-function email(...$params)
+function email($param, ...$params)
 {
-	return isset($params[1]) ? Container::driver('email')->send(...$params) : Container::driver('email', ...$params);
+	return $params ? Container::driver('email')->send($param, ...$params) : Container::driver('email', $param);
 }
 
 /*
@@ -101,14 +101,6 @@ function email(...$params)
 function event($name, callable $call, $priority = 0)
 {
     Event::on($name, $call, $priority);
-}
-
-/*
- * 发送队列任务
- */
-function job($name, $message, $driver = null)
-{
-    return Container::driver('queue', $driver)->producer($name)->push($message);
 }
 
 /*
@@ -138,17 +130,17 @@ function output($name, $type = null)
 /*
  * 获取或设置COOKIE
  */
-function cookie($name = null, ...$params)
+function cookie($name, ...$params)
 {
-    return $params ? Cookie::set($name, ...$params) : ($name === null ? Cookie::all() : Cookie::get($name)); 
+    return $params ? Cookie::set($name, ...$params) : Cookie::get($name); 
 }
 
 /*
  * 获取或设置SESSION
  */
-function session($name = null, $value = null)
+function session($name, $value = null)
 {
-	return $value !== null ? Session::set($name, $value) : ($name === null ? Session::all() : Session::get($name));
+	return isset($value) ? Session::set($name, $value) : Session::get($name);
 }
 
 /*
@@ -249,7 +241,7 @@ function getter($providers = null)
     return new class ($providers) {
         use Getter;
         public function __construct($providers) {
-            $this->{\app\env\GETTER_PROVIDERS_NAME} = $providers;
+            $this->{Config::get('container.getter_providers_name')} = $providers;
         }
     };
 }

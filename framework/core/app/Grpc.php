@@ -35,7 +35,7 @@ class Grpc extends App
         'action_dispatch_aliases_property' => 'aliases',
         // 闭包绑定的类（为true时绑定getter匿名类）
         'closure_bind_class' => true,
-        // Getter providers（上个配置为true时有效）
+        // Getter providers（绑定getter匿名类时有效）
         'closure_getter_providers' => null,
         // service前缀
         'service_prefix'        => null,

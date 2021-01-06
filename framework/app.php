@@ -100,13 +100,13 @@ abstract class App
             require FW_DIR.'core/Config.php';
             require FW_DIR.'core/Loader.php';
         }
-        set_error_handler(function (...$e) {
+        set_error_handler(function(...$e) {
             Error::errorHandler(...$e);
         });
-        set_exception_handler(function ($e) {
+        set_exception_handler(function($e) {
             Error::exceptionHandler($e);
         });
-        register_shutdown_function(function () {
+        register_shutdown_function(function() {
             try {
 	            if (!isset(self::$exit)) {
 	                Error::fatalHandler();

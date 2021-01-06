@@ -34,7 +34,7 @@ class Jsonrpc extends App
         'action_dispatch_aliases_property' => 'aliases',
         // 闭包绑定的类（为true时绑定getter匿名类）
         'closure_bind_class' => true,
-        // Getter providers（上个配置为true时有效）
+        // Getter providers（绑定getter匿名类时有效）
         'closure_getter_providers' => null,
         // 最大批调用数（1不启用批调用，0无限批调用数）
         'batch_call_limit'		=> 1,

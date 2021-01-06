@@ -17,7 +17,7 @@ class Container
     protected static $instances;
     // 容器提供者设置
     protected static $providers = [
-        'db'        => [self::T_DRIVER/*，驱动类名称空间（可选） */],
+        'db'        => [self::T_DRIVER/*，驱动类名称空间 */],
         'sms'       => [self::T_DRIVER],
         'rpc'       => [self::T_DRIVER],
         'data'      => [self::T_DRIVER],
@@ -30,9 +30,9 @@ class Container
         'logger'    => [self::T_DRIVER],
         'captcha'   => [self::T_DRIVER],
         'storage'   => [self::T_DRIVER],
-        'model'     => [self::T_MODEL, 1/* 模型层数, 模型类名称空间（可选） */],
-        'logic'     => [self::T_MODEL, 1],
-        'service'   => [self::T_MODEL, 1],
+        'model'     => [self::T_MODEL/* 模型层数（默认为1）, 模型类名称空间 */],
+        'logic'     => [self::T_MODEL],
+        'service'   => [self::T_MODEL],
 		/*
 		'class_provider' 	=> [self::T_CLASS, [类全名, ...类初始化参数（可选）]],
 		'closure_provider' 	=> [self::T_CLOSURE, 匿名函数（函数执行返回实例）],
@@ -49,12 +49,12 @@ class Container
             return;
         }
         self::$init = true;
-		if ($config = Config::read('container')) {
+		if ($config = Config::get('container')) {
 	        if (isset($config['providers'])) {
 				self::$providers = $config['providers'] + self::$providers;
 	        }
 			if (!empty($config['exit_event_clean'])) {
-				Event::on('exit', function () {
+				Event::on('exit', function() {
 					Container::clean();
 					if (class_exists(Facade::class, false)) {
 						Facade::clean();
@@ -80,29 +80,29 @@ class Container
     }
 	
     /*
-     * 添加规则
+     * 获取或设置规则
      */
-    public static function bind($name, ...$params)
+    public static function provider($name, array $value = null)
     {
-        self::$providers[$name] = $params;
+		if (isset($value)) {
+			self::$providers[$name] = $value;
+		} else {
+			return self::$providers[$name] ?? null;
+		}
     }
 	
     /*
-     * 获取规则
+     * 获取或设置实例
      */
-    public static function getProvider($name)
+    public static function instance($name, object $value = null)
     {
-		return self::$providers[$name] ?? null;
+		if (isset($value)) {
+			self::$instances[$name] = $value;
+		} else {
+			return self::$instances[$name] ?? null;
+		}
     }
-	
-    /*
-     * 设置实例
-     */
-    public static function setInstance($name, object $instance)
-    {
-        self::$instances[$name] = $instance;
-    }
-	
+
     /*
      * 清除实例
      */
@@ -158,7 +158,7 @@ class Container
 				}
 				break;
 			case self::T_MODEL:
-				if ($c == ($v[1] ?? 1) + 1) {
+				if ($c > 1) {
 					$params[0] = $v[2] ?? "app\\$params[0]";
 					return instance(implode('\\', $params));
 				}

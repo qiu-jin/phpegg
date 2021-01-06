@@ -19,7 +19,7 @@ class Inline extends App
         'enable_view'       => false,
         // 绑定类（为true时绑定getter匿名类）
         'bind_class'		=> true,
-        // Getter providers（getter匿名类时有效）
+        // Getter providers（绑定getter匿名类时有效）
         'getter_providers'  => null,
         // 是否将返回值1改成null
         'return_1_to_null'  => false,

@@ -15,7 +15,7 @@ class Cli extends App
         'controller_suffix' => null,
         // 闭包绑定的类（为true时绑定匿名类）
         'closure_bind_class' => true,
-        // Getter providers（上个配置为true时有效）
+        // Getter providers（绑定getter匿名类时有效）
         'closure_getter_providers' => null,
         // 默认调度的控制器，为空不限制
         'default_dispatch_controllers' => null,
