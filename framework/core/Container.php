@@ -39,6 +39,10 @@ class Container
 		'alias_provider' 	=> [self::T_ALIAS, 真实provider名],
 		*/
     ];
+	// 
+	protected static $getter_providers_name = 'providers';
+	// 允许数组形式访问的驱动集合
+	protected static $getter_drivers_array_access = [];
 	
     /*
      * 初始化
@@ -52,6 +56,12 @@ class Container
 		if ($config = Config::get('container')) {
 	        if (isset($config['providers'])) {
 				self::$providers = $config['providers'] + self::$providers;
+	        }
+	        if (isset($config['getter_providers_name'])) {
+				self::$getter_providers_name = $config['getter_providers_name'];
+	        }
+	        if (isset($config['getter_drivers_array_access'])) {
+				self::$getter_drivers_array_access = $config['getter_drivers_array_access'];
 	        }
 			if (!empty($config['exit_event_clean'])) {
 				Event::on('exit', function() {
@@ -142,6 +152,22 @@ class Container
             return $provider();
         }
 		throw new \Exception("无效的自定义Provider类型");
+    }
+	
+    /*
+     * 
+     */
+    public static function getGetterDriversName()
+    {
+		return self::$getter_providers_name;
+    }
+	
+    /*
+     * 
+     */
+    public static function checkGetterDriversArrayAccess($driver)
+    {
+		return in_array($driver, self::$getter_drivers_array_access, true);
     }
 	
     /*

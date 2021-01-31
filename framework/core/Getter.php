@@ -8,7 +8,7 @@ trait Getter
      */
     public function __get($name)
     {
-        $n = Config::get('container.getter_providers_name');
+        $n = Container::getGetterDriversName();
         if (isset($this->$n) && isset($this->$n[$name])) {
 			return $this->$name = Container::makeCustomProvider($this->$n[$name]);
         } elseif ($v = Container::provider($name)) {
@@ -34,7 +34,7 @@ trait Getter
 						throw new \Exception("模型属性命名不允许以下划线开头: $this->_ns");
 		            }
 				};
-            } elseif ($v[0] === Container::T_DRIVER && in_array($name, Config::get('container.getter_drivers_array_access'))) {
+            } elseif ($v[0] === Container::T_DRIVER && Container::checkGetterDriversArrayAccess($name)) {
 				// 驱动名称空间链实例
 				return $this->$name = new class($name) extends \ArrayObject {
    		            private $type;
