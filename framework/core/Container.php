@@ -30,7 +30,7 @@ class Container
         'logger'    => [self::T_DRIVER],
         'captcha'   => [self::T_DRIVER],
         'storage'   => [self::T_DRIVER],
-        'model'     => [self::T_MODEL/* 模型层数（默认为1）, 模型类名称空间 */],
+        'model'     => [self::T_MODEL/*, 模型层数（默认为1）, 模型类名称空间 */],
         'logic'     => [self::T_MODEL],
         'service'   => [self::T_MODEL],
 		/*
@@ -39,9 +39,9 @@ class Container
 		'alias_provider' 	=> [self::T_ALIAS, 真实provider名],
 		*/
     ];
-	// 
+	// getter providers属性名
 	protected static $getter_providers_name = 'providers';
-	// 允许数组形式访问的驱动集合
+	// 允许getter数组形式访问的驱动集合
 	protected static $getter_drivers_array_access = [];
 	
     /*
@@ -155,7 +155,7 @@ class Container
     }
 	
     /*
-     * 
+     * 获取getter providers属性名
      */
     public static function getGetterDriversName()
     {
@@ -163,11 +163,11 @@ class Container
     }
 	
     /*
-     * 
+     * 检查是否为允许getter数组形式访问的驱动
      */
-    public static function checkGetterDriversArrayAccess($driver)
+    public static function checkGetterDriversArrayAccess($name)
     {
-		return in_array($driver, self::$getter_drivers_array_access, true);
+		return in_array($name, self::$getter_drivers_array_access, true);
     }
 	
     /*

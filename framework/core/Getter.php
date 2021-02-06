@@ -36,16 +36,25 @@ trait Getter
 				};
             } elseif ($v[0] === Container::T_DRIVER && Container::checkGetterDriversArrayAccess($name)) {
 				// 驱动名称空间链实例
-				return $this->$name = new class($name) extends \ArrayObject {
+				return $this->$name = new class($name) implements \ArrayAccess {
    		            private $type;
+					private $instances;
    		            public function __construct($type) {
    		                $this->type = $type;
    		            }
-				    public function offsetGet($name) {
-						if (!$this->offsetExists($name)) {
-							$this->offsetSet($name, Container::driver($this->type, $name));
+				    public function offsetExists($key) {
+						return isset($this->instances[$key]);
+				    }
+				    public function offsetGet($key) {
+						return $this->instances[$key] ?? ($this->instances[$key] = Container::driver($this->type, $key));
+				    }
+				    public function offsetSet($key, $value) {
+						$this->instances[$key] = $value;
+				    }
+				    public function offsetUnset($key) {
+						if (isset($this->instances[$key])) {
+							unset($this->instances[$key]);
 						}
-						return parent::offsetGet($name);
 				    }
 				};
 			}
