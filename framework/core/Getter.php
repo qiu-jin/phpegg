@@ -46,13 +46,16 @@ trait Getter
 						return isset($this->instances[$key]);
 				    }
 				    public function offsetGet($key) {
-						return $this->instances[$key] ?? ($this->instances[$key] = Container::driver($this->type, $key));
+						if (array_key_exists($key, $this->instances)) {
+							return $this->instances[$key]; 
+						}
+						return $this->instances[$key] = Container::driver($this->type, $key);
 				    }
 				    public function offsetSet($key, $value) {
 						$this->instances[$key] = $value;
 				    }
 				    public function offsetUnset($key) {
-						if (isset($this->instances[$key])) {
+						if (array_key_exists($key, $this->instances)) {
 							unset($this->instances[$key]);
 						}
 				    }
