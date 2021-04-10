@@ -71,10 +71,10 @@ class Loader
      */
     private static function autoload($class)
     {
-        if (isset(self::$map_rules[$class])) {
-            self::import(self::$map_rules[$class]);
-        } elseif (isset(self::$alias_rules[$class])) {
+        if (isset(self::$alias_rules[$class])) {
             class_alias(self::$alias_rules[$class], $class);
+	   	} elseif (isset(self::$map_rules[$class])) {
+			self::import(self::$map_rules[$class]);	
         } else {
 	        $arr = explode('\\', $class, 2);
 	        if (isset($arr[1])) {

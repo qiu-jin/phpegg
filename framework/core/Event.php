@@ -33,7 +33,7 @@ class Event
     public static function on($name, callable $call, $priority = 0)
     {
 		$event = self::$events[$name] ?? self::$events[$name] = new \SplPriorityQueue();
-		$event->insert($call, [$priority, self::$counter--]);
+		return $event->insert($call, [$priority, self::$counter--]);
     }
 
     /*

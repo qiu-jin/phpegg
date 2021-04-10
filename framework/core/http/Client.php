@@ -289,7 +289,7 @@ class Client
      */
     public function response()
     {
-		if (!isset($this->response)) {
+		if (!$this->response) {
 			$this->setResponse($this->exec());
 		}
 		return $this->response;
@@ -316,7 +316,7 @@ class Client
      */
     public function saveAs($file)
     {
-        if (isset($this->response)) {
+        if ($this->response) {
             throw new \Exception("不能使用已完成的请求实例");
         }
         if ($fp = fopen($file, 'w+')) {
@@ -341,7 +341,7 @@ class Client
      */
     public function getCurlInfo($name)
     {
-		if (!isset($this->response)) {
+		if (!$this->response) {
 			$this->setResponse($this->exec());
 		}
         return curl_getinfo($this->ch, $name);
@@ -518,6 +518,6 @@ class Client
      */
     public function __destruct()
     {
-        is_resource($this->ch) && curl_close($this->ch);
+        if (is_resource($this->ch)) curl_close($this->ch);
     }
 }
