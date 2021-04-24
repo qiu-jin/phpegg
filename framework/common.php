@@ -154,7 +154,7 @@ function validate($rule, $message = null)
 /*
  * HTTP请求实例
  */
-function request($url, $method = null)
+function request($method, $url)
 {
     return new Client($method, $url);
 }

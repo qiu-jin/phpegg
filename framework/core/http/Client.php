@@ -78,6 +78,16 @@ class Client
     {
         $this->request = (object) ['url' => $url, 'method' => $method];
     }
+	
+    /*
+     * 设置请求query
+     */
+    public function query($query)
+    {
+		$this->request->url .= strpos($this->request->url, '?') === false ? '?' : '&';
+		$this->request->url .= is_array($query) ? http_build_query($query) : $query;
+        return $this;
+    }
 
     /*
      * 设置请求body
@@ -207,7 +217,6 @@ class Client
 		}
         return $this;
     }
-	
 	
     /*
      * 设置单个cookie
@@ -414,14 +423,13 @@ class Client
                 $this->status	= $status;
                 $this->headers	= $headers;
             }
-			// 获取header
+			// 获取响应头
             public function header($name, $default = null) {
 				return $this->headers[$name] ?? $default;
             }
-			// 获取json解码数据
-            public function json($name = null, $default = null) {
-				$data = $this->data ?? $this->data = json_decode($this->body, true);
-				return $name === null ? $data : Arr::get($data, $name, $default);
+			// 解码响应内容
+            public function decode(callable $decoder = null) {
+				return $decoder ? $decoder($this->body) : json_decode($this->body, true);
             }
             public function __toString() {
                 return $this->body;

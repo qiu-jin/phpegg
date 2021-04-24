@@ -153,7 +153,7 @@ class Qiniu extends Storage
         if ($response->status === 404 && strtok($path, '/') === 'stat') {
             return false;
         }
-        $result = $response->json();
+        $result = $response->decode();
         return error($result['error'] ?? $client->error, 2);
     }
     

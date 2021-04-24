@@ -36,7 +36,7 @@ class Dropbox extends Storage
      */
     public function has($from)
     {
-        return $this->result($this->send('get_metadata', ['path' => $this->path($from)])->json(), true);
+        return $this->result($this->send('get_metadata', ['path' => $this->path($from)])->decode(), true);
     }
     
     /* 
@@ -45,7 +45,7 @@ class Dropbox extends Storage
     public function put($from, $to, $is_buffer = false)
     {
         $params = ['path' => $this->path($to), 'mode' => 'overwrite'];
-        return $this->result($this->send('upload', $params, $is_buffer ? $from : file_get_contents($from))->json());
+        return $this->result($this->send('upload', $params, $is_buffer ? $from : file_get_contents($from))->decode());
     }
 
     /* 
@@ -53,7 +53,7 @@ class Dropbox extends Storage
      */
     public function stat($from)
     {
-		$result = $this->result($this->send('get_metadata', ['path' => $this->path($from)])->json(), false);
+		$result = $this->result($this->send('get_metadata', ['path' => $this->path($from)])->decode(), false);
         return $result ? ['size'  => (int) $result['size'], 'mtime' => strtotime($result['server_modified'])] : false;
     }
     
@@ -63,7 +63,7 @@ class Dropbox extends Storage
     public function copy($from, $to)
     {
         $params = ['from_path' => $this->path($from), 'to_path' => $this->path($to)];
-        return $this->result($this->send('copy_v2', $params)->json());
+        return $this->result($this->send('copy_v2', $params)->decode());
     }
     
     /* 
@@ -72,7 +72,7 @@ class Dropbox extends Storage
     public function move($from, $to)
     {
         $params = ['from_path' => $this->path($from), 'to_path' => $this->path($to)];
-        return $this->result($this->send('move_v2', $params)->json());
+        return $this->result($this->send('move_v2', $params)->decode());
     }
     
     /* 
@@ -80,7 +80,7 @@ class Dropbox extends Storage
      */
     public function delete($from)
     {
-        return $this->result($this->send('delete_v2', ['path' => $this->path($from)])->json());
+        return $this->result($this->send('delete_v2', ['path' => $this->path($from)])->decode());
     }
     
     /* 

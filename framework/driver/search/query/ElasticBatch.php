@@ -111,7 +111,7 @@ class ElasticBatch
         $client = Client::post("$this->endpoint/$method")->body($body);
         $response = $client->response();
         if ($response->status >= 200 && $response->status < 300) {
-            return $response->json();
+            return $response->decode();
         }
         error($client->error);
     }

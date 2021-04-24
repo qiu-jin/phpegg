@@ -169,7 +169,7 @@ class Url
     /*
      * http请求
      */
-    public function request($method = null)
+    public function request($method)
     {
         return new Client($method, $this->make());
     }

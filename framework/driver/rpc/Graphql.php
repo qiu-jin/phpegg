@@ -62,7 +62,7 @@ class Graphql
 		if ($this->config['debug']) {
 			$this->log($gql.PHP_EOL.$response->body);
 		}
-		if ($result = $response->json()) {
+		if ($result = $response->decode()) {
 			if (isset($result['data'])) {
 				return $result['data'];
 			}
