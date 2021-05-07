@@ -45,14 +45,22 @@ class Logger
         if ($configs = Config::read('logger')) {
             foreach ($configs as $name => $config) {
                 if (isset($config['level'])) {
-                    foreach ((array) $config['level'] as $lv) {
-                        self::$level_handler_names[$lv][] = $name;
-                    }
+					if (is_array($config['level'])) {
+	                    foreach ($config['level'] as $lv) {
+	                        self::$level_handler_names[$lv][] = $name;
+	                    }
+					} else {
+						self::$level_handler_names[$config['level']][] = $name;
+					}
                 }
                 if (isset($config['group'])) {
-                    foreach ((array) $config['group'] as $gp) {
-                        self::$group_handler_names[$gp][] = $name;
-                    }
+					if (is_array($config['group'])) {
+	                    foreach ($config['group'] as $lv) {
+	                        self::$group_handler_names[$lv][] = $name;
+	                    }
+					} else {
+						self::$group_handler_names[$config['group']][] = $name;
+					}
                 }
             }
             self::$configs = $configs;

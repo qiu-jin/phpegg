@@ -45,9 +45,6 @@ abstract class Auth
             throw new Exception('Illegal auth class');
         }
         self::$auth = instance($config['class'], $config);
-        if (!empty($config['auto_auth'])) {
-            self::$auth->user = self::$auth->auth();
-        }
     }
     
     /*
@@ -56,14 +53,6 @@ abstract class Auth
     public static function __callStatic($method, $params)
     {
         return self::$auth->$method(...$params);
-    }
-    
-    /*
-     * 获取用户id
-     */
-    public static function id()
-    {
-        return self::user()['id'] ?? null;
     }
     
     /*
