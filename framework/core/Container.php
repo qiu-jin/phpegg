@@ -18,18 +18,20 @@ class Container
     // 容器提供者设置
     protected static $providers = [
         'db'        => [self::T_DRIVER/*，驱动类名称空间 */],
-        'sms'       => [self::T_DRIVER],
         'rpc'       => [self::T_DRIVER],
-        'data'      => [self::T_DRIVER],
         'cache'     => [self::T_DRIVER],
+        'email'     => [self::T_DRIVER],
+        'logger'    => [self::T_DRIVER],
+        'storage'   => [self::T_DRIVER],
+		/*
+		'sms'       => [self::T_DRIVER],
+		'data'      => [self::T_DRIVER],
         'crypt'     => [self::T_DRIVER],
         'queue'     => [self::T_DRIVER],
-        'email'     => [self::T_DRIVER],
         'geoip'     => [self::T_DRIVER],
         'search'    => [self::T_DRIVER],
-        'logger'    => [self::T_DRIVER],
-        'captcha'   => [self::T_DRIVER],
-        'storage'   => [self::T_DRIVER],
+		'captcha'   => [self::T_DRIVER],
+		*/
         'model'     => [self::T_MODEL/*, 模型层数（默认为1）, 模型类名称空间 */],
         'logic'     => [self::T_MODEL],
         'service'   => [self::T_MODEL],
