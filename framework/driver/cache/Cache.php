@@ -5,7 +5,7 @@ use framework\core\Event;
 
 abstract class Cache
 {
-    // 默认缓存过期时间
+    // 默认缓存过期时间，0表示永不过期，数组取区间随机值
     protected $ttl = 0;
     // 序列化反序列化处理器
     protected $serializer;
@@ -126,6 +126,14 @@ abstract class Cache
             }
         }
         return true;
+    }
+	
+    /*
+     * 获取缓存有效时间
+     */
+    protected function ttl($ttl)
+    {
+        return is_array($t = $ttl ?? $this->ttl) ? mt_rand($t[0], $t[1]) : $t;
     }
     
     /*

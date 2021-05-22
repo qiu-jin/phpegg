@@ -114,7 +114,7 @@ class Redis extends Cache
      */
     public function setMultiple(array $values, $ttl = null)
     {
-        if (($t = $ttl ?? $this->ttl) == 0) {
+        if (($t = $this->ttl($ttl)) == 0) {
             return $this->connection->mSet($values);
         } else {
 			return $this->connection->mSet($values, $t);

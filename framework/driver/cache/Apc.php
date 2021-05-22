@@ -43,7 +43,7 @@ class Apc extends Cache
      */
     public function set($key, $value, $ttl = null)
     {
-        return apcu_store($this->prefix.$key, $value, $ttl ?? $this->ttl);
+        return apcu_store($this->prefix.$key, $value, $this->ttl($ttl));
     }
 	
     /*

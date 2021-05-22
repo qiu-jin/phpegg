@@ -60,7 +60,7 @@ class Db extends Cache
         return (bool) $this->db->exec($this->format(
             'REPLACE INTO %s SET %s = ?, %s = ?, %s = ?', $this->table, ...$this->fields
         ), [
-            $key, $this->serialize($value), time() + (($t = $ttl ?? $this->ttl) == 0 ? $this->gc_maxlife : $t)
+            $key, $this->serialize($value), time() + (($t = $this->ttl($ttl)) == 0 ? $this->gc_maxlife : $t)
         ]);
     }
 
