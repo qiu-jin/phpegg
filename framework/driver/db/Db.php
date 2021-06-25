@@ -17,11 +17,7 @@ abstract class Db
     protected $connection;
     // 数据库表字段
     protected $fields;
-    // 数据库表字段缓存实例
-    protected $fields_cache;
-    // 数据库表字段缓存实例配置
-    protected $fields_cache_config;
-    
+
     /*
      * 执行SQL返回结果
      */
@@ -143,22 +139,7 @@ abstract class Db
      */
     public function fields($table)
     {
-        if (isset($this->fields[$this->dbname][$table])) {
-            return $this->fields[$this->dbname][$table];
-        } else {
-            if (isset($this->fields_cache_config)) {
-				$cache = $this->fields_cache ??
-					     $this->fields_cache = Container::driver('cache', $this->fields_cache_config);
-                if ($fields = $cache->get($key = "$this->dbname-$table")) {
-                    return $fields;
-                }
-            }
-            $fields = $this->getFields($table);
-            if (isset($cache)) {
-                $cache->set($key, $fields);
-            }
-            return $this->fields[$this->dbname][$table] = $fields;
-        }
+		return $this->fields[$this->dbname][$table] : $this->fields[$this->dbname][$table] = $this->getFields($table);
     }
     
     /*

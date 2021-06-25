@@ -59,7 +59,6 @@ class DateImmutable extends DateTimeImmutable
  */
 trait DateBase
 {
-	
     private static $init;
     // 配置
     private static $config = [];
@@ -325,7 +324,7 @@ trait DateBase
 		$ts    = $this->getTimestamp();
 		$start = $this->makeDateTime($start)->getTimestamp();
 		$end   = $this->makeDateTime($end)->getTimestamp();
-		return $eq ? $ts >= $start && $ts <= $end : $ts > $start && $ts < $end;
+		return $eq ? ($ts >= $start && $ts <= $end) : ($ts > $start && $ts < $end);
     }
 	
 	/*
