@@ -39,6 +39,7 @@ class Loader
         if ($dir = Config::env('VENDOR_DIR')) {
             self::import($dir.'autoload', false);
         }
+		// 内核autoload优先级最高
         spl_autoload_register([__CLASS__, 'autoload'], true, true);
     }
     
