@@ -1,7 +1,6 @@
 <?php
 namespace framework\core\http;
 
-use framework\util\Arr;
 use framework\core\Logger;
 
 class Client
@@ -259,7 +258,16 @@ class Client
      */
     public function timeout($timeout)
     {
-        $this->request->curlopts[CURLOPT_TIMEOUT] = (int) $timeout;
+        $this->request->curlopts[CURLOPT_TIMEOUT] = $timeout;
+        return $this;
+    }
+	
+    /*
+     * 设置请求连接超时时间
+     */
+    public function connectTimeout($timeout)
+    {
+		$this->request->curlopts[CURLOPT_CONNECTTIMEOUT] = $timeout;
         return $this;
     }
 	

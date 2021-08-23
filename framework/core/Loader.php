@@ -50,10 +50,13 @@ class Loader
     {
         switch ($type = strtolower($type)) {
             case 'prefix':
+				self::$prefix_rules = $rules + self::$prefix_rules;
+            	return;
             case 'map':
+				self::$map_rules = $rules + self::$map_rules;
+            	return;
             case 'alias':
-				$t = $type.'_rules';
-				self::$$t = $rules + self::$$t;
+				self::$alias_rules = $rules + self::$alias_rules;
                 return;
             case 'psr4':
                 self::addPsr4($rules);
@@ -75,7 +78,7 @@ class Loader
         if (isset(self::$alias_rules[$class])) {
             class_alias(self::$alias_rules[$class], $class);
 	   	} elseif (isset(self::$map_rules[$class])) {
-			self::import(self::$map_rules[$class]);	
+			self::import(self::$map_rules[$class]);
         } else {
 	        $arr = explode('\\', $class, 2);
 	        if (isset($arr[1])) {
