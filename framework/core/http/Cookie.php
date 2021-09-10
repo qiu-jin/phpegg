@@ -109,15 +109,16 @@ class Cookie
 				$secure ?? self::$options['secure'], 
 				$httponly ?? self::$options['httponly']
 			);
+		} else {
+	        return setcookie($name, $value, [
+				'expire'	=> $expire, 
+				'path' 		=> $path ?? self::$options['path'], 
+				'domain' 	=> $domain ?? self::$options['domain'], 
+				'secure' 	=> $secure ?? self::$options['secure'], 
+				'httponly' 	=> $httponly ?? self::$options['httponly'],
+				'samesite'	=> $samesite ?? self::$options['samesite'],
+	        ]);
 		}
-        return setcookie($name, $value, [
-			'expire'	=> $expire, 
-			'path' 		=> $path ?? self::$options['path'], 
-			'domain' 	=> $domain ?? self::$options['domain'], 
-			'secure' 	=> $secure ?? self::$options['secure'], 
-			'httponly' 	=> $httponly ?? self::$options['httponly'],
-			'samesite'	=> $samesite ?? self::$options['samesite'],
-        ]);
     }
 }
 Cookie::__init();

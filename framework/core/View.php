@@ -3,7 +3,6 @@ namespace framework\core;
 
 use framework\util\File;
 use framework\core\http\Response;
-use framework\core\misc\ViewError;
 use framework\exception\ViewException;
 
 class View
@@ -128,7 +127,7 @@ class View
         if (isset(self::$config['error'][$code])) {
             return self::render(self::$config['error'][$code], compact('code', 'message'));
         }
-        return $code == 404 ? ViewError::render404($message) : ViewError::renderError($message);
+        return $code == 404 ? self::render404($message) : self::renderError($message);
     }
     
     /*
@@ -211,6 +210,41 @@ class View
 			return OPCACHE_LOADED && opcache_compile_file($file);
         }
         throw new ViewException("写入视图文件: $file 失败");
+    }
+	
+    private static function render404($message)
+    {
+        $html = '<h1 style="text-align: center">🙁 404 Page Not Found 🙁</h1>';
+        if ($message) {
+            $html .= '<p style="text-align: center">'.$message.'</p>';
+        }
+        return $html;
+    }
+    
+    private static function renderError($message)
+    {
+        $loglevel = [
+            Logger::EMERGENCY  => ['icon'=>'❌', 'class' => 'error',   'title' => 'error'],
+            Logger::ALERT      => ['icon'=>'❌', 'class' => 'error',   'title' => 'error'],
+            Logger::CRITICAL   => ['icon'=>'❌', 'class' => 'error',   'title' => 'error'],
+            Logger::ERROR      => ['icon'=>'❌', 'class' => 'error',   'title' => 'error'],
+            Logger::WARNING    => ['icon'=>'⚠️', 'class' => 'warning', 'title' => 'warning'],
+            Logger::NOTICE     => ['icon'=>'⚠️', 'class' => 'warning', 'title' => 'warning'],
+            Logger::INFO       => ['icon'=>'❕', 'class' => 'info',    'title' => 'info'],
+            Logger::DEBUG      => ['icon'=>'❕', 'class' => 'info',    'title' => 'info']
+        ];
+        $html = '<h1 style="text-align: center">🙁 500 Internal Server Error 🙁</h1>';
+        if($message) {
+            $html .= '<style type="text/css">.table {background: #AAAAAA}tr{ background-color: #EEEEEE;}.error{ background-color: #FFCCCC;}.warning{ background-color: #FFFFCC;}.info{ background-color: #EEEEEE;}</style>';
+            $html .= '<table table cellpadding="5" cellspacing="1" width="100%" class="table">';
+            foreach ($message as $line){
+                $level = $loglevel[$line['level']];
+                $txt   = $line['message'].' in '.($line['context']['file'] ?? '').' on '.($line['context']['line'] ?? '');
+                $html .= '<tr class="'.$level['class'].'"><td title="'.$level['title'].'">'.$level['icon'].' '.$txt.'</td></tr>';
+            }
+            $html .= '</table>';
+        }
+        return $html;
     }
     
     /*

@@ -22,8 +22,8 @@ class Container
         'cache'     => [self::T_DRIVER],
         'email'     => [self::T_DRIVER],
         'logger'    => [self::T_DRIVER],
-        'storage'   => [self::T_DRIVER],
 		/*
+        'storage'   => [self::T_DRIVER],
 		'sms'       => [self::T_DRIVER],
 		'data'      => [self::T_DRIVER],
         'crypt'     => [self::T_DRIVER],
