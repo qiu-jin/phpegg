@@ -138,7 +138,7 @@ class Container
             $key = $name ? "$type.$name" : $type;
             return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($type, $name);
         }
-		throw new \Exception("容器驱动不存: $type");
+		throw new \Exception("容器驱动不存在: $type");
     }
 	
     /*
@@ -248,7 +248,13 @@ class Container
      */
     protected static function makeDriverInstance($type, $config)
     {
-		$class = $config['class'] ?? (self::$providers[$type][1] ?? "framework\driver\\$type").'\\'.ucfirst($config['driver']);
+		if (isset($config['class'])) {
+			$class = $config['class'];
+		} elseif (isset($config['driver'])) {
+			$class = (self::$providers[$type][1] ?? "framework\driver\\$type").'\\'.ucfirst($config['driver']);
+		} else {
+			throw new \Exception($type.'驱动没有设置实例');
+		}
 		return new $class($config);
     }
 }

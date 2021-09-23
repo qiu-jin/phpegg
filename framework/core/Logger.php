@@ -127,8 +127,12 @@ class Logger
      */
     private static function getHandler($name)
     {
-        return self::$handlers[$name] ?? 
-			   self::$handlers[$name] = Container::driver('logger', self::$configs[$name]);
+		if (isset(self::$handlers[$name])) {
+			return self::$handlers[$name];
+		} elseif (isset(self::$configs[$name])) {
+			return self::$handlers[$name] = Container::driver('logger', self::$configs[$name]);
+		}
+		throw new \Exception("日志处理器实例不存在: $name");
     }
 	
     /*
@@ -157,9 +161,13 @@ class Logger
      * 分组日志实例
      */
     private static function getGroupHandler($name)
-    {
-        return self::$group_handlers[$name] ?? 
-			   self::$group_handlers[$name] = self::makeGroupHandler(self::$group_handler_names[$name]);
+    {		
+		if (isset(self::$group_handlers[$name])) {
+			return self::$group_handlers[$name];
+		} elseif (isset(self::$group_handler_names[$name])) {
+			return self::$group_handlers[$name] = self::makeGroupHandler(self::$group_handler_names[$name]);
+		}
+		throw new \Exception("分组日志实例不存在: $name");
     }
     
     /*

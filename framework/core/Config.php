@@ -97,10 +97,14 @@ class Config
     /*
      * 读取配置项值，不缓存值（仅支持顶级配置项）
      */
-    public static function read($name)
+    public static function read($name, $use_cache = true)
     {
 		if (strpos($name, '.') === false) {
-			return self::$config[$name] ?? (self::$dir ? self::loadFile($name) : null);
+			if ($use_cache && isset(self::$config[$name])) {
+				return self::$config[$name];
+			} elseif (self::$dir) {
+				return self::loadFile($name);
+			}
 		}
     }
 

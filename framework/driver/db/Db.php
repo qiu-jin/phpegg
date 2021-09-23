@@ -139,7 +139,7 @@ abstract class Db
      */
     public function fields($table)
     {
-		return $this->fields[$this->dbname][$table] : $this->fields[$this->dbname][$table] = $this->getFields($table);
+		return $this->fields[$this->dbname][$table] ?? $this->fields[$this->dbname][$table] = $this->getFields($table);
     }
     
     /*
