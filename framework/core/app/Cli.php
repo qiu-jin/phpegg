@@ -164,7 +164,7 @@ class Cli extends App
     protected function respond($return = null)
     {
         self::exit(2);
-        exit((int) $return);
+        //exit((int) $return);
     }
     
     /*
