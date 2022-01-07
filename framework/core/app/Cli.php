@@ -155,7 +155,7 @@ class Cli extends App
     {
         $command = $this->instance ?? new Command;
         $command->error("[$code]");
-        $command->highlight(is_array($message) ? dump($message, true) : $message);
+        $command->highlight(is_array($message) ? var_dump($message, true) : $message);
     }
     
     /*

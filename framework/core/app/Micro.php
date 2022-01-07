@@ -6,7 +6,7 @@ use framework\core\Router;
 use framework\core\Dispatcher;
 use framework\core\http\Status;
 use framework\core\http\Request;
-use framework\core\http\response;
+use framework\core\http\Response;
 
 class Micro extends App
 {
@@ -32,6 +32,8 @@ class Micro extends App
     ];
     // 路由
     protected $routes = [];
+	// 
+	protected $query_rules = [];
 
     /*
      * 单个路由
@@ -56,6 +58,20 @@ class Micro extends App
     public function post($role, $call)
     {
         return $this->method('POST', $role, $call);
+    }
+	
+    /*
+     * query规则集合
+     */
+    public function query($path, $query, $param1, $param2 = null)
+    {
+		$path = trim($path, '/');
+		if (isset($param2)) {
+			$this->query_rules[$path][$param1] = $param2;
+		} else {
+			$this->query_rules[$path] = $param1;
+		}
+        return $this;
     }
 
     /*
@@ -98,48 +114,67 @@ class Micro extends App
      */
     protected function dispatch()
     {
-        $router = new Router(App::getPathArr(), Request::method());
-        if (!$result = $router->route($this->routes)) {
-            return;
-        }
-		$call = $result['dispatch'];
-        if ($call instanceof \Closure) {
-            if ($class = $this->config['closure_bind_class']) {
-				if ($class === true) {
-					$getter = getter($this->config['closure_getter_providers']);
-					$call = \Closure::bind($call, $getter, $getter);
-				} else {
-					$call = \Closure::bind($call, new $class, $class);
-				}
-            }
-			return $this->dispatch = ['call' => $call, 'params' => $result['matches']];
-        } elseif (is_string($call)) {
-			$dispatch = Dispatcher::dispatch(
-				$result['dispatch'],
-				$result['matches'],
-				$this->config['param_mode'],
-				$this->config['route_dispatch_dynamic']
-			);
-            $arr = explode('::', $dispatch[0]);
-			if ($this->config['controller_ns']) {
-				$arr[0] = $this->getControllerClass($arr[0]);
-			}
-			$call = new $arr[0];
-            if (isset($arr[1])) {
-				$call = [$call, $arr[1]];
-	            if (!$dispatch[2] || (is_callable($call) && $arr[1][0] !== '_')) {
-					return $this->getDispatchResult($call, $dispatch[1]);
+		if ($this->routes) {
+	        $router = new Router(App::getPathArr(), Request::method());
+	        if (!$result = $router->route($this->routes)) {
+	            return;
+	        }
+			$call = $result['dispatch'];
+	        if ($call instanceof \Closure) {
+	            if ($class = $this->config['closure_bind_class']) {
+					if ($class === true) {
+						$getter = getter($this->config['closure_getter_providers']);
+						$call = \Closure::bind($call, $getter, $getter);
+					} else {
+						$call = \Closure::bind($call, new $class, $class);
+					}
 	            }
-				return;
-            } elseif ($this->config['action_dispatch_routes_property'] && isset($result['next'])) {
-		        return $this->actionRouteDispatch($call, $result['next']);
-            }
-        } elseif (is_object($call)) {
-			if ($this->config['action_dispatch_routes_property'] && isset($result['next'])) {
-				return $this->actionRouteDispatch($call, $result['next']);
+				return $this->dispatch = ['call' => $call, 'params' => $result['matches']];
+	        } elseif (is_string($call)) {
+				$dispatch = Dispatcher::dispatch(
+					$result['dispatch'],
+					$result['matches'],
+					$this->config['param_mode'],
+					$this->config['route_dispatch_dynamic']
+				);
+	            $arr = explode('::', $dispatch[0]);
+				if ($this->config['controller_ns']) {
+					$arr[0] = $this->getControllerClass($arr[0]);
+				}
+				$call = new $arr[0];
+	            if (isset($arr[1])) {
+					$call = [$call, $arr[1]];
+		            if (!$dispatch[2] || (is_callable($call) && $arr[1][0] !== '_')) {
+						return $this->getDispatchResult($call, $dispatch[1]);
+		            }
+					return;
+	            } elseif ($this->config['action_dispatch_routes_property'] && isset($result['next'])) {
+			        return $this->actionRouteDispatch($call, $result['next']);
+	            }
+	        } elseif (is_object($call)) {
+				if ($this->config['action_dispatch_routes_property'] && isset($result['next'])) {
+					return $this->actionRouteDispatch($call, $result['next']);
+				}
+	        }
+			throw new \Exception("无效的路由dispatch规则或类型");
+		} elseif ($this->query_rules) {
+			$path = App::getPath();
+			if (isset($this->query_rules[$path])) {
+				foreach ($this->query_rules[$path] as $q => $rule) {
+					if ($query = Request::query($q)) {
+						if (is_array($rule)) {
+							foreach ($rule as $k => $v) {
+								if ($k == $query) {
+									return $v();
+								}
+							}
+						} else {
+							return call_user_func([is_object($v) ? $v : new $v(), $query]);
+						}
+					}
+				}
 			}
-        }
-		throw new \Exception("无效的路由dispatch规则或类型");
+		}
     }
     
     /*
