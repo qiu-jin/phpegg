@@ -165,11 +165,14 @@ class Micro extends App
 						if (is_array($rule)) {
 							foreach ($rule as $k => $v) {
 								if ($k == $query) {
-									return $v();
+									return $this->dispatch = ['call' => $v, 'params' => []];
 								}
 							}
 						} else {
-							return call_user_func([is_object($v) ? $v : new $v(), $query]);
+							$instance = is_object($v) ? $v : instance($v);
+							if (is_callable([$instance, $query]) && $query[0] !== '_') {
+								return $this->dispatch = ['call' => [$instance, $query], 'params' => []];
+							}
 						}
 					}
 				}
