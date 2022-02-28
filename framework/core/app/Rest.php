@@ -1,4 +1,6 @@
 <?php
+// 参考 https://cloud.google.com/apis/design
+
 namespace framework\core\app;
 
 use framework\App;
@@ -13,7 +15,7 @@ use framework\core\http\Response;
 class Rest extends App
 {
     protected $config = [
-        // 调度模式，支持default resource route组合
+        // 调度模式，支持default route组合
         'dispatch_mode'     => ['default'],
         // 控制器namespace
         'controller_ns'     => 'controller',
