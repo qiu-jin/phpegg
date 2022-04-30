@@ -8,8 +8,8 @@ use framework\core\http\Request;
 
 abstract class App
 {
-    // 版本号
-    const VERSION = '1.0.0';
+    // 框架版本号
+    const FW_VERSION = '1.0.0';
     // 内核版本号
     const CORE_VERSION = '1.0.0';
     // 是否命令行环境

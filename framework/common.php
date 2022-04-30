@@ -64,27 +64,11 @@ function db($name = null)
 }
 
 /*
- * 获取RPC实例
- */
-function rpc($name = null)
-{
-    return Container::driver('rpc', $name);
-}
-
-/*
  * 获取缓存实例
  */
 function cache($name = null)
 {
     return Container::driver('cache', $name);
-}
-
-/*
- * 获取存储实例
- */
-function storage($name = null)
-{
-    return Container::driver('storage', $name);
 }
 
 /*

@@ -2,9 +2,7 @@
 namespace framework\core\http;
 
 use framework\util\Str;
-use framework\util\Hash;
 use framework\util\File;
-use framework\util\Image;
 
 class Uploaded
 {
@@ -111,16 +109,6 @@ class Uploaded
     }
     
     /*
-     * 图片实例，如非图片文件则返回false
-     */
-    public function image($check = null)
-    {
-		if ($this->is_valid) {
-			return $this->image ?? $this->image = Image::open($this->path(), $check);
-		}
-    }
-    
-    /*
      * 保存文件
      */
     public function saveTo($dir)
@@ -202,7 +190,7 @@ class Uploaded
      */
     protected function randName($ext = null)
     {
-		$name = Hash::hmac(Hash::random(16, true), $this->path());
+		$name = hash_hmac('md5', $this->path(), random_bytes(16))
 		if (isset($ext)) {
 			if ($ext === false) {
 				return $name;
