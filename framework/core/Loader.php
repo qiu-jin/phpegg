@@ -15,7 +15,7 @@ class Loader
 	private static $alias_rules = [
 		'App' => App::class
 	];
-	// 前缀目录
+	// 前缀
 	private static $prefix_rules = [
 		'app' => APP_DIR,
 		'framework' => FW_DIR
@@ -37,9 +37,9 @@ class Loader
         }
         // 注册composer
         if ($dir = Config::env('VENDOR_DIR')) {
-            self::import($dir.'autoload', false);
+            __require($dir.'autoload.php');
         }
-		// 内核autoload优先级最高
+		// 内置autoload优先级最高
         spl_autoload_register([__CLASS__, 'autoload'], true, true);
     }
     
@@ -63,7 +63,7 @@ class Loader
 				return;
 			case 'file':
                 foreach ($rules as $v) {
-                    self::import($v, false);
+                    __require($v);
                 }
                 return;
         }
@@ -78,27 +78,16 @@ class Loader
         if (isset(self::$alias_rules[$class])) {
             class_alias(self::$alias_rules[$class], $class);
 	   	} elseif (isset(self::$map_rules[$class])) {
-			self::import(self::$map_rules[$class]);
+			__require(self::$map_rules[$class].'.php');
         } else {
 	        $arr = explode('\\', $class, 2);
 	        if (isset($arr[1])) {
 	            if (isset(self::$prefix_rules[$arr[0]])) {
-	               	self::import(self::$prefix_rules[$arr[0]].strtr($arr[1], '\\', '/'));
+	               	__require(self::$prefix_rules[$arr[0]].strtr($arr[1], '\\', '/').'.php');
 	            } elseif (isset(self::$psr4_rules[$arr[0]])) {
-	                self::loadPsr4($arr[0], $class);
+	                self::importPsr4($arr[0], $arr[1]);
 	            }
 	        }
-        }
-    }
-
-    /*
-     * 加载php文件，忽略.php后缀
-     */
-    private static function import($name, $check = true)
-    {
-        $file = "$name.php";
-        if (!$check || is_php_file($file)) {
-            __require($file);
         }
     }
     
@@ -108,27 +97,27 @@ class Loader
     private static function addPsr4($rules)
     {
         foreach ($rules as $k => $v) {
-            $k = trim($k, '\\');
-            self::$psr4_rules[strstr($k, '\\', true) ?: $k]["$k\\"] = $v;
+			$arr = explode('\\', $class, 2);
+            self::$psr4_rules[$arr[0]][$arr[1] ?? ''] = $v;
         }
     }
     
     /*
-     * 加载PSR-4规则
+     * 加载PSR-4规则文件
      */
-    private static function loadPsr4($prefix, $class)
+    private static function importPsr4($prefix, $path)
     {
         $i = 0;
-		$m = strlen($class);
+		$m = strrpos($path, '\\') ?: 0;
         foreach (self::$psr4_rules[$prefix] as $k => $v) {
             $l = strlen($k);
-            if ($m > $l && $l > $i && strncmp($k, $class, $l) === 0) {
+            if ($m >= $l && $l >= $i && strncmp($k, $path, $l) === 0) {
                 $i = $l;
                 $d = $v;
             }
         }
         if ($i > 0) {
-            self::import(Str::lastPad($d, '/').strtr(substr($class, $i), '\\', '/'));
+            __require(Str::lastPad($d, '/').strtr(substr($path, $i), '\\', '/').'.php');
         }
     }
 }

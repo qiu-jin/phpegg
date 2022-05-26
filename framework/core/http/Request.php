@@ -191,16 +191,6 @@ class Request
     {
         return file_get_contents('php://input');
     }
-    
-    /*
-     * 获取请求UserAgent实例
-     */
-	/*
-    public static function agent()
-    {
-        return new UserAgent($_SERVER['HTTP_USER_AGENT']);
-    }
-    */
 	
     /*
      * 是否为POST请求
