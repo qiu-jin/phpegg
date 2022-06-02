@@ -71,19 +71,19 @@ class Loader
     }
 
     /*
-     * spl_autoload_register 自动加载处理器
+	 * 自动加载
      */
     private static function autoload($class)
     {
         if (isset(self::$alias_rules[$class])) {
             class_alias(self::$alias_rules[$class], $class);
 	   	} elseif (isset(self::$map_rules[$class])) {
-			__require(self::$map_rules[$class].'.php');
+			__require(self::$map_rules[$class]);
         } else {
 	        $arr = explode('\\', $class, 2);
 	        if (isset($arr[1])) {
 	            if (isset(self::$prefix_rules[$arr[0]])) {
-	               	__require(self::$prefix_rules[$arr[0]].strtr($arr[1], '\\', '/').'.php');
+					self::import(self::$prefix_rules[$arr[0]].strtr($arr[1], '\\', '/'));
 	            } elseif (isset(self::$psr4_rules[$arr[0]])) {
 	                self::importPsr4($arr[0], $arr[1]);
 	            }
@@ -101,6 +101,16 @@ class Loader
             self::$psr4_rules[$arr[0]][$arr[1] ?? ''] = $v;
         }
     }
+	
+    /*
+     * 加载php文件
+     */
+    private static function import($path)
+    {
+		if (is_php_file($file = "$path.php")) {
+			__require($file);
+		}
+	}
     
     /*
      * 加载PSR-4规则文件
@@ -117,7 +127,7 @@ class Loader
             }
         }
         if ($i > 0) {
-            __require(Str::lastPad($d, '/').strtr(substr($path, $i), '\\', '/').'.php');
+            self::import(Str::lastPad($d, '/').strtr(substr($path, $i), '\\', '/'));
         }
     }
 }
