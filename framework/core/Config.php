@@ -36,6 +36,17 @@ class Config
     {
         return defined($const = "app\\env\\$name") ? constant($const) : $default;
     }
+	
+    
+    /*
+     * 读取配置项值，不缓存值（仅支持顶级配置项）
+     */
+    public static function read($name)
+    {
+		if (strpos($name, '.') === false) {
+			return self::$config[$name] ?? self::loadFile($name);
+		}
+    }
     
     /*
      * 获取配置项值
@@ -49,10 +60,7 @@ class Config
         }
         $value = self::$config[$fn];
 		if ($ns) {
-			if (is_array($value)) {
-				return Arr::get($value, $ns, $default);
-			}
-			return $default;
+			return is_array($value) ? Arr::get($value, $ns, $default) : $default;
 		}
         return $value;
     }
@@ -69,10 +77,7 @@ class Config
         }
         $value = self::$config[$fn];
 		if ($ns) {
-			if (is_array($value)) {
-				return Arr::has($value, $ns, $default);
-			}
-			return false;
+			return is_array($value) ? Arr::has($value, $ns, $default) : false;
 		}
 		return true;
     }
@@ -93,20 +98,6 @@ class Config
             self::$config[$fn] = $value;
         }
     }
-    
-    /*
-     * 读取配置项值，不缓存值（仅支持顶级配置项）
-     */
-    public static function read($name, $use_cache = true)
-    {
-		if (strpos($name, '.') === false) {
-			if ($use_cache && isset(self::$config[$name])) {
-				return self::$config[$name];
-			} elseif (self::$dir) {
-				return self::loadFile($name);
-			}
-		}
-    }
 
     /*
      * 检查配置是否导入
@@ -116,7 +107,7 @@ class Config
         if (isset(self::$config[$name])) {
             return true;
         }
-        if (self::$dir && !isset(self::$checked[$name])) {
+        if (!isset(self::$checked[$name])) {
 	        self::$checked[$name] = true;
 			$config = self::loadFile($name);
 			if (isset($config)) {
@@ -132,7 +123,7 @@ class Config
      */
     private static function loadFile($name)
     {
-        if (is_php_file($file = self::$dir."$name.php") && is_array($config = __require($file))) {
+        if (self::$dir && is_php_file($file = self::$dir."$name.php") && is_array($config = __require($file))) {
             return $config;
         }
     }

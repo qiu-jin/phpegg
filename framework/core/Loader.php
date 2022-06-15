@@ -11,10 +11,6 @@ class Loader
 	private static $map_rules = [];
 	// PSR-4
 	private static $psr4_rules = [];
-	// 别名
-	private static $alias_rules = [
-		'App' => App::class
-	];
 	// 前缀
 	private static $prefix_rules = [
 		'app' => APP_DIR,
@@ -49,15 +45,12 @@ class Loader
     public static function add($type, array $rules)
     {
         switch ($type = strtolower($type)) {
-            case 'prefix':
-				self::$prefix_rules = $rules + self::$prefix_rules;
-            	return;
             case 'map':
 				self::$map_rules = $rules + self::$map_rules;
             	return;
-            case 'alias':
-				self::$alias_rules = $rules + self::$alias_rules;
-                return;
+	        case 'prefix':
+				self::$prefix_rules = $rules + self::$prefix_rules;
+				return;	
             case 'psr4':
                 self::addPsr4($rules);
 				return;
@@ -75,9 +68,7 @@ class Loader
      */
     private static function autoload($class)
     {
-        if (isset(self::$alias_rules[$class])) {
-            class_alias(self::$alias_rules[$class], $class);
-	   	} elseif (isset(self::$map_rules[$class])) {
+		if (isset(self::$map_rules[$class])) {
 			__require(self::$map_rules[$class]);
         } else {
 	        $arr = explode('\\', $class, 2);

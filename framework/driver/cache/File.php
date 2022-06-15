@@ -59,7 +59,7 @@ class File extends Cache
     public function set($key, $value, $ttl = null)
     {
         $expiration = ($t = $this->ttl($ttl)) == 0 ? 0 : $t + time();
-        return (bool) file_put_contents($this->filename($key), $expiration.PHP_EOL.$this->serialize($value));
+        return (bool) file_put_contents($this->filename($key), $expiration.PHP_EOL.$this->serialize($value), LOCK_EX);
     }
 
     /*

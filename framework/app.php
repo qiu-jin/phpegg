@@ -10,8 +10,6 @@ abstract class App
 {
     // 框架版本号
     const FW_VERSION = '1.0.0';
-    // 内核版本号
-    const CORE_VERSION = '1.0.0';
     // 是否命令行环境
     const IS_CLI = PHP_SAPI === 'cli';
     // 内置应用模式
@@ -81,6 +79,7 @@ abstract class App
             return;
         }
         self::$boot = true;
+		class_alias(__CLASS__, 'App');
         define('FW_DIR', __DIR__.'/');
         if (!defined('APP_DIR')) {
             if (self::IS_CLI) {
@@ -89,14 +88,9 @@ abstract class App
                 define('APP_DIR', dirname($_SERVER['DOCUMENT_ROOT']).'/');
             }
         }
-		// 检测是否安装eggcore扩展
-        if (extension_loaded('eggcore')) {
-            eggcore_boot(self::VERSION, self::CORE_VERSION);
-        } else {
-            require FW_DIR.'common.php';
-            require FW_DIR.'core/Config.php';
-            require FW_DIR.'core/Loader.php';
-        }
+        require FW_DIR.'common.php';
+        require FW_DIR.'core/Config.php';
+        require FW_DIR.'core/Loader.php';
         set_error_handler(function(...$e) {
             Error::errorHandler(...$e);
         });

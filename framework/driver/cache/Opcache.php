@@ -65,7 +65,7 @@ class Opcache extends Cache
             ($t = $this->ttl($ttl)) == 0 ? 0 : $t + time(),
             var_export($value, true)
         );
-        return file_put_contents($file = $this->filename($key), $contents) && opcache_compile_file($file);
+        return file_put_contents($file = $this->filename($key), $contents, LOCK_EX) && opcache_compile_file($file);
     }
 
     /*
