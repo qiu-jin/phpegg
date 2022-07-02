@@ -103,12 +103,13 @@ abstract class App
 	                Error::fatalHandler();
 	            }
                 Event::trigger('exit');
-				self::$app = null;
-				Event::trigger('flush');
-	            if (function_exists('fastcgi_finish_request')) {
-	                fastcgi_finish_request();
-	            }
-	            Event::trigger('close');
+				Event::trigger('__flush__');
+				if (Event::has('close')) {
+		            if (function_exists('fastcgi_finish_request')) {
+		                fastcgi_finish_request();
+		            }
+		            Event::trigger('close');
+				}
             } catch (\Throwable $e) {
                 Error::exceptionHandler($e);
             }

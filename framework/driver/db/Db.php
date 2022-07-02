@@ -46,12 +46,12 @@ abstract class Db
     /*
      * 获取数据条数
      */
-    abstract public function numRows($query);
+    abstract public function count($query);
     
     /*
      * 影响数据条数
      */
-    abstract public function affectedRows($query);
+    abstract public function affectedCount($query);
     
     /*
      * 最近插入数据ID

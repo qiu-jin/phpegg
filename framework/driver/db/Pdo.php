@@ -114,46 +114,6 @@ abstract class Pdo extends Db
     }
     
     /*
-     * 获取一条数据
-     */
-    public function fetch($query)
-    {
-        return $query->fetch(\PDO::FETCH_ASSOC);
-    }
-
-    /*
-     * 获取一条数据（无字段键）
-     */
-    public function fetchRow($query)
-    {
-        return $query->fetch(\PDO::FETCH_NUM);
-    }
-    
-    /*
-     * 获取所有数据
-     */
-    public function fetchAll($query)
-    {
-        return $query->fetchAll(\PDO::FETCH_ASSOC);
-    }
-    
-    /*
-     * 获取数据条数
-     */
-    public function numRows($query)
-    {
-        return $query->rowCount();
-    }
-    
-    /*
-     * 影响数据条数
-     */
-    public function affectedRows($query)
-    {
-        return $query->rowCount();
-    }
-    
-    /*
      * 最近插入数据id
      */
     public function insertId()
@@ -196,17 +156,17 @@ abstract class Pdo extends Db
     /*
      * 获取错误代码
      */
-    public function errno($query = null)
+    public function errno()
     {   
-		return ($query ? $query->errorInfo() : $this->connection->errorInfo())[1] ?? null;
+		return ($this->connection->errorInfo())[1] ?? null;
     }
 	
     /*
      * 获取错误信息
      */
-    public function error($query = null)
+    public function error()
     {   
-		return ($query ? $query->errorInfo() : $this->connection->errorInfo())[2] ?? null;
+		return ($this->connection->errorInfo())[2] ?? null;
     }
     
     /*

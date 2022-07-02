@@ -47,16 +47,9 @@ class Mysqli extends Db
 	 */
     public function insert($sql, $params = null, $return_id = false)
     {
-        if ($params) {
-            $query = $this->prepareExecute($sql, $params);
-            if ($return_id) {
-                return $query->insert_id; 
-            }
-        } else {
-            $this->realQuery($sql);
-            if ($return_id) {
-                return $this->connection->insert_id; 
-            }
+		$params ? $this->prepareExecute($sql, $params) : $this->realQuery($sql);
+        if ($return_id) {
+            return $this->connection->insert_id; 
         }
     }
     
@@ -65,12 +58,8 @@ class Mysqli extends Db
 	 */
     public function update($sql, $params = null)
     {
-        if ($params) {
-            return $this->prepareExecute($sql, $params)->affected_rows;
-        } else {
-            $this->realQuery($sql);
-            return $this->connection->affected_rows; 
-        }
+		$params ? $this->prepareExecute($sql, $params) : $this->realQuery($sql);
+		return $this->connection->affected_rows; 
     }
     
 	/*
@@ -148,46 +137,6 @@ class Mysqli extends Db
     }
     
     /*
-     * 获取一条数据
-     */
-    public function fetch($query)
-    {
-        return $query->fetch_assoc();
-    }
-    
-    /*
-     * 获取一条数据（无字段键）
-     */
-    public function fetchRow($query)
-    {
-        return $query->fetch_row();
-    }
-    
-    /*
-     * 获取所有数据
-     */
-    public function fetchAll($query)
-    {
-        return $query->fetch_all(MYSQLI_ASSOC);
-    }
-    
-    /*
-     * 获取查询到的数据条数
-     */
-    public function numRows($query)
-    {
-        return $query->num_rows;
-    }
-    
-    /*
-     * 获取更新的数据条数
-     */
-    public function affectedRows($query = null)
-    {
-        return $query ? $query->affected_rows : $this->connection->affected_rows;
-    }
-    
-    /*
      * 获取最近插入数据的ID
      */
     public function insertId()
@@ -230,17 +179,17 @@ class Mysqli extends Db
     /*
      * 获取错误代码
      */
-    public function errno($query = null)
+    public function errno()
     {   
-		return ($query ?? $this->connection)->errno;
+		return $this->connection->errno;
     }
     
     /*
      * 获取错误信息
      */
-    public function error($query = null)
+    public function error()
     {
-		return ($query ?? $this->connection)->error;
+		return $this->connection->error;
     }
     
     /*

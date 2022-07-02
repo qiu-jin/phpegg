@@ -22,15 +22,15 @@ class Response
         }
         self::$init = true;
 		self::$response = new \stdClass();
-        Event::on('flush', [__CLASS__, 'flush']);
+        Event::on('__flush__', [__CLASS__, 'flush']);
     }
     
     /*
      * 设置响应状态码
      */
-    public static function status($code = 200)
+    public static function code($code = 200)
     {
-		self::$response->status = $code;
+		self::$response->code = $code;
     }
     
     /*
@@ -59,7 +59,7 @@ class Response
     public static function cookie(
     	$name, $value, $lifetime = null, $path = null, $domain = null, $secure = null, $httponly = null, $samesite = null
     ) {
-        self::$response->cookies[] = func_get_args();
+        self::$response->cookies[$name] = func_get_args();
     }
     
     /*
@@ -110,10 +110,12 @@ class Response
     /*
      * 设置响应body内容
      */
-    public static function send($body, $type = null)
+    public static function send($body = null, $type = null)
     {
-        self::$response->body = $body;
-        if ($type) {
+        if (isset($body)) {
+            self::$response->body = $body;
+        }
+        if (isset($type)) {
             self::$response->headers['Content-Type'] = $type;
         }
         App::exit();
@@ -124,7 +126,7 @@ class Response
      */
     public static function redirect($url, $permanently = false)
     {
-        self::$response->status = $permanently ? 301 : 302;
+        self::$response->code = $permanently ? 301 : 302;
         self::$response->headers['Location'] = $url;
         self::$response->body = null;
         App::exit();
@@ -146,24 +148,12 @@ class Response
     }
     
     /*
-     * 应用匿名函数处理内部数据
-     */
-    public static function apply(callable $call)
-    {
-        return $call(self::$response);
-    }
-    
-    /*
      * 输出响应
      */
     public static function flush()
     {
-        if (headers_sent()) {
-            throw new \Exception('Response headers sent failure');
-        }
-        Event::trigger('response', self::$response);
-        if (isset(self::$response->status)) {
-            http_response_code(self::$response->status);
+        if (isset(self::$response->code)) {
+            http_response_code(self::$response->code);
         }
         if (isset(self::$response->headers)) {
             foreach (self::$response->headers as $k => $v) {

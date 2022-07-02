@@ -339,7 +339,7 @@ class Client
         if ($fp = fopen($file, 'w+')) {
             $this->request->curlopts[CURLOPT_FILE] = $fp;
             $this->setResponse($this->exec());
-            $return = $this->response->status == 200 && $this->response->body === true;
+            $return = $this->response->code == 200 && $this->response->body === true;
             if ($return) {
                 fclose($fp);
             } else {
@@ -414,21 +414,21 @@ class Client
      */
     protected function setResponse($body)
     {
-        $status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-        if (!($status >= 200 && $status < 300)) {
-            $this->setError($status);
+        $code = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
+        if (!($code >= 200 && $code < 300)) {
+            $this->setError($code);
         }
         if (!empty($this->request->return_header)) {
         	$headers = $this->getResponseHeadersFromResult($body);
         }
-        $this->response = new class ($status, $body, $headers ?? null) {
+        $this->response = new class ($code, $body, $headers ?? null) {
+			public $code;
 			public $body;
-			public $status;
 			public $headers;
 			private $data;
-            public function __construct($status, $body, $headers) {
+            public function __construct($code, $body, $headers) {
+				$this->code		= $code;
 				$this->body 	= $body;
-                $this->status	= $status;
                 $this->headers	= $headers;
             }
 			// 获取响应头
@@ -451,7 +451,7 @@ class Client
     protected function setError($code)
     {
         if ($code) {
-            $message = Status::CODE[$code] ?? 'Unknown Status';
+            $message = $code ?? 'Unknown Status';
         } else {
             $code  	 = curl_errno($this->ch);
             $message = curl_error($this->ch);

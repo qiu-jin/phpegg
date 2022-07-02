@@ -35,17 +35,7 @@ class Event
 		$event = self::$events[$name] ?? self::$events[$name] = new \SplPriorityQueue();
 		return $event->insert($call, [$priority, self::$counter--]);
     }
-
-    /*
-     * 触发事件
-     */
-    public static function trigger($name, ...$params)
-    {
-        if (isset(self::$events[$name])) {
-            while(self::$events[$name]->valid() && (self::$events[$name]->extract())(...$params) !== false);
-            unset(self::$events[$name]);
-        }
-    }
+	
     
     /*
      * 是否注册
@@ -72,13 +62,17 @@ class Event
             unset(self::$events[$name]);
         }
     }
-    
+
     /*
-     * 清理事件
+     * 触发事件
      */
-    public static function clean()
+    public static function trigger($name, ...$params)
     {
-		self::$events = null;
+        if (isset(self::$events[$name])) {
+            while(self::$events[$name]->valid() && (self::$events[$name]->extract())(...$params) !== false);
+            unset(self::$events[$name]);
+			return true;
+        }
     }
 }
 Event::__init();

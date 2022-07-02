@@ -1,6 +1,9 @@
 <?php
 namespace framework\driver\db\query;
 
+use framework\driver\db\result\Pdo;
+use framework\driver\db\result\Mysqli;
+
 class Query extends QueryChain
 {
     /*
@@ -56,71 +59,27 @@ class Query extends QueryChain
         }
         return $this->db->select(...$this->builder::select($this->table, $this->options));
     }
-    
+	
     /*
-     * 检查结果存在
+     * 请求query
      */
-    public function has($id = null, $pk = 'id')
+    public function query()
+    {
+		$query = $this->db->query(...$this->builder::select($this->table, $this->options));
+		return $query instanceof \PDOStatement ? new Pdo($query) : new Mysqli($query);
+    }
+	
+    /*
+     * 请求数量
+     */
+    public function count($val = null, $key = 'id')
     {
         if (isset($id)) {
-            $this->options['where'] = [[$pk, '=', $id]];
+            $this->options['where'] = [[$key, '=', $val]];
         }
-        $select = $this->builder::select($this->table, $this->options);
-        $query  = $this->db->query("SELECT EXISTS($select[0])", $select[1]);
-        return $this->db->fetchRow($query)[0] ?? 0;
+		return $this->query()->count();
     }
-    
-    /*
-     * 最大值
-     */
-    public function max($field)
-    {
-        return $this->aggregate('max', $field);
-    }
-    
-    /*
-     * 最小值
-     */
-    public function min($field)
-    {
-        return $this->aggregate('min', $field);
-    }
-    
-    /*
-     * 求和
-     */
-    public function sum($field)
-    {
-        return $this->aggregate('sum', $field);
-    }
-    
-    /*
-     * 求积
-     */
-    public function avg($field)
-    {
-        return $this->aggregate('avg', $field);
-    }
-    
-    /*
-     * 求数量
-     */
-    public function count($field = '*')
-    {
-        return $this->aggregate('count', $field);
-    }
-    
-    /*
-     * 聚合查询
-     */
-    public function aggregate($func, $field)
-    {
-        $alias = $func.'_'.$field;
-        $this->options['fields'] = [[$func, $field, $alias]];
-        $data = $this->db->select(...$this->builder::select($this->table, $this->options));
-        return $data[0][$alias] ?? false;
-    }
-    
+ 
     /*
      * 插入数据
      */

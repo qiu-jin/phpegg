@@ -77,7 +77,7 @@ class Standard extends App
      */
     protected function error($code = null, $message = null)
     {
-        Response::status(isset(Status::CODE[$code]) ? $code : 500);
+        Response::code($code ?? 500);
         if ($this->config['enable_view']) {
             Response::html(View::error($code, $message));
         } else {

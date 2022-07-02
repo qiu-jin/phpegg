@@ -116,16 +116,5 @@ class Session
 		    Cookie::delete(session_name(), ...array_values(session_get_cookie_params()));
 		}
     }
-    
-    /*
-     * 原生session函数魔术方法 Session::setCookieParams
-     */
-    public static function __callStatic($method, $params)
-    {
-        if (function_exists($func = 'session_'.Str::snakeCase($method))) {
-            return $func(...$params);
-        }
-        throw new \BadMethodCallException('Call to undefined method '.__CLASS__."::$method");
-    }
 }
 Session::__init();
