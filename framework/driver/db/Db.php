@@ -19,39 +19,19 @@ abstract class Db
     protected $fields;
 
     /*
-     * 执行SQL返回结果
+     * 读取语句返回全部数据
+     */
+    abstract public function all($sql);
+	
+    /*
+     * 更新语句返回影响数量
      */
     abstract public function exec($sql);
     
     /*
-     * 执行SQL返回query
+     * 读取语句返回结果对象
      */
     abstract public function query($sql);
-    
-    /*
-     * 获取一条数据
-     */
-    abstract public function fetch($query);
-    
-    /*
-     * 获取一条数据（无字段键）
-     */
-    abstract public function fetchRow($query);
-    
-    /*
-     * 获取所有数据
-     */
-    abstract public function fetchAll($query);
-    
-    /*
-     * 获取数据条数
-     */
-    abstract public function count($query);
-    
-    /*
-     * 影响数据条数
-     */
-    abstract public function affectedCount($query);
     
     /*
      * 最近插入数据ID
@@ -169,15 +149,17 @@ abstract class Db
     /*
      * 日志
      */
-    protected function log($sql, $params = null)
+    protected function sqlLog($sql, $params = null)
     {
-        if ($params) {
-            if (isset($params[0])) {
-                $sql = vsprintf(str_replace("?", "'%s'", $sql), $params);
-            } else {
-                $sql = Str::format($sql, $params, ':%s');
-            }
-        }
-		Logger::channel($this->debug)->debug($sql);
+		if ($this->debug) {
+	        if ($params) {
+	            if (isset($params[0])) {
+	                $sql = vsprintf(str_replace("?", "'%s'", $sql), $params);
+	            } else {
+	                $sql = Str::format($sql, $params, ':%s');
+	            }
+	        }
+			Logger::channel($this->debug)->debug($sql);
+		}
     }
 }

@@ -6,7 +6,7 @@ use framework\core\Container;
 
 class Cluster
 {
-	// 工作实例
+	// 现实例
     protected $work;
 	// 读实例
     protected $read;
@@ -16,10 +16,6 @@ class Cluster
     protected $config;
 	// 构造器
     protected $builder;
-	// 写入方法集合
-    protected static $write_methods = [
-        'insertid', 'affectedrows', 'begin', 'rollback', 'commit', 'transaction'
-    ];
     
     /*
      * 构造函数
@@ -46,52 +42,28 @@ class Cluster
         return new query\Query($this, $name);
     }
 	
-	/*
-	 * 查询
-	 */
-    public function select($sql, $params = null)
+    /*
+     * 读取语句返回全部数据
+     */
+    public function all($sql, $params = null)
     {
-		return $this->selectDatabase()->select($sql, $params);
-    }
-    
-	/*
-	 * 插入
-	 */
-    public function insert($sql, $params = null, $return_id = false)
-    {
-		return $this->selectDatabase(true)->insert($sql, $params, $return_id);
-    }
-    
-	/*
-	 * 更新
-	 */
-    public function update($sql, $params = null)
-    {
-		return $this->selectDatabase(true)->update($sql, $params);
-    }
-    
-	/*
-	 * 删除
-	 */
-    public function delete($sql, $params = null)
-    {
-		return $this->selectDatabase(true)->delete($sql, $params);
+		return $this->selectDatabase()->all($sql, $params);
     }
     
     /*
-     * 执行sql
+     * 更新语句返回影响数量
      */
     public function exec($sql, $params = null)
     {
-        return $this->selectDatabase($this->isWrite($sql))->exec($sql, $params);
+        return $this->selectDatabase(true)->exec($sql, $params);
     }
     
     /*
-     * 请求sql
+     * 读取语句返回结果对象
      */
     public function query($sql, $params = null)
     {
-        return $this->selectDatabase($this->isWrite($sql))->query($sql, $params);
+        return $this->selectDatabase()->query($sql, $params);
     }
 	
     /*
@@ -99,7 +71,8 @@ class Cluster
      */
     public function __call($method, $params)
     {
-        return $this->selectDatabase(in_array(strtolower($method), self::$write_methods))->$method(...$params);
+		$is_write_method = in_array(strtolower($method), ['insertid', 'begintransaction', 'rollback', 'commit', 'transaction']);
+        return $this->selectDatabase($is_write_method)->$method(...$params);
     }
     
     /*
@@ -124,7 +97,7 @@ class Cluster
     /*
      * 选择数据库实例
      */
-    protected function selectDatabase($is_write)
+    protected function selectDatabase($is_write = false)
     {
         return $this->makeStickyDatabase($is_write, !empty($this->config['sticky']));
     }
@@ -135,7 +108,7 @@ class Cluster
     protected function makeDatabase($is_write)
     {
 		$type = $is_write ? 'write' : 'read';
-        return $this->work = $this->$type ?? ($this->$type = makeDatabaseInstance($type));
+        return ($this->work = $this->$type) ?? ($this->$type = makeDatabaseInstance($type));
     }
 	
     /*
@@ -154,13 +127,5 @@ class Cluster
 		$config = Arr::random($this->config[$type]);
 		$config['driver'] = $this->config['dbtype'];
         return Container::driver('db', $config + $this->config);
-    }
-
-    /*
-     * sql读写类型
-     */
-    protected function isWrite($sql)
-    {
-        return strtoupper(substr(ltrim($sql), 0, 6)) !== 'SELECT';
     }
 }

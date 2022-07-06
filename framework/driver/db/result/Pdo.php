@@ -9,9 +9,17 @@ class Pdo
     /*
      * 构造函数
      */
-    public function __construct($query)
+    public function __construct(\PDOStatement $query)
     {
         $this->query = $query;
+    }
+	
+    /*
+     * 获取数据条数
+     */
+    public function count()
+    {
+        return $this->query->rowCount();
     }
 	
     /*
@@ -29,6 +37,14 @@ class Pdo
     {
         return $this->query->fetch(\PDO::FETCH_NUM);
     }
+	
+    /*
+     * 获取一条数据（object）
+     */
+    public function fetchObject($class_name = 'stdClass', array $ctor_args = null)
+    {
+        return $this->query->fetchObject($class_name, $ctor_args);
+    }
     
     /*
      * 获取所有数据
@@ -37,37 +53,4 @@ class Pdo
     {
         return $this->query->fetchAll(\PDO::FETCH_ASSOC);
     }
-    
-    /*
-     * 获取数据条数
-     */
-    public function count()
-    {
-        return $this->query->rowCount();
-    }
-    
-    /*
-     * 影响数据条数
-     */
-    public function affectedCount()
-    {
-        return $this->query->rowCount();
-    }
-
-    /*
-     * 获取错误代码
-     */
-    public function errno()
-    {   
-		return ($this->query->errorInfo())[1] ?? null;
-    }
-	
-    /*
-     * 获取错误信息
-     */
-    public function error()
-    {   
-		return ($this->query->errorInfo())[2] ?? null;
-    }
-
 }

@@ -53,10 +53,8 @@ class With extends QueryChain
     public function find($limit = 0)
     {
         if ($data = $this->query->find($limit)) {
-            if ($this->optimize
-                && ($count = count($data)) > 1
-                && !array_diff(array_keys($this->options), ['on', 'fields', 'where', 'order'])
-            ) {
+			$count = count($data);
+            if ($this->optimize && $count > 1 && !array_diff(array_keys($this->options), ['on', 'fields', 'where', 'order'])) {
                 $this->withOptimizeData($count, $data);
             } else {
                 $this->withData($count, $data);
@@ -74,7 +72,7 @@ class With extends QueryChain
         list($field1, $field2) = $this->getOnFields();
         for ($i = 0; $i < $count;  $i++) {
             $this->options['where'] = array_merge([[$field2, '=', $data[$i][$field1]]], $where);
-            $data[$i][$this->alias] = $this->db->select(...$this->builder::select($this->with, $this->options));
+            $data[$i][$this->alias] = $this->db->all(...$this->builder::select($this->with, $this->options));
         }
     }
     
@@ -89,7 +87,7 @@ class With extends QueryChain
         if (isset($this->options['fields']) && !in_array($field2, $this->options['fields'])) {
             $this->options['fields'][] = $field2;
         }
-        if ($with_data = $this->db->select(...$this->builder::select($this->with, $this->options))) {
+        if ($with_data = $this->db->all(...$this->builder::select($this->with, $this->options))) {
             foreach ($with_data as $wd) {
                 $sub_data[$wd[$field2]][] = $wd;
             }

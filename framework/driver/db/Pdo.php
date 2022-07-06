@@ -28,89 +28,28 @@ abstract class Pdo extends Db
         return $connection;
     }
     
-	/*
-	 * 查询
-	 */
-    public function select($sql, $params = null)
-    {
-        $query = $params ? $this->prepareExecute($sql, $params) : $this->realQuery($sql);
-        return $query->fetchAll(\PDO::FETCH_ASSOC);
-    }
-    
-	/*
-	 * 插入
-	 */
-    public function insert($sql, $params = null, $return_id = false)
-    {
-        $params ? $this->prepareExecute($sql, $params) : $this->realExec($sql);
-        if ($return_id) {
-            return $this->connection->lastInsertId();
-        }
-    }
-    
-	/*
-	 * 更新
-	 */
-    public function update($sql, $params = null)
-    {
-        if ($params) {
-            return $this->prepareExecute($sql, $params)->rowCount();
-        } else {
-            return $this->realExec($sql);
-        }
-    }
-    
-	/*
-	 * 删除
-	 */
-    public function delete($sql, $params = null)
-    {
-        return $this->update($sql, $params);
-    }
-    
     /*
-     * 执行sql
+     * 读取语句返回全部数据
+     */
+    public function all($sql, $params = null)
+    {
+        return ($params ? $this->prepareExecute($sql, $params) : $this->pdoQuery($sql))->fetchAll(\PDO::FETCH_ASSOC);
+    }
+	
+    /*
+     * 更新语句返回影响数量
      */
     public function exec($sql, $params = null)
     {
-        $cmd = trim(strtoupper(strtok($sql, ' ')), "\t(");
-        if ($params) {
-            $query = $this->prepareExecute($sql, $params);
-            switch ($cmd) {
-                case 'SELECT':
-                    return $query->fetchAll(\PDO::FETCH_ASSOC);
-                case 'INSERT':
-                    return $this->connection->lastInsertId();
-                case 'UPDATE':
-                case 'REPLACE':
-                case 'DELETE':
-                    return $query->rowCount();
-                default:
-                    return true;
-            }
-        } else {
-            switch ($cmd) {
-                case 'SELECT':
-                    return $this->realQuery($sql)->fetchAll(\PDO::FETCH_ASSOC);
-                case 'INSERT':
-                    $this->realExec($sql);
-                    return $this->connection->lastInsertId();
-                case 'UPDATE':
-                case 'REPLACE':
-                case 'DELETE':
-                    return $this->realExec($sql);
-                default:
-                    return (bool) $this->realQuery($sql);
-            }
-        }
+		return $params ? $this->prepareExecute($sql, $params)->rowCount() : $this->execute($sql);
     }
     
     /*
-     * 请求sql
+     * 读取语句返回结果对象
      */
     public function query($sql, $params = null)
     {
-        return $params ? $this->prepareExecute($sql, $params) : $this->realQuery($sql);
+        return new result\Pdo($params ? $this->prepareExecute($sql, $params) : $this->pdoQuery($sql));
     }
     
     /*
@@ -172,42 +111,36 @@ abstract class Pdo extends Db
     /*
      * 执行请求
      */
-    public function realQuery($sql)
+    protected function pdoQuery($sql)
     {
-        $this->debug && $this->log($sql);
+        $this->sqlLog($sql);
         if ($query = $this->connection->query($sql)) {
             return $query;
         }
         throw new \Exception($this->exceptionMessage());
     }
-    
-    /*
-     * 执行
-     */
-    public function realExec($sql)
-    {
-        $this->debug && $this->log($sql);
+	
+	protected function execute($sql)
+	{
+       $this->sqlLog($sql);
         if ($result = $this->connection->exec($sql)) {
             return $result;
         }
         throw new \Exception($this->exceptionMessage());
-    }
+	}
     
     /*
      * 预处理执行
      */
-    public function prepareExecute($sql, $params)
+    protected function prepareExecute($sql, $params)
     {
-        $this->debug && $this->log($sql, $params);
+        $this->sqlLog($sql, $params);
         if ($query = $this->connection->prepare($sql)) {
             if ($query->execute($params)) {
                 return $query;
-            } else {
-                $error = $query->errorInfo();
             }
-        } else {
-            $error = $this->connection->errorInfo();
         }
+		$error = $this->connection->errorInfo();
         if ($error[0] === 'HY093') {
             throw new \Exception('DB ERROR: Invalid parameter number');
         }

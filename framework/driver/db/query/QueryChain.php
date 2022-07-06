@@ -100,9 +100,9 @@ abstract class QueryChain
     /*
      * 查询分组
      */
-    public function group($field)
+    public function group(...$fields)
     {
-        $this->options['group'] = $field;
+        $this->options['group'] = $fields;
         return $this;
     }
     
@@ -111,9 +111,6 @@ abstract class QueryChain
      */
     public function having(...$having)
     {
-        if (!isset($this->options['group'])) {
-            throw new \Exception('SQL having ERROR: must follow group method');
-        }
         $count = count($having);
         if ($count === 3 || $count === 4) {
             $this->options['having'][] = $having;

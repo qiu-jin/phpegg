@@ -9,9 +9,17 @@ class Mysqli
     /*
      * 构造函数
      */
-    public function __construct($query)
+    public function __construct(\mysqli_result $query)
     {
         $this->query = $query;
+    }
+	
+    /*
+     * 获取查询到的数据条数
+     */
+    public function count()
+    {
+        return $this->query->num_rows;
     }
 	
     /*
@@ -29,6 +37,14 @@ class Mysqli
     {
         return $this->query->fetch_row();
     }
+	
+    /*
+     * 获取一条数据（object）
+     */
+    public function fetchObject($class_name = 'stdClass', array $ctor_args = null)
+    {
+        return $this->query->fetch_object($class_name, $ctor_args);
+    }
     
     /*
      * 获取所有数据
@@ -37,29 +53,12 @@ class Mysqli
     {
         return $this->query->fetch_all(MYSQLI_ASSOC);
     }
-    
+	
     /*
-     * 获取查询到的数据条数
+     * 析构函数
      */
-    public function count()
+    public function __destruct()
     {
-        return $this->query->num_rows;
+        $this->query->free();
     }
-
-    /*
-     * 获取错误代码
-     */
-    public function errno()
-    {   
-		return $this->query->errno;
-    }
-    
-    /*
-     * 获取错误信息
-     */
-    public function error()
-    {
-		return $this->query->error;
-    }
-
 }

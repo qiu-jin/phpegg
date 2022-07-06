@@ -138,6 +138,14 @@ class Builder
 	 */
     public static function groupClause($field, $table = null)
     {
+		if (is_array($field)) {
+			foreach ($field as $v) {
+                foreach ($this->db->fields($table) as $field) {
+					$group[] = $table ? self::keywordEscapePair($table, $field) : self::keywordEscape($field);
+                }
+			}
+			 return 'GROUP BY '.implode(',', $group);
+		}
         return ' GROUP BY '.($table ? self::keywordEscapePair($table, $field) : self::keywordEscape($field));
     }
     

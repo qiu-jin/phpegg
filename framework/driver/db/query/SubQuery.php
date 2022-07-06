@@ -64,7 +64,7 @@ class SubQuery extends QueryChain
             $this->master['limit'] = $limit;
         }
         $this->table_options[$this->cur] = $this->options;
-        return $this->db->select(...$this->buildSelect());
+        return $this->db->all(...$this->buildSelect());
     }
     
     /*
@@ -77,7 +77,7 @@ class SubQuery extends QueryChain
         if (isset($this->master['limit'])) {
             $sql .= $this->builder::limitClause($this->master['limit']);
         }
-        return $this->db->update($sql, $params);
+        return $this->db->exec($sql, $params);
     }
     
     /*
@@ -89,7 +89,7 @@ class SubQuery extends QueryChain
         if (isset($this->master['limit'])) {
             $sql .= $this->builder::limitClause($this->master['limit']);
         }
-        return $this->db->delete($sql, $params);
+        return $this->db->exec($sql, $params);
     }
     
     /*
@@ -154,10 +154,10 @@ class SubQuery extends QueryChain
      */
     protected function checkExpLogic($exp, $logic)
     {
-        if (!in_array($exp, self::$sub_exp, true)) {
+        if (!in_array($exp, self::$sub_exp)) {
             throw new \Exception('SubQuery Exp ERROR: '.var_export($exp, true));
         }
-        if (!in_array($logic, self::$sub_logic, true)) {
+        if (!in_array($logic, self::$sub_logic)) {
             throw new \Exception('SubQuery Logic ERROR: '.var_export($logic, true));
         }
     }

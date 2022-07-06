@@ -1,9 +1,6 @@
 <?php
 namespace framework\driver\db\query;
 
-use framework\driver\db\result\Pdo;
-use framework\driver\db\result\Mysqli;
-
 class Query extends QueryChain
 {
     /*
@@ -57,27 +54,15 @@ class Query extends QueryChain
         if ($limit > 0) {
             $this->options['limit'] = $limit;
         }
-        return $this->db->select(...$this->builder::select($this->table, $this->options));
+        return $this->db->all(...$this->builder::select($this->table, $this->options));
     }
 	
     /*
-     * 请求query
+     * 查询返回结果对象
      */
     public function query()
     {
-		$query = $this->db->query(...$this->builder::select($this->table, $this->options));
-		return $query instanceof \PDOStatement ? new Pdo($query) : new Mysqli($query);
-    }
-	
-    /*
-     * 请求数量
-     */
-    public function count($val = null, $key = 'id')
-    {
-        if (isset($id)) {
-            $this->options['where'] = [[$key, '=', $val]];
-        }
-		return $this->query()->count();
+		return $this->db->query(...$this->builder::select($this->table, $this->options));
     }
  
     /*
@@ -85,8 +70,8 @@ class Query extends QueryChain
      */
     public function insert(array $data, $return_id = false)
     {
-        list($sql, $params) = $this->builder::insert($this->table, $data);
-        return $this->db->insert($sql, $params, $return_id);
+        $result = $this->db->exec(...$this->builder::insert($this->table, $data));
+		return $return_id ? $this->db->insertId() : $result;
     }
     
     /*
@@ -100,7 +85,7 @@ class Query extends QueryChain
             $sql .= ", ($values)";
             $params = array_merge($params, array_values($data));
         }
-        return $this->db->affectedRows($this->db->prepareExecute($sql, $params));
+        return $this->db->exec($sql, $params);
     }
     
     /*
@@ -110,7 +95,7 @@ class Query extends QueryChain
     {
         $set = $this->builder::setData($data);
         $sql = 'REPLACE INTO '.$this->builder::keywordEscape($this->table)." SET $set[0]";
-        return $this->db->affectedRows($this->db->prepareExecute($sql, $set[1]));
+        return $this->db->exec($sql, $set[1]);
     }
     
     /*
@@ -121,7 +106,7 @@ class Query extends QueryChain
         if (isset($id)) {
             $this->options['where'] = [[$pk, '=', $id]];
         }
-        return $this->db->update(...$this->builder::update($this->table, $data, $this->options));
+        return $this->db->exec(...$this->builder::update($this->table, $data, $this->options));
     }
     
     /*
@@ -153,7 +138,7 @@ class Query extends QueryChain
         if (isset($this->options['limit'])) {
             $sql .= $this->limitClause($this->options['limit']);
         }
-        return $this->db->update('UPDATE '.$this->builder::keywordEscape($this->table).$sql, $params);
+        return $this->db->exec('UPDATE '.$this->builder::keywordEscape($this->table).$sql, $params);
     }
     
     /*
@@ -164,6 +149,6 @@ class Query extends QueryChain
         if (isset($id)) {
             $this->options['where'] = [[$pk, '=', $id]];
         }
-        return $this->db->delete(...$this->builder::delete($this->table, $this->options));
+        return $this->db->exec(...$this->builder::delete($this->table, $this->options));
     }
 }

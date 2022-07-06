@@ -32,110 +32,35 @@ class Mysqli extends Db
         }
         return $connection;
     }
-    
-	/*
-	 * 查询
-	 */
-    public function select($sql, $params = null)
+	
+    /*
+     * 读取语句返回全部数据
+     */
+    public function all($sql, $params = null)
     {
-        $query = $params ? $this->prepareExecute($sql, $params)->get_result() : $this->realQuery($sql);
-        return $query->fetch_all(MYSQLI_ASSOC);
-    }
-    
-	/*
-	 * 插入
-	 */
-    public function insert($sql, $params = null, $return_id = false)
-    {
-		$params ? $this->prepareExecute($sql, $params) : $this->realQuery($sql);
-        if ($return_id) {
-            return $this->connection->insert_id; 
-        }
-    }
-    
-	/*
-	 * 更新
-	 */
-    public function update($sql, $params = null)
-    {
-		$params ? $this->prepareExecute($sql, $params) : $this->realQuery($sql);
-		return $this->connection->affected_rows; 
-    }
-    
-	/*
-	 * 删除
-	 */
-    public function delete($sql, $params = null)
-    {
-        return $this->update($sql, $params);
+        $query = $params ? $this->prepareExecute($sql, $params, true) : $this->execute($sql);
+        $return = $query->fetch_all(MYSQLI_ASSOC);
+		$query->free();
+		return $return;
     }
     
     /*
-     * 执行sql
+     * 更新语句返回影响数量
      */
-    public function exec($sql, array $params = null, $is_assoc = false)
+    public function exec($sql, $params = null)
     {
-        $cmd = trim(strtoupper(strtok($sql, ' ')),"\t(");
-        if ($params) {
-            $query = $this->prepareExecute($sql, $params, $is_assoc);
-            switch ($cmd) {
-                case 'SELECT':
-                    return $query->get_result()->fetch_all(MYSQLI_ASSOC);
-                case 'INSERT':
-                    return $query->insert_id;
-                case 'UPDATE':
-                case 'REPLACE':
-                case 'DELETE':
-                    return $query->affected_rows;
-                default:
-                    return true;
-            }
-        } else {
-            $query = $this->realQuery($sql);
-            switch ($cmd) {
-                case 'SELECT':
-                    return $query->fetch_all(MYSQLI_ASSOC);
-                case 'INSERT':
-                    return $this->connection->insert_id;
-                case 'UPDATE':
-                case 'REPLACE':
-                case 'DELETE':
-                    return $this->connection->affected_rows;
-                default:
-                    return (bool) $query;
-            }
-        }
+		$params ? $this->prepareExecute($sql, $params) : $this->execute($sql);
+		return $this->connection->affected_rows;
     }
     
     /*
-     * 请求sql
+     * 读取语句返回结果对象
      */
-    public function query($sql, array $params = null, $is_assoc = false)
+    public function query($sql, $params = null)
     {
-        if ($params) {
-            return $this->prepareExecute($sql, $params, $is_assoc)->get_result();
-        } else {
-            return $this->realQuery($sql);
-        }
+		return new result\Mysqli($params ? $this->prepareExecute($sql, $params, true) : $this->execute($sql, MYSQLI_USE_RESULT));
     }
-    
-    /*
-     * 切换数据库
-     */
-    public function switch($dbname, callable $call)
-    {
-        $raw_dbname = $this->dbname;
-        try {
-            if ($this->connection->select_db($dbname)) {
-                $this->dbname = $dbname;
-                return $call($this);
-            }
-        } finally {
-            $this->dbname = $raw_dbname;
-            $this->connection->select_db($raw_dbname);
-        }
-    }
-    
+
     /*
      * 获取最近插入数据的ID
      */
@@ -201,49 +126,55 @@ class Mysqli extends Db
     }
     
     /*
+     * 切换数据库
+     */
+    public function switch($dbname, callable $call)
+    {
+        $raw_dbname = $this->dbname;
+        try {
+            if ($this->connection->select_db($dbname)) {
+                $this->dbname = $dbname;
+                return $call($this);
+            }
+        } finally {
+            $this->dbname = $raw_dbname;
+            $this->connection->select_db($raw_dbname);
+        }
+    }
+	
+    /*
      * 执行请求
      */
-    public function realQuery($sql)
-    {
-        $this->debug && $this->log($sql);
-        if ($query = $this->connection->query($sql)) {
-            return $query;
+	protected function execute($sql, $mode = MYSQLI_STORE_RESULT)
+	{
+        $this->sqlLog($sql);
+        if ($result = $this->connection->query($sql, $mode)) {
+			return $result;
         }
         throw new \Exception($this->exceptionMessage());
-    }
+	}
     
     /*
      * 预处理执行
      */
-    public function prepareExecute($sql, $params, $is_assoc = false)
+    protected function prepareExecute($sql, $params, $return_result = false)
     {
-        $this->debug && $this->log($sql, $params, $is_assoc);
+        $this->sqlLog($sql, $params);
         $bind_params = [];
-        if ($is_assoc) {
-            if (preg_match_all('/\:(\w+)/', $sql, $matchs, PREG_OFFSET_CAPTURE)) {
-                $str = '';
-                $start = 0;
-                foreach ($matchs[0] as $i => $match) {
-                    $str .= substr($sql, $start, $match[1]-$start).'?';
-                    $bind_params[] = &$params[$matchs[1][$i][0]];
-                    $start = strlen($match[0]) + $match[1];
-                }
-                if ($start < strlen($sql)) {
-                    $str .= substr($sql, $start);
-                }
-                $sql = $str;
-            }
-        } else {
-            foreach ($params as $k => $v) {
-                $bind_params[] = &$params[$k];
-            }
+        foreach ($params as $k => $v) {
+            $bind_params[] = &$params[$k];
         }
         if ($query = $this->connection->prepare($sql)) {
             $type  = str_pad('', count($bind_params), 's');
             array_unshift($bind_params, $type);
             $query->bind_param(...$bind_params);
             if ($query->execute()) {
-                return $query;
+				if ($return_result) {
+					$result = $query->get_result();
+					$query->close();
+					return $result;
+				}
+                $query->close();
             }
         }
         throw new \Exception($this->exceptionMessage());

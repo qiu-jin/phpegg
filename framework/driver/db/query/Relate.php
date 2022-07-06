@@ -85,7 +85,7 @@ class Relate extends QueryChain
                     $field2_field1_related[$rd[$field2[1]]][] = $rd[$field1[1]];
                 }
                 unset($related_data);
-                $with_data = $this->db->select(...$this->builder::select($this->with, [
+                $with_data = $this->db->all(...$this->builder::select($this->with, [
                     'order' => $this->options['order'],
                     'fields'=> $this->options['fields'],
                     'where' => array_merge([[$field2[0], 'IN', array_keys($field2_field1_related)]], $this->options['where'])
