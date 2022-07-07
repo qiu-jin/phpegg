@@ -73,7 +73,7 @@ class SubQuery extends QueryChain
     public function update($data)
     {
         list($set, $params) = $this->builder::setData($data);
-        $sql = "UPDATE ".$this->builder::keywordEscape($this->table)." SET $set WHERE ".self::buildSubQuery($params);
+        $sql = "UPDATE ".$this->builder::quoteField($this->table)." SET $set WHERE ".self::buildSubQuery($params);
         if (isset($this->master['limit'])) {
             $sql .= $this->builder::limitClause($this->master['limit']);
         }
@@ -85,7 +85,7 @@ class SubQuery extends QueryChain
      */
     public function delete()
     {
-        $sql = "DELETE FROM ".$this->builder::keywordEscape($this->table).self::buildSubQuery($params);
+        $sql = "DELETE FROM ".$this->builder::quoteField($this->table).self::buildSubQuery($params);
         if (isset($this->master['limit'])) {
             $sql .= $this->builder::limitClause($this->master['limit']);
         }
@@ -130,16 +130,16 @@ class SubQuery extends QueryChain
             }
             if (isset($options['on'])) {
                 if (is_array($options['on'][0])) {
-                    $sql .= '('.$this->builder::keywordEscape(implode($this->builder::keywordEscape(','), $options['on'][0])).')';
+                    $sql .= '('.$this->builder::quoteField(implode($this->builder::quoteField(','), $options['on'][0])).')';
                 } else {
-                    $sql .= $this->builder::keywordEscape($options['on'][0]);
+                    $sql .= $this->builder::quoteField($options['on'][0]);
                 }
                 $sql .= " {$options['exp']} ";
                 if (isset($options['on'][1])) {
                     $options['fields'] = (array) $options['on'][1];
                 }
             } else {
-                $sql .= $this->builder::keywordEscape('id')." {$options['exp']} ";
+                $sql .= $this->builder::quoteField('id')." {$options['exp']} ";
                 $options['fields'] = [$this->table.'_id'];
             }
             $sub = $this->builder::select($table, $options);

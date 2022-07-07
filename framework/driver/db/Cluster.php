@@ -47,7 +47,7 @@ class Cluster
      */
     public function all($sql, $params = null)
     {
-		return $this->selectDatabase()->all($sql, $params);
+		return $this->selectDatabase(false)->all($sql, $params);
     }
     
     /*
@@ -63,16 +63,7 @@ class Cluster
      */
     public function query($sql, $params = null)
     {
-        return $this->selectDatabase()->query($sql, $params);
-    }
-	
-    /*
-     * 魔术方法，调用数据库实例方法
-     */
-    public function __call($method, $params)
-    {
-		$is_write_method = in_array(strtolower($method), ['insertid', 'begintransaction', 'rollback', 'commit', 'transaction']);
-        return $this->selectDatabase($is_write_method)->$method(...$params);
+        return $this->selectDatabase(false)->query($sql, $params);
     }
     
     /*
@@ -86,46 +77,60 @@ class Cluster
     /*
      * 获取数据库实例
      */
-    public function getDatabase($is_write = null, $sticky = false)
+    public function getDatabase($mode = null)
     {
-		if ($is_write === null && $sticky && $this->write) {
-			return $this->work = $this->write;
+		switch ($mode) {
+			case null:
+				return $this->work;
+			case true:
+				return $this->write ?? $this->read;
+			case 'read':
+			case 'write':
+				return $this->$mode ?? $this->makeDatabase($mode);
 		}
-		return $this->makeDatabase($is_write);
+		throw new \Exception("Invalid cluster database mode: $mode");
+    }
+	
+    /*
+     * 魔术方法，调用数据库实例方法
+     */
+    public function __call($method, $params)
+    {
+		$m = strtolower($method);
+		if (in_array($m, ['insertid', 'begintransaction', 'rollback', 'commit', 'transaction'])) {
+			$is_write = true;
+		} elseif ($m == 'fields') {
+			$is_write = false;
+		}
+		// 其他quote, errno, error, debug, getConnection
+        return $this->selectDatabase($is_write ?? null)->$method(...$params);
     }
 	
     /*
      * 选择数据库实例
      */
-    protected function selectDatabase($is_write = false)
+    protected function selectDatabase($is_write = null)
     {
-        return $this->makeStickyDatabase($is_write, !empty($this->config['sticky']));
-    }
-	
-    /*
-     * 加载数据库实例
-     */
-    protected function makeDatabase($is_write)
-    {
-		$type = $is_write ? 'write' : 'read';
-        return ($this->work = $this->$type) ?? ($this->$type = makeDatabaseInstance($type));
-    }
-	
-    /*
-     * 选择数据库实例
-     */
-    protected function makeStickyDatabase($is_write, $sticky)
-    {
-		return $sticky && $this->write ? ($this->work = $this->write) : $this->makeDatabase($is_write);
-    }
+		if (isset($is_write)) {
+			if ($is_write) {
+				$db = $this->write ?? $this->makeDatabase('write');
+			} elseif (!empty($this->config['sticky'] && $this->write)) {
+				$db = $this->write;
+			} else {
+				$db = $this->read ?? $this->makeDatabase('read');
+			}
+			return $this->work = $db;
+		}
+		return $this->work ?? $this->work = ($this->read ?? $this->write ?? $this->makeDatabase('read'));
+	}
 	
     /*
      * 生成数据库实例
      */
-    protected function makeDatabaseInstance($type)
+    protected function makeDatabase($mode)
     {
-		$config = Arr::random($this->config[$type]);
+		$config = Arr::random($this->config[$mode]);
 		$config['driver'] = $this->config['dbtype'];
-        return Container::driver('db', $config + $this->config);
+        return $this->$mode = Container::driver('db', $config + $this->config);
     }
 }

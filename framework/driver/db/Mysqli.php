@@ -126,9 +126,9 @@ class Mysqli extends Db
     }
     
     /*
-     * 切换数据库
+     * 切换使用数据库
      */
-    public function switch($dbname, callable $call)
+    public function useDatabase($dbname, callable $call)
     {
         $raw_dbname = $this->dbname;
         try {

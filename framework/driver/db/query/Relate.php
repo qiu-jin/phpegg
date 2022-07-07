@@ -77,8 +77,8 @@ class Relate extends QueryChain
         if ($in_data = array_unique(array_column($data, $field1[0]))) {
             $params = [];
             $sql = $this->builder::whereItem($params, $field1[1], 'IN', $in_data);
-            $sql = 'SELECT '.$this->builder::keywordEscape($field1[1]).', '
-                 . $this->builder::keywordEscape($field2[1]).' FROM '.$this->builder::keywordEscape($related)." WHERE $sql";
+            $sql = 'SELECT '.$this->builder::quoteField($field1[1]).', '
+                 . $this->builder::quoteField($field2[1]).' FROM '.$this->builder::quoteField($related)." WHERE $sql";
             $related_data = $this->db->select($sql, $params);
             if ($related_data) {
                 foreach ($related_data as $rd) {

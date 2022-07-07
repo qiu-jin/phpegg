@@ -3,10 +3,10 @@ namespace framework\driver\db\builder;
 
 class Pgsql extends Builder
 {
-	// 左关键词转义符
-    const KEYWORD_ESCAPE_LEFT = '"';
-	// 右关键词转义符
-    const KEYWORD_ESCAPE_RIGHT = '"';
+	// 左字段引用符
+    const FIELD_QUOTE_LEFT = '"';
+	// 右字段引用符
+    const FIELD_QUOTE_RIGHT = '"';
     
 	/*
 	 * limit语句

@@ -80,7 +80,7 @@ class Query extends QueryChain
     public function insertAll(array $datas)
     {
         list($fields, $values, $params) = $this->builder::insertData(array_shift($datas));
-        $sql = 'INSERT INTO '.$this->builder::keywordEscape($this->table)." ($fields) VALUES ($values)";
+        $sql = 'INSERT INTO '.$this->builder::quoteField($this->table)." ($fields) VALUES ($values)";
         foreach ($datas as $data) {
             $sql .= ", ($values)";
             $params = array_merge($params, array_values($data));
@@ -94,7 +94,7 @@ class Query extends QueryChain
     public function replace(array $data)
     {
         $set = $this->builder::setData($data);
-        $sql = 'REPLACE INTO '.$this->builder::keywordEscape($this->table)." SET $set[0]";
+        $sql = 'REPLACE INTO '.$this->builder::quoteField($this->table)." SET $set[0]";
         return $this->db->exec($sql, $set[1]);
     }
     
@@ -117,16 +117,16 @@ class Query extends QueryChain
         if (is_array($auto)) {
             foreach ($auto as $key => $val) {
                 if (is_int($key)) {
-                    $v = $this->builder::keywordEscape($val);
+                    $v = $this->builder::quoteField($val);
                     $set[] = "$v = $v+1";
                 } else {
-                    $v = $this->builder::keywordEscape($key);
+                    $v = $this->builder::quoteField($key);
                     $val = (int) $val;
                     $set[] = $val > 0 ? "$v = $v+$val" : "$v = $v$val";
                 }
             }
         } else {
-            $v = $this->builder::keywordEscape($auto);
+            $v = $this->builder::quoteField($auto);
             $set[] = "$v = $v+1";
         }
         $params = [];
@@ -138,7 +138,7 @@ class Query extends QueryChain
         if (isset($this->options['limit'])) {
             $sql .= $this->limitClause($this->options['limit']);
         }
-        return $this->db->exec('UPDATE '.$this->builder::keywordEscape($this->table).$sql, $params);
+        return $this->db->exec('UPDATE '.$this->builder::quoteField($this->table).$sql, $params);
     }
     
     /*
