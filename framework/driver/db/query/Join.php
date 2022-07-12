@@ -63,17 +63,15 @@ class Join extends QueryChain
         if (isset($id)) {
             $this->table_options[$this->table]['where'] = [[$pk, '=', $id]];
         }
-        return $this->find(1)[0] ?? null;
+		$this->table_options[$this->cur] = $this->options;
+        return $this->db->get(...$this->build());
     }
 
     /*
      * 查询（多条）
      */
-    public function find($limit = 0)
+    public function all()
     {
-        if ($limit) {
-            $this->table_options[$this->cur]['limit'] = $limit;
-        }
         $this->table_options[$this->cur] = $this->options;
         return $this->db->all(...$this->build());
     }

@@ -34,9 +34,20 @@ class Mysqli extends Db
     }
 	
     /*
+     * 读取语句返回一条数据
+     */
+    public function get($sql, $params = null)
+    {
+        $query = $params ? $this->prepareExecute($sql, $params, true) : $this->execute($sql);
+        $return = $query->fetch_assoc();
+		$query->free();
+		return $return;
+    }
+	
+    /*
      * 读取语句返回全部数据
      */
-    public function all($sql, $params = null)
+    public function find($sql, $params = null)
     {
         $query = $params ? $this->prepareExecute($sql, $params, true) : $this->execute($sql);
         $return = $query->fetch_all(MYSQLI_ASSOC);
@@ -165,7 +176,7 @@ class Mysqli extends Db
             $bind_params[] = &$params[$k];
         }
         if ($query = $this->connection->prepare($sql)) {
-            $type  = str_pad('', count($bind_params), 's');
+            $type = str_pad('', count($bind_params), 's');
             array_unshift($bind_params, $type);
             $query->bind_param(...$bind_params);
             if ($query->execute()) {

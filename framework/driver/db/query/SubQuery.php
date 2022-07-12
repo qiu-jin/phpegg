@@ -52,19 +52,17 @@ class SubQuery extends QueryChain
      */
     public function get()
     {
-        return $this->find(1)[0] ?? null;
+        $this->table_options[$this->cur] = $this->options;
+        return $this->db->get(...$this->buildSelect());
     }
     
     /*
      * 查询（多条）
      */
-    public function find($limit = 0)
+    public function find()
     {
-        if ($limit) {
-            $this->master['limit'] = $limit;
-        }
         $this->table_options[$this->cur] = $this->options;
-        return $this->db->all(...$this->buildSelect());
+        return $this->db->find(...$this->buildSelect());
     }
     
     /*

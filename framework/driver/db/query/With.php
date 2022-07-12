@@ -5,23 +5,23 @@ class With extends QueryChain
 {
 	// with表名
     protected $with;
-	// 别名（防止字段冲突）
-    protected $alias;
 	// query实例
     protected $query;
-	// 是否优化
-    protected $optimize;
+	// 是否多条
+    protected $has_many;
+	// 字段名
+    protected $field_name;
 	
     /*
      * 初始化
      */
-    protected function __init($table, $query, $with, $alias = null, $optimize = true)
+    protected function __init($table, $query, $with, $has_many = false, $alias = null)
     {
         $this->with = $with;
         $this->table = $table;
         $this->query = $query;
-        $this->alias = $alias ?? $with;
-        $this->optimize = $optimize;
+		$this->has_many = $has_many;
+		$this->field_name = $alias ?? $with;
         $this->options['where'] = [];
     }
     
@@ -50,11 +50,11 @@ class With extends QueryChain
     /*
      * 查询（多条）
      */
-    public function find($limit = 0)
+    public function find()
     {
-        if ($data = $this->query->find($limit)) {
+        if ($data = $this->query->find()) {
 			$count = count($data);
-            if ($this->optimize && $count > 1 && !array_diff(array_keys($this->options), ['on', 'fields', 'where', 'order'])) {
+            if ($count > 1 && !array_diff(array_keys($this->options), ['on', 'fields', 'where', 'order'])) {
                 $this->withOptimizeData($count, $data);
             } else {
                 $this->withData($count, $data);
@@ -72,7 +72,12 @@ class With extends QueryChain
         list($field1, $field2) = $this->getOnFields();
         for ($i = 0; $i < $count;  $i++) {
             $this->options['where'] = array_merge([[$field2, '=', $data[$i][$field1]]], $where);
-            $data[$i][$this->alias] = $this->db->all(...$this->builder::select($this->with, $this->options));
+			$params = $this->builder::select($this->with, $this->options);
+			if ($this->has_many) {
+				$data[$i][$this->field_name] = $this->db->find(...$params);
+			} else {
+				$data[$i][$this->field_name] = $this->db->get(...$params);
+			}
         }
     }
     
@@ -87,13 +92,21 @@ class With extends QueryChain
         if (isset($this->options['fields']) && !in_array($field2, $this->options['fields'])) {
             $this->options['fields'][] = $field2;
         }
-        if ($with_data = $this->db->all(...$this->builder::select($this->with, $this->options))) {
-            foreach ($with_data as $wd) {
-                $sub_data[$wd[$field2]][] = $wd;
-            }
+        if ($with_data = $this->db->find(...$this->builder::select($this->with, $this->options))) {
+			if ($this->has_many) {
+	            foreach ($with_data as $wd) {
+	                $sub_data[$wd[$field2]][] = $wd;
+	            }
+			} else {
+	            foreach ($with_data as $wd) {
+					if (!isset($sub_data[$wd[$field2]])) {
+						 $sub_data[$wd[$field2]] = $wd;
+					}
+	            }
+			}
             unset($with_data);
             for ($i = 0; $i < $count;  $i++) {
-                $data[$i][$this->alias] = &$sub_data[$data[$i][$field1]];
+                $data[$i][$this->field_name] = $sub_data[$data[$i][$field1]] ?? ($this->has_many ? [] : null);
             }
         }
     }

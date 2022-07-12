@@ -99,10 +99,10 @@ class Cluster
 		$m = strtolower($method);
 		if (in_array($m, ['insertid', 'begintransaction', 'rollback', 'commit', 'transaction'])) {
 			$is_write = true;
-		} elseif ($m == 'fields') {
+		} elseif (in_array($m, ['fields', 'getfields'])) {
 			$is_write = false;
 		}
-		// 其他quote, errno, error, debug, getConnection
+		// 其他quote, errno, error, debug, getConnection 
         return $this->selectDatabase($is_write ?? null)->$method(...$params);
     }
 	
@@ -114,7 +114,7 @@ class Cluster
 		if (isset($is_write)) {
 			if ($is_write) {
 				$db = $this->write ?? $this->makeDatabase('write');
-			} elseif (!empty($this->config['sticky'] && $this->write)) {
+			} elseif (!empty($this->config['follow_write']) && $this->write) {
 				$db = $this->write;
 			} else {
 				$db = $this->read ?? $this->makeDatabase('read');
@@ -130,6 +130,7 @@ class Cluster
     protected function makeDatabase($mode)
     {
 		$config = Arr::random($this->config[$mode]);
+		$config['read'] = $config['write'] = null;
 		$config['driver'] = $this->config['dbtype'];
         return $this->$mode = Container::driver('db', $config + $this->config);
     }

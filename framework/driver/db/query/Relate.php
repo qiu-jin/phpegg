@@ -5,20 +5,23 @@ class Relate extends QueryChain
 {
 	// with表名
     protected $with;
-	// 别名（防止字段冲突）
-    protected $alias;
 	// query实例
     protected $query;
+	// 是否多条
+    protected $has_many;
+	// 字段名
+    protected $field_name;
 	
     /*
      * 初始化
      */
-    protected function __init($table, $query, $with, $alias = null)
+    protected function __init($table, $query, $with, $has_many = false, $alias = null)
     {
         $this->with	= $with;
         $this->table = $table;
-        $this->alias = $alias;
         $this->query = $query;
+		$this->has_many = $has_many;
+		$this->field_name = $alias ?? $with;
         $this->options = ['where' => [], 'order' => null, 'fields' => null];
     }
     
@@ -47,9 +50,9 @@ class Relate extends QueryChain
     /*
      * 查询（多条）
      */
-    public function find($limit = 0)
+    public function find()
     {
-        if ($data = $this->query->find($limit)) {
+        if ($data = $this->query->find()) {
             $this->withSubData($data);
         }
         return $data;
@@ -79,13 +82,13 @@ class Relate extends QueryChain
             $sql = $this->builder::whereItem($params, $field1[1], 'IN', $in_data);
             $sql = 'SELECT '.$this->builder::quoteField($field1[1]).', '
                  . $this->builder::quoteField($field2[1]).' FROM '.$this->builder::quoteField($related)." WHERE $sql";
-            $related_data = $this->db->select($sql, $params);
+            $related_data = $this->db->find($sql, $params);
             if ($related_data) {
                 foreach ($related_data as $rd) {
                     $field2_field1_related[$rd[$field2[1]]][] = $rd[$field1[1]];
                 }
                 unset($related_data);
-                $with_data = $this->db->all(...$this->builder::select($this->with, [
+                $with_data = $this->db->find(...$this->builder::select($this->with, [
                     'order' => $this->options['order'],
                     'fields'=> $this->options['fields'],
                     'where' => array_merge([[$field2[0], 'IN', array_keys($field2_field1_related)]], $this->options['where'])
@@ -94,16 +97,19 @@ class Relate extends QueryChain
                     foreach ($with_data as $wd) {
                         if (isset($field2_field1_related[$wd[$field2[0]]])) {
                             foreach ($field2_field1_related[$wd[$field2[0]]] as $item) {
-                                $sub_data[$item][] = $wd;
+								if ($this->has_many) {
+						            $sub_data[$item][] = $wd;
+								} elseif (!isset($sub_data[$item])) {
+									$sub_data[$item] = $wd;
+								}
                             }
                         }
                     }
                     unset($with_data);
                     $count = count($data);
-                    $field_name = $this->alias ? $this->alias : $this->with; 
                     for ($i = 0; $i < $count;  $i++) {
                         $index = $data[$i][$field1[0]];
-                        $data[$i][$field_name] = $sub_data[$index] ?? [];
+                        $data[$i][$this->field_name] = $sub_data[$index] ?? [];
                     }
                 }
             }

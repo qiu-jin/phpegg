@@ -45,6 +45,6 @@ class Union extends QueryChain
             $params = array_merge($params, $select[1]);
         }
         $union = $this->all ? ' UNION ALL ' : ' UNION ';
-        return $this->db->all(implode($union, $sql), $params);
+        return $this->db->find(implode($union, $sql), $params);
     }
 }

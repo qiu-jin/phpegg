@@ -43,18 +43,15 @@ class Query extends QueryChain
         if (isset($id)) {
             $this->options['where'] = [[$pk, '=', $id]];
         }
-        return $this->find(1)[0] ?? null;
+        return $this->db->get(...$this->builder::select($this->table, $this->options));
     }
 
     /*
      * 查询（多条）
      */
-    public function find($limit = 0)
+    public function find()
     {
-        if ($limit > 0) {
-            $this->options['limit'] = $limit;
-        }
-        return $this->db->all(...$this->builder::select($this->table, $this->options));
+        return $this->db->find(...$this->builder::select($this->table, $this->options));
     }
 	
     /*
@@ -114,20 +111,10 @@ class Query extends QueryChain
      */
     public function updateAuto($auto, $data = null)
     {
-        if (is_array($auto)) {
-            foreach ($auto as $key => $val) {
-                if (is_int($key)) {
-                    $v = $this->builder::quoteField($val);
-                    $set[] = "$v = $v+1";
-                } else {
-                    $v = $this->builder::quoteField($key);
-                    $val = (int) $val;
-                    $set[] = $val > 0 ? "$v = $v+$val" : "$v = $v$val";
-                }
-            }
-        } else {
-            $v = $this->builder::quoteField($auto);
-            $set[] = "$v = $v+1";
+        foreach ($auto as $key => $val) {
+            $v = $this->builder::quoteField($key);
+            $val = (int) $val;
+            $set[] = $val > 0 ? "$v = $v+$val" : "$v = $v$val";
         }
         $params = [];
         if ($data) {

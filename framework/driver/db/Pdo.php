@@ -27,11 +27,19 @@ abstract class Pdo extends Db
         }
         return $connection;
     }
+	
+    /*
+     * 读取语句返回一条数据
+     */
+    public function get($sql, $params = null)
+    {
+        return ($params ? $this->prepareExecute($sql, $params) : $this->pdoQuery($sql))->fetch(\PDO::FETCH_ASSOC);
+    }
     
     /*
      * 读取语句返回全部数据
      */
-    public function all($sql, $params = null)
+    public function find($sql, $params = null)
     {
         return ($params ? $this->prepareExecute($sql, $params) : $this->pdoQuery($sql))->fetchAll(\PDO::FETCH_ASSOC);
     }
@@ -122,7 +130,7 @@ abstract class Pdo extends Db
 	
 	protected function execute($sql)
 	{
-       $this->sqlLog($sql);
+		$this->sqlLog($sql);
         if ($result = $this->connection->exec($sql)) {
             return $result;
         }

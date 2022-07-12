@@ -23,7 +23,7 @@ abstract class QueryChain
     }
     
     /*
-     * with联表查询
+     * 联表查询
      */
     public function with($table, $alias = null)
     {
@@ -31,11 +31,11 @@ abstract class QueryChain
     }
     
     /*
-     * relate联表查询
+     * 联表查询（多条数据）
      */
-    public function relate($table, $alias = null)
+    public function many($table, $alias = null)
     {
-        return new Relate($this->db, $this->table, $this, $table, $alias);
+        return new With($this->db, $this->table, $this, $table, $alias, true);
     }
     
     /*

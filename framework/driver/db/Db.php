@@ -17,11 +17,16 @@ abstract class Db
     protected $connection;
     // 数据库表字段
     protected $fields;
+	
+    /*
+     * 读取语句返回一条数据
+     */
+    abstract public function get($sql);
 
     /*
      * 读取语句返回全部数据
      */
-    abstract public function all($sql);
+    abstract public function find($sql);
 	
     /*
      * 更新语句返回影响数量
@@ -77,9 +82,6 @@ abstract class Db
         $this->dbname = $config['dbname'];
         if (isset($config['debug'])) {
             $this->debug = $config['debug'];
-        }
-        if (isset($config['fields_cache'])) {
-            $this->fields_cache_config = $config['fields_cache'];
         }
     }
     
