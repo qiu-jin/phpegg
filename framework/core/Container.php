@@ -6,23 +6,24 @@ use framework\util\Arr;
 class Container
 {
 	// Provider类型常量
-	const T_CLASS 	= 1;
-	const T_DRIVER	= 1 << 1;
-	const T_MODEL 	= 1 << 2;
-	const T_CLOSURE	= 1 << 3;
-	const T_ALIAS 	= 1 << 4;
+	const T_DRIVER	= 1;
+	const T_MODEL 	= 1 << 1;
+	const T_SERVICE = 1 << 2;
+	const T_CLASS 	= 1 << 3;
+	const T_CLOSURE	= 1 << 4;
+	const T_ALIAS 	= 1 << 5;
 
     protected static $init;
     // 容器实例
     protected static $instances;
     // 容器提供者设置
     protected static $providers = [
-        'db'        => [self::T_DRIVER/*，驱动类名称空间 */],
-        'rpc'       => [self::T_DRIVER],
+        'db'        => [self::T_DRIVER/*, 驱动类型, 默认配置项*/],
         'cache'     => [self::T_DRIVER],
-        'email'     => [self::T_DRIVER],
-        'logger'    => [self::T_DRIVER],
 		/*
+		'email'     => [self::T_DRIVER],
+		'rpc'       => [self::T_DRIVER],
+		'logger'    => [self::T_DRIVER],
         'storage'   => [self::T_DRIVER],
 		'sms'       => [self::T_DRIVER],
 		'data'      => [self::T_DRIVER],
@@ -32,19 +33,22 @@ class Container
         'search'    => [self::T_DRIVER],
 		'captcha'   => [self::T_DRIVER],
 		*/
-        'model'     => [self::T_MODEL/*, 模型层数（默认为1）, 模型类名称空间 */],
-        'logic'     => [self::T_MODEL],
-        'service'   => [self::T_MODEL],
 		/*
-		'class_provider' 	=> [self::T_CLASS, [类全名, ...类初始化参数（可选）]],
-		'closure_provider' 	=> [self::T_CLOSURE, 匿名函数（函数执行返回实例）],
-		'alias_provider' 	=> [self::T_ALIAS, 真实provider名],
+        'model'     => [self::T_MODEL],
+		*/
+        'service'   => [self::T_SERVICE/*, ...层数（默认为1）, ...基础名称空间 */],
+		/*
+		'class' 	=> [self::T_CLASS, [类全名, ...类初始化参数（可选）]],
+		'closure' 	=> [self::T_CLOSURE, 匿名函数（函数执行返回实例）],
+		'alias' 	=> [self::T_ALIAS, 真实provider名],
 		*/
     ];
 	// getter providers属性名
 	protected static $getter_providers_name = 'providers';
-	// 允许getter数组形式访问的驱动集合
-	protected static $getter_drivers_array_access = [];
+	// 公共 getter providers
+	protected static $getter_common_providers = [];
+	// 
+	protected static $allow_driver_getter_accss = [];
 	
     /*
      * 初始化
@@ -62,8 +66,8 @@ class Container
 	        if (isset($config['getter_providers_name'])) {
 				self::$getter_providers_name = $config['getter_providers_name'];
 	        }
-	        if (isset($config['getter_drivers_array_access'])) {
-				self::$getter_drivers_array_access = $config['getter_drivers_array_access'];
+	        if (isset($config['getter_common_providers'])) {
+				self::$getter_common_providers = $config['getter_common_providers'];
 	        }
 			if (!empty($config['exit_event_clean'])) {
 				Event::on('exit', function() {
@@ -129,14 +133,15 @@ class Container
     public static function driver($type, $name = null)
     {
         if (isset(self::$providers[$type])) {
+			$pv = self::$providers[$type];
 			if (self::$providers[$type][0] !== self::T_DRIVER) {
 				throw new \Exception("容器非驱动类型: $type");
 			}
             if (is_array($name)) {
-                return self::makeDriverInstance($type, $name);
+                return self::makeDriverInstance($pv[1] ?? $type, $name);
             }
             $key = $name ? "$type.$name" : $type;
-            return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($type, $name);
+            return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($pv[1] ?? $type, $name ?? $pv[2] ?? null);
         }
 		throw new \Exception("容器驱动不存在: $type");
     }
@@ -165,11 +170,13 @@ class Container
     }
 	
     /*
-     * 检查是否为允许getter数组形式访问的驱动
+     * 生成公共Provider实例
      */
-    public static function checkGetterDriversArrayAccess($name)
+    public static function makeGetterCommonProvider($name)
     {
-		return in_array($name, self::$getter_drivers_array_access, true);
+		if (isset(self::$getter_common_providers[$name])) {
+			return self::makeCustomProvider(self::$getter_common_providers[$name]);
+		}
     }
 	
     /*
@@ -182,10 +189,12 @@ class Container
 		switch ($v[0]) {
 			case self::T_DRIVER:
 				if ($c <= 2) {
-					return self::makeDriver(...$params);
+					return self::makeDriver($v[1] ?? $params[0], $v[2] ?? null);
 				}
 				break;
-			case self::T_MODEL:
+			/*case self::T_MODEL:
+				break;*/
+			case self::T_SERVICE:
 				if ($c > 1) {
 					$params[0] = $v[2] ?? "app\\$params[0]";
 					return instance(implode('\\', $params));
@@ -251,7 +260,7 @@ class Container
 		if (isset($config['class'])) {
 			$class = $config['class'];
 		} elseif (isset($config['driver'])) {
-			$class = (self::$providers[$type][1] ?? "framework\driver\\$type").'\\'.ucfirst($config['driver']);
+			$class = "framework\driver\\$type\\".ucfirst($config['driver']);
 		} else {
 			throw new \Exception($type.'驱动没有设置实例');
 		}

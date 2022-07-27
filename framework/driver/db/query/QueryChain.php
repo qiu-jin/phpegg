@@ -25,17 +25,17 @@ abstract class QueryChain
     /*
      * 联表查询
      */
-    public function with($table, $alias = null)
+    public function with($table, $has_many = false, $alias = null)
     {
-        return new With($this->db, $this->table, $this, $table, $alias);
+        return new With($this->db, $this->table, $this, $table, $has_many, $alias);
     }
     
     /*
      * 联表查询（多条数据）
      */
-    public function many($table, $alias = null)
+    public function relate($table, $has_many = false, $alias = null)
     {
-        return new With($this->db, $this->table, $this, $table, $alias, true);
+        return new Relate($this->db, $this->table, $this, $table, $has_many, $alias);
     }
     
     /*
@@ -72,7 +72,7 @@ abstract class QueryChain
     /*
      * 查询where条件或
      */
-    public function  whereOr(...$where)
+    public function whereOr(...$where)
     {
         $key = 'OR#'.count($this->options['where']);
         $count = count($where);

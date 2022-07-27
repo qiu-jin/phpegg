@@ -1,6 +1,7 @@
 <?php
 use framework\App;
 use framework\util\Url;
+use framework\util\Date;
 use framework\core\Debug;
 use framework\core\Error;
 use framework\core\Event;
@@ -141,14 +142,6 @@ function validate($rule, $message = null)
 function request($method, $url)
 {
     return new Client($method, $url);
-}
-
-/*
- * URL实例
- */
-function url($url)
-{
-    return is_array($url) ? new Url($url) : Url::parse($url);
 }
 
 /*

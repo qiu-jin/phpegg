@@ -6,11 +6,12 @@ use DatePeriod;
 use DateInterval;
 use DateTimeZone;
 use DateTimeImmutable;
+use DateTimeInterface;
 use framework\core\Config;
 
 class Date extends DateTime
 {
-	use DateBase { config as private; }
+	use DateBase;
 	
 	// 周常量
     const SUNDAY	= 0;
@@ -20,9 +21,11 @@ class Date extends DateTime
     const THURSDAY 	= 4;
     const FRIDAY 	= 5;
     const SATURDAY 	= 6;
+	// MySQL DATETIME 格式
+	const MYSQL = 'Y-m-d H:i:s';
 	
     /*
-     * immutable
+     * DateImmutable
      */
     public static function immutable(...$params)
     {
@@ -30,12 +33,13 @@ class Date extends DateTime
     }
 	
 	/*
-	 * DateTime实例
+	 * 时间实例
 	 */
-	protected static function makeDateTime($time)
-	{
-		return $time instanceof DateTime ? $time : new DateTime($time);
-	}
+    public static function createFromImmutable($date)
+    {
+		$datetime = parent::createFromImmutable($date);
+		return (new self('@'.$datetime->getTimestamp()))->setTimezone($datetime->getTimezone());
+    }
 }
 
 /*
@@ -43,15 +47,16 @@ class Date extends DateTime
  */
 class DateImmutable extends DateTimeImmutable
 {
-	use DateBase { config as private; }
+	use DateBase;
 	
 	/*
-	 * DateTimeImmutable实例
+	 * 时间实例
 	 */
-	protected static function makeDateTime($time)
-	{
-		return $time instanceof DateTimeImmutable ? $time : new DateTimeImmutable($time);
-	}
+    public static function createFromMutable($date)
+    {
+		$datetime = parent::createFromMutable($date);
+		return (new self('@'.$datetime->getTimestamp()))->setTimezone($datetime->getTimezone());
+    }
 }
 
 /*
@@ -61,14 +66,16 @@ trait DateBase
 {
     private static $init;
     // 配置
-    private static $config = [];
+    private static $config = [
+    	'timezone' => 'UTC',
+    ];
 	// datetime简名
     private static $datetime_alias = [
-        'y' => 'year', 'n' => 'month', 'w' => 'week', 'd' => 'day', 'h' => 'hour', 'i' => 'minute', 's' => 'second'
+        'y' => 'year', 'm' => 'month', 'w' => 'week', 'd' => 'day', 'h' => 'hour', 'i' => 'minute', 's' => 'second'
     ];
 	// datetime格式
     private static $datetime_format = [
-        'year' => 'Y', 'month' => 'n', 'week' => 'w', 'day' => 'j', 'hour' => 'G', 'minute' => 'i', 'second' => 's'
+        'year' => 'Y', 'month' => 'n', 'week' => 'w', 'day' => 'j', 'days' => 't', 'hour' => 'G', 'minute' => 'i', 'second' => 's'
     ];
 	// datetime interval格式
     private static $datetime_interval_format = [
@@ -87,14 +94,6 @@ trait DateBase
         if ($config = Config::read('date')) {
             self::$config = $config + self::$config;
         }
-    }
-	
-	/*
-	 * 获取配置
-	 */
-    public static function config($name, $default = null)
-    {
-        return DateBase::$config[$name] ?? $default;
     }
 
 	/*
@@ -134,9 +133,17 @@ trait DateBase
 	 */
     public static function createFromFormat($format, $time, $tz = null)
     {
-		if ($datetime = parent::createFromFormat($format, $time, $tz = self::makeTimeZone($tz))) {
-			return new self('@'.$datetime->getTimestamp(), $tz);
-		}
+		$datetime = parent::createFromFormat($format, $time, $tz = self::makeTimeZone($tz));
+		return (new self('@'.$datetime->getTimestamp()))->setTimezone($tz);
+    }
+	
+	/*
+	 * 时间实例
+	 */
+    public static function createFromInterface($date)
+    {
+		$datetime = parent::createFromFormat($date);
+		return (new self('@'.$datetime->getTimestamp()))->setTimezone($datetime->getTimezone());
     }
 	
     /*
@@ -175,14 +182,6 @@ trait DateBase
 	        }
 		}
 		throw new \InvalidArgumentException("Undefined datetime property: $$name");
-    }
-	
-	/*
-	 * 获取当月天数
-	 */
-    public function getNumOfDays()
-    {
-        return (int) parent::format('t');
     }
     
 	/*
@@ -313,7 +312,7 @@ trait DateBase
 	 */
     public function diffTimestamp($time)
     {
-		return $this->getTimestamp() - $this->makeDateTime($time)->getTimestamp();
+		return $this->getTimestamp() - self::makeDateTime($time)->getTimestamp();
     }
 	
 	/*
@@ -322,15 +321,15 @@ trait DateBase
     public function between($start, $end, $eq = true)
     {
 		$ts    = $this->getTimestamp();
-		$start = $this->makeDateTime($start)->getTimestamp();
-		$end   = $this->makeDateTime($end)->getTimestamp();
+		$start = self::makeDateTime($start)->getTimestamp();
+		$end   = self::makeDateTime($end)->getTimestamp();
 		return $eq ? ($ts >= $start && $ts <= $end) : ($ts > $start && $ts < $end);
     }
 	
 	/*
 	 * 格式化时间
 	 */
-	public function format($format = 'Y-m-d H:i:s')
+	public function format($format = Date::MYSQL)
 	{
 		return parent::format($format);
 	}
@@ -349,14 +348,6 @@ trait DateBase
 	public function __toString()
 	{
 		return $this->format();
-	}
-	
-	/*
-	 * 复制实例
-	 */
-	public function copy()
-	{
-		return clone $this;
 	}
 	
 	/*
@@ -384,11 +375,21 @@ trait DateBase
 	}
 	
 	/*
+	 * DateTime实例
+	 */
+	private static function makeDateTime($time)
+	{
+		return $time instanceof DateTimeInterface ? $time : new self($time);
+	}
+	
+	/*
 	 * TimeZone实例
 	 */
 	private static function makeTimeZone($tz)
 	{
-		if ($tz = $tz ?? DateBase::config('timezone')) {
+		if (empty($tz)) {
+			return new DateTimeZone(self::$config['timezone'] ?? 'UTC');
+		} else {
 			return $tz instanceof DateTimeZone ? $tz : new DateTimeZone($tz);
 		}
 	}

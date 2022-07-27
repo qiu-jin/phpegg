@@ -8,12 +8,9 @@ trait Getter
      */
     public function __get($name)
     {
-        $n = Container::getGetterDriversName();
-        if (isset($this->$n) && isset($this->$n[$name])) {
-			return $this->$name = Container::makeCustomProvider($this->$n[$name]);
-        } elseif ($v = Container::provider($name)) {
-			if ($v[0] === Container::T_MODEL) {
-				// 模型名称空间链实例
+		if ($v = Container::provider($name)) {
+			if ($v[0] === Container::T_SERVICE) {
+				// SERVICE 名称空间链实例
 				return $this->$name = new class($name, $v[1] ?? 1) {
 		            private $_ns;
 		            private $_depth;
@@ -31,38 +28,34 @@ trait Getter
 								return $this->$name = Container::make($this->_ns);
 			                }
 		                }
-						throw new \Exception("模型属性命名不允许以下划线开头: $this->_ns");
+						throw new \Exception("属性命名不允许以下划线开头: $this->_ns");
 		            }
 				};
-            } elseif ($v[0] === Container::T_DRIVER && Container::checkGetterDriversArrayAccess($name)) {
-				// 驱动名称空间链实例
-				return $this->$name = new class($name) implements \ArrayAccess {
-   		            private $type;
-					private $instances;
-   		            public function __construct($type) {
-   		                $this->type = $type;
-   		            }
-				    public function offsetExists($key) {
-						return isset($this->instances[$key]);
-				    }
-				    public function offsetGet($key) {
-						if (array_key_exists($key, $this->instances)) {
-							return $this->instances[$key]; 
+            } elseif ($v[0] === Container::T_DRIVER) {
+				// DRIVER 名称空间链实例
+				return $this->$name = new class($name) {
+		            private $_n;
+		            public function __construct($name) {
+		                $this->_n = $name;
+		            }
+					// 魔术方法，获取空间链实例或容器实例
+		            public function __get($name) {
+						if ($name[0] != '_') {
+							return $this->$name = Container::driver($this->_n, $name);
 						}
-						return $this->instances[$key] = Container::driver($this->type, $key);
-				    }
-				    public function offsetSet($key, $value) {
-						$this->instances[$key] = $value;
-				    }
-				    public function offsetUnset($key) {
-						if (array_key_exists($key, $this->instances)) {
-							unset($this->instances[$key]);
-						}
-				    }
+		               	throw new \Exception("属性命名不允许以下划线开头: $name");
+		            }
 				};
-			}
+            }
 			return $this->$name = Container::make($name);
+		}
+        $n = Container::getGetterDriversName();
+        if (isset($this->$n) && isset($this->$n[$name])) {
+			return $this->$name = Container::makeCustomProvider($this->$n[$name]);
         }
+		if ($instance = Container::makeGetterCommonProvider($name)) {
+			return $this->$name = $instance;
+		}
 		throw new \Exception("Undefined property: $$name");
     }
 }
