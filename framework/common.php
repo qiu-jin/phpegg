@@ -65,6 +65,14 @@ function db($name = null)
 }
 
 /*
+ * 获取rpc实例
+ */
+function rpc($name = null)
+{
+    return Container::driver('rpc', $name);
+}
+
+/*
  * 获取缓存实例
  */
 function cache($name = null)

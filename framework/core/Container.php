@@ -20,10 +20,10 @@ class Container
     protected static $providers = [
         'db'        => [self::T_DRIVER/*, 驱动类型, 默认配置项*/],
         'cache'     => [self::T_DRIVER],
-		/*
-		'email'     => [self::T_DRIVER],
 		'rpc'       => [self::T_DRIVER],
 		'logger'    => [self::T_DRIVER],
+		/*
+		'email'     => [self::T_DRIVER],
         'storage'   => [self::T_DRIVER],
 		'sms'       => [self::T_DRIVER],
 		'data'      => [self::T_DRIVER],
@@ -44,11 +44,11 @@ class Container
 		*/
     ];
 	// getter providers属性名
-	protected static $getter_providers_name = 'providers';
+	protected static $getter_providers_name;
 	// 公共 getter providers
 	protected static $getter_common_providers = [];
-	// 
-	protected static $allow_driver_getter_accss = [];
+	// 允许 getter property 访问 driver
+	protected static $allow_driver_getter_property_access = [];
 	
     /*
      * 初始化
@@ -68,6 +68,9 @@ class Container
 	        }
 	        if (isset($config['getter_common_providers'])) {
 				self::$getter_common_providers = $config['getter_common_providers'];
+	        }
+	        if (isset($config['allow_driver_getter_property_access'])) {
+				self::$allow_driver_getter_property_access = $config['allow_driver_getter_property_access'];
 	        }
 			if (!empty($config['exit_event_clean'])) {
 				Event::on('exit', function() {
@@ -179,6 +182,14 @@ class Container
 		}
     }
 	
+    /*
+     * 
+     */
+    public static function checkAllowDriverGetterPropertyAccess($name)
+    {
+		return in_array($name, self::$allow_driver_getter_property_access);
+    }
+
     /*
      * 生成Provider实例
      */

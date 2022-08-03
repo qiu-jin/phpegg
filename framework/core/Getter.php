@@ -31,7 +31,7 @@ trait Getter
 						throw new \Exception("属性命名不允许以下划线开头: $this->_ns");
 		            }
 				};
-            } elseif ($v[0] === Container::T_DRIVER) {
+            } elseif ($v[0] === Container::T_DRIVER && Container::checkAllowDriverGetterPropertyAccess($name)) {
 				// DRIVER 名称空间链实例
 				return $this->$name = new class($name) {
 		            private $_n;
@@ -49,8 +49,7 @@ trait Getter
             }
 			return $this->$name = Container::make($name);
 		}
-        $n = Container::getGetterDriversName();
-        if (isset($this->$n) && isset($this->$n[$name])) {
+        if (($n = Container::getGetterDriversName()) && isset($this->$n) && isset($this->$n[$name])) {
 			return $this->$name = Container::makeCustomProvider($this->$n[$name]);
         }
 		if ($instance = Container::makeGetterCommonProvider($name)) {
