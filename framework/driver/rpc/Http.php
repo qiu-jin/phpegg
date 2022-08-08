@@ -20,12 +20,12 @@ class Http
         'response_decode'
         // 响应结果字段
         'response_result_field'
-        // 忽略错误返回false
-        'response_ignore_error'
+        // 抛出响应错误异常
+        'throw_response_error'
         // 错误码定义字段
-        'error_code_field'
+        'response_error_code_field'
         // 错误信息定义字段
-        'error_message_field'
+        'response_error_message_field'
 		*/
     ];
 

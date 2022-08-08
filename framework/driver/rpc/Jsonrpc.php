@@ -3,8 +3,6 @@ namespace framework\driver\rpc;
 
 class Jsonrpc
 {
-    // 协议版本
-    const VERSION = '2.0'; 
     // 客户端实例
     protected $client;
     // 配置项
@@ -17,13 +15,13 @@ class Jsonrpc
         // 服务端点（HTTP）
         'endpoint'
 		// HTTP请求headers（HTTP）
-		'http_headers' => ['Content-Type' => 'application/json'],
+		'http_headers',
         // HTTP请求curl设置（HTTP）
         'http_curlopts'
         // 连接超时（TCP）
         'tcp_timeout'
-		// TCP发送后是否退出（TCP）
-		'send_and_close'
+		// TCP是否保持连接（TCP）
+		'tcp_keep_alive'
 		 */
         // 请求内容序列化
         'requset_serialize'		=> 'jsonencode',
@@ -60,4 +58,14 @@ class Jsonrpc
     {
         return new query\Jsonrpc($name, $id, $this->client);
     }
+	
+    /*
+     * 批量请求
+     */
+	/*
+	public function batch(...$params)
+	{
+		return new query\JsonrpcBatch($this->client)->call(...$params);
+	}
+	*/
 }

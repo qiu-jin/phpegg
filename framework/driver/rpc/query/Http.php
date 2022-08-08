@@ -52,6 +52,6 @@ class Http
      */
     protected function call($method, $data = null, $headers = null)
     {
-        return $this->client->make($method, $this->ns, $this->filters, $data, $headers);
+        return $this->client->send($method, $this->ns, $this->filters, $data, $headers);
     }
 }

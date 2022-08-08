@@ -7,10 +7,6 @@ abstract class Cache
 {
     // 默认缓存过期时间，0表示永不过期，数组取区间随机值
     protected $ttl = 0;
-    // 序列化反序列化处理器
-    protected $serializer;
-    // 垃圾回收处理生命周期（部分驱动有效）
-    protected $gc_maxlife = 2592000;
     
     /*
      * 获取
@@ -45,29 +41,16 @@ abstract class Cache
     /*
      * 清理
      */
-    abstract public function clean();
+    abstract public function clear();
     
     /*
      * 构造函数
      */
     public function __construct($config)
     {
-        $this->__init($config);
 		if (isset($config['ttl'])) {
 			$this->ttl = $config['ttl'];
 		}
-		if (isset($config['serializer'])) {
-			$this->serializer = $config['serializer'];
-		}
-        if (isset($config['gc_random'])
-            && method_exists($this, 'gc')
-            && mt_rand(0, $config['gc_random'][1]) < $config['gc_random'][0]
-        ) {
-			if (isset($config['gc_maxlife'])) {
-				$this->gc_maxlife = $config['gc_maxlife'];
-			}
-            Event::on('close', [$this, 'gc']);
-        }
     }
     
     /*
@@ -134,21 +117,5 @@ abstract class Cache
     protected function ttl($ttl)
     {
         return is_array($t = $ttl ?? $this->ttl) ? mt_rand($t[0], $t[1]) : $t;
-    }
-    
-    /*
-     * 序列化
-     */
-    protected function serialize($data)
-    {
-        return $this->serializer ? ($this->serializer[0])($data) : $data;
-    }
-    
-    /*
-     * 反序列化
-     */
-    protected function unserialize($data)
-    {
-        return $this->serializer ? ($this->serializer[1])($data) : $data;
     }
 }

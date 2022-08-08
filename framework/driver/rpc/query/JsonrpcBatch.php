@@ -15,19 +15,14 @@ class JsonrpcBatch
     protected $client;
 	// 请求集合
     protected $queries;
-	// 公共namespace
-    protected $common_ns;
     
     /*
      * 构造函数
      */
-    public function __construct($common_ns, $client, $config)
+    public function __construct($client, $config)
     {
         $this->client = $client;
         $this->config = $config;
-        if ($common_ns) {
-            $this->ns[] = $this->common_ns[] = $common_ns;
-        }
     }
 
     /*

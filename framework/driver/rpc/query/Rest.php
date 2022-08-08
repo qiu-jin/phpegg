@@ -36,7 +36,7 @@ class Rest
     /*
      * get方法
      */
-    public function get()
+    public function get($id)
     {
 		$this->ns[] = $id;
 		return $this->call('GET');
@@ -89,6 +89,6 @@ class Rest
      */
     protected function call($method, $custom_method = null, $data = null, $headers = null)
     {
-		return $this->client->make($method, implode('/', $this->ns), $this->filters, $data, $headers);
+		return $this->client->send($method, implode('/', $this->ns), $this->filters, $data, $headers);
     }
 }

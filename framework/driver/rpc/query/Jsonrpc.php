@@ -1,8 +1,6 @@
 <?php
 namespace framework\driver\rpc\query;
 
-use framework\driver\rpc\Jsonrpc as JRPC;
-
 class Jsonrpc
 {
 	// 请求id
@@ -47,11 +45,7 @@ class Jsonrpc
      */
     protected function call($params)
     {
-        $data = [
-            'jsonrpc'   => JRPC::VERSION,
-            'method'    => implode('.', $this->ns),
-            'params'    => $params,
-        ];
+        $data = ['jsonrpc' => '2.0', 'method' => implode('.', $this->ns), 'params' => $params];
 		if ($this->id === true) {
 			$data['id'] = uniqid();
 		} elseif ($this->id !== false) {

@@ -132,7 +132,7 @@ class Redis extends Cache
     /*
      * 清理
      */
-    public function clean()
+    public function clear()
     {
         return $this->connection->flushdb();
     }

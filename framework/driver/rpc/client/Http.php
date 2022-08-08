@@ -9,6 +9,10 @@ class Http
 {
 	// 配置项
     protected $config;
+	// 错误码
+	protected $error_code;
+	// 错误信息
+	protected $error_message;
     
     /*
      * 构造函数
@@ -19,57 +23,80 @@ class Http
     }
     
     /*
-     * 生成client实例
+     * 请求
      */
-    public function make($method, $path, $filters, $data, $headers)
+    public function send($method, $path, $filters, $body, $headers)
     {
-		$url = $this->config['endpoint'];
+		$config = $this->config;
+		if (isset($config['request_handler'])) {
+			$request = (object) compact('config', 'method', 'path', 'filters', 'body', 'headers');
+			$config['request_handler']($request);
+			extract((array) $request);
+		}
+		$url = $config['endpoint'];
 		if ($path) {
-			$url .= '/'.$path;
+			$url .= Str::lastPad($url, '/').$path;
 		}
         if ($filters) {
             $url .= (strpos($url, '?') === false ? '?' : '&').http_build_query($filters);
 		}
         $client = new Client($method, $url);
-        if (isset($this->config['http_headers'])) {
-            $client->headers($this->config['http_headers']);
+        if (isset($config['http_headers'])) {
+            $client->headers($config['http_headers']);
         }
         if (isset($headers)) {
             $client->headers($headers);
         }
-        if (isset($this->config['http_curlopts'])) {
-            $client->curlopts($this->config['http_curlopts']);
+        if (isset($config['http_curlopts'])) {
+            $client->curlopts($config['http_curlopts']);
         }
-        if ($data) {
-			if (is_array($data)) {
-				$client->form($data);
+        if ($body) {
+			if (is_string($body)) {
+				$client->body($body);
 			} else {
-				$client->body($data);
+				if (isset($config['response_encode'])) {
+					$client->body($config['response_encode']($body));
+				} else {
+					$client->form($body);
+				}
 			}
         }
         $response = $client->response();
+		if (isset($config['response_handler'])) {
+			return $config['response_handler']($response);
+		}
         if ($response->code >= 200 && $response->code < 300) {
             $result = $response->body;
-            if (isset($this->config['response_decode'])) {
-                $result = $this->config['response_decode']($result);
+            if (isset($config['response_decode'])) {
+                $result = $config['response_decode']($result);
             }
-            if (isset($this->config['response_result_field'])) {
-                if (($result = Arr::get($result, $this->config['response_result_field'])) !== null) {
-                    return $result;
-                }
-            } else {
+            if (empty($config['response_result_field'])) {
+				return $result;
+            }
+			$result = Arr::get($result, $config['response_result_field']);
+            if (isset($result)) {
                 return $result;
             }
         }
-        if (!empty($this->config['response_ignore_error'])) {
+		$this->error_code = $response->code;
+		$this->error_message = '';
+		if (!$this->error_code) {
+			$this->error_message = $client->error->message;
+		} else {
+			if (isset($config['response_error_code_field'])) {
+				$this->error_code = Arr::get($result, $config['response_error_code_field']);
+			}
+			if (isset($config['response_error_message_field'])) {
+				$this->error_message = Arr::get($result, $config['response_error_message_field']);
+			}
+		}
+        if (empty($config['throw_response_error'])) {
             return false;
         }
-        if (isset($this->config['error_code_field'])) {
-            $error_code = Arr::get($result, $this->config['error_code_field']);
-        }
-        if (isset($this->config['error_message_field'])) {
-            $error_message = Arr::get($result, $this->config['error_message_field']);
-        }
-        return error(isset($error_code) ? "[$error_code]".($error_message ?? '')  : $client->error, 2);
-    }
+		if ($config['throw_response_error'] !== true) {
+			throw new \Exception("[$this->error_code]".$this->error_message);
+		}
+		$class = $config['throw_response_error'];
+		throw new $class("[$this->error_code]".$this->error_message);
+	}
 }

@@ -4,26 +4,30 @@ namespace framework\driver\cache;
 use framework\util\Str;
 use framework\util\File;
 
+/*
+ * 只支持 null bool int float string array 类型（支持serialize object，但unserialize为array）
+ */
 class Opcache extends Cache
 {
 	// 缓存文件目录
     protected $dir;
 	// 缓存文件扩展名
     protected $ext = '.cache.php';
-	// 启用值过滤功能
-    protected $enable_filter_value = false;
+	// 强制处理数据类型安全
+    protected $force_type_safe = false;
 
     /*
      * 初始化
      */
-    protected function __init($config)
+    public function __construct($config)
     {
+		parent::__construct($config);
 		$this->dir = Str::lastPad($config['dir'], '/');
 		if (isset($config['ext'])) {
 			$this->ext = $config['ext'];
 		}
-		if (isset($config['enable_filter_value'])) {
-			$this->enable_filter_value = $config['enable_filter_value'];
+		if (isset($config['force_type_safe'])) {
+			$this->force_type_safe = $config['force_type_safe'];
 		}
     }
     
@@ -48,7 +52,7 @@ class Opcache extends Cache
     {
         if (is_php_file($file = $this->filename($key))) {
             require($file);
-            return $expiration === 0 || $expiration < time();
+            return $expiration === 0 || $expiration > time();
         }
         return false;
     }
@@ -58,8 +62,8 @@ class Opcache extends Cache
      */
     public function set($key, $value, $ttl = null)
     {
-        if ($this->enable_filter_value) {
-            $this->filterValue($value);
+        if ($this->force_type_safe) {
+            $value = json_decode(json_encode($value), true);
         }
         $contents = sprintf('<?php $expiration = %d;'.PHP_EOL.'return %s;',
             ($t = $this->ttl($ttl)) == 0 ? 0 : $t + time(),
@@ -95,10 +99,14 @@ class Opcache extends Cache
     /*
      * 清理
      */
-    public function clean()
+    public function clear()
     {
-        File::cleanDir($this->dir, function ($file) {
-            opcache_invalidate($file, true);
+		$len = strlen($this->ext);
+        File::clearDir($this->dir, function ($file) use ($len) {
+			if (substr($file, - $len) === $this->ext) {
+				opcache_invalidate($file, true);
+				return true;
+			}
         });
     }
     
@@ -107,12 +115,16 @@ class Opcache extends Cache
      */
     public function gc()
     {
-        $maxtime = time() + $this->gc_maxlife;
-        File::cleanDir($this->dir, function ($file) use ($maxtime) {
-            if ($maxtime > filemtime($file)) {
-                return true;
-            }
-            opcache_invalidate($file, true);
+		$len = strlen($this->ext);
+		$time = time();
+        File::cleanDir($this->dir, function ($file) use ($len, $time) {
+			if (substr($file, - $len) === $this->ext) {
+	            require($file);
+				if ($expiration <= $time && $expiration !== 0) {
+					opcache_invalidate($file, true);
+					return true;
+				}
+			}
         });
     }
 
@@ -122,24 +134,5 @@ class Opcache extends Cache
     protected function filename($key)
     {
         return $this->dir.md5($key).$this->ext;
-    }
-    
-    /*
-     * 过滤设置值
-     */
-    protected function filterValue(&$value)
-    {
-        if (is_array($value)) {
-            foreach ($value as $val) {
-                $this->filterValue($val);
-            }
-        } elseif (is_object($value)) {
-            $value = get_object_vars($value);
-            foreach ($value as $val) {
-                $this->filterValue($val);
-            }
-        } elseif (is_resource($value)) {
-            $value = null;
-        }
     }
 }

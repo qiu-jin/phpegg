@@ -2,7 +2,7 @@
 namespace framework\driver\cache;
 
 use framework\util\Str;
-use framework\util\File as F;
+use framework\util\File as UFile;
 
 class File extends Cache
 {
@@ -10,14 +10,20 @@ class File extends Cache
     protected $dir;
 	// 缓存文件扩展名
     protected $ext = '.cache.txt';
+    // 序列化反序列化处理器
+    protected $serializer = ['serialize', 'unserialize'];
     
     /*
      * 初始化
      */
-    protected function __init($config)
+    public function __construct($config)
     {
+		parent::__construct($config);
 		if (isset($config['ext'])) {
 			$this->ext = $config['ext'];
+		}
+		if (isset($config['serializer'])) {
+			$this->serializer = $config['serializer'];
 		}
         $this->dir = Str::lastPad($config['dir'], '/');
     }
@@ -29,7 +35,7 @@ class File extends Cache
     {
         if (is_file($file = $this->filename($key)) && ($fp = fopen($file, 'r'))) {
             $expiration = (int) trim(fgets($fp));
-            if($expiration === '0' || $expiration < time()){
+            if($expiration === '0' || $expiration > time()){
                 $data = stream_get_contents($fp);
                 fclose($fp);
                 return $this->unserialize($data);
@@ -48,7 +54,7 @@ class File extends Cache
         if (is_file($file = $this->filename($key)) && ($fp = fopen($file, 'r'))) {
             $expiration = (int) trim(fgets($fp));
             fclose($fp);
-            return $expiration === '0' || $expiration < time();
+            return $expiration === '0' || $expiration > time();
         }
         return false;
     }
@@ -89,9 +95,12 @@ class File extends Cache
     /*
      * 清理
      */
-    public function clean()
+    public function clear()
     {
-        F::cleanDir($this->dir);
+		$len = strlen($this->ext);
+        UFile::clearDir($this->dir, function ($file) use ($len) {
+			return substr($file, - $len) === $this->ext;
+		});
     }
     
     /*
@@ -99,9 +108,15 @@ class File extends Cache
      */
     public function gc()
     {
-        $maxtime = time() + $this->gc_maxlife;
-        F::cleanDir($this->dir, function ($file) use ($maxtime) {
-            return $maxtime > filemtime($file);
+		$len = strlen($this->ext);
+		$time = time();
+        UFile::clearDir($this->dir, function ($file) use ($len, $time) {
+			if (substr($file, - $len) === $this->ext) {
+				$fp = fopen($file, 'r');
+	            $expiration = (int) trim(fgets($fp));
+	            fclose($fp);
+	            return $expiration <= $time && $expiration !== 0;
+			}
         });
     }
     
@@ -111,5 +126,21 @@ class File extends Cache
     protected function filename($key)
     {
         return $this->dir.md5($key).$this->ext;
+    }
+	
+    /*
+     * 序列化
+     */
+    protected function serialize($data)
+    {
+        return $this->serializer ? ($this->serializer[0])($data) : $data;
+    }
+    
+    /*
+     * 反序列化
+     */
+    protected function unserialize($data)
+    {
+        return $this->serializer ? ($this->serializer[1])($data) : $data;
     }
 }

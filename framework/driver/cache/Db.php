@@ -16,17 +16,23 @@ class Db extends Cache
     protected $table = 'cache';
     // 数据表字段名
     protected $fields = ['key', 'value', 'expiration'];
+    // 序列化反序列化处理器
+    protected $serializer = ['serialize', 'unserialize'];
 
     /*
      * 初始化
      */
-    protected function __init($config)
+    public function __construct($config)
 	{
+		parent::__construct($config);
 		if (isset($config['table'])) {
 			$this->table = $config['table'];
 		}
 		if (isset($config['fields'])) {
 			$this->fields = $config['fields'];
+		}
+		if (isset($config['serializer'])) {
+			$this->serializer = $config['serializer'];
 		}
 		$this->db = Container::driver('db', $config['db']);
     }
@@ -36,7 +42,7 @@ class Db extends Cache
      */
     public function get($key, $default = null)
     {
-        $cache = $this->db->select($this->format(
+        $cache = $this->db->get($this->format(
             'SELECT %s FROM %s WHERE %s = ? AND %s > '.time(), $this->fields[1], $this->table, $this->fields[0], $this->fields[2]
         ), [$key]);
         return $cache ? $this->unserialize($cache[0]['value']) : $default;
@@ -47,9 +53,9 @@ class Db extends Cache
      */
     public function has($key)
     {
-        return $this->db->numRows($this->db->query($this->format(
+        return $this->db->query($this->format(
             'SELECT %s FROM %s WHERE %s = ? AND %s > '.time(), $this->fields[1], $this->table, $this->fields[0], $this->fields[2]
-        ), [$key])) > 0;
+        ), [$key])->count() > 0;
     }
     
     /*
@@ -69,7 +75,7 @@ class Db extends Cache
      */
     public function delete($key)
     {
-        return (bool) $this->db->delete($this->format('DELETE FROM %s WHERE %s = ?', $this->table, $this->fields[0]), [$key]);
+        return (bool) $this->db->exec($this->format('DELETE FROM %s WHERE %s = ?', $this->table, $this->fields[0]), [$key]);
     }
 	
     /*
@@ -77,7 +83,7 @@ class Db extends Cache
      */
     public function increment($key, $value = 1)
     {
-        return (bool) $this->db->update($this->format(
+        return (bool) $this->db->exec($this->format(
             'UPDATE %s SET %s = %s + ? WHERE %s = ?', $this->table, $this->fields[1], $this->fields[1], $this->fields[2]
         ), [$value, $key]);
     }
@@ -87,7 +93,7 @@ class Db extends Cache
      */
     public function decrement($key, $value = 1)
     {
-        return (bool) $this->db->update($this->format(
+        return (bool) $this->db->exec($this->format(
             'UPDATE %s SET %s = %s - ? WHERE %s = ?', $this->table, $this->fields[1], $this->fields[1], $this->fields[2]
         ), [$value, $key]);
     }
@@ -98,7 +104,7 @@ class Db extends Cache
     public function getMultiple(array $keys, $default = null)
     {
         $in = implode(',', array_fill(0, count($keys), '?'));
-        $reslut = $this->db->select($this->format(
+        $reslut = $this->db->find($this->format(
             "SELECT %s, %s FROM %s WHERE %s IN ($in) AND %s > ".time(),
             $this->fields[0], $this->fields[1], $this->table, $this->fields[0], $this->fields[2]
         ), $keys);
@@ -115,15 +121,15 @@ class Db extends Cache
     public function deleteMultiple(array $keys)
     {
         $in = implode(',', array_fill(0, count($keys), '?'));
-        return (bool) $this->db->delete($this->format("DELETE FROM %s WHERE %s IN ($in)", $this->table. $this->fields[0]), $keys);
+        return (bool) $this->db->exec($this->format("DELETE FROM %s WHERE %s IN ($in)", $this->table. $this->fields[0]), $keys);
     }
 
     /*
      * 清理
      */
-    public function clean()
+    public function clear()
     {
-        return (bool) $this->db->query($this->format('TRUNCATE %s', $this->table));
+        return (bool) $this->db->exec($this->format('TRUNCATE %s', $this->table));
     }
     
     /*
@@ -131,7 +137,7 @@ class Db extends Cache
      */
     public function gc()
     {
-        $this->db->delete($this->format('DELETE FROM %s WHERE %s < '.time(), $this->table, $this->fields[2]));
+        $this->db->exec($this->format('DELETE FROM %s WHERE %s < '.time(), $this->table, $this->fields[2]));
     }
     
     /*
@@ -139,10 +145,24 @@ class Db extends Cache
      */
     protected function format($sql, ...$params)
     {
-        $builder = $this->db::Builder;
-        foreach ($params as $i => $v) {
-            $params[$i] = $builder::keywordEscape($v);
-        }
-        return sprintf($sql, ...$params);
+        return sprintf($sql, ...array_map(function ($v) {
+			return ($this->db::Builder)::keywordEscape($v);
+		}, $params));
+    }
+	
+    /*
+     * 序列化
+     */
+    protected function serialize($data)
+    {
+        return $this->serializer ? ($this->serializer[0])($data) : $data;
+    }
+    
+    /*
+     * 反序列化
+     */
+    protected function unserialize($data)
+    {
+        return $this->serializer ? ($this->serializer[1])($data) : $data;
     }
 }

@@ -154,26 +154,29 @@ class File
     
     /*
      * 清空目录（不删目录本身）
-     * $fitler 返回true表示不删除对应文件
+     * $fitler 返回true表示删除对应文件
      */
-    public static function cleanDir($dir, callable $fitler = null)
+    public static function clearDir($dir, callable $fitler = null)
     {
         $dir = Str::lastPad($dir, '/');
         if ($open = opendir($dir)) {
             while (($item = readdir($open)) !== false) {
-                if ($item !== '.' && $item !== '..' && is_dir($file = $dir.$item)) {
-                    if (self::cleanDir($file, $fitler)) {
-                        rmdir($file);
-                    } else {
-                        $empty = false;
-                    }
-                } else {
-                    if ($fitler === null || $fitler($file) !== true) {
-                        unlink($file);
-                    } else {
-                        $empty = false;
-                    }
-                }
+				if ($item !== '.' && $item !== '..') {
+					$file = $dir.$item;
+	                if (is_dir($file)) {
+	                    if (self::clearDir($file, $fitler)) {
+	                        rmdir($file);
+	                    } else {
+	                        $empty = false;
+	                    }
+	                } else {
+	                    if ($fitler === null || $fitler($file) === true) {
+	                        unlink($file);
+	                    } else {
+	                        $empty = false;
+	                    }
+	                }
+				}
             }
             closedir($open);
         }

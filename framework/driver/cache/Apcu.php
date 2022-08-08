@@ -4,22 +4,18 @@ namespace framework\driver\cache;
 /*
  * http://php.net/apcu
  */
-class Apc extends Cache
+class Apcu extends Cache
 {
 	// 字段前缀
     protected $prefix;
-	// 是否全局清理
-    protected $global_clean = false;
     
     /*
      * 构造函数
      */
     public function __construct($config)
     {
+		parent::__construct($config);
         $this->prefix = $config['prefix'];
-		if (isset($config['global_clean'])) {
-			$this->global_clean = $config['global_clean'];
-		}
     }
     
     /*
@@ -73,14 +69,8 @@ class Apc extends Cache
     /*
      * 清理
      */
-    public function clean()
+    public function clear()
     {
-        if ($this->global_clean) {
-            return apcu_clear_cache();
-        }
-        foreach (new \APCUIterator("/^{$this->prefix}/", APC_ITER_KEY) as $counter) {
-            apcu_delete($counter['key']);
-        }
-        return true;
+		return apcu_clear_cache();
     }
 }

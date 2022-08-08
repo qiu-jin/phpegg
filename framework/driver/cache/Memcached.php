@@ -125,7 +125,7 @@ class Memcached extends Cache
     /*
      * 清理
      */
-    public function clean()
+    public function clear()
     {
         return $this->connection->flush();
     }
