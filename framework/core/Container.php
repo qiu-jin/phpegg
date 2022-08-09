@@ -19,11 +19,11 @@ class Container
     // 容器提供者设置
     protected static $providers = [
         'db'        => [self::T_DRIVER/*, 驱动类型, 默认配置项*/],
-        'cache'     => [self::T_DRIVER],
 		'rpc'       => [self::T_DRIVER],
+		'cache'     => [self::T_DRIVER],
+		'email'     => [self::T_DRIVER],
 		'logger'    => [self::T_DRIVER],
 		/*
-		'email'     => [self::T_DRIVER],
         'storage'   => [self::T_DRIVER],
 		'sms'       => [self::T_DRIVER],
 		'data'      => [self::T_DRIVER],

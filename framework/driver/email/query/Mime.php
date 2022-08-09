@@ -11,7 +11,7 @@ class Mime
     /*
      * 构建邮件
      */
-    public static function make($options, &$addrs = null)
+    public static function make($options)
     {
         $data = ["MIME-Version: 1.0", "Date: ".date("D, j M Y G:i:s O")];
         if (isset($options['from'])) {
@@ -59,7 +59,7 @@ class Mime
             $data[] = '';
             $data[] = self::encodeContent($options['content'], $encoding);
         }
-        return implode(self::EOL, $data);
+        return [$addrs, implode(self::EOL, $data)];
     }
     
     /*

@@ -7,7 +7,7 @@ use framework\driver\email\query\Mime;
 class Mailgun extends Email
 {
 	// 访问key
-    protected $acckey;
+    protected $apikey;
 	// 域名
     protected $domain;
 	// 服务端点
@@ -19,7 +19,7 @@ class Mailgun extends Email
     protected function __init($config)
     {
         $this->domain = $config['domain'];
-        $this->acckey = $config['acckey'];
+        $this->apikey = $config['apikey'];
     }
     
     /*
@@ -27,13 +27,16 @@ class Mailgun extends Email
      */
     protected function handle($options)
     {
-        $mime = Mime::make($options, $addrs);
+        list($addrs, $mime) = Mime::make($options);
         $options['options']['to'] = implode(',', $addrs);
         $client = Client::post(self::$endpoint."/$this->domain/messages.mime")
-						->auth('api', $this->acckey)
+						->auth('api', $this->apikey)
                         ->form($options['options'], true)
                         ->buffer('message', $mime);
         $result = $client->response()->decode();
-        return isset($result['id']) ? true : warn($result['message'] ?? $client->error);
+		if (isset($result['id'])) {
+			return true;
+		}
+		throw new \Exception($result['message'] ?? $client->error);
     }
 }

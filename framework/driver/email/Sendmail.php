@@ -22,7 +22,8 @@ class Sendmail extends Email
     protected function handle($options)
     {
         $subject = Mime::encodeHeader(Arr::pull($options, 'subject'));
-        list($header, $body) = explode(Mime::EOL.Mime::EOL, Mime::make($options, $addrs), 2);
+		list($addrs, $mime) = Mime::make($options);
+        list($header, $body) = explode(Mime::EOL.Mime::EOL, $mime, 2);
         return mail(implode(',', $addrs), $subject, $body, $header);
     }
 }

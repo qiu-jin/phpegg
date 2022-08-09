@@ -66,7 +66,7 @@ class Smtp extends Email
 			$this->connect();
 		}
         $this->commandCheck("MAIL FROM: <{$options['from'][0]}>");
-		$mime = Mime::make($options, $addrs);
+		list($addrs, $mime) = Mime::make($options);
         foreach ($addrs as $addr) {
 			$this->commandCheck("RCPT TO: <$addr>");
         }

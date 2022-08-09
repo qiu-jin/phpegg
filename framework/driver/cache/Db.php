@@ -45,7 +45,7 @@ class Db extends Cache
         $cache = $this->db->get($this->format(
             'SELECT %s FROM %s WHERE %s = ? AND %s > '.time(), $this->fields[1], $this->table, $this->fields[0], $this->fields[2]
         ), [$key]);
-        return $cache ? $this->unserialize($cache[0]['value']) : $default;
+        return $cache ? ($this->serializer[1])($cache[0]['value']) : $default;
     }
 
     /*
@@ -66,7 +66,7 @@ class Db extends Cache
         return (bool) $this->db->exec($this->format(
             'REPLACE INTO %s SET %s = ?, %s = ?, %s = ?', $this->table, ...$this->fields
         ), [
-            $key, $this->serialize($value), time() + (($t = $this->ttl($ttl)) == 0 ? $this->gc_maxlife : $t)
+            $key, ($this->serializer[0])($value), time() + (($t = $this->ttl($ttl)) == 0 ? $this->gc_maxlife : $t)
         ]);
     }
 
@@ -83,9 +83,7 @@ class Db extends Cache
      */
     public function increment($key, $value = 1)
     {
-        return (bool) $this->db->exec($this->format(
-            'UPDATE %s SET %s = %s + ? WHERE %s = ?', $this->table, $this->fields[1], $this->fields[1], $this->fields[2]
-        ), [$value, $key]);
+        return $this->set($key, $this->get($key, 0) + $value);
     }
     
     /*
@@ -93,9 +91,7 @@ class Db extends Cache
      */
     public function decrement($key, $value = 1)
     {
-        return (bool) $this->db->exec($this->format(
-            'UPDATE %s SET %s = %s - ? WHERE %s = ?', $this->table, $this->fields[1], $this->fields[1], $this->fields[2]
-        ), [$value, $key]);
+        return $this->set($key, $this->get($key, 0) - $value);
     }
     
     /*
@@ -110,7 +106,7 @@ class Db extends Cache
         ), $keys);
         $caches = array_column($reslut, 'value', 'key');
         foreach ($keys as $key) {
-            $caches[$key] = isset($caches[$key]) ? $this->unserialize($caches[$key]) : $default;
+            $caches[$key] = isset($caches[$key]) ? ($this->serializer[1])($caches[$key]) : $default;
         }
         return $caches;
     }
@@ -148,21 +144,5 @@ class Db extends Cache
         return sprintf($sql, ...array_map(function ($v) {
 			return ($this->db::Builder)::keywordEscape($v);
 		}, $params));
-    }
-	
-    /*
-     * 序列化
-     */
-    protected function serialize($data)
-    {
-        return $this->serializer ? ($this->serializer[0])($data) : $data;
-    }
-    
-    /*
-     * 反序列化
-     */
-    protected function unserialize($data)
-    {
-        return $this->serializer ? ($this->serializer[1])($data) : $data;
     }
 }

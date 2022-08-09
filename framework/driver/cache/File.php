@@ -38,7 +38,7 @@ class File extends Cache
             if($expiration === '0' || $expiration > time()){
                 $data = stream_get_contents($fp);
                 fclose($fp);
-                return $this->unserialize($data);
+                return ($this->serializer[1])($data);
             } else {
                 fclose($fp);
             }
@@ -65,7 +65,7 @@ class File extends Cache
     public function set($key, $value, $ttl = null)
     {
         $expiration = ($t = $this->ttl($ttl)) == 0 ? 0 : $t + time();
-        return (bool) file_put_contents($this->filename($key), $expiration.PHP_EOL.$this->serialize($value), LOCK_EX);
+        return (bool) file_put_contents($this->filename($key), $expiration.PHP_EOL.($this->serializer[0])($value), LOCK_EX);
     }
 
     /*
@@ -126,21 +126,5 @@ class File extends Cache
     protected function filename($key)
     {
         return $this->dir.md5($key).$this->ext;
-    }
-	
-    /*
-     * 序列化
-     */
-    protected function serialize($data)
-    {
-        return $this->serializer ? ($this->serializer[0])($data) : $data;
-    }
-    
-    /*
-     * 反序列化
-     */
-    protected function unserialize($data)
-    {
-        return $this->serializer ? ($this->serializer[1])($data) : $data;
     }
 }

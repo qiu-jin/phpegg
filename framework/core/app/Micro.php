@@ -20,9 +20,9 @@ class Micro extends App
          * 1 顺序参数
          * 2 键值参数
          */
-        'param_mode'		=> 1,
+        'param_mode'	=> 1,
         // 闭包绑定的类（为true时绑定getter匿名类）
-        'closure_bind_class' 		=> true,
+        'closure_bind_class'	=> true,
         // Getter providers（绑定getter匿名类时有效）
         'closure_getter_providers'  => null,
         // 是否路由动态调用
@@ -33,7 +33,7 @@ class Micro extends App
     // 路由
     protected $routes = [];
 	// 
-	protected $query_rules = [];
+	protected $queries = [];
 
     /*
      * 单个路由
@@ -63,14 +63,9 @@ class Micro extends App
     /*
      * query规则集合
      */
-    public function query($path, $query, $param1, $param2 = null)
+    public function query($path, ...$params)
     {
-		$path = trim($path, '/');
-		if (isset($param2)) {
-			$this->query_rules[$path][$param1] = $param2;
-		} else {
-			$this->query_rules[$path] = $param1;
-		}
+		$this->queries[trim($path, '/')] = $params;
         return $this;
     }
 
@@ -157,23 +152,27 @@ class Micro extends App
 				}
 	        }
 			throw new \Exception("无效的路由dispatch规则或类型");
-		} elseif ($this->query_rules) {
+		} elseif ($this->queries) {
 			$path = App::getPath();
-			if (isset($this->query_rules[$path])) {
-				foreach ($this->query_rules[$path] as $q => $rule) {
-					if ($query = Request::query($q)) {
-						if (is_array($rule)) {
-							foreach ($rule as $k => $v) {
-								if ($k == $query) {
-									return $this->dispatch = ['call' => $v, 'params' => []];
-								}
-							}
-						} else {
-							$instance = is_object($v) ? $v : instance($v);
-							if (is_callable([$instance, $query]) && $query[0] !== '_') {
-								return $this->dispatch = ['call' => [$instance, $query], 'params' => []];
+			if (isset($this->queries[$path])) {
+				foreach ($this->queries[$path] as $params) {
+					if (!empty($params[0])) {
+						foreach ($params[0] as $k => $v) {
+							if (Request::query($k) != $v) {
+								continue 2;
 							}
 						}
+					}
+					if (isset($params[2])) {
+						$method = Request::query($params[1]);
+						if ($method) {
+							$instance = is_object($params[2]) ? $params[2] : instance($params[2]);
+							if (is_callable([$instance, $method]) && $method[0] !== '_') {
+								return $this->dispatch = ['call' => [$instance, $method]];
+							}
+						}
+					} else {
+						return $this->dispatch = ['call' => $v];
 					}
 				}
 			}
@@ -185,7 +184,7 @@ class Micro extends App
      */
     protected function call()
     {
-		return $this->dispatch['call'](...$this->dispatch['params']);
+		return $this->dispatch['call'](...($this->dispatch['params'] ?? []));
     }
     
     /*
@@ -213,7 +212,7 @@ class Micro extends App
 		$property = $this->config['action_dispatch_routes_property'];
 		if (!isset($instance->$property)) {
 			if (count($path) == 1 && is_callable([$instance, $path[0]]) && $path[0][0] !== '_') {
-				return $this->dispatch = ['call' => [$instance, $path[0]], 'params' => []];
+				return $this->dispatch = ['call' => [$instance, $path[0]]];
 			}
 			return;
 		}

@@ -35,7 +35,7 @@ class Http
 		}
 		$url = $config['endpoint'];
 		if ($path) {
-			$url .= Str::lastPad($url, '/').$path;
+			$url = Str::lastPad($url, '/').$path;
 		}
         if ($filters) {
             $url .= (strpos($url, '?') === false ? '?' : '&').http_build_query($filters);
@@ -63,7 +63,10 @@ class Http
         }
         $response = $client->response();
 		if (isset($config['response_handler'])) {
-			return $config['response_handler']($response);
+			$result = $config['response_handler']($response);
+			if ($result !== null) {
+				return $result;
+			}
 		}
         if ($response->code >= 200 && $response->code < 300) {
             $result = $response->body;
