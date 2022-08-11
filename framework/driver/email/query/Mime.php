@@ -81,7 +81,7 @@ class Mime
     /*
      * 编码内容
      */
-    public static function encodeContent($str, $encoding = 'base64')
+    public static function encodeContent($str, $encoding = 'quoted-printable')
     {
         switch ($encoding)
         {

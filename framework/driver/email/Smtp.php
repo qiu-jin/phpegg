@@ -6,10 +6,12 @@ use framework\driver\email\query\Mime;
 
 class Smtp extends Email
 {
+	// log 
+	protected $log;
 	// 套接字
     protected $socket;
 	// 配置
-	protected $config = [
+	protected $config/* = [
 		// 主机
 		'host'	=> '127.0.0.1',
 		// 端口
@@ -23,18 +25,10 @@ class Smtp extends Email
 		// 超时设置
 		'timeout'	=> 30,
 		// 调试模式
-		'debug'		=> \app\env\APP_DEBUG,
-		// 发送后是否退出
-		'send_and_close'	=> true,
-	];
-	
-    /*
-     * 初始化
-     */
-    protected function __init($config)
-    {
-		$this->config = $config + $this->config;
-    }
+		'debug'		=> false,
+		// 发送后保持链接
+		'keep_alive'	=> false,
+	]*/;
 	
     /*
      * 连接
@@ -42,10 +36,10 @@ class Smtp extends Email
     protected function connect()
     {
         $this->socket = fsockopen(
-			($this->config['secure'] ? $this->config['secure'].'://' : '').$this->config['host'],
-			$this->config['port'],
+			(isset($this->config['scheme']) ? $this->config['scheme'].'://' : '').$this->config['host'],
+			$this->config['port'] ?? 25,
 			$errno, $error,
-			$this->config['timeout']
+			$this->config['timeout'] ?? 30
 		);
         if (!is_resource($this->socket)) {
             throw new \Exception("Smtp connect error: [$errno] $error");
@@ -54,7 +48,7 @@ class Smtp extends Email
         $this->command('EHLO '.$this->config['host']);
         $this->command('AUTH LOGIN');
         $this->command(base64_encode($this->config['username']));
-		$this->commandCheck(base64_encode($this->config['password']), '235');
+		return $this->commandCheck(base64_encode($this->config['password']), '235');
     }
     
     /*
@@ -63,16 +57,24 @@ class Smtp extends Email
     protected function handle($options)
     {
 		if (!is_resource($this->socket)) {
-			$this->connect();
+			if (!$this->connect()) {
+				return false;
+			}
 		}
-        $this->commandCheck("MAIL FROM: <{$options['from'][0]}>");
+        if (!$this->commandCheck("MAIL FROM: <{$options['from'][0]}>")) {
+        	return false;
+        }
 		list($addrs, $mime) = Mime::make($options);
         foreach ($addrs as $addr) {
-			$this->commandCheck("RCPT TO: <$addr>");
+			if (!$this->commandCheck("RCPT TO: <$addr>")) {
+	        	return false;
+	        }
         }
         $this->command('DATA');
-		$this->commandCheck($mime.Mime::EOL.'.');
-		if ($this->config['send_and_close']) {
+		if (!$this->commandCheck($mime.Mime::EOL.'.')) {
+			return false;
+		}
+		if (!empty($this->config['keep_alive'])) {
 			$this->close();
 		}
         return true;
@@ -90,7 +92,7 @@ class Smtp extends Email
             	break;
             }
         }
-		if ($this->config['debug']) {
+		if (!empty($this->config['debug'])) {
 			$this->log($str);
 		}
         return trim($str);
@@ -111,10 +113,18 @@ class Smtp extends Email
     protected function commandCheck($cmd, $check = '250')
     {
 		$result = $this->command($cmd);
-        if (substr($result, 0, 3) != $check) {
-			$this->close();
-            throw new \Exception("SMTP Email Exception: [$cmd] $result");
+        if (substr($result, 0, 3) === $check) {
+			return true;
         }
+		$this->close();
+		if (empty($this->config['throw_response_error'])) {
+			return false;
+		}
+		if ($this->config['throw_response_error'] !== true) {
+			throw new \Exception("SMTP Email Exception: [$cmd] $result");
+		}
+		$class = $this->config['throw_response_error'];
+		throw new $class("SMTP Email Exception: [$cmd] $result");
     }
 	
     /*
@@ -133,7 +143,7 @@ class Smtp extends Email
      */
     protected function log($log)
     {
-		Logger::channel($this->config['debug'])->debug($log);
+		//Logger::channel($this->config['debug'])->debug($log);
     }
     
     /*

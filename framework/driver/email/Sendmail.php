@@ -7,10 +7,11 @@ use framework\driver\email\query\Mime;
 class Sendmail extends Email
 {   
     /*
-     * 初始化
+     * 构造函数
      */
-    protected function __init($config)
+    public function __construct($config)
     {
+		parent::__construct($config);
         if (isset($config['sendmail_path'])) {
             ini_set('sendmail_path', $config['sendmail_path']);
         }

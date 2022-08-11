@@ -6,8 +6,7 @@ class Http
 	// client实例
     protected $client;
     // 配置项
-    protected $config = [
-        /*
+    protected $config/* = [
         // 服务端点
         'endpoint'
         // 请求公共headers
@@ -26,8 +25,7 @@ class Http
         'response_error_code_field'
         // 错误信息定义字段
         'response_error_message_field'
-		*/
-    ];
+    ]*/;
 
     /*
      * 构造函数

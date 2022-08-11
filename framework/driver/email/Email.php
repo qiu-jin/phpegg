@@ -1,10 +1,17 @@
 <?php
 namespace framework\driver\email;
 
+use framework\driver\email\query\Query;
+
 abstract class Email
 {
-    // 发信人
-    protected $from;
+	// 配置
+	protected $config/* = [
+		// 发信人
+		'from'
+        // 抛出响应错误异常
+        'throw_response_error'
+	]*/;
     
     /*
      * 邮件发送处理
@@ -16,10 +23,7 @@ abstract class Email
      */
     public function __construct($config)
     {
-        $this->__init($config);
-        if (isset($config['from'])) {
-        	$this->from = $config['from'];
-        }
+		$this->config = $config;
     }
     
     /*
@@ -27,7 +31,7 @@ abstract class Email
      */
     public function __call($method, $params)
     {
-        return (new query\Query($this))->$method(...$params);
+        return (new Query($this))->$method(...$params);
     }
     
     /*
@@ -44,8 +48,8 @@ abstract class Email
 		if ($content) {
 			$options['content'] = $content;
 		}
-		if (!isset($options['from']) && isset($this->from)) {
-			$options['from'] = $this->from;
+		if (!isset($options['from']) && isset($this->config['from'])) {
+			$options['from'] = $this->config['from'];
 		}
         return $this->handle($options);
     }

@@ -6,21 +6,13 @@ use framework\driver\email\query\Mime;
 
 class Mailgun extends Email
 {
-	// 访问key
-    protected $apikey;
-	// 域名
-    protected $domain;
+	// 配置
+    protected $config/* = [
+    	'domain' => '',
+		'apikey' => '',
+    ]*/;
 	// 服务端点
     protected static $endpoint = 'https://api.mailgun.net/v3';
-    
-    /*
-     * 初始化
-     */
-    protected function __init($config)
-    {
-        $this->domain = $config['domain'];
-        $this->apikey = $config['apikey'];
-    }
     
     /*
      * 处理请求
@@ -37,6 +29,13 @@ class Mailgun extends Email
 		if (isset($result['id'])) {
 			return true;
 		}
-		throw new \Exception($result['message'] ?? $client->error);
+		if (empty($this->config['throw_response_error'])) {
+			return false;
+		}
+		if ($this->config['throw_response_error'] !== true) {
+			throw new \Exception($result['message'] ?? $client->error);
+		}
+		$class = $this->config['throw_response_error'];
+		throw new $class($result['message'] ?? $client->error);
     }
 }
