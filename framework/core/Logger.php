@@ -60,11 +60,75 @@ class Logger
     }
 	
     /*
+     * emergency等级
+     */
+    public static function emergency($message, $context = null)
+    {
+       self::write(__FUNCTION__, $message, $context);
+    }
+    
+    /*
+     * alert等级
+     */
+    public static function alert($message, $context = null)
+    {
+        self::write(__FUNCTION__, $message, $context);
+    }
+    
+    /*
+     * critical等级
+     */
+    public static function critical($message, $context = null)
+    {
+        self::write(__FUNCTION__, $message, $context);
+    }
+    
+    /*
+     * error等级
+     */
+    public static function error($message, $context = null)
+    {
+        self::write(__FUNCTION__, $message, $context);
+    }
+    
+    /*
+     * warning等级
+     */
+    public static function warning($message, $context = null)
+    {
+        self::write(__FUNCTION__, $message, $context);
+    }
+    
+    /*
+     * notice等级
+     */
+    public static function notice($message, $context = null)
+    {
+        self::write(__FUNCTION__, $message, $context);
+    }
+    
+    /*
+     * info等级
+     */
+    public static function info($message, $context = null)
+    {
+        self::write(__FUNCTION__, $message, $context);
+    }
+    
+    /*
+     * debug等级
+     */
+    public static function debug($message, $context = null)
+    {
+		self::write(__FUNCTION__, $message, $context);
+    }
+	
+    /*
      * 获取实例
      */
     public static function get($name = null)
     {
-		return isset($name) ? self::getHandler($name) : self::getLevelHandler();
+		return self::getHandler($name ?? key(self::$configs));
     }
 
     /*

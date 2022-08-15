@@ -11,7 +11,7 @@ class File extends Logger
     // 日志格式化处理器
     protected $formatter;
     // 是否实时写入日志
-    protected $realtime_write = false;
+    protected $realtime_write;
     
     /*
      * 构造函数
@@ -19,11 +19,10 @@ class File extends Logger
     public function __construct($config)
     {
         $this->logfile = $config['logfile'];
-        if (isset($config['realtime_write'])) {
-            $this->realtime_write = $config['realtime_write'];
-        }
-        if (!$this->realtime_write) {
-            Event::on('close', [$this, 'flush']);
+        if (empty($config['realtime_write'])) {
+			Event::on('exit', [$this, 'flush']);
+        } else {
+        	$this->realtime_write = true;
         }
 		if (isset($config['formatter'])) {
 			$f = $config['formatter'];
@@ -36,7 +35,7 @@ class File extends Logger
      * 写入
      */
     public function write($level, $message, $context = null)
-    {
+    {	
         if ($this->realtime_write) {
             $this->realWrite($level, $message, $context);
         } else {

@@ -9,7 +9,7 @@ use framework\core\http\Response;
  * Chrome
  * https://github.com/qiu-jin/chromelogger
  * Firefox
- * https://developer.mozilla.org/en-US/docs/Tools/Web_Console/Console_messages#Server
+ * https://addons.mozilla.org/en-US/firefox/addon/chromelogger
  */
 class WebConsole extends Logger
 {
@@ -33,19 +33,17 @@ class WebConsole extends Logger
     // 是否输出日志
     protected $flush;
     // 日志数据大小限制（防止过大导致HTTP服务器报错）
-    protected $message_size_limit = 4000;
+    protected $message_size_limit = 1024 * 3;
     
     /*
      * 构造函数
      */
     public function __construct($config)
     {
-        if (isset($config['allow_ips']) && !in_array(Request::ip(), $config['allow_ips'])) {
+        if (isset($config['allow_ip_list']) && !in_array(Request::ip(), $config['allow_ip_list'])) {
             return;
         }
-        if (isset($config['check_header_accept']) &&
-			$config['check_header_accept'] != Request::server('HTTP_ACCEPT_LOGGER_DATA')
-        ) {
+        if (isset($config['check_header_accept']) && $config['check_header_accept'] != Request::server('HTTP_ACCEPT_LOGGER_DATA')) {
             return;
         }
         if (isset($config['message_size_limit'])) {

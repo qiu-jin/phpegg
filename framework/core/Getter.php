@@ -8,7 +8,8 @@ trait Getter
      */
     public function __get($name)
     {
-		if ($v = Container::provider($name)) {
+		$v = Container::provider($name);
+		if ($v && !empty($v[1])) {
 			if ($v[0] === Container::T_SERVICE) {
 				// SERVICE 名称空间链实例
 				return $this->$name = new class($name, $v[1] ?? 1) {
@@ -55,6 +56,9 @@ trait Getter
 		if ($instance = Container::makeGetterCommonProvider($name)) {
 			return $this->$name = $instance;
 		}
-		throw new \Exception("Undefined property: $$name");
+		
+		Error::trigger("Undefined property: $$name");
+		
+		//throw new \Exception("Undefined property: $$name");
     }
 }

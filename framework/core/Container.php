@@ -18,9 +18,9 @@ class Container
     protected static $instances;
     // 容器提供者设置
     protected static $providers = [
-        'db'        => [self::T_DRIVER/*, 驱动类型, 默认配置项*/],
-		'rpc'       => [self::T_DRIVER],
-		'cache'     => [self::T_DRIVER],
+        'db'        => [self::T_DRIVER, true/*是否应用于Getter, 驱动类型, 默认配置项*/],
+		'rpc'       => [self::T_DRIVER, true],
+		'cache'     => [self::T_DRIVER, true],
 		'email'     => [self::T_DRIVER],
 		'logger'    => [self::T_DRIVER],
 		/*
@@ -36,11 +36,11 @@ class Container
 		/*
         'model'     => [self::T_MODEL],
 		*/
-        'service'   => [self::T_SERVICE/*, ...层数（默认为1）, ...基础名称空间 */],
+        'service'   => [self::T_SERVICE, true/*, ...层数（默认为1）, ...基础名称空间 */],
 		/*
-		'class' 	=> [self::T_CLASS, [类全名, ...类初始化参数（可选）]],
-		'closure' 	=> [self::T_CLOSURE, 匿名函数（函数执行返回实例）],
-		'alias' 	=> [self::T_ALIAS, 真实provider名],
+		'class' 	=> [self::T_CLASS, false, [类全名, ...类初始化参数（可选）]],
+		'closure' 	=> [self::T_CLOSURE, false, 匿名函数（函数执行返回实例）],
+		'alias' 	=> [self::T_ALIAS, false, 真实provider名],
 		*/
     ];
 	// getter providers属性名
@@ -141,7 +141,7 @@ class Container
 				throw new \Exception("容器非驱动类型: $type");
 			}
             if (is_array($name)) {
-                return self::makeDriverInstance($pv[1] ?? $type, $name);
+                return self::makeDriverInstance($pv[2] ?? $type, $name);
             }
             $key = $name ? "$type.$name" : $type;
             return self::$instances[$key] ?? self::$instances[$key] = self::makeDriver($pv[1] ?? $type, $name ?? $pv[2] ?? null);
@@ -200,30 +200,30 @@ class Container
 		switch ($v[0]) {
 			case self::T_DRIVER:
 				if ($c <= 2) {
-					return self::makeDriver($v[1] ?? $params[0], $v[2] ?? null);
+					return self::makeDriver($v[2] ?? $params[0], $v[3] ?? null);
 				}
 				break;
 			/*case self::T_MODEL:
 				break;*/
 			case self::T_SERVICE:
 				if ($c > 1) {
-					$params[0] = $v[2] ?? "app\\$params[0]";
+					$params[0] = $v[3] ?? "app\\$params[0]";
 					return instance(implode('\\', $params));
 				}
 				break;
 			case self::T_CLASS:
 				if ($c == 1) {
-					return instance(...$v[1]);
+					return instance(...$v[2]);
 				}
 				break;
 			case self::T_CLOSURE:
 				if ($c == 1) {
-					return $v[1]();
+					return $v[2]();
 				}
 				break;
 			case self::T_ALIAS:
 				if ($c == 1) {
-					return self::makeAlias($v[1]);
+					return self::makeAlias($v[2]);
 				}
 				break;
 			default:
@@ -258,9 +258,10 @@ class Container
         if ($index) {
             return self::makeDriverInstance($type, Config::get("$type.$index"));
         }
-        list($index, $config) = Arr::headKv(Config::get($type));
+		$config = Config::get($type);
+		$index = Arr::headKey($config);
         $key = "$type.$index";
-		return self::$instances[$key] ?? self::$instances[$key] = self::makeDriverInstance($type, $config);
+		return self::$instances[$key] ?? self::$instances[$key] = self::makeDriverInstance($type, $config[$index]);
     }
 	
     /*

@@ -1,10 +1,11 @@
 <?php
 namespace framework\driver\logger;
 
+use framework\util\Str;
 use framework\util\Arr;
+use framework\util\Date;
 use framework\core\Event;
 use framework\core\Container;
-use framework\core\misc\ViewError;
 
 class Email extends Logger
 {
@@ -14,11 +15,14 @@ class Email extends Logger
     protected $email;
     // 缓存驱动配置
     protected $cache = [
-        'driver'	=> 'opcache',
-        'dir'       => APP_DIR.'storage/cache/',
+        'driver'=> 'file',
+		'ext'	=> '.send_email_log_cache.txt',
+        'dir'	=> APP_DIR.'storage/cache/',
     ];
+	// 邮件标题模版
+	protected $title = "[{time}] Error report: {key}";
     // 邮件发送间隔时间（秒数）
-    protected $send_interval = 600;
+    protected $send_interval = 900;
     
     /*
      * 构造函数
@@ -33,7 +37,12 @@ class Email extends Logger
         if (isset($config['send_interval'])) {
             $this->send_interval = $config['send_interval'];
         }
-        Event::on('close', [$this, 'flush']);
+        Event::on('exit', [$this, 'flush']);
+    }
+	
+    public function write($level, $message, $context = null)
+    {
+        $this->logs[] = [$level, $message, $context];
     }
     
     /*
@@ -42,17 +51,14 @@ class Email extends Logger
     public function flush()
     {
         if ($this->logs) {
-            if ($cache = Container::driver('cache', $this->cache)) {
-                $log = Arr::last($this->logs);
-                $key = md5($log[0].$log[1].($log[2]['file'] ?? '').($log[2]['line'] ?? ''));
-                if (!$cache->has($key)) {
-                    $cache->set($key, '', $this->interval);
-                    if ($email = Container::driver('email', $this->email)) {
-                        $title = "Error report: $key";
-                        $content = ViewError::renderError($this->logs);
-                        $email->send($this->to, $title, $content);
-                    }
-                }
+            $log = Arr::last($this->logs);
+            $key = md5($log[0].$log[1].($log[2]['file'] ?? '').($log[2]['line'] ?? ''));
+			$cache = Container::driver('cache', $this->cache);
+            if (!$cache->has($key)) {
+                $cache->set($key, 1, $this->send_interval);
+				$title = Str::format($this->title, ['key' => $key, 'time' => Date::now()->format()]);
+				$content = json_encode($this->logs, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+				Container::driver('email', $this->email)->send($this->to, $title, $content);
             }
             $this->logs = null;
         }

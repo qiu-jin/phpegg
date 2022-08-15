@@ -108,32 +108,31 @@ class Arr
     }
     
     /*
-     * 随机键值对
-     */
-    public static function randomKv(array $array)
-    {
-        $key = array_rand($array);
-        return [$key, $array[$key]];
-    }
-    
-    /*
      * 首值
      */
     public static function head(array $array)
     {
+		if (PHP_VERSION_ID >=  70300) {
+			return $array[array_key_first()];
+		}
         foreach ($array as $value) {
             return $value;
         }
     }
-    
+	
     /*
-     * 首键值对
+     * 首键
      */
-    public static function headKv(array $array)
+    public static function headKey(array $array)
     {
-        foreach ($array as $key => $value) {
-            return [$key, $value];
-        }
+		if (PHP_VERSION_ID >=  70300) {
+			return array_key_first();
+		} else {
+	        foreach ($array as $key => $value) {
+	            return $key;
+	        }
+		}
+       
     }
     
     /*
@@ -141,16 +140,24 @@ class Arr
      */
     public static function last(array $array)
     {
-        return end($array);
+		if (PHP_VERSION_ID >=  70300) {
+			return $array[array_key_last()];
+		} else {
+			return end($array);
+		}
     }
-    
+	
     /*
-     * 尾键值对
+     * 尾键
      */
-    public static function lastKv(array $array)
+    public static function lastKey(array $array)
     {
-        $value = end($array);
-        return [key($array), $value];
+		if (PHP_VERSION_ID >=  70300) {
+			return array_key_last();
+		} else {
+	        end($array);
+			return key($array);
+		}
     }
 
     /*

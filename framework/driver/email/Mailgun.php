@@ -21,8 +21,8 @@ class Mailgun extends Email
     {
         list($addrs, $mime) = Mime::make($options);
         $options['options']['to'] = implode(',', $addrs);
-        $client = Client::post(self::$endpoint."/$this->domain/messages.mime")
-						->auth('api', $this->apikey)
+        $client = Client::post(self::$endpoint.'/'.$this->config['domain'].'/messages.mime')
+						->auth('api', $this->config['apikey'])
                         ->form($options['options'], true)
                         ->buffer('message', $mime);
         $result = $client->response()->decode();

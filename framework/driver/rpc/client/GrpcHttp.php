@@ -26,7 +26,8 @@ class GrpcHttp
 		$client = Client::post($url);
         $data   = $message->serializeToString();
 		if (isset($this->config['http_request_encode'])) {
-			list($encode_name, $encode_function) = Arr::randomKv($this->config['http_request_encode']);
+			$encode_name = array_rand($this->config['http_request_encode']);
+			$encode_function = $this->config['http_request_encode'][$encode_name];
 			$client->header('grpc-encoding', $encode_name);
 			$encode = 1;
 			$data   = $encode_function($data);
