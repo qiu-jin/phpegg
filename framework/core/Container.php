@@ -18,38 +18,22 @@ class Container
     protected static $instances;
     // 容器提供者设置
     protected static $providers = [
-        'db'        => [self::T_DRIVER, true/*是否应用于Getter, 驱动类型, 默认配置项*/],
-		'rpc'       => [self::T_DRIVER, true],
-		'cache'     => [self::T_DRIVER, true],
+        'db'        => [self::T_DRIVER, 1/*是否应用于Getter(0否,1是,2是并允许属性访问驱动), 驱动类型, 默认配置项*/],
+		'rpc'       => [self::T_DRIVER, 2],
+		'cache'     => [self::T_DRIVER, 1],
 		'email'     => [self::T_DRIVER],
 		'logger'    => [self::T_DRIVER],
 		/*
-        'storage'   => [self::T_DRIVER],
-		'sms'       => [self::T_DRIVER],
-		'data'      => [self::T_DRIVER],
-        'crypt'     => [self::T_DRIVER],
-        'queue'     => [self::T_DRIVER],
-        'geoip'     => [self::T_DRIVER],
-        'search'    => [self::T_DRIVER],
-		'captcha'   => [self::T_DRIVER],
-		*/
-		/*
         'model'     => [self::T_MODEL],
 		*/
-        'service'   => [self::T_SERVICE, true/*, ...层数（默认为1）, ...基础名称空间 */],
+        'service'   => [self::T_SERVICE, 1/*, ...层数（默认为1）, ...基础名称空间 */],
 		/*
-		'class' 	=> [self::T_CLASS, false, [类全名, ...类初始化参数（可选）]],
-		'closure' 	=> [self::T_CLOSURE, false, 匿名函数（函数执行返回实例）],
-		'alias' 	=> [self::T_ALIAS, false, 真实provider名],
+		'class' 	=> [self::T_CLASS,   0, [类全名, ...类初始化参数（可选）]],
+		'closure' 	=> [self::T_CLOSURE, 0, 匿名函数（函数执行返回实例）],
+		'alias' 	=> [self::T_ALIAS,   0, 真实provider名],
 		*/
     ];
-	// getter providers属性名
-	protected static $getter_providers_name;
-	// 公共 getter providers
-	protected static $getter_common_providers = [];
-	// 允许 getter property 访问 driver
-	protected static $allow_driver_getter_property_access = [];
-	
+
     /*
      * 初始化
      */
@@ -63,20 +47,11 @@ class Container
 	        if (isset($config['providers'])) {
 				self::$providers = $config['providers'] + self::$providers;
 	        }
-	        if (isset($config['getter_providers_name'])) {
-				self::$getter_providers_name = $config['getter_providers_name'];
-	        }
-	        if (isset($config['getter_common_providers'])) {
-				self::$getter_common_providers = $config['getter_common_providers'];
-	        }
-	        if (isset($config['allow_driver_getter_property_access'])) {
-				self::$allow_driver_getter_property_access = $config['allow_driver_getter_property_access'];
-	        }
 			if (!empty($config['exit_event_clean'])) {
 				Event::on('exit', function() {
-					Container::clean();
+					Container::clear();
 					if (class_exists(Facade::class, false)) {
-						Facade::clean();
+						Facade::clear();
 					}
 				});
 			}
@@ -125,7 +100,7 @@ class Container
     /*
      * 清除实例
      */
-    public static function clean()
+    public static function clear()
     {
 		self::$instances = null;
     }
@@ -162,32 +137,6 @@ class Container
             return $provider();
         }
 		throw new \Exception("无效的自定义Provider类型");
-    }
-	
-    /*
-     * 获取getter providers属性名
-     */
-    public static function getGetterDriversName()
-    {
-		return self::$getter_providers_name;
-    }
-	
-    /*
-     * 生成公共Provider实例
-     */
-    public static function makeGetterCommonProvider($name)
-    {
-		if (isset(self::$getter_common_providers[$name])) {
-			return self::makeCustomProvider(self::$getter_common_providers[$name]);
-		}
-    }
-	
-    /*
-     * 
-     */
-    public static function checkAllowDriverGetterPropertyAccess($name)
-    {
-		return in_array($name, self::$allow_driver_getter_property_access);
     }
 
     /*

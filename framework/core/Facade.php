@@ -19,10 +19,10 @@ abstract class Facade
     /*
      * 清除实例
      */
-    public static function clean($class = null)
+    public static function clear($class = null)
     {
 		if (static::class !== __CLASS__) {
-			return static::__callStatic('clean', func_get_args());
+			return static::__callStatic('clear', func_get_args());
 		}
 		if ($class === null) {
 			self::$instances = null;

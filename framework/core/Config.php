@@ -41,7 +41,7 @@ class Config
     /*
      * 读取配置项值，不缓存值（仅支持顶级配置项）
      */
-    public static function read($name)
+    public static function read($name, $cache = false)
     {
 		if (strpos($name, '.') === false) {
 			return self::$config[$name] ?? self::loadFile($name);

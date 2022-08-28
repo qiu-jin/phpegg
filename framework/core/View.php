@@ -250,7 +250,7 @@ class View
     /*
      * 清理
      */
-    public static function clean()
+    public static function clear()
     {
 		self::$vars = self::$filters = [];
     }

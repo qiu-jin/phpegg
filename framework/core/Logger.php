@@ -60,7 +60,7 @@ class Logger
     }
 	
     /*
-     * emergency等级
+     * 写入emergency日志
      */
     public static function emergency($message, $context = null)
     {
@@ -68,7 +68,7 @@ class Logger
     }
     
     /*
-     * alert等级
+     * 写入alert日志
      */
     public static function alert($message, $context = null)
     {
@@ -76,7 +76,7 @@ class Logger
     }
     
     /*
-     * critical等级
+     * 写入critical日志
      */
     public static function critical($message, $context = null)
     {
@@ -84,7 +84,7 @@ class Logger
     }
     
     /*
-     * error等级
+     * 写入error日志
      */
     public static function error($message, $context = null)
     {
@@ -92,7 +92,7 @@ class Logger
     }
     
     /*
-     * warning等级
+     * 写入warning日志
      */
     public static function warning($message, $context = null)
     {
@@ -100,7 +100,7 @@ class Logger
     }
     
     /*
-     * notice等级
+     * 写入notice日志
      */
     public static function notice($message, $context = null)
     {
@@ -108,7 +108,7 @@ class Logger
     }
     
     /*
-     * info等级
+     * 写入info日志
      */
     public static function info($message, $context = null)
     {
@@ -116,11 +116,36 @@ class Logger
     }
     
     /*
-     * debug等级
+     * 写入debug日志
      */
     public static function debug($message, $context = null)
     {
 		self::write(__FUNCTION__, $message, $context);
+    }
+	
+    /*
+     * 写入分级日志
+     */
+    public static function write($level, $message, $context = null)
+    {
+        if (isset(self::$level_handler_names[$level])) {
+            foreach (self::$level_handler_names[$level] as $n) {
+                self::getHandler($n)->write($level, $message, $context);
+            }
+        }
+    }
+    
+    /*
+     * 写入分组日志
+     */
+    public static function groupWrite($group, $level, $message, $context = null)
+    {
+		$names = is_array($group) ? $group : (self::$group_handler_names[$group] ?? null);
+        if ($names) {
+            foreach ($names as $n) {
+                self::getHandler($n)->write($level, $message, $context);
+            }
+        }
     }
 	
     /*
@@ -142,7 +167,7 @@ class Logger
     /*
      * 频道实例
      */
-    public static function channel($name = null, $use_null_handler = false)
+    public static function channel($name = null, $enable_null_handler = false)
     {
 		if (!isset($name)) {
 			return self::getLevelHandler();
@@ -156,34 +181,9 @@ class Logger
 		if (is_array($name)) {
 			return self::makeGroupHandler($name);
 		}
-		if ($use_null_handler) {
+		if ($enable_null_handler) {
 			return self::getNullHandler();
 		}
-    }
-    
-    /*
-     * 分级写入日志
-     */
-    public static function write($level, $message, $context = null)
-    {
-        if (isset(self::$level_handler_names[$level])) {
-            foreach (self::$level_handler_names[$level] as $n) {
-                self::getHandler($n)->write($level, $message, $context);
-            }
-        }
-    }
-    
-    /*
-     * 分组写入日志
-     */
-    public static function groupWrite($group, $level, $message, $context = null)
-    {
-		$names = is_array($group) ? $group : (self::$group_handler_names[$group] ?? null);
-        if ($names) {
-            foreach ($names as $n) {
-                self::getHandler($n)->write($level, $message, $context);
-            }
-        }
     }
     
     /*

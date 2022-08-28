@@ -8,11 +8,11 @@ class Loader
 {
     private static $init;
 	// 映射
-	private static $map_rules = [];
+	private static $class_map = [];
 	// PSR-4
-	private static $psr4_rules = [];
+	private static $class_psr4 = [];
 	// 前缀
-	private static $prefix_rules = [
+	private static $class_prefix = [
 		'app' => APP_DIR,
 		'framework' => FW_DIR
 	];
@@ -46,10 +46,10 @@ class Loader
     {
         switch ($type = strtolower($type)) {
             case 'map':
-				self::$map_rules = $rules + self::$map_rules;
+				self::$class_map = $rules + self::$class_map;
             	return;
 	        case 'prefix':
-				self::$prefix_rules = $rules + self::$prefix_rules;
+				self::$class_prefix = $rules + self::$class_prefix;
 				return;	
             case 'psr4':
                 self::addPsr4($rules);
@@ -68,14 +68,14 @@ class Loader
      */
     private static function autoload($class)
     {
-		if (isset(self::$map_rules[$class])) {
-			__require(self::$map_rules[$class]);
+		if (isset(self::$class_map[$class])) {
+			__require(self::$class_map[$class]);
         } else {
 	        $arr = explode('\\', $class, 2);
 	        if (isset($arr[1])) {
-	            if (isset(self::$prefix_rules[$arr[0]])) {
-					self::import(self::$prefix_rules[$arr[0]].strtr($arr[1], '\\', '/'));
-	            } elseif (isset(self::$psr4_rules[$arr[0]])) {
+	            if (isset(self::$class_prefix[$arr[0]])) {
+					self::import(self::$class_prefix[$arr[0]].strtr($arr[1], '\\', '/'));
+	            } elseif (isset(self::$class_psr4[$arr[0]])) {
 	                self::importPsr4($arr[0], $arr[1]);
 	            }
 	        }
@@ -89,7 +89,7 @@ class Loader
     {
         foreach ($rules as $k => $v) {
 			$arr = explode('\\', $class, 2);
-            self::$psr4_rules[$arr[0]][$arr[1] ?? ''] = $v;
+            self::$class_psr4[$arr[0]][$arr[1] ?? ''] = $v;
         }
     }
 	
@@ -110,7 +110,7 @@ class Loader
     {
         $i = 0;
 		$m = strrpos($path, '\\') ?: 0;
-        foreach (self::$psr4_rules[$prefix] as $k => $v) {
+        foreach (self::$class_psr4[$prefix] as $k => $v) {
             $l = strlen($k);
             if ($m >= $l && $l >= $i && strncmp($k, $path, $l) === 0) {
                 $i = $l;
