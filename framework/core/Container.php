@@ -24,9 +24,9 @@ class Container
 		'email'     => [self::T_DRIVER],
 		'logger'    => [self::T_DRIVER],
 		/*
-        'model'     => [self::T_MODEL],
+        'model'     => [self::T_MODEL, 1, ...基础名称空间],
 		*/
-        'service'   => [self::T_SERVICE, 1/*, ...层数（默认为1）, ...基础名称空间 */],
+        'service'   => [self::T_SERVICE, 1/*是否应用于Getter（0否,大于0的整数为Getter层数）, ...基础名称空间 */],
 		/*
 		'class' 	=> [self::T_CLASS,   0, [类全名, ...类初始化参数（可选）]],
 		'closure' 	=> [self::T_CLOSURE, 0, 匿名函数（函数执行返回实例）],
@@ -156,7 +156,7 @@ class Container
 				break;*/
 			case self::T_SERVICE:
 				if ($c > 1) {
-					$params[0] = $v[3] ?? "app\\$params[0]";
+					$params[0] = $v[2] ?? "app\\$params[0]";
 					return instance(implode('\\', $params));
 				}
 				break;

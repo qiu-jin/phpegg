@@ -50,7 +50,7 @@ class Loader
             	return;
 	        case 'prefix':
 				self::$class_prefix = $rules + self::$class_prefix;
-				return;	
+				return;
             case 'psr4':
                 self::addPsr4($rules);
 				return;

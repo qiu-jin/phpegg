@@ -18,8 +18,6 @@ class Logger
     const DEBUG     = 'debug';
     
     private static $init;
-    // 配置
-    private static $configs;
     // 日志驱动处理器
     private static $handlers;
 	// 空日志处理器
@@ -42,7 +40,7 @@ class Logger
             return;
         }
         self::$init = true;
-        if ($configs = Config::read('logger')) {
+        if ($configs = Config::get('logger')) {
             foreach ($configs as $name => $config) {
                 if (isset($config['level'])) {
                     foreach ((array) $config['level'] as $lv) {
@@ -54,8 +52,8 @@ class Logger
                         self::$group_handler_names[$gp][] = $name;
                     }
                 }
+				self::$handlers[$name] = null;
             }
-            self::$configs = $configs;
         }
     }
 	
@@ -153,7 +151,7 @@ class Logger
      */
     public static function get($name = null)
     {
-		return self::getHandler($name ?? key(self::$configs));
+		return self::getHandler($name ?? key(self::$handlers));
     }
 
     /*
@@ -172,7 +170,7 @@ class Logger
 		if (!isset($name)) {
 			return self::getLevelHandler();
 		}
-		if (isset(self::$configs[$name])) {
+		if (array_key_exists($name, self::$handlers)) {
 			return self::getHandler($name);
 		}
 		if (isset(self::$group_handler_names[$name])) {
@@ -193,8 +191,8 @@ class Logger
     {
 		if (isset(self::$handlers[$name])) {
 			return self::$handlers[$name];
-		} elseif (isset(self::$configs[$name])) {
-			return self::$handlers[$name] = Container::driver('logger', self::$configs[$name]);
+		} elseif (array_key_exists($name, self::$handlers)) {
+			return self::$handlers[$name] = Container::driver('logger', $name);
 		}
 		throw new \Exception("日志处理器实例不存在: $name");
     }
