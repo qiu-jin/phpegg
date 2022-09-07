@@ -11,11 +11,13 @@ abstract class Model implements ArrayAccess
             return;
         }
         self::$init = true;
+		$config = Config::get('model');
+		self::$db = Container::driver('db', $config['db'] ?? null);
     }
 	
     public static function name($table)
 	{
-		
+		return new static();
     }
 	
     public static function __callStatic($method, $params)

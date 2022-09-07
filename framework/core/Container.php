@@ -7,11 +7,10 @@ class Container
 {
 	// Provider类型常量
 	const T_DRIVER	= 1;
-	const T_MODEL 	= 1 << 1;
-	const T_SERVICE = 1 << 2;
-	const T_CLASS 	= 1 << 3;
-	const T_CLOSURE	= 1 << 4;
-	const T_ALIAS 	= 1 << 5;
+	const T_SERVICE = 1 << 1;
+	const T_CLASS 	= 1 << 2;
+	const T_CLOSURE	= 1 << 3;
+	const T_ALIAS 	= 1 << 4;
 
     protected static $init;
     // 容器实例
@@ -23,9 +22,6 @@ class Container
 		'cache'     => [self::T_DRIVER, 1],
 		'email'     => [self::T_DRIVER],
 		'logger'    => [self::T_DRIVER],
-		/*
-        'model'     => [self::T_MODEL, 1, ...基础名称空间],
-		*/
         'service'   => [self::T_SERVICE, 1/*是否应用于Getter（0否,大于0的整数为Getter层数）, ...基础名称空间 */],
 		/*
 		'class' 	=> [self::T_CLASS,   0, [类全名, ...类初始化参数（可选）]],
@@ -152,8 +148,6 @@ class Container
 					return self::makeDriver($v[2] ?? $params[0], $v[3] ?? null);
 				}
 				break;
-			/*case self::T_MODEL:
-				break;*/
 			case self::T_SERVICE:
 				if ($c > 1) {
 					$params[0] = $v[2] ?? "app\\$params[0]";
