@@ -11,7 +11,16 @@ class JsonrpcTcp
 	// 套接字
     protected $socket;
     // 配置项
-    protected $config;
+    protected $config/* = [
+        // 服务主机（TCP）
+        'host'
+        // 服务端口（TCP）
+        'port'
+        // 连接超时（TCP）
+        'tcp_timeout'
+		// TCP是否保持连接（TCP）
+		'tcp_keep_alive'
+    ]*/;
     
     /*
      * 构造函数
@@ -26,12 +35,7 @@ class JsonrpcTcp
      */
     protected function contect()
     {
-        $this->socket = fsockopen(
-            $this->config['host'],
-            $this->config['port'],
-            $errno, $errstr,
-            $this->config['tcp_timeout'] ?? ini_get("default_socket_timeout")
-        );
+        $this->socket = fsockopen($this->config['host'], $this->config['port'], $errno, $errstr, $this->config['tcp_timeout'] ?? null);
         if (!is_resource($this->socket)) {
             error("-32000: Internet error $errstr[$errno]");
         }
@@ -52,7 +56,7 @@ class JsonrpcTcp
             while (($res = fgets($this->socket)) !== false) {
                 $str .= $res;
                 if (substr($res, - $len) === self::EOL) {
-					if (!empty($this->config['send_and_close'])) {
+					if (empty($this->config['tcp_keep_alive'])) {
 						$this->close();
 					}
                     return $this->config['response_unserialize'](substr($str, 0, - $len));

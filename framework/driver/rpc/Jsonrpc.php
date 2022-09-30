@@ -7,27 +7,15 @@ class Jsonrpc
     protected $client;
     // 配置项
     protected $config = [
-        /*
-        // 服务主机（TCP）
-        'host'
-        // 服务端口（TCP）
-        'port'
-        // 服务端点（HTTP）
-        'endpoint'
-		// HTTP请求headers（HTTP）
-		'http_headers',
-        // HTTP请求curl设置（HTTP）
-        'http_curlopts'
-        // 连接超时（TCP）
-        'tcp_timeout'
-		// TCP是否保持连接（TCP）
-		'tcp_keep_alive'
+		/* 参数模式
+		 * 0:索引数组，所有参数组成的索引数组
+		 * 1:关联数组，取第一个参数的索引数组或基础类型
 		 */
+		'param_mode' => 0;
         // 请求内容序列化
         'requset_serialize'		=> 'jsonencode',
         // 响应内容反序列化
         'response_unserialize'	=> 'jsondecode',
-
     ];
     
     /*
@@ -53,19 +41,10 @@ class Jsonrpc
     
     /*
      * query实例
+	 * $id = true 自动生成id, $id = false 不传id
      */
     public function query($name = null, $id = true)
     {
-        return new query\Jsonrpc($name, $id, $this->client);
+        return new query\Jsonrpc($this->client, $this->config['param_mode'], $name, $id);
     }
-	
-    /*
-     * 批量请求
-     */
-	/*
-	public function batch(...$params)
-	{
-		return new query\JsonrpcBatch($this->client)->call(...$params);
-	}
-	*/
 }

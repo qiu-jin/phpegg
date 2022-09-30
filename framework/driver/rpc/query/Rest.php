@@ -1,94 +1,79 @@
 <?php
 namespace framework\driver\rpc\query;
 
-use framework\driver\rpc\Rest as Restrpc;
-
 class Rest
 {
 	// namespace
     protected $ns;
 	// client实例
     protected $client;
+	// http method
+    protected $method;
+	// 配置
+	protected $config;
 	// filter设置
     protected $filters;
-    
+	// headers设置
+    protected $headers;
+	
     /*
      * 构造函数
      */
-    public function __construct($client, $name, $filters)
+    public function __construct($client, $config, $path, $filters, $headers, $method)
     {
-        if (isset($name)) {
-            $this->ns[] = $name;
-        }
+        $this->ns = explode('/', $path);
         $this->client = $client;
+		$this->config = $config;
 		$this->filters = $filters;
+		$this->headers = $headers;
+        if ($method) {
+			$m = strtoupper($method);
+			if (in_array($m, ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'])) {
+				$this->method = $m;
+		    } else {
+		    	throw new \Exception('Call to undefined method '.__CLASS__."::$method");
+		    }
+        }
     }
 
-    /*
-     * 魔术方法，设置namespace
-     */
-    public function __get($name)
-    {
-        $this->ns[] = $name;
-        return $this;
-    }
-
-    /*
-     * get方法
-     */
-    public function get($id)
-    {
-		$this->ns[] = $id;
-		return $this->call('GET');
-    }
-	
-    /*
-     * list方法
-     */
-    public function list()
-    {
-		return $this->call('GET');
-    }
-	
-    /*
-     * create方法
-     */
-    public function create($data)
-    {
-		return $this->call('POST', null, $data);
-    }
-	
-    /*
-     * update方法
-     */
-    public function update($id, $data)
-    {
-		$this->ns[] = $id;
-		return $this->call('PATCH', null, $data);
-    }
-
-    /*
-     * delete方法
-     */
-    public function delete($id)
-    {
-		$this->ns[] = $id;
-		return $this->call('DELETE');
-    }
-    
     /*
      * 魔术方法，调用rpc方法
      */
-    public function __call($method, $params)
+    public function __call($name, $params)
     {
-		return $this->call('POST', $method, ...$params);
+		$data = null;
+		if ($params) {
+			$i = count($params) - 1;
+			if (is_array($params[$i]) || is_object($params[$i])) {
+				$data = array_pop($params);
+			}
+		}
+		foreach ($this->ns as $i => $v) {
+			if ($v === '*') {
+				if ($params) {
+					$this->ns[$i] = array_shift($params);
+				} else {
+					throw new \Exception('Resource error:'.implode('/', $this->ns));
+				}
+			}
+		}
+		$n = strtolower($name);
+		if (isset($this->config['standard_methods'][$n])) {
+			return $this->call($this->config['standard_methods'][$n], $data);
+		} else {
+			return $this->call(isset($data) ? 'POST' : 'GET', $data, $name);
+		}
     }
     
     /*
      * 调用
      */
-    protected function call($method, $custom_method = null, $data = null, $headers = null)
+    protected function call($method, $data = null, $custom_method = null)
     {
-		return $this->client->send($method, implode('/', $this->ns), $this->filters, $data, $headers);
+		$path = implode('/', $this->ns);
+		if ($custom_method) {
+			$path .= $this->config['custom_method_prefix'].$custom_method;
+		}
+		return $this->client->send($this->method ?? $method, $path, $this->filters, $data, $this->headers);
     }
 }

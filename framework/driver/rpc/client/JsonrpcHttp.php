@@ -6,7 +6,14 @@ use framework\core\http\Client;
 class JsonrpcHttp
 {
 	// 配置项
-    protected $config;
+    protected $config/* = [
+        // 服务端点（HTTP）
+        'endpoint'
+		// HTTP请求headers（HTTP）
+		'http_headers',
+        // HTTP请求curl设置（HTTP）
+        'http_curlopts'
+    ]*/;
     
     /*
      * 构造函数
@@ -29,7 +36,8 @@ class JsonrpcHttp
             $client->curlopts($this->config['http_curlopts']);
         }
         $client->body($this->config['requset_serialize']($data));
-        if (($result = $client->response()->body) !== false) {
+		$result = $client->response()->body;
+        if ($result !== false) {
             return $this->config['response_unserialize']($result);
         }
         if ($error = $client->error) {

@@ -9,21 +9,24 @@ class Http
     protected $client;
 	// filter设置
     protected $filters;
+	// headers设置
+    protected $headers;
     
     /*
      * 构造函数
      */
-    public function __construct($client, $name, $filters)
+    public function __construct($client, $name, $filters, $headers)
     {
         $this->ns = $name;
         $this->client = $client;
 		$this->filters = $filters;
+		$this->headers = $headers;
     }
 	
     /*
      * get方法
      */
-    public function get($data = null, $headers = null)
+    public function get($data = null)
     {
 		return $this->call('GET', $data);
     }
@@ -31,7 +34,7 @@ class Http
     /*
      * post方法
      */
-    public function post($data = null, $headers = null)
+    public function post($data = null)
     {
 		return $this->call('POST', $data);
     }
@@ -50,8 +53,8 @@ class Http
     /*
      * 调用
      */
-    protected function call($method, $data = null, $headers = null)
+    protected function call($method, $data = null)
     {
-        return $this->client->send($method, $this->ns, $this->filters, $data, $headers);
+        return $this->client->send($method, $this->ns, $this->filters, $data, $this->headers);
     }
 }

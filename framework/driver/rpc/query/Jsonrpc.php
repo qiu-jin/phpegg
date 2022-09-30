@@ -9,14 +9,17 @@ class Jsonrpc
     protected $ns;
 	// client实例
     protected $client;
+	// 参数模式
+    protected $param_mode;
     
     /*
      * 构造函数
      */
-    public function __construct($name, $id, $client)
+    public function __construct($client, $param_mode, $name, $id)
     {
 		$this->id = $id;
         $this->client = $client;
+		$this->param_mode = $param_mode;
         if (isset($name)) {
             $this->ns[] = $name;
         }
@@ -37,7 +40,7 @@ class Jsonrpc
     public function __call($method, $params)
     {
         $this->ns[] = $method;
-        return $this->call($params);
+        return $this->call($this->param_mode ? ($params[0] ?? null) : $params);
     }
     
     /*

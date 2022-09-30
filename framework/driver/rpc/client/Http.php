@@ -7,8 +7,27 @@ use framework\core\http\Client;
 
 class Http
 {
-	// 配置项
-    protected $config;
+    // 配置项
+    protected $config/* = [
+        // 服务端点
+        'endpoint'
+        // 请求公共headers
+        'http_headers'
+        // 请求公共curlopts
+        'http_curlopts'
+        // 请求内容编码
+        'requset_encode'
+        // 响应内容解码
+        'response_decode'
+        // 响应结果字段
+        'response_result_field'
+        // 抛出响应错误异常
+        'throw_response_error'
+        // 错误码定义字段
+        'response_error_code_field'
+        // 错误信息定义字段
+        'response_error_message_field'
+    ]*/;
 	// 错误码
 	protected $error_code;
 	// 错误信息
@@ -54,8 +73,8 @@ class Http
 			if (is_string($body)) {
 				$client->body($body);
 			} else {
-				if (isset($config['response_encode'])) {
-					$client->body($config['response_encode']($body));
+				if (isset($config['request_encode'])) {
+					$client->body($config['request_encode']($body));
 				} else {
 					$client->form($body);
 				}

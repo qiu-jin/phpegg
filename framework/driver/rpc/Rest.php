@@ -1,27 +1,37 @@
 <?php
 namespace framework\driver\rpc;
 
-class Rest extends Http
+class Rest
 {
-    // 配置项
-    protected $config = [
-    	'standard_methods' => [
-    		'get' => 'GET'
-    	];
-    ];
-	
+	// client实例
+    protected $client;
+	// 配置
+	protected $config = [
+		// 标准方法
+		'standard_methods' => [
+			'get'	 => 'GET',
+			'list'   => 'GET',
+			'create' => 'POST',
+			'update' => 'POST',
+			'delete' => 'DELETE',
+		],
+		// 自定义方法前缀符
+		'custom_method_prefix' => '/',
+	];
+
     /*
-     * query实例
+     * 构造函数
      */
-    public function __get($name)
+    public function __construct($config)
     {
-        return $this->query($name);
+        $this->client = new client\Http($config);
+		$this->config = array_intersect_key($this->config, $config) + $this->config;
     }
     /*
      * query实例
      */
-    public function query($name = null, $filters = null)
+    public function query($name, $filters = null, $headers = null, $method = null)
     {
-        return new query\Rest($this->client, $name, $filters);
+        return new query\Rest($this->client, $this->config, $name, $filters, $headers, $method);
     }
 }

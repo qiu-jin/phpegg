@@ -7,14 +7,37 @@ use framework\core\http\Client;
 class GrpcHttp
 {
 	// 配置项
-    protected $config;
+    protected $config = [
+        /*
+        // 服务端点（HTTP）
+        'endpoint'
+        // 公共headers（HTTP）
+        'http_headers'
+        // HTTP 请求编码
+        'http_request_encode'	=> ['gzip' => 'gzencode'],
+        // HTTP 响应解码
+        'http_response_decode'	=> ['gzip' => 'gzdecode'],
+        // service类名前缀
+        'service_prefix'
+        // schema定义文件加载规则
+        'schema_loader_rules'
+        */
+        // CURL设置（HTTP）
+        'http_curlopts' => [
+        	CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_2_0
+        ],
+        // 请求参数协议类格式
+        'http_request_message_format'	=> '{service}{method}Request',
+        // 响应结构协议类格式
+        'http_response_message_format'	=> '{service}{method}Response',
+    ];
     
     /*
      * 构造函数
      */
     public function __construct($config)
     {
-        $this->config = $config;
+        $this->config = $config + $this->config;
     }
     
     /*
@@ -22,9 +45,12 @@ class GrpcHttp
      */
     public function send($service, $method, $message)
     {
+		if (isset($this->config['service_prefix'])) {
+			$service = $this->config['service_prefix'].'\\'.$service;
+		}
         $url    = $this->config['endpoint'].'/'.strtr($service, '\\', '.').'/'.$method;
 		$client = Client::post($url);
-        $data   = $message->serializeToString();
+        $data   = $this->makeRequestMessage($service, $method, $message)->serializeToString();
 		if (isset($this->config['http_request_encode'])) {
 			$encode_name = array_rand($this->config['http_request_encode']);
 			$encode_function = $this->config['http_request_encode'][$encode_name];
@@ -59,7 +85,7 @@ class GrpcHttp
                     	error("Can't decode: $decode_name response");
                     }
                 }
-                $response_class = strtr($this->config['response_message_format'], [
+                $response_class = strtr($this->config['http_response_message_format'], [
                     '{service}' => $service,
                     '{method}'  => ucfirst($method)
                 ]);
@@ -70,5 +96,29 @@ class GrpcHttp
             error("[{$response->headers['grpc-status']}]".$response->headers['grpc-message']);
         }
         error($client->error);
+    }
+	
+
+    /*
+     * 生成请求信息实例
+     */
+    protected function makeRequestMessage($service, $method, $message)
+    {
+		if (isset($this->config['http_request_message_format'])) {
+            if (is_array($message)) {
+	            $class = strtr($this->config['http_request_message_format'], [
+	                '{service}' => $service,
+	                '{method}'  => ucfirst($method)
+	            ]);
+	            $message = new $class;
+	            $message->mergeFromJsonString(json_encode($message));
+	            return $message;
+            }
+		} else {
+            if (is_subclass_of($message, Message::class)) {
+                return $message;
+            }
+		}
+		throw new \Exception('Invalid params');
     }
 }
