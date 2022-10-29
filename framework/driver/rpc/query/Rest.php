@@ -10,7 +10,18 @@ class Rest
 	// http method
     protected $method;
 	// 配置
-	protected $config;
+	protected $config = [
+		// 标准方法
+		'standard_methods' => [
+			'get'	 => 'GET',
+			'list'   => 'GET',
+			'create' => 'POST',
+			'update' => 'POST',
+			'delete' => 'DELETE',
+		],
+		// 自定义方法前缀符
+		'custom_method_prefix' => '/',
+	];
 	// filter设置
     protected $filters;
 	// headers设置
@@ -23,7 +34,7 @@ class Rest
     {
         $this->ns = explode('/', $path);
         $this->client = $client;
-		$this->config = $config;
+		$this->config = array_intersect_key($this->config, $config) + $this->config;
 		$this->filters = $filters;
 		$this->headers = $headers;
         if ($method) {

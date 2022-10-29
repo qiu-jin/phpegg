@@ -11,7 +11,7 @@ class Jsonrpc
 		 * 0:索引数组，所有参数组成的索引数组
 		 * 1:关联数组，取第一个参数的索引数组或基础类型
 		 */
-		'param_mode' => 0;
+		'param_mode' => 0,
         // 请求内容序列化
         'requset_serialize'		=> 'jsonencode',
         // 响应内容反序列化
@@ -47,4 +47,18 @@ class Jsonrpc
     {
         return new query\Jsonrpc($this->client, $this->config['param_mode'], $name, $id);
     }
+	
+    /*
+     * 批量请求
+     */
+	public function batch(...$params)
+	{
+		foreach ($params as $i => $v) {
+			$params[$i]['jsonrpc'] = '2.0';
+			if (!array_key_exists('id', $v) || $v['id'] === true) {
+				$params[$i]['id'] = uniqid();
+			}
+		}
+        return $this->client->send($params);
+	}
 }
