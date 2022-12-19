@@ -62,7 +62,7 @@ class Rest
 		foreach ($this->ns as $i => $v) {
 			if ($v === '*') {
 				if ($params) {
-					$this->ns[$i] = array_shift($params);
+					$this->ns[$i] = urlencode(array_shift($params));
 				} else {
 					throw new \Exception('Resource error:'.implode('/', $this->ns));
 				}
