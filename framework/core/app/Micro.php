@@ -15,93 +15,85 @@ class Micro extends App
         'controller_ns'     => 'controller',
         // 控制器类名后缀
         'controller_suffix' => null,
-        /* 参数模式
-         * 0 单参数
-         * 1 顺序参数
-         * 2 键值参数
-         */
-        'param_mode'	=> 1,
         // 闭包绑定的类（为true时绑定getter匿名类）
         'closure_bind_class'	=> true,
         // Getter providers（绑定getter匿名类时有效）
         'closure_getter_providers'  => null,
-        // 是否路由动态调用
-        'route_dispatch_dynamic'    => false,
         // 设置动作调度路由属性名，为null则不启用动作路由
         'action_dispatch_routes_property' => 'routes',
     ];
-    // 路由
+    // 路由规则
     protected $routes = [];
-	// 
+	// query规则
 	protected $queries = [];
 
     /*
-     * 单个路由
+     * 路由规则集合
      */
-    public function any($role, $call)
+    public function route(...$params)
     {
-        $this->routes[$role] = $call;
-        return $this;
-    }
-    
-    /*
-     * GET Method路由
-     */
-    public function get($role, $call)
-    {
-        return $this->method('GET', $role, $call);
-    }
-    
-    /*
-     * POST Method路由
-     */
-    public function post($role, $call)
-    {
-        return $this->method('POST', $role, $call);
+		$count = count($params);
+		if ($count == 2) {
+			$this->routes[$params[0]] = $params[1];
+			return $this;
+		} elseif ($count == 3) {
+	        if (is_array($params[0])) {
+	            foreach ($params[0] as $m) {
+	                $this->routes[$params[1]][":$m"] = $params[2];
+	            }
+	        } else {
+	            $this->routes[$params[1]][":$params[0]"] = $params[2];
+	        }
+			return $this;
+		}
+		throw new \Exception("无效的route规则或类型");
     }
 	
     /*
      * query规则集合
      */
-    public function query($path, ...$params)
+    public function query(...$params)
     {
-		$this->queries[trim($path, '/')] = $params;
-        return $this;
-    }
-
-    /*
-     * 其它HTTP Method路由魔术方法
-     */
-    public function __call($method, $params)
-    {
-        if (in_array($m = strtoupper($method), ['PUT', 'DELETE', 'HEAD', 'PATCH', 'OPTIONS'])) {
-            return $this->method($m, ...$params);
-        }
-        throw new \RuntimeException("Invalid method: $method");
-    }
-	
-    /*
-     * HTTP Method路由
-     */
-    public function method($method, $role, $call)
-    {
-        if (is_array($method)) {
-            foreach ($method as $m) {
-                $this->routes[$role][":$m"] = $call;
-            }
-        } else {
-            $this->routes[$role][":$method"] = $call;
-        }
-        return $this;
-    }
-
-    /*
-     * 路由规则集合
-     */
-    public function route(array $roles)
-    {
-        $this->routes = array_replace_recursive($this->routes, $roles);
-        return $this;
+		$count = count($params);
+		if ($count > 1) {
+			$call = array_pop($params);
+			if ($count == 2) {
+				if (is_array($params[0])) {
+					$query['query'] = $params[0];
+				} else {
+					$query['method_query'] = $params[0];
+				}
+			} elseif ($count == 3) {
+				if (is_array($params[1])) {
+					$path = $params[0];
+					$query['query'] = $params[1];
+				} elseif (is_array($params[0])) {
+					$query['query'] = $params[0];
+					$query['method_query'] = $params[1];
+				} elseif (is_array($call)) {
+					$query['object_query'] = $params[0];
+					$query['method_query'] = $params[1];
+				} else {
+					$path = $params[0];
+					$query['method_query'] = $params[1];
+				}
+			} elseif ($count == 4) {
+				$path = $params[0];
+				if (is_array($params[1])) {
+					$query['query'] = $params[0];
+					$query['method_query'] = $params[1];
+				} else {
+					$query['object_query'] = $params[0];
+					$query['method_query'] = $params[1];
+				}
+			}
+			if (isset($query)) {
+				$query['call'] = $call;
+				$this->queries[$path ?? ''] = $query;
+				return $this;
+			}
+		}
+		throw new \Exception("无效的query规则或类型");
     }
     
     /*
@@ -110,70 +102,128 @@ class Micro extends App
     protected function dispatch()
     {
 		if ($this->routes) {
-	        $router = new Router(App::getPathArr(), Request::method());
-	        if (!$result = $router->route($this->routes)) {
-	            return;
-	        }
+			return $this->dispatchRoute();
+		}
+		if ($this->queries) {
+			return $this->dispatchQuery();
+		}
+	}
+	
+    protected function dispatchRoute()
+    {
+		$http_method = Request::method();
+		$router = new Router(App::getPathArr(), $http_method);
+		$result = $router->route($this->routes);
+		if ($result) {
 			$call = $result['dispatch'];
 	        if ($call instanceof \Closure) {
-	            if ($class = $this->config['closure_bind_class']) {
-					if ($class === true) {
-						$getter = getter($this->config['closure_getter_providers']);
-						$call = \Closure::bind($call, $getter, $getter);
-					} else {
-						$call = \Closure::bind($call, new $class, $class);
+	            if ($this->config['closure_bind_class']) {
+					$call = $this->callClosure($call, $this->config['closure_bind_class']);
+	            }
+				return ['call' => $call, 'params' => $result['matches']];
+	        } else {
+				if (!isset($result['next'])) {
+					if (is_string($call)) {
+			        	$call = explode('::', $call);
+						if (count($call) == 2) {
+							$instance = $this->instanceClass($call[0]);
+							$dispatch = Dispatcher::dispatch($call[1], $result['matches']);
+							if ($instance && is_callable([$instance, $dispatch[0]])) {
+								return ['call' => [$instance, $dispatch[0]], 'params' => $dispatch[1]];
+							}
+						}
 					}
-	            }
-				return $this->dispatch = ['call' => $call, 'params' => $result['matches']];
-	        } elseif (is_string($call)) {
-				$dispatch = Dispatcher::dispatch(
-					$result['dispatch'],
-					$result['matches'],
-					$this->config['param_mode'],
-					$this->config['route_dispatch_dynamic']
-				);
-	            $arr = explode('::', $dispatch[0]);
-				if ($this->config['controller_ns']) {
-					$arr[0] = $this->getControllerClass($arr[0]);
-				}
-				$call = new $arr[0];
-	            if (isset($arr[1])) {
-					$call = [$call, $arr[1]];
-		            if (!$dispatch[2] || (is_callable($call) && $arr[1][0] !== '_')) {
-						return $this->getDispatchResult($call, $dispatch[1]);
-		            }
-					return;
-	            } elseif ($this->config['action_dispatch_routes_property'] && isset($result['next'])) {
-			        return $this->actionRouteDispatch($call, $result['next']);
-	            }
-	        } elseif (is_object($call)) {
-				if ($this->config['action_dispatch_routes_property'] && isset($result['next'])) {
-					return $this->actionRouteDispatch($call, $result['next']);
-				}
+					throw new \Exception("无效的路由dispatch规则或类型");
+		        } else {
+				    if (is_object($call)) {
+						$instance = $call;
+					} else {
+						if (is_string($call)) {
+							$instance = $this->instanceClass($call);
+						} elseif (is_array($call)) {
+							if (isset($result['matches'][0]) && isset($call[$result['matches'][0]])) {
+								$instance = $this->instanceClass($call[$result['matches'][0]]);
+							} else {
+								return;
+							}
+						}
+						if (!isset($instance)) {
+							throw new \Exception("无效的路由dispatch规则或类型");
+						}
+					}
+					if ($this->config['action_dispatch_routes_property']) {
+						$property = $this->config['action_dispatch_routes_property'];
+						if (isset($instance->$property)) {
+							$dispatch = Dispatcher::route($result['next'], $instance->$property, $http_method);
+					        if ($dispatch) {
+					            if (is_callable([$instance, $dispatch[0]]) || $dispatch[0][0] === '_') {
+									return ['call' => [$instance, $dispatch[0]], 'params' => $dispatch[1]];
+					            }
+					        }
+						}
+					} else {
+						if (is_callable([$instance, $result['next']] && $result['next'][0] != '_')) {
+							return ['call' => [$instance, $result['next']]];
+						}
+					}
+		        }
 	        }
-			throw new \Exception("无效的路由dispatch规则或类型");
-		} elseif ($this->queries) {
-			$path = App::getPath();
-			if (isset($this->queries[$path])) {
-				foreach ($this->queries[$path] as $params) {
-					if (!empty($params[0])) {
-						foreach ($params[0] as $k => $v) {
-							if (Request::query($k) != $v) {
-								continue 2;
-							}
+		}
+    }
+	
+    protected function dispatchQuery()
+    {
+		$path = App::getPath();
+		if (isset($this->queries[$path])) {
+			$call = $query['call'];
+			foreach ($this->queries[$path] as $query) {
+				if (isset($query['query'])) {
+					foreach ($query['query'] as $k => $v) {
+						if (Request::query($k) != $v) {
+							continue 2;
 						}
 					}
-					if (isset($params[2])) {
-						$method = Request::query($params[1]);
-						if ($method) {
-							$instance = is_object($params[2]) ? $params[2] : instance($params[2]);
-							if (is_callable([$instance, $method]) && $method[0] !== '_') {
-								return $this->dispatch = ['call' => [$instance, $method]];
+				}
+				if (!isset($query['method_query'])) {
+			        if ($call instanceof \Closure) {
+			            if ($this->config['closure_bind_class']) {
+							$call = $this->callClosure($call, $this->config['closure_bind_class']);
+			            }
+						return ['call' => $call];
+			        } elseif (is_string($call)) {
+			        	$call = explode('::', $call);
+						if (count($call) == 2) {
+							$instance = $this->instanceClass($call[0]);
+							$method = Dispatcher::parseDispatch($call[1]);
+							if ($instance && is_callable([$instance, $method])) {
+								return ['call' => [$instance, $method]];
 							}
 						}
-					} else {
-						return $this->dispatch = ['call' => $v];
+			        }
+					throw new \Exception("无效的query dispatch规则或类型");
+				}
+				$method = Request::query($query['method_query']);
+				if ($method) {
+					if (isset($query['object_query'])) {
+						$object = Request::query($query['object_query']);
+						if ($object && isset($call[$object])) {
+							$call = $call[$object];
+						} else {
+							continue;
+						}
 					}
+					if (is_object($call)) {
+						$instance = $call;
+					} elseif (is_string($call)) {
+						$instance = $this->instanceClass($class);
+						if (!$instance) {
+							throw new \Exception("无效的query dispatch规则或类型");
+						}
+					}
+					if (is_callable([$instance, $method]) && $method[0] !== '_') {
+						return ['call' => [$instance, $method]];
+					}
+					return;
 				}
 			}
 		}
@@ -203,6 +253,30 @@ class Micro extends App
     {
         Response::json($return);
     }
+	
+	protected function callClosure($call, $class)
+	{
+		if ($class === true) {
+			$getter = getter($this->config['closure_getter_providers']);
+			return \Closure::bind($call, $getter, $getter);
+		} else {
+			return \Closure::bind($call, new $class, $class);
+		}
+	}
+	
+	protected function instanceClass($class)
+	{
+		if ($this->config['controller_ns']) {
+			$class = $this->getControllerClass($class);
+			if ($class) {
+				return instance($class);
+			}
+		} else {
+	        if (class_exists($class)) {
+	            return instance($call);
+	        }
+		}
+	}
 	
     /*
      * Action 路由调度

@@ -30,8 +30,6 @@ class Standard extends App
 		 * 3 数组参数
          */
         'default_dispatch_param_mode' => 1,
-		
-		
 
         /* 默认调度的参数来源
          * 0 url参数
@@ -40,7 +38,6 @@ class Standard extends App
 		 * 3 REQUEST参数
 		 * 4 body参数
          */
-		
 		
         // 控制器类namespace深度，0为不确定
         'default_dispatch_depth' => 1,

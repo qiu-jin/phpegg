@@ -29,7 +29,7 @@ class Rest extends App
 			':DELETE *'	=> 'delete($1)',
 		],
 		// 自定义方法前缀符
-		'default_custom_method_prefix' => null,
+		'default_custom_method_prefix' => ':',
         // 设置动作调度路由属性名，为null则不启用动作路由
         'dispatch_method_routes_property' => 'routes',
     ];
@@ -41,11 +41,11 @@ class Rest extends App
     {
         $path = App::getPathArr();
 		$http_method = Request::method();
-        if ($this->config['route_dispatch_routes']) {
-            $routes = $this->config['route_dispatch_routes'];
-            if (is_string($routes) && !($routes = Config::read($routes))) {
-                return;
-            }
+		$routes = $this->config['route_dispatch_routes'];
+		if (is_string($routes)) {
+			$routes = Config::read($routes);
+		}
+		if ($routes) {
 			$route_dispatch = Dispatcher::route($path, $routes, $param_mode, 0, $http_method)
             if ($route_dispatch) {
                 $call = explode('::', $route_dispatch[0]);
