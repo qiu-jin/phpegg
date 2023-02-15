@@ -29,16 +29,6 @@ class Router
 			}
 		}
     }
-
-    /*
-     * 构造函数
-     */
-    public function __construct(array $path, $method = null)
-    {
-        $this->path   = $path;
-        $this->count  = count($path);
-        $this->method = $method;
-    }
 	
     /*
      * 设置内置正则规则
@@ -51,6 +41,16 @@ class Router
 			self::$patterns = $name + self::$patterns;
 		}
 	}
+	
+    /*
+     * 构造函数
+     */
+    public function __construct(array $path, $method = null)
+    {
+        $this->path   = $path;
+        $this->count  = count($path);
+        $this->method = $method;
+    }
 
     /*
      * 路由匹配
@@ -92,6 +92,26 @@ class Router
     public function match($rule, $step)
     {
         $ret = [];
+		// 方法匹配
+		if ($rule[0] == ':') {
+			$arr = explode(' ', substr($v, 1), 2);
+			$method = strtoupper(trim($arr[0]));
+			
+			if (strpos("|$method|", "|$this->method|") === false) {}
+			
+			if (strpos($method, '|') === false) {
+				if ($method != $this->method) {
+					return false;
+				}
+			} elseif (!in_array($this->method, explode('|', $method))) {
+				return false;
+			}
+			if (isset($arr[1])) {
+				$rule = trim($arr[1]);
+			} else {
+				return $step == $this->count ? [$ret, $step] : false;
+			}
+		}
         // 空匹配
         if ($rule == '/') {
             return $step == $this->count ? [$ret, $step] : false;
@@ -165,14 +185,6 @@ class Router
                 case '~':
                     if ($v === '~') {
                         return [$ret, $this->count, array_slice($this->path, $step)];
-                    }
-                    return false;
-                // HTTP方法匹配
-                case ':':
-                    foreach (explode(' ', substr($v, 1)) as $n) {
-                        if (strtoupper(trim($n)) == $this->method) {
-                            return [$ret, $step];
-                        }
                     }
                     return false;
                 // 原义匹配

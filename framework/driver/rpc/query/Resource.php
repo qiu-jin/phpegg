@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\rpc\query;
 
-class Rest
+class Resource
 {
 	// namespace
     protected $ns;

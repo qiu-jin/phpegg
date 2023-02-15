@@ -171,9 +171,10 @@ class Arr
     /*
      * 是否为哈希数组
      */
+	
     public static function isAssoc(array $array)
     {
-        return array_keys($keys = array_keys($array)) !== $keys;
+		return !array_diff_key($array, array_keys($array));
     }
     
     /*

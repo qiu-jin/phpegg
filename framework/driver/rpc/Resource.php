@@ -1,7 +1,7 @@
 <?php
 namespace framework\driver\rpc;
 
-class Rest
+class Resource
 {
 	// client实例
     protected $client;
@@ -21,6 +21,6 @@ class Rest
      */
     public function query($name, $filters = null, $headers = null, $method = null)
     {
-        return new query\Rest($this->client, $this->config, $name, $filters, $headers, $method);
+        return new query\Resource($this->client, $this->config, $name, $filters, $headers, $method);
     }
 }
