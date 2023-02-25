@@ -7,10 +7,11 @@ class Container
 {
 	// Provider类型常量
 	const T_DRIVER	= 1;
-	const T_SERVICE = 1 << 1;
-	const T_CLASS 	= 1 << 2;
-	const T_CLOSURE	= 1 << 3;
-	const T_ALIAS 	= 1 << 4;
+	const T_MODEL   = 2;
+	const T_SERVICE = 3;
+	const T_CLASS 	= 4;
+	const T_CLOSURE	= 5;
+	const T_ALIAS 	= 6;
 
     protected static $init;
     // 容器实例
@@ -24,6 +25,7 @@ class Container
 		'logger'    => [self::T_DRIVER],
         'service'   => [self::T_SERVICE, 1/*是否应用于Getter（0否,大于0的整数为Getter层数）, ...基础名称空间 */],
 		/*
+		'model' 	=> [self::T_MODEL,   1, ],
 		'class' 	=> [self::T_CLASS,   0, [类全名, ...类初始化参数（可选）]],
 		'closure' 	=> [self::T_CLOSURE, 0, 匿名函数（函数执行返回实例）],
 		'alias' 	=> [self::T_ALIAS,   0, 真实provider名],
@@ -70,27 +72,19 @@ class Container
     }
 	
     /*
-     * 获取或设置规则
+     * 获取实例
      */
-    public static function provider($name, array $value = null)
+    public static function get($name)
     {
-		if (isset($value)) {
-			self::$providers[$name] = $value;
-		} else {
-			return self::$providers[$name] ?? null;
-		}
+		return self::$instances[$name] ?? null;
     }
 	
     /*
-     * 获取或设置实例
+     * 设置实例
      */
-    public static function instance($name, object $value = null)
+    public static function set($name, object $value)
     {
-		if (isset($value)) {
-			self::$instances[$name] = $value;
-		} else {
-			return self::$instances[$name] ?? null;
-		}
+		self::$instances[$name] = $value;
     }
 
     /*
@@ -99,6 +93,22 @@ class Container
     public static function clear()
     {
 		self::$instances = null;
+    }
+	
+    /*
+     * 获取规则
+     */
+    public static function getProvider($name)
+    {
+		return self::$providers[$name] ?? null;
+    }
+	
+    /*
+     * 设置规则
+     */
+    public static function setProvider($name, array $value)
+    {
+		self::$providers[$name] = $value;
     }
     
     /*

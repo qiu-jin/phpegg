@@ -8,7 +8,7 @@ trait Getter
      */
     public function __get($name)
     {
-		$v = Container::provider($name);
+		$v = Container::getProvider($name);
 		if ($v && !empty($v[1])) {
 			if ($v[0] === Container::T_DRIVER) {
 				if ($v[1] === 2) {
@@ -28,6 +28,24 @@ trait Getter
 					};
 				}
 				return $this->$name = Container::driver($name);
+			} elseif ($v[0] === Container::T_MODEL) {
+				/*
+				return $this->$name = new class($name) {
+		            private $_n;
+		            public function __construct($name) {
+		                $this->_n = $name;
+		            }
+					//
+		            public function __call($method, $params) {
+						if ($method[0] != '_') {
+							$this->$method = Container::model($this->_n, $method);
+							($this->$method)(...$params);
+							return $this->$method
+						}
+		               	throw new \Exception("方法命名不允许以下划线开头: $method");
+		            }
+				};
+				*/
 			} elseif ($v[0] === Container::T_SERVICE) {
 				// SERVICE 名称空间链实例
 				return $this->$name = new class($name, ($int = (int) $v[1]) > 0 ? $int : 1) {
@@ -49,29 +67,10 @@ trait Getter
 		                }
 						throw new \Exception("属性命名不允许以下划线开头: $this->_ns");
 		            }
-				};	
+				};
 			}
 			return $this->$name = Container::make($name);
 		} else {
-			
-			/*
-			return $this->$name = new class($name) {
-	            private $_n;
-	            public function __construct($name) {
-	                $this->_n = $name;
-	            }
-				//
-	            public function __call($method, $params) {
-					if ($method[0] != '_') {
-						$this->$method = Container::model($this->_n, $method);
-						($this->$method)(...$params);
-						return $this->$method
-					}
-	               	throw new \Exception("方法命名不允许以下划线开头: $method");
-	            }
-			};
-			*/
-			
 			$config = Config::get('getter');
 			if (isset($config['providers_name'])) {
 				$n = $config['providers_name'];
