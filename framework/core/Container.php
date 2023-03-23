@@ -11,7 +11,6 @@ class Container
 	const T_SERVICE = 3;
 	const T_CLASS 	= 4;
 	const T_CLOSURE	= 5;
-	const T_ALIAS 	= 6;
 
     protected static $init;
     // 容器实例
@@ -28,7 +27,6 @@ class Container
 		'model' 	=> [self::T_MODEL,   1, ],
 		'class' 	=> [self::T_CLASS,   0, [类全名, ...类初始化参数（可选）]],
 		'closure' 	=> [self::T_CLOSURE, 0, 匿名函数（函数执行返回实例）],
-		'alias' 	=> [self::T_ALIAS,   0, 真实provider名],
 		*/
     ];
 
@@ -93,6 +91,14 @@ class Container
     public static function clear()
     {
 		self::$instances = null;
+    }
+	
+    /*
+     * 设置规则
+     */
+    public static function bind($name, $provider, $params = null)
+    {
+		self::$providers[$name] = $value;
     }
 	
     /*
@@ -174,33 +180,10 @@ class Container
 					return $v[2]();
 				}
 				break;
-			case self::T_ALIAS:
-				if ($c == 1) {
-					return self::makeAlias($v[2]);
-				}
-				break;
 			default:
 			    throw new \Exception("无效的Provider类型: $v[0]");
 		}
 		throw new \Exception('生成Provider实例失败: '.implode('.', $params));
-    }
-	
-    /*
-     * 生成别名实例
-     */
-    protected static function makeAlias($name)
-    {
-		if (isset(self::$instances[$name])) {
-			return self::$instances[$name];
-		}
-		$p = explode('.', $name);
-		if (isset(self::$providers[$p[0]])) {
-			if (self::$providers[$p[0]][0] == self::T_ALIAS) {
-				throw new \Exception("别名实例源不能仍为alias类型: $name");
-			}
-			return self::$instances[$name] = self::makeProvider($p);
-		}
-		throw new \Exception("别名实例源不存在: $name");
     }
 	
     /*
@@ -225,7 +208,8 @@ class Container
 		if (isset($config['class'])) {
 			$class = $config['class'];
 		} elseif (isset($config['driver'])) {
-			$class = "framework\driver\\$type\\".ucfirst($config['driver']);
+			$namespace = $config['namespace'] ?? "framework\driver\\$type";
+			$class = $namespace."\\".ucfirst($config['driver']);
 		} else {
 			throw new \Exception($type.'驱动没有设置实例');
 		}

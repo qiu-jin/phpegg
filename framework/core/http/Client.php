@@ -344,9 +344,11 @@ class Client
                 fclose($fp);
             } else {
                 rewind($fp);
-                $this->response->body = stream_get_contents($fp);
+                //$this->response->body = stream_get_contents($fp);
                 fclose($fp);
-                unlink($file);
+				if (file_exists($file)) {
+					unlink($file);
+				}
             }
             return $return;
         }

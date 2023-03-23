@@ -6,7 +6,7 @@ class Event
     private static $init;
     // 事件容器
     private static $events;
-    // 计数器
+    // 排序计数器
     private static $counter = PHP_INT_MAX;
     
     /*
@@ -69,9 +69,14 @@ class Event
     public static function trigger($name, ...$params)
     {
         if (isset(self::$events[$name])) {
-            while(self::$events[$name]->valid() && (self::$events[$name]->extract())(...$params) !== false);
+			while (self::$events[$name]->valid()) {
+				//&& (self::$events[$name]->extract())(...$params) !== false
+				$params = (self::$events[$name]->extract())(...$params) ?? [];
+				if ($params === false) {
+					break;
+				}
+			}
             unset(self::$events[$name]);
-			return true;
         }
     }
 }

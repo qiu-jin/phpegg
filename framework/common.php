@@ -88,14 +88,6 @@ function email($param, ...$params)
 }
 
 /*
- * 设置事件
- */
-function event($name, callable $call, $priority = 0)
-{
-    Event::on($name, $call, $priority);
-}
-
-/*
  * 输出视图页面
  */
 function view($tpl, array $vars = null)
@@ -225,7 +217,7 @@ function getter($providers = null)
     return new class ($providers) {
         use Getter;
         public function __construct($providers) {
-            $this->{Config::get('container.getter_providers_name')} = $providers;
+            $this->{Config::get('getter.providers_name', 'providers')} = $providers;
         }
     };
 }
@@ -243,7 +235,7 @@ function is_php_file($file)
 /*
  * 安全引用文件
  */
-function __require($file)
+function __require($__file)
 {
-    return require $file;
+    return require $__file;
 }

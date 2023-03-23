@@ -9,7 +9,7 @@ class Loader
     private static $init;
 	// 映射
 	private static $class_map = [];
-	// PSR-4
+	// PSR4
 	private static $class_psr4 = [];
 	// 前缀
 	private static $class_prefix = [

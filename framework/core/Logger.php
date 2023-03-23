@@ -42,6 +42,7 @@ class Logger
         self::$init = true;
         if ($configs = Config::get('logger')) {
             foreach ($configs as $name => $config) {
+				self::$handlers[$name] = null;
                 if (isset($config['level'])) {
                     foreach ((array) $config['level'] as $lv) {
                         self::$level_handler_names[$lv][] = $name;
@@ -52,7 +53,6 @@ class Logger
                         self::$group_handler_names[$gp][] = $name;
                     }
                 }
-				self::$handlers[$name] = null;
             }
         }
     }
@@ -177,7 +177,7 @@ class Logger
 			return self::getGroupHandler($name);
 		}
 		if (is_array($name)) {
-			return self::makeGroupHandler($name);
+			return self::makeGroupHandler($name, $enable_null_handler);
 		}
 		if ($enable_null_handler) {
 			return self::getNullHandler();
@@ -187,12 +187,14 @@ class Logger
     /*
      * 日志实例
      */
-    private static function getHandler($name)
+    private static function getHandler($name, $enable_null_handler = false)
     {
 		if (isset(self::$handlers[$name])) {
 			return self::$handlers[$name];
 		} elseif (array_key_exists($name, self::$handlers)) {
 			return self::$handlers[$name] = Container::driver('logger', $name);
+		} elseif ($enable_null_handler) {
+			return self::getNullHandler();
 		}
 		throw new \Exception("日志处理器实例不存在: $name");
     }
@@ -235,16 +237,18 @@ class Logger
     /*
      * 生成组实例
      */
-    private static function makeGroupHandler($names)
+    private static function makeGroupHandler($names, $enable_null_handler = false)
     {
-        return new class ($names) extends LoggerDriver {
+        return new class ($names, $enable_null_handler) extends LoggerDriver {
             private $names;
-            public function __construct($names) {
+			private $enable_null_handler;
+            public function __construct($names, $enable_null_handler) {
                 $this->names = $names;
+				$this->enable_null_handler = $enable_null_handler;
             }
             public function write($level, $message, $context = null) {
                 foreach ($this->names as $n) {
-                    Logger::getHandler($n)->write($level, $message, $context);
+                    Logger::getHandler($n, $this->enable_null_handler)->write($level, $message, $context);
                 }
             }
         };

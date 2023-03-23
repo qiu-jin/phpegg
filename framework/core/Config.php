@@ -6,12 +6,12 @@ use framework\util\Arr;
 class Config
 {
     private static $init;
-    //配置文件目录
-    private static $dir;
     //配置值缓存
     private static $config;
     //文件检查缓存
     private static $checked;
+    //配置文件目录
+    private static $config_dir;
     
     /*
      * 初始化
@@ -22,11 +22,21 @@ class Config
             return;
         }
         self::$init = true;
-        __require(defined('ENV_FILE') ? ENV_FILE : APP_DIR.'env.php');
-        if ($file = self::env('CONFIG_FILE')) {
-			self::$config = __require($file);
+		if (defined('ENV_FILE')) {
+			__require(ENV_FILE);
+		} elseif (file_exists(APP_DIR.'env.php')) {
+			__require(APP_DIR.'env.php');
+		}
+		if (!defined('app\env\APP_DEBUG')) {
+			define('app\env\APP_DEBUG', false);
+		}
+		if (!defined('app\env\STRICT_ERROR_MODE')) {
+			define('app\env\STRICT_ERROR_MODE', true);
+		}
+        if ($config_file = self::env('CONFIG_FILE')) {
+			self::$config = __require($config_file);
         }
-        self::$dir = self::env('CONFIG_DIR');
+        self::$config_dir = self::env('CONFIG_DIR');
     }
     
     /*
@@ -37,11 +47,10 @@ class Config
         return defined($const = "app\\env\\$name") ? constant($const) : $default;
     }
 	
-    
     /*
      * 读取配置项值，不缓存值（仅支持顶级配置项）
      */
-    public static function read($name, $cache = false)
+    public static function read($name)
     {
 		if (strpos($name, '.') === false) {
 			return self::$config[$name] ?? self::loadFile($name);
@@ -123,7 +132,7 @@ class Config
      */
     private static function loadFile($name)
     {
-        if (self::$dir && is_php_file($file = self::$dir."$name.php") && is_array($config = __require($file))) {
+        if (self::$config_dir && is_php_file($file = self::$config_dir."$name.php") && is_array($config = __require($file))) {
             return $config;
         }
     }

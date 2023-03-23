@@ -102,19 +102,19 @@ abstract class App
 	            if (!isset(self::$exit)) {
 	                Error::fatalHandler();
 	            }
-                Event::trigger('exit');
-				Event::trigger('__flush__');
-				if (Event::has('close')) {
+                Event::trigger('app.exit');
+				Event::trigger('app.flush');
+				if (Event::has('app.close')) {
 		            if (function_exists('fastcgi_finish_request')) {
 		                fastcgi_finish_request();
 		            }
-		            Event::trigger('close');
+		            Event::trigger('app.close');
 				}
             } catch (\Throwable $e) {
                 Error::exceptionHandler($e);
             }
         });
-        Event::trigger('boot');
+        Event::trigger('app.boot');
     }
     
     /*
