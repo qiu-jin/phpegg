@@ -47,6 +47,7 @@ class Micro extends App
 			    Arr::set($this->routes, $params, $call);
 			}
 		}
+		return $this;
     }
 	
     /*
@@ -154,7 +155,7 @@ class Micro extends App
 					}
 					if (!$this->config['method_dispatch_routes_property']) {
 						if ($method = $this->checkInstanceMethod($instance, $result['next'])) {
-							return ['call' => [$instance, $method];
+							return ['call' => [$instance, $method]];
 						}
 						return;
 					}
@@ -215,7 +216,7 @@ class Micro extends App
 					}
 					if (isset($instance)) {
 						if ($method = $this->checkInstanceMethod($instance, $method)) {
-							return ['call' => [$instance, $method];
+							return ['call' => [$instance, $method]];
 						}
 						return;
 					}

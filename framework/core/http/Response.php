@@ -22,7 +22,7 @@ class Response
         }
         self::$init = true;
 		self::$response = new \stdClass();
-        Event::on('__flush__', [__CLASS__, 'flush']);
+        Event::on('app.flush', [__CLASS__, 'flush']);
     }
     
     /*

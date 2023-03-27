@@ -161,7 +161,7 @@ abstract class Db
 	                $sql = Str::format($sql, $params, ':%s');
 	            }
 	        }
-			Logger::channel($this->debug)->debug($sql);
+			//Logger::channel($this->debug)->debug($sql);
 		}
     }
 }

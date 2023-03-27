@@ -126,7 +126,7 @@ class Arr
     public static function headKey(array $array)
     {
 		if (PHP_VERSION_ID >=  70300) {
-			return array_key_first();
+			return array_key_first($array);
 		} else {
 	        foreach ($array as $key => $value) {
 	            return $key;
@@ -141,7 +141,7 @@ class Arr
     public static function last(array $array)
     {
 		if (PHP_VERSION_ID >=  70300) {
-			return $array[array_key_last()];
+			return $array[array_key_last($array)];
 		} else {
 			return end($array);
 		}

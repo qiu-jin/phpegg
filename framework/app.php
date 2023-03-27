@@ -189,8 +189,10 @@ abstract class App
      */
     public static function abort(...$params)
     {
-        if (isset(self::$app) && (self::$error_handler === null || self::$error_handler(...$params) === true)) {
-            self::$app->error(...$params);
+        if (isset(self::$app)) {
+			if (self::$error_handler === null || self::$error_handler(...$params) === true) {
+				self::$app->error(...$params);
+			}
         }
         self::exit();
     }

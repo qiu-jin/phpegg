@@ -75,7 +75,11 @@ class Client
      */
     public function __construct($method, $url)
     {
-        $this->request = (object) ['url' => $url, 'method' => $method];
+        $this->request = (object) [
+        	'url' => $url,
+			'method' => $method,
+			'curlopts' => [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 30]
+        ];
     }
 	
     /*
@@ -288,7 +292,7 @@ class Client
      */
     public function returnHeader($bool = true)
     {
-		$this->request->return_header = $bool;
+		$this->request->curlopts[CURLOPT_HEADER] = (bool) $bool;
         return $this;
     }
     
@@ -379,34 +383,30 @@ class Client
      */
     protected function build()
     {
-		$request = $this->request;
-        $ch = curl_init($request->url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        if (isset($request->method)){
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $request->method);
+        $ch = curl_init($this->request->url);
+        if (isset($this->request->method)){
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $this->request->method);
         }
-        if (isset($request->body)){
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $request->body);
+        if (isset($this->request->body)){
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $this->request->body);
         }
-        if (isset($request->headers)) {
-			foreach ($request->headers as $name => $value) {
+        if (isset($this->request->headers)) {
+			foreach ($this->request->headers as $name => $value) {
 				$headers[] = "$name: $value";
 			}
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         }
-        if (isset($request->cookies)) {
-			curl_setopt($ch, CURLOPT_COOKIE, http_build_query($request->cookies, '', ';'));
+        if (isset($this->request->cookies)) {
+			curl_setopt($ch, CURLOPT_COOKIE, http_build_query($this->request->cookies, '', ';'));
         }
+		/*
         if ($this->debug) {
-            $request->return_header = true;
-            $request->curlopts[CURLINFO_HEADER_OUT] = true;
-        }
-        if (!empty($request->return_header)) {
-			$request->curlopts[CURLOPT_HEADER] = true;
-        }
-        if (isset($request->curlopts)) {
-            ksort($request->curlopts);
-            curl_setopt_array($ch, $request->curlopts);
+            $this->request->curlopts[CURLOPT_HEADER] = true;
+            $this->request->curlopts[CURLINFO_HEADER_OUT] = true;
+        }*/
+        if (isset($this->request->curlopts)) {
+			//ksort($$this->request->curlopts);
+            curl_setopt_array($ch, $this->request->curlopts);
         }
         return $this->ch = $ch;
     }
@@ -420,7 +420,7 @@ class Client
         if (!($code >= 200 && $code < 300)) {
             $this->setError($code);
         }
-        if (!empty($this->request->return_header)) {
+        if (!empty($this->request->curlopts[CURLOPT_HEADER])) {
         	$headers = $this->getResponseHeadersFromResult($body);
         }
         $this->response = new class ($code, $body, $headers ?? null) {

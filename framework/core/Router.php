@@ -94,11 +94,8 @@ class Router
         $ret = [];
 		// 方法匹配
 		if ($rule[0] == ':') {
-			$arr = explode(' ', substr($v, 1), 2);
+			$arr = explode(' ', substr($rule, 1), 2);
 			$method = strtoupper(trim($arr[0]));
-			
-			if (strpos("|$method|", "|$this->method|") === false) {}
-			
 			if (strpos($method, '|') === false) {
 				if ($method != $this->method) {
 					return false;
@@ -109,7 +106,7 @@ class Router
 			if (isset($arr[1])) {
 				$rule = trim($arr[1]);
 			} else {
-				return $step == $this->count ? [$ret, $step] : false;
+				return [$ret, $step];
 			}
 		}
         // 空匹配

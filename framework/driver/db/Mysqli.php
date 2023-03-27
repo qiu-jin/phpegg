@@ -186,6 +186,7 @@ class Mysqli extends Db
 					return $result;
 				}
                 $query->close();
+				return;
             }
         }
         throw new \Exception($this->exceptionMessage());

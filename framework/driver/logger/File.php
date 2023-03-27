@@ -20,7 +20,7 @@ class File extends Logger
     {
         $this->logfile = $config['logfile'];
         if (empty($config['realtime_write'])) {
-			Event::on('exit', [$this, 'flush']);
+			Event::on('app.exit', [$this, 'flush']);
         } else {
         	$this->realtime_write = true;
         }

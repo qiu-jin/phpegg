@@ -190,7 +190,7 @@ class Uploaded
      */
     protected function randName($ext = null)
     {
-		$name = hash_hmac('md5', $this->path(), random_bytes(16))
+		$name = hash_hmac('md5', $this->path(), random_bytes(16));
 		if (isset($ext)) {
 			if ($ext === false) {
 				return $name;
