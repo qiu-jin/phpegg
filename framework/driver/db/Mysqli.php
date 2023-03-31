@@ -133,7 +133,7 @@ class Mysqli extends Db
      */
     public function getFields($table)
     {
-        return array_column($this->select("desc `$table`"), 'Field');
+        return array_column($this->find("desc `$table`"), 'Field');
     }
     
     /*

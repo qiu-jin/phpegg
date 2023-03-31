@@ -70,7 +70,7 @@ class Str
     /*
      * 随机串
      */
-    public static function random(int $length = 32, int $mode = 3)
+    public static function random(int $length = 32, int $mode = 2)
     {
         static $strs = [
 			//[位码, 长度, 字符集]

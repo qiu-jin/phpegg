@@ -15,7 +15,7 @@ class Join extends QueryChain
     /*
      * 初始化
      */
-    protected function __init($table, $options, $join, $type = 'LEFT', $prefix = true)
+    protected function __init($table, $options, $join, $prefix = true, $type = 'LEFT')
     {
         if (!in_array($type, self::$join_type)) {
             throw new \Exception("Join Type Error: $type");
@@ -34,7 +34,7 @@ class Join extends QueryChain
     /*
      * 设置关联表
      */
-    public function join($join, $type = 'LEFT', $prefix = true)
+    public function join($join, $prefix = true, $type = 'LEFT')
     {
         if (!in_array($type, self::$join_type)) {
             throw new \Exception("Join Type Error: $type");

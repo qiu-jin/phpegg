@@ -141,12 +141,12 @@ class Builder
 		if (is_array($field)) {
 			foreach ($field as $v) {
                 foreach ($this->db->fields($table) as $field) {
-					$group[] = $table ? self::quoteFieldPair($table, $field) : self::quoteField($field);
+					$group[] = $table ? self::quoteTableField($table, $field) : self::quoteField($field);
                 }
 			}
 			 return 'GROUP BY '.implode(',', $group);
 		}
-        return ' GROUP BY '.($table ? self::quoteFieldPair($table, $field) : self::quoteField($field));
+        return ' GROUP BY '.($table ? self::quoteTableField($table, $field) : self::quoteField($field));
     }
     
 	/*
@@ -173,7 +173,7 @@ class Builder
 	public static function orderClause($orders)
     {
         foreach ($orders as $order) {
-            $field = isset($order[2]) ? self::quoteFieldPair($order[2], $order[0]) : self::quoteField($order[0]);
+            $field = isset($order[2]) ? self::quoteTableField($order[2], $order[0]) : self::quoteField($order[0]);
             $items[] = $order[1] ? "$field DESC" : $field;
         }
         return ' ORDER BY '.implode(',', $items);
@@ -226,7 +226,7 @@ class Builder
 	 */
     public static function whereItem($prefix, &$params, $field, $exp, $value)
     {
-        return ' '.(isset($prefix) ? self::quoteFieldPair($prefix, $field) 
+        return ' '.(isset($prefix) ? self::quoteTableField($prefix, $field) 
                                    : self::quoteField($field)).' '.self::whereItemValue($params, $exp, $value);
     }
     

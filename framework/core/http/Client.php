@@ -78,7 +78,7 @@ class Client
         $this->request = (object) [
         	'url' => $url,
 			'method' => $method,
-			'curlopts' => [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 30]
+			'curlopts' => [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 6, CURLOPT_TIMEOUT => 60]
         ];
     }
 	
@@ -362,7 +362,7 @@ class Client
     /*
      * 获取Curl信息
      */
-    public function getCurlInfo($name)
+    public function getCurlInfo($name = null)
     {
 		if (!$this->response) {
 			$this->setResponse($this->exec());
@@ -421,13 +421,12 @@ class Client
             $this->setError($code);
         }
         if (!empty($this->request->curlopts[CURLOPT_HEADER])) {
-        	$headers = $this->getResponseHeadersFromResult($body);
+        	list($headers, $body) = $this->getResponseHeadersFromResult($body);
         }
         $this->response = new class ($code, $body, $headers ?? null) {
 			public $code;
 			public $body;
 			public $headers;
-			private $data;
             public function __construct($code, $body, $headers) {
 				$this->code		= $code;
 				$this->body 	= $body;
@@ -499,28 +498,28 @@ class Client
     /*
      * 获取响应头
      */
-    protected function getResponseHeadersFromResult(&$body)
+    protected function getResponseHeadersFromResult($body)
     {
         if (is_string($body) && ($size = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE))) {
-			$body = substr($body, $size);
+			$new_body = substr($body, $size);
 	        foreach (explode(self::EOL, substr($body, 0, $size)) as $line) {
 	            $kv = explode(':', $line, 2);
 	            if(isset($kv[1])) {
 	                $k = trim($kv[0]);
 	                $v = trim($kv[1]);
 	                if (isset($headers[$k])) {
-	                    if (count($headers[$k]) === 1) {
-	                        $headers[$k] = [$headers[$k], $v];
-	                    } else {
+	                    if (is_array($headers[$k])) {
 	                        $headers[$k][] = $v;
+	                    } else {
+							$headers[$k] = [$headers[$k], $v];
 	                    }
 	                } else {
 	                    $headers[$k] = $v;
 	                }
 	            }
 	        }
-	        return $headers ?? null;
         }
+		return [$headers ?? null, $new_body ?? $body];
     }
 	
     /*

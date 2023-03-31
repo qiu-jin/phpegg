@@ -22,9 +22,9 @@ class Query extends QueryChain
     /*
      * join联表查询
      */
-    public function join($table, $type = 'LEFT', $prefix = true)
+    public function join($table, $prefix = true, $type = 'LEFT')
     {
-        return new Join($this->db, $this->table, $this->options, $table, $type, $prefix);
+        return new Join($this->db, $this->table, $this->options, $table, $prefix, $type);
     }
     
     /*
