@@ -138,6 +138,11 @@ function validate($rule, $message = null)
 /*
  * HTTP请求实例
  */
+function fetch($method, $url)
+{
+    return new Client($method, $url);
+}
+
 function request($method, $url)
 {
     return new Client($method, $url);
