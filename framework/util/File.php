@@ -8,9 +8,9 @@ class File
     /*
      * 文件读取
      */
-    public static function get($file)
+    public static function get($file, $check = false)
     {
-        return is_file($file) ? file_get_contents($file) : false;
+        return (!$check || is_file($file)) ? file_get_contents($file) : false;
     }
     
     /*
@@ -24,25 +24,25 @@ class File
     /*
      * 文件移动
      */
-    public static function move($file, $to)
+    public static function move($file, $to, $check = false)
     {
-        return is_file($file) && self::makeDir(dirname($to)) && rename($file, $to);
+        return (!$check || is_file($file)) && self::makeDir(dirname($to)) && rename($file, $to);
     }
     
     /*
      * 文件复制
      */
-    public static function copy($file, $to)
+    public static function copy($file, $to, $check = false)
     {
-        return is_file($file) && self::makeDir(dirname($to)) && copy($file, $to);
+        return (!$check || is_file($file)) && self::makeDir(dirname($to)) && copy($file, $to);
     }
     
     /*
      * 文件删除
      */
-    public static function delete($file)
+    public static function delete($file, $check = false)
     {
-        return is_file($file) && unlink($file);
+        return (!$check || is_file($file)) && unlink($file);
     }
     
     /*

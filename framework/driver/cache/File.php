@@ -12,6 +12,8 @@ class File extends Cache
     protected $ext = '.cache.txt';
     // 序列化反序列化处理器
     protected $serializer = ['serialize', 'unserialize'];
+	// 使用真实文件名
+    protected $use_real_name = false;
     
     /*
      * 初始化
@@ -26,6 +28,7 @@ class File extends Cache
 			$this->serializer = $config['serializer'];
 		}
         $this->dir = Str::lastPad($config['dir'], '/');
+		$this->use_real_name = !empty($config['use_real_name']);
     }
     
     /*
@@ -125,6 +128,6 @@ class File extends Cache
      */
     protected function filename($key)
     {
-        return $this->dir.md5($key).$this->ext;
+        return $this->dir.($this->use_real_name ? $key : md5($key)).$this->ext;
     }
 }

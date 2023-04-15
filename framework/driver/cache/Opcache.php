@@ -13,6 +13,8 @@ class Opcache extends Cache
     protected $dir;
 	// 缓存文件扩展名
     protected $ext = '.cache.php';
+	// 使用真实文件名
+    protected $use_real_name = false;
 	// 强制处理数据类型安全
     protected $force_type_safe = false;
 
@@ -26,6 +28,7 @@ class Opcache extends Cache
 		if (isset($config['ext'])) {
 			$this->ext = $config['ext'];
 		}
+		$this->use_real_name = !empty($config['use_real_name']);
 		if (isset($config['force_type_safe'])) {
 			$this->force_type_safe = $config['force_type_safe'];
 		}
@@ -133,6 +136,6 @@ class Opcache extends Cache
      */
     protected function filename($key)
     {
-        return $this->dir.md5($key).$this->ext;
+        return $this->dir.($this->use_real_name ? $key : md5($key)).$this->ext;
     }
 }
