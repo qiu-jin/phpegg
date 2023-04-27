@@ -171,12 +171,32 @@ class Arr
     /*
      * 是否为哈希数组
      */
-	
     public static function isAssoc(array $array)
     {
 		return !array_diff_key($array, array_keys($array));
     }
-    
+	
+    /*
+     * 是否为list数组
+     */
+    public static function isList(array $array)
+    {
+		return PHP_VERSION_ID > 80100 ? array_is_list($array) : array_diff_key($array, array_keys($array));
+    }
+	
+    /*
+     * 获取部分键
+     */
+    public static function pick(array $array , array $keys)
+    {
+        foreach ($keys as $key) {
+            if (isset($array[$key])) {
+                $return[$key] = $array[$key];
+            }
+        }
+        return $return ?? [];
+    }
+	
     /*
      * 过滤键
      */

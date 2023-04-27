@@ -98,7 +98,7 @@ class File extends Cache
     /*
      * 清理
      */
-    public function clear()
+    public function clear(callable $fitler = null)
     {
 		$len = strlen($this->ext);
         UFile::clearDir($this->dir, function ($file) use ($len) {

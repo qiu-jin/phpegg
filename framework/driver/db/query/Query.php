@@ -65,19 +65,24 @@ class Query extends QueryChain
     /*
      * 插入数据
      */
-    public function insert(array $data, $return_id = false)
+    public function insert(array $data, $return_id = false, $ignore = false)
     {
-        $result = $this->db->exec(...$this->builder::insert($this->table, $data));
+        $result = $this->db->exec(...$this->builder::insert($this->table, $data, $ignore));
 		return $return_id ? $this->db->insertId() : $result;
     }
     
     /*
      * 插入多个
      */
-    public function insertAll(array $datas)
+    public function insertAll(array $datas, $ignore = false)
     {
+		if ($ignore) {
+			$sql = 'INSERT IGNORE INTO ';
+		} else {
+			$sql = 'INSERT INTO ';
+		}
         list($fields, $values, $params) = $this->builder::insertData(array_shift($datas));
-        $sql = 'INSERT INTO '.$this->builder::quoteField($this->table)." ($fields) VALUES ($values)";
+        $sql .= $this->builder::quoteField($this->table)." ($fields) VALUES ($values)";
         foreach ($datas as $data) {
             $sql .= ", ($values)";
             $params = array_merge($params, array_values($data));
@@ -109,8 +114,11 @@ class Query extends QueryChain
     /*
      * 数据自增自减
      */
-    public function updateAuto($auto, $data = null)
+    public function updateAuto($auto, $data = null, $id = null, $pk = 'id')
     {
+        if (isset($id)) {
+            $this->options['where'] = [[$pk, '=', $id]];
+        }
         foreach ($auto as $key => $val) {
             $v = $this->builder::quoteField($key);
             $val = (int) $val;

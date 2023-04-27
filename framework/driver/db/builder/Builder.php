@@ -40,10 +40,15 @@ class Builder
 	/*
 	 * insert语句
 	 */
-    public static function insert($table, $data)
+    public static function insert($table, $data, $ignore = false)
     {
+		if ($ignore) {
+			$sql = 'INSERT IGNORE INTO ';
+		} else {
+			$sql = 'INSERT INTO ';
+		}
         list($fields, $values, $params) = self::insertData($data);
-        return ['INSERT INTO '.self::quoteField($table)." ($fields) VALUES ($values)", $params];
+        return [$sql.self::quoteField($table)." ($fields) VALUES ($values)", $params];
     }
     
 	/*
