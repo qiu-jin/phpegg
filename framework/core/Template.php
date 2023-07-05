@@ -721,7 +721,7 @@ class Template
             throw new TemplateException("必须非自闭合标签 $str");
         }
         $prefix = preg_quote(self::$config['argument_attr_prefix']);
-        if (preg_match_all('/([\w-'.$prefix.']+)\s*=\s*(?:"([^"]+)"|\'([^\']+)\')/', $str, $matches)) {
+        if (preg_match_all('/([\w\-'.$prefix.']+)\s*=\s*(?:"([^"]+)"|\'([^\']+)\')/', $str, $matches)) {
             foreach ($matches[1] as $i => $attr) {
                 $ret[$attr] = $matches[2][$i] ?: $matches[3][$i];
             }

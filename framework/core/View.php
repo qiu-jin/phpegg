@@ -95,7 +95,7 @@ class View
 			require func_get_arg(1);
 		}) ($vars, self::path($tpl));
 		if ($clean) {
-			self::clean();
+			//self::clean();
 		}
         return ob_get_clean();
     }

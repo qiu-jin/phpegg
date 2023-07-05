@@ -97,7 +97,7 @@ class Config
     public static function set($name, $value)
     {
         $ns = explode('.', $name);
-		$fn = array_shift($fn);
+		$fn = array_shift($ns);
         if ($ns) {
             if (!self::check($fn) || !is_array(self::$config[$fn])) {
                 self::$config[$fn] = [];

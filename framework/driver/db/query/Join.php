@@ -70,10 +70,10 @@ class Join extends QueryChain
     /*
      * 查询（多条）
      */
-    public function all()
+    public function find()
     {
         $this->table_options[$this->cur] = $this->options;
-        return $this->db->all(...$this->build());
+        return $this->db->find(...$this->build());
     }
     
     /*
